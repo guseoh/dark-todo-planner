@@ -27,8 +27,6 @@ export type TodoInput = {
   categoryId?: string;
   memo?: string;
   date?: string;
-  startTime?: string;
-  endTime?: string;
   priority?: TodoPriority;
   repeat?: TodoRepeat;
   tags?: string[];

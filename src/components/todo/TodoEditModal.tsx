@@ -14,8 +14,6 @@ export function TodoEditModal({ todo, categories = [], onClose, onSave }: TodoEd
   const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
   const [date, setDate] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
   const [priority, setPriority] = useState<TodoPriority>("MEDIUM");
   const [repeat, setRepeat] = useState<TodoRepeat>("NONE");
   const [tags, setTags] = useState("");
@@ -27,8 +25,6 @@ export function TodoEditModal({ todo, categories = [], onClose, onSave }: TodoEd
     setTitle(todo.title);
     setMemo(todo.memo || "");
     setDate(todo.date);
-    setStartTime(todo.startTime || "");
-    setEndTime(todo.endTime || "");
     setPriority(todo.priority);
     setRepeat(todo.repeat || "NONE");
     setTags((todo.tags || []).join(", "));
@@ -52,8 +48,6 @@ export function TodoEditModal({ todo, categories = [], onClose, onSave }: TodoEd
       categoryId: categoryId || undefined,
       memo,
       date,
-      startTime,
-      endTime,
       priority,
       repeat,
       tags: tags.split(","),
@@ -87,7 +81,7 @@ export function TodoEditModal({ todo, categories = [], onClose, onSave }: TodoEd
           </button>
         </div>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
           <label className="space-y-1 text-sm text-ink-400 md:col-span-2">
             제목
             <input
@@ -130,24 +124,6 @@ export function TodoEditModal({ todo, categories = [], onClose, onSave }: TodoEd
             </select>
           </label>
           <label className="space-y-1 text-sm text-ink-400">
-            시작 시간
-            <input
-              className="field"
-              type="time"
-              value={startTime}
-              onChange={(event) => setStartTime(event.target.value)}
-            />
-          </label>
-          <label className="space-y-1 text-sm text-ink-400">
-            종료 시간
-            <input
-              className="field"
-              type="time"
-              value={endTime}
-              onChange={(event) => setEndTime(event.target.value)}
-            />
-          </label>
-          <label className="space-y-1 text-sm text-ink-400">
             반복
             <select
               className="field"
@@ -183,7 +159,7 @@ export function TodoEditModal({ todo, categories = [], onClose, onSave }: TodoEd
           <label className="space-y-1 text-sm text-ink-400 md:col-span-2">
             메모
             <textarea
-              className="field min-h-28 resize-y"
+              className="field min-h-24 resize-y"
               value={memo}
               onChange={(event) => setMemo(event.target.value)}
               placeholder="메모"

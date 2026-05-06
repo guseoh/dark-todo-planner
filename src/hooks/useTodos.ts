@@ -51,8 +51,6 @@ export function useTodos() {
       title,
       memo: normalizeOptional(input.memo),
       date: input.date || todayKey(),
-      startTime: normalizeOptional(input.startTime),
-      endTime: normalizeOptional(input.endTime),
       priority: input.priority || "MEDIUM",
       completed: false,
       createdAt: now,

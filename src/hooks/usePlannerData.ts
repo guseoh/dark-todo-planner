@@ -23,6 +23,27 @@ export const defaultFilters: TodoFilters = {
 
 const getMessage = (error: unknown) => (error instanceof Error ? error.message : "요청 처리 중 오류가 발생했습니다.");
 
+const toTodoRequestBody = (todo: Todo | (Partial<Todo> & TodoInput)) => {
+  const {
+    id,
+    userId,
+    createdAt,
+    updatedAt,
+    category,
+    startTime,
+    endTime,
+    ...body
+  } = todo;
+  void id;
+  void userId;
+  void createdAt;
+  void updatedAt;
+  void category;
+  void startTime;
+  void endTime;
+  return body;
+};
+
 export function usePlannerData() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [allTodos, setAllTodos] = useState<Todo[]>([]);
@@ -72,7 +93,7 @@ export function usePlannerData() {
     try {
       const result = await api<{ todo: Todo }>("/api/todos", {
         method: "POST",
-        ...jsonBody({ date: todayKey(), priority: "MEDIUM", repeat: "NONE", ...input }),
+        ...jsonBody(toTodoRequestBody({ date: todayKey(), priority: "MEDIUM", repeat: "NONE", ...input })),
       });
       setAllTodos((current) => [result.todo, ...current]);
       setError("");
@@ -90,7 +111,7 @@ export function usePlannerData() {
     try {
       const result = await api<{ todo: Todo }>(`/api/todos/${id}`, {
         method: "PUT",
-        ...jsonBody({ ...existing, ...updates }),
+        ...jsonBody(toTodoRequestBody({ ...existing, ...updates })),
       });
       setAllTodos((current) => current.map((todo) => (todo.id === id ? result.todo : todo)));
       setError("");

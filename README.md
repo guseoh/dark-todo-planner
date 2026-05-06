@@ -88,6 +88,8 @@ npm run build
 npm run start
 ```
 
+운영 DB에 migration 파일이 준비되어 있다면 `npm run db:push` 대신 `npm run db:deploy`를 사용하세요.
+
 운영 실행 후 접속:
 
 - App: `http://localhost:3000/`
@@ -105,6 +107,8 @@ npm run start
 - `npm run start`: production Express 서버 실행
 - `npm run db:generate`: Prisma Client 생성
 - `npm run db:push`: Prisma schema를 DB에 반영
+- `npm run db:migrate`: 개발 환경에서 Prisma migration 생성 및 적용
+- `npm run db:deploy`: 운영 환경에서 이미 생성된 migration 적용
 - `npm run db:studio`: Prisma Studio 실행
 
 ## 환경 변수 설정
@@ -174,7 +178,17 @@ npm run db:generate
 npm run db:push
 ```
 
-개발 환경에서는 `db:push`로 빠르게 SQLite 스키마를 반영합니다. 운영에서 장기적으로 관리하려면 Prisma migrate 워크플로로 전환하는 것을 권장합니다.
+개발 환경에서는 `db:push`로 빠르게 SQLite 스키마를 반영할 수 있습니다. 다만 장기 운영이나 실제 배포 DB에는 migration 이력이 남는 방식이 더 안전합니다.
+
+권장 흐름:
+
+```text
+개발 초기 / 빠른 실험: npm run db:push
+개발에서 migration 생성: npm run db:migrate
+운영 배포에서 migration 적용: npm run db:deploy
+```
+
+현재 저장소는 초기 개발 단계에서 `db:push` 중심으로 구성되어 있으므로, production에서 `db:deploy`를 사용하려면 먼저 개발 환경에서 baseline migration을 생성한 뒤 배포에 포함해야 합니다.
 
 ## SQLite 파일 위치와 주의사항
 
@@ -187,9 +201,11 @@ DATABASE_URL="file:../data/prod.db"
 주의:
 
 - `data/*.db`와 journal 파일은 Git에 올리지 않습니다.
-- Render/Railway 같은 PaaS에서는 재배포나 재시작 시 SQLite 파일이 유지되는지 확인해야 합니다.
-- 영구 디스크를 설정하지 않으면 데이터가 사라질 수 있습니다.
-- 개인 VPS나 장기 운영 환경에서는 정기 백업을 권장합니다.
+- SQLite는 로컬 PC, 개인 VPS, 단일 서버에서 쓰기 간단한 개인용 저장소에 적합합니다.
+- Render/Railway 같은 PaaS에서는 재배포나 재시작 시 SQLite 파일이 유지되는지 반드시 확인해야 합니다.
+- 영구 디스크를 설정하지 않으면 DB 파일이 사라져 Todo, 목표, 회고 데이터가 유실될 수 있습니다.
+- 장기 운영에서는 JSON 백업을 주기적으로 내려받거나 서버 파일 백업을 자동화하는 것을 권장합니다.
+- 여러 기기에서 오래 사용할 계획이라면 PostgreSQL 전환을 고려하세요.
 
 ## Render 배포 가이드
 
@@ -202,7 +218,7 @@ npm install && npm run db:generate && npm run build
 Start Command:
 
 ```bash
-npm run db:push && npm run start
+npm run db:deploy && npm run start
 ```
 
 환경 변수 예시:
@@ -215,7 +231,7 @@ NODE_ENV=production
 PORT=10000
 ```
 
-Render에서 SQLite를 안정적으로 쓰려면 Persistent Disk 설정이 필요할 수 있습니다. Persistent Disk를 사용하지 않으면 재배포 또는 재시작 시 DB 파일이 사라질 수 있습니다.
+Render에서 SQLite를 안정적으로 쓰려면 Persistent Disk 설정이 필요할 수 있습니다. Persistent Disk를 사용하지 않으면 재배포 또는 재시작 시 DB 파일이 사라질 수 있습니다. 아직 Prisma migration을 만들지 않은 상태라면 첫 배포 전에는 `db:push`로 초기화하고, 이후 운영에서는 migration 기반으로 전환하는 방식을 권장합니다.
 
 ## Railway 배포 가이드
 
@@ -229,12 +245,15 @@ NODE_ENV=production
 ```
 
 Railway에서 SQLite 파일 저장이 영구적으로 유지되는지 확인해야 합니다. 장기적으로는 Railway PostgreSQL을 사용하는 것이 더 안정적일 수 있습니다.
+운영 DB를 유지하면서 스키마를 바꿀 때는 `db:push`보다 `db:deploy`를 사용하는 것이 안전합니다. 단, `db:deploy`는 `prisma/migrations` 폴더에 migration 파일이 있을 때 의미가 있습니다.
 
 ## PostgreSQL 전환 안내
 
 SQLite는 개인용 로컬이나 VPS에서는 간단하고 좋지만, 서버 재배포 시 파일 유지가 중요한 환경에서는 주의가 필요합니다.
 
 Render/Railway 같은 환경에서 장기적으로 사용할 경우 PostgreSQL로 전환하는 것이 더 안정적입니다. Prisma를 사용하고 있으므로 `DATABASE_URL`과 `provider`를 변경하면 PostgreSQL 전환이 가능합니다.
+
+PostgreSQL로 전환하면 파일 유실 걱정은 줄어들지만, 백업과 migration 관리는 계속 필요합니다. 개인용으로도 중요한 일정 데이터라면 JSON 백업 기능과 DB 백업을 함께 사용하는 것이 좋습니다.
 
 ## API Health Check
 
@@ -354,6 +373,8 @@ scripts
  ┗ write-server-dist-package.cjs
 src
  ┣ components
+ ┃ ┣ monthly
+ ┃ ┣ todo
  ┣ hooks
  ┣ lib
  ┣ pages

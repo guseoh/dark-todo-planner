@@ -1,4 +1,4 @@
-import { Archive, CalendarDays, CheckCircle2, Clock3, Pencil, Play, RotateCcw, Trash2 } from "lucide-react";
+import { Archive, CalendarDays, CheckCircle2, Pencil, Play, RotateCcw, Trash2 } from "lucide-react";
 import { formatKoreanDate } from "../../lib/date";
 import { repeatLabel } from "../../lib/todo";
 import type { Todo } from "../../types/todo";
@@ -82,12 +82,6 @@ export function TodoItem({
               <span className="inline-flex items-center gap-1">
                 <CalendarDays size={14} />
                 {formatKoreanDate(todo.date, "M월 d일 E")}
-              </span>
-            ) : null}
-            {todo.startTime || todo.endTime ? (
-              <span className="inline-flex items-center gap-1">
-                <Clock3 size={14} />
-                {todo.startTime || "--:--"} - {todo.endTime || "--:--"}
               </span>
             ) : null}
           </div>

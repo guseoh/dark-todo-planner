@@ -723,12 +723,14 @@ app.post(
 );
 
 const clientDistPath = path.resolve(process.cwd(), "dist");
+const githubPagesBasePath = "/dark-todo-planner";
 
 app.use("/api", (_req, res) => {
   return res.status(404).json({ message: "API 경로를 찾을 수 없습니다." });
 });
 
 app.use(express.static(clientDistPath));
+app.use(githubPagesBasePath, express.static(clientDistPath));
 
 app.get(/^(?!\/api(?:\/|$)).*/, (_req, res) => {
   return res.sendFile(path.join(clientDistPath, "index.html"));

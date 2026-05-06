@@ -72,7 +72,8 @@ export function TodayPage({
         emptyDescription="새로운 Todo를 추가해보세요."
         showDate={false}
         defaultDate={todayKey()}
-        showCategoryCreator={false}
+        includeEmptyCategories
+        showCategoryCreator
       />
     </div>
   );
