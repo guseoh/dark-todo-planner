@@ -9,6 +9,7 @@ import {
   ListChecks,
   Settings,
   Target,
+  FolderKanban,
 } from "lucide-react";
 
 export type AppView =
@@ -17,6 +18,7 @@ export type AppView =
   | "week"
   | "month"
   | "all"
+  | "categories"
   | "timer"
   | "reflection"
   | "goals"
@@ -34,6 +36,7 @@ const navItems = [
   { id: "week", label: "주간", icon: CalendarRange },
   { id: "month", label: "월간", icon: CalendarDays },
   { id: "all", label: "전체 Todo", icon: ListChecks },
+  { id: "categories", label: "카테고리", icon: FolderKanban },
   { id: "timer", label: "타이머", icon: Clock3 },
   { id: "reflection", label: "회고", icon: NotebookPen },
   { id: "goals", label: "목표", icon: Target },

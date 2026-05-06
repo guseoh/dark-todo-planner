@@ -2,6 +2,7 @@ export type TimerMode = "FOCUS" | "SHORT_BREAK" | "LONG_BREAK";
 
 export type FocusSession = {
   id: string;
+  userId?: string;
   todoId?: string;
   todoTitle?: string;
   mode: TimerMode;
@@ -12,6 +13,8 @@ export type FocusSession = {
 };
 
 export type TimerSettings = {
+  id?: string;
+  userId?: string;
   focusMinutes: number;
   shortBreakMinutes: number;
   longBreakMinutes: number;

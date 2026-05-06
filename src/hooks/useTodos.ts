@@ -23,6 +23,9 @@ export const defaultFilters: TodoFilters = {
   status: "ALL",
   priority: "ALL",
   tag: "",
+  categoryId: "",
+  repeat: "ALL",
+  archived: "ACTIVE",
   date: "",
   sort: "DATE_ASC",
 };

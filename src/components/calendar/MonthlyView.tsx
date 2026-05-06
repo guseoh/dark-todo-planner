@@ -12,6 +12,8 @@ import {
   weekdayLabels,
 } from "../../lib/date";
 import type { Todo, TodoInput } from "../../types/todo";
+import type { Category } from "../../types/category";
+import type { Goal } from "../../types/goal";
 import { TodoForm } from "../todo/TodoForm";
 import { TodoList } from "../todo/TodoList";
 
@@ -24,9 +26,11 @@ type MonthlyViewProps = {
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   onArchive: (id: string) => void;
   onFocusTodo: (todo: Todo) => void;
+  categories?: Category[];
+  goals?: Goal[];
 };
 
-export function MonthlyView({ todos, getTodosByDate, onAdd, onToggle, onDelete, onUpdate, onArchive, onFocusTodo }: MonthlyViewProps) {
+export function MonthlyView({ todos, getTodosByDate, onAdd, onToggle, onDelete, onUpdate, onArchive, onFocusTodo, categories = [], goals = [] }: MonthlyViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(todayKey());
   const selectedPanelRef = useRef<HTMLElement | null>(null);
@@ -67,6 +71,7 @@ export function MonthlyView({ todos, getTodosByDate, onAdd, onToggle, onDelete, 
           {monthDays.map((day) => {
             const dateKey = toDateKey(day);
             const dayTodos = getTodosByDate(dateKey);
+            const dayGoals = goals.filter((goal) => goal.targetDate === dateKey || goal.dueDate === dateKey);
             const selected = dateKey === selectedDate;
             const today = isTodayDate(day);
             const inMonth = isCurrentMonth(day, currentMonth);
@@ -89,6 +94,16 @@ export function MonthlyView({ todos, getTodosByDate, onAdd, onToggle, onDelete, 
                       {dayTodos.length}
                     </span>
                   ) : null}
+                  {dayGoals.length ? (
+                    <span className="rounded-full bg-warning/20 px-2 py-0.5 text-[11px] font-semibold text-amber-100">
+                      목표 {dayGoals.length}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {Array.from(new Set(dayTodos.map((todo) => todo.category?.color).filter(Boolean))).slice(0, 4).map((color) => (
+                    <span key={color} className="h-2 w-2 rounded-full" style={{ background: color }} />
+                  ))}
                 </div>
                 <div className="mt-2 hidden space-y-1 sm:block">
                   {dayTodos.slice(0, 3).map((todo) => (
@@ -109,7 +124,7 @@ export function MonthlyView({ todos, getTodosByDate, onAdd, onToggle, onDelete, 
             <Plus size={18} className="text-accent-400" />
             <h3 className="font-semibold text-ink-100">{formatKoreanDate(selectedDate, "M월 d일 EEEE")}에 추가</h3>
           </div>
-          <TodoForm onAdd={onAdd} defaultDate={selectedDate} compact />
+          <TodoForm onAdd={onAdd} defaultDate={selectedDate} compact categories={categories} />
         </section>
         <section className="space-y-4">
           <div className="flex items-center justify-between gap-3">
@@ -125,6 +140,7 @@ export function MonthlyView({ todos, getTodosByDate, onAdd, onToggle, onDelete, 
             onUpdate={onUpdate}
             onArchive={onArchive}
             onFocusTodo={onFocusTodo}
+            categories={categories}
             emptyTitle="선택한 날짜의 Todo가 없습니다."
             emptyDescription="달력에서 날짜를 고른 뒤 Todo를 추가해보세요."
             groupByCompletion

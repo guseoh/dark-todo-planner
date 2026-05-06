@@ -1,4 +1,5 @@
 import type { Todo } from "../types/todo";
+import type { Category } from "../types/category";
 import { TodoList } from "../components/todo/TodoList";
 
 type ArchivePageProps = {
@@ -7,9 +8,10 @@ type ArchivePageProps = {
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   onUnarchive: (id: string) => void;
+  categories?: Category[];
 };
 
-export function ArchivePage({ archivedTodos, onToggle, onDelete, onUpdate, onUnarchive }: ArchivePageProps) {
+export function ArchivePage({ archivedTodos, onToggle, onDelete, onUpdate, onUnarchive, categories = [] }: ArchivePageProps) {
   return (
     <div className="space-y-6">
       <section>
@@ -22,6 +24,7 @@ export function ArchivePage({ archivedTodos, onToggle, onDelete, onUpdate, onUna
         onDelete={onDelete}
         onUpdate={onUpdate}
         onUnarchive={onUnarchive}
+        categories={categories}
         emptyTitle="보관된 Todo가 없습니다."
         emptyDescription="완료한 Todo 카드의 보관 버튼을 눌러 목록을 정리할 수 있습니다."
       />

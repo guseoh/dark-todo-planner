@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
 import { todayKey } from "../../lib/date";
+import type { Category } from "../../types/category";
 import type { TodoInput, TodoPriority, TodoRepeat } from "../../types/todo";
 
 type TodoFormProps = {
@@ -8,9 +9,11 @@ type TodoFormProps = {
   defaultDate?: string;
   compact?: boolean;
   submitLabel?: string;
+  categories?: Category[];
+  defaultCategoryId?: string;
 };
 
-export function TodoForm({ onAdd, defaultDate, compact = false, submitLabel = "추가" }: TodoFormProps) {
+export function TodoForm({ onAdd, defaultDate, compact = false, submitLabel = "추가", categories = [], defaultCategoryId = "" }: TodoFormProps) {
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
@@ -20,11 +23,16 @@ export function TodoForm({ onAdd, defaultDate, compact = false, submitLabel = "�
   const [priority, setPriority] = useState<TodoPriority>("MEDIUM");
   const [repeat, setRepeat] = useState<TodoRepeat>("NONE");
   const [tags, setTags] = useState("");
+  const [categoryId, setCategoryId] = useState(defaultCategoryId);
   const [showDetails, setShowDetails] = useState(!compact);
 
   useEffect(() => {
     setDate(defaultDate || todayKey());
   }, [defaultDate]);
+
+  useEffect(() => {
+    setCategoryId(defaultCategoryId);
+  }, [defaultCategoryId]);
 
   const reset = () => {
     setTitle("");
@@ -35,6 +43,7 @@ export function TodoForm({ onAdd, defaultDate, compact = false, submitLabel = "�
     setPriority("MEDIUM");
     setRepeat("NONE");
     setTags("");
+    setCategoryId(defaultCategoryId);
     if (compact) setShowDetails(false);
   };
 
@@ -47,6 +56,7 @@ export function TodoForm({ onAdd, defaultDate, compact = false, submitLabel = "�
 
     onAdd({
       title,
+      categoryId: categoryId || undefined,
       memo,
       date: date || todayKey(),
       startTime,
@@ -127,6 +137,17 @@ export function TodoForm({ onAdd, defaultDate, compact = false, submitLabel = "�
               <option value="LOW">낮음</option>
               <option value="MEDIUM">보통</option>
               <option value="HIGH">높음</option>
+            </select>
+          </label>
+          <label className="space-y-1 text-sm text-ink-400">
+            카테고리
+            <select className="field" value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
+              <option value="">미분류</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
             </select>
           </label>
           <label className="space-y-1 text-sm text-ink-400">

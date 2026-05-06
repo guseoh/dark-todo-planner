@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { defaultFilters } from "../hooks/useTodos";
+import { defaultFilters } from "../hooks/usePlannerData";
+import type { Category } from "../types/category";
 import type { Todo, TodoFilters } from "../types/todo";
 import { TodoFilter } from "../components/todo/TodoFilter";
 import { TodoList } from "../components/todo/TodoList";
@@ -7,6 +8,7 @@ import { TodoList } from "../components/todo/TodoList";
 type AllTodosPageProps = {
   filterTodos: (filters: TodoFilters) => Todo[];
   tagOptions: string[];
+  categories?: Category[];
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
@@ -14,7 +16,7 @@ type AllTodosPageProps = {
   onFocusTodo: (todo: Todo) => void;
 };
 
-export function AllTodosPage({ filterTodos, tagOptions, onToggle, onDelete, onUpdate, onArchive, onFocusTodo }: AllTodosPageProps) {
+export function AllTodosPage({ filterTodos, tagOptions, categories = [], onToggle, onDelete, onUpdate, onArchive, onFocusTodo }: AllTodosPageProps) {
   const [filters, setFilters] = useState<TodoFilters>(defaultFilters);
   const filteredTodos = useMemo(() => filterTodos(filters), [filterTodos, filters]);
 
@@ -30,7 +32,7 @@ export function AllTodosPage({ filterTodos, tagOptions, onToggle, onDelete, onUp
         </span>
       </section>
 
-      <TodoFilter filters={filters} onChange={setFilters} tagOptions={tagOptions} />
+      <TodoFilter filters={filters} onChange={setFilters} tagOptions={tagOptions} categories={categories} />
       <TodoList
         todos={filteredTodos}
         onToggle={onToggle}
@@ -38,6 +40,7 @@ export function AllTodosPage({ filterTodos, tagOptions, onToggle, onDelete, onUp
         onUpdate={onUpdate}
         onArchive={onArchive}
         onFocusTodo={onFocusTodo}
+        categories={categories}
         emptyTitle="아직 등록된 Todo가 없습니다."
         emptyDescription="검색 조건을 바꾸거나 새로운 Todo를 추가해보세요."
       />

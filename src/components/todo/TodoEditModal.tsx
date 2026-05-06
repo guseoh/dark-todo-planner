@@ -1,14 +1,16 @@
 import { FormEvent, useEffect, useState } from "react";
 import { X } from "lucide-react";
+import type { Category } from "../../types/category";
 import type { Todo, TodoPriority, TodoRepeat } from "../../types/todo";
 
 type TodoEditModalProps = {
   todo: Todo | null;
+  categories?: Category[];
   onClose: () => void;
   onSave: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
 };
 
-export function TodoEditModal({ todo, onClose, onSave }: TodoEditModalProps) {
+export function TodoEditModal({ todo, categories = [], onClose, onSave }: TodoEditModalProps) {
   const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
   const [date, setDate] = useState("");
@@ -18,6 +20,7 @@ export function TodoEditModal({ todo, onClose, onSave }: TodoEditModalProps) {
   const [repeat, setRepeat] = useState<TodoRepeat>("NONE");
   const [tags, setTags] = useState("");
   const [completed, setCompleted] = useState(false);
+  const [categoryId, setCategoryId] = useState("");
 
   useEffect(() => {
     if (!todo) return;
@@ -30,6 +33,7 @@ export function TodoEditModal({ todo, onClose, onSave }: TodoEditModalProps) {
     setRepeat(todo.repeat || "NONE");
     setTags((todo.tags || []).join(", "));
     setCompleted(todo.completed);
+    setCategoryId(todo.categoryId || "");
   }, [todo]);
 
   useEffect(() => {
@@ -45,6 +49,7 @@ export function TodoEditModal({ todo, onClose, onSave }: TodoEditModalProps) {
 
     onSave(todo.id, {
       title,
+      categoryId: categoryId || undefined,
       memo,
       date,
       startTime,
@@ -100,6 +105,17 @@ export function TodoEditModal({ todo, onClose, onSave }: TodoEditModalProps) {
               value={date}
               onChange={(event) => setDate(event.target.value)}
             />
+          </label>
+          <label className="space-y-1 text-sm text-ink-400">
+            카테고리
+            <select className="field" value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
+              <option value="">미분류</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="space-y-1 text-sm text-ink-400">
             우선순위

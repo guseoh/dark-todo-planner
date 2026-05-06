@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  nickname     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  categories    Category[]
+  todos         Todo[]
+  tags          Tag[]
+  reflections   Reflection[]
+  goals         Goal[]
+  focusSessions FocusSession[]
+  timerSettings TimerSettings?
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  color       String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  todos Todo[]
+}
+
+model Todo {
+  id         String  @id @default(cuid())
+  userId     String
+  categoryId String?
+
+  title     String
+  memo      String?
+  date      String
+  startTime String?
+  endTime   String?
+
+  priority  Priority   @default(MEDIUM)
+  completed Boolean    @default(false)
+  repeat    RepeatType @default(NONE)
+
+  archived  Boolean   @default(false)
+  archivedAt DateTime?
+
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category      Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  todoTags      TodoTag[]
+  focusSessions FocusSession[]
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  todoTags TodoTag[]
+
+  @@unique([userId, name])
+}
+
+model TodoTag {
+  todoId String
+  tagId  String
+
+  todo Todo @relation(fields: [todoId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([todoId, tagId])
+}
+
+model Reflection {
+  id           String         @id @default(cuid())
+  userId       String
+  date         String
+  type         ReflectionType
+  sectionsJson String         @default("[]")
+  content      String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Goal {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+
+  type          GoalType @default(DAILY)
+  targetDate    String?
+  weekStartDate String?
+  weekEndDate   String?
+  month         String?
+  dueDate       String?
+
+  progress  Int      @default(0)
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FocusSession {
+  id              String    @id @default(cuid())
+  userId          String
+  todoId          String?
+  todoTitle       String?
+  mode            TimerMode
+  durationMinutes Int
+  startedAt       DateTime
+  endedAt         DateTime
+  completed       Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  todo Todo? @relation(fields: [todoId], references: [id], onDelete: SetNull)
+}
+
+model TimerSettings {
+  id                      String   @id @default(cuid())
+  userId                  String   @unique
+  focusMinutes            Int      @default(25)
+  shortBreakMinutes       Int      @default(5)
+  longBreakMinutes        Int      @default(15)
+  sessionsBeforeLongBreak Int      @default(4)
+  soundEnabled            Boolean  @default(true)
+  notificationEnabled     Boolean  @default(false)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum RepeatType {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+  WEEKDAY
+  WEEKEND
+}
+
+enum ReflectionType {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum GoalType {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum TimerMode {
+  FOCUS
+  SHORT_BREAK
+  LONG_BREAK
+}

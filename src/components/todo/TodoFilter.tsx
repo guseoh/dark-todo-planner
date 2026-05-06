@@ -1,14 +1,16 @@
 import { RotateCcw, Search } from "lucide-react";
-import { defaultFilters } from "../../hooks/useTodos";
+import { defaultFilters } from "../../hooks/usePlannerData";
+import type { Category } from "../../types/category";
 import type { TodoFilters, TodoPriorityFilter, TodoStatusFilter } from "../../types/todo";
 
 type TodoFilterProps = {
   filters: TodoFilters;
   onChange: (filters: TodoFilters) => void;
   tagOptions?: string[];
+  categories?: Category[];
 };
 
-export function TodoFilter({ filters, onChange, tagOptions = [] }: TodoFilterProps) {
+export function TodoFilter({ filters, onChange, tagOptions = [], categories = [] }: TodoFilterProps) {
   const quickFilters: Array<{
     label: string;
     status: TodoStatusFilter;
@@ -27,7 +29,7 @@ export function TodoFilter({ filters, onChange, tagOptions = [] }: TodoFilterPro
 
   return (
     <div className="app-card p-4">
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,1fr)_minmax(0,0.72fr)_minmax(0,0.72fr)_minmax(0,0.8fr)_auto]">
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,1fr)_repeat(5,minmax(0,0.72fr))_auto]">
         <label className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" size={17} />
           <input
@@ -61,6 +63,13 @@ export function TodoFilter({ filters, onChange, tagOptions = [] }: TodoFilterPro
           onChange={(event) => onChange({ ...filters, date: event.target.value })}
           aria-label="날짜 필터"
         />
+        <select className="field" value={filters.categoryId} onChange={(event) => onChange({ ...filters, categoryId: event.target.value })} aria-label="카테고리 필터">
+          <option value="">모든 카테고리</option>
+          <option value="uncategorized">미분류</option>
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>{category.name}</option>
+          ))}
+        </select>
         <select
           className="field"
           value={filters.tag}
@@ -73,6 +82,20 @@ export function TodoFilter({ filters, onChange, tagOptions = [] }: TodoFilterPro
               #{tag}
             </option>
           ))}
+        </select>
+        <select className="field" value={filters.repeat} onChange={(event) => onChange({ ...filters, repeat: event.target.value as TodoFilters["repeat"] })} aria-label="반복 필터">
+          <option value="ALL">모든 반복</option>
+          <option value="NONE">반복 없음</option>
+          <option value="DAILY">매일</option>
+          <option value="WEEKLY">매주</option>
+          <option value="MONTHLY">매월</option>
+          <option value="WEEKDAY">평일</option>
+          <option value="WEEKEND">주말</option>
+        </select>
+        <select className="field" value={filters.archived} onChange={(event) => onChange({ ...filters, archived: event.target.value as TodoFilters["archived"] })} aria-label="보관 필터">
+          <option value="ACTIVE">보관 제외</option>
+          <option value="ARCHIVED">보관함</option>
+          <option value="ALL">전체</option>
         </select>
         <select
           className="field"

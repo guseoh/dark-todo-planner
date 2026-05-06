@@ -15,14 +15,17 @@ export function ReflectionCard({
   onDelete,
 }: {
   reflection: Reflection;
-  onUpdate: (id: string, updates: Partial<Pick<Reflection, "date" | "type" | "content">>) => void;
+  onUpdate: (id: string, updates: Partial<Pick<Reflection, "date" | "type" | "content" | "sections">>) => void;
   onDelete: (id: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const [content, setContent] = useState(reflection.content);
+  const [sections, setSections] = useState(reflection.sections || []);
 
   const save = () => {
-    onUpdate(reflection.id, { content });
+    onUpdate(reflection.id, {
+      sections,
+      content: sections.map((section) => `${section.title}\n${section.content}`).join("\n\n"),
+    });
     setEditing(false);
   };
 
@@ -51,13 +54,33 @@ export function ReflectionCard({
       </div>
       {editing ? (
         <div className="mt-4 space-y-3">
-          <textarea className="field min-h-36 resize-y" value={content} onChange={(event) => setContent(event.target.value)} />
+          {sections.map((section) => (
+            <label key={section.id} className="block space-y-2 text-sm font-semibold text-ink-200">
+              {section.title}
+              <textarea
+                className="field min-h-24 resize-y"
+                value={section.content}
+                onChange={(event) =>
+                  setSections((current) =>
+                    current.map((item) => (item.id === section.id ? { ...item, content: event.target.value } : item)),
+                  )
+                }
+              />
+            </label>
+          ))}
           <button type="button" className="btn-primary" onClick={save}>
             저장
           </button>
         </div>
       ) : (
-        <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-ink-300">{reflection.content}</p>
+        <div className="mt-4 space-y-4">
+          {(reflection.sections || []).map((section) => (
+            <section key={section.id}>
+              <h4 className="text-sm font-bold text-ink-100">{section.title}</h4>
+              <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-ink-400">{section.content || "비어 있음"}</p>
+            </section>
+          ))}
+        </div>
       )}
     </article>
   );

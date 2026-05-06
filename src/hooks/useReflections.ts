@@ -24,6 +24,7 @@ export function useReflections() {
         date: input.date,
         type: input.type,
         content,
+        sections: [{ id: "legacy-content", title: "메모", content, order: 0 }],
         createdAt: now,
         updatedAt: now,
       },

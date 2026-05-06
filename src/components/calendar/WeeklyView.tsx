@@ -3,6 +3,8 @@ import { Plus } from "lucide-react";
 import { calculateRate } from "../../lib/todo";
 import { formatKoreanDate, getWeekDays, toDateKey, todayKey } from "../../lib/date";
 import type { Todo, TodoInput } from "../../types/todo";
+import type { Category } from "../../types/category";
+import type { Goal } from "../../types/goal";
 import { ProgressBar } from "../common/ProgressBar";
 import { TodoForm } from "../todo/TodoForm";
 import { TodoList } from "../todo/TodoList";
@@ -17,24 +19,55 @@ type WeeklyViewProps = {
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   onArchive: (id: string) => void;
   onFocusTodo: (todo: Todo) => void;
+  categories?: Category[];
+  goals?: Goal[];
 };
 
-export function WeeklyView({ todos, getTodosByDate, onAdd, onToggle, onDelete, onUpdate, onArchive, onFocusTodo }: WeeklyViewProps) {
+export function WeeklyView({ todos, getTodosByDate, onAdd, onToggle, onDelete, onUpdate, onArchive, onFocusTodo, categories = [], goals = [] }: WeeklyViewProps) {
   const [selectedDate, setSelectedDate] = useState(todayKey());
   const weekDays = useMemo(() => getWeekDays(), []);
+  const weekStart = toDateKey(weekDays[0]);
+  const weekEnd = toDateKey(weekDays[6]);
   const selectedTodos = getTodosByDate(selectedDate);
   const weekRate = calculateRate(todos);
+  const weeklyGoals = goals.filter(
+    (goal) =>
+      goal.type === "WEEKLY" &&
+      (!goal.weekStartDate || goal.weekStartDate <= weekEnd) &&
+      (!goal.weekEndDate || goal.weekEndDate >= weekStart),
+  );
+  const weeklyGoalRate = weeklyGoals.length
+    ? Math.round(weeklyGoals.reduce((sum, goal) => sum + goal.progress, 0) / weeklyGoals.length)
+    : 0;
 
   return (
     <div className="space-y-5">
       <section className="app-card p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="grid gap-5 lg:grid-cols-2">
           <div>
             <p className="text-sm text-ink-400">이번 주 완료율</p>
             <h2 className="mt-1 text-2xl font-bold text-ink-100">{weekRate}%</h2>
+            <div className="mt-3">
+              <ProgressBar value={weekRate} label={`${todos.length}개 중 ${todos.filter((todo) => todo.completed).length}개 완료`} />
+            </div>
           </div>
-          <div className="w-full max-w-md">
-            <ProgressBar value={weekRate} label={`${todos.length}개 중 ${todos.filter((todo) => todo.completed).length}개 완료`} />
+          <div>
+            <p className="text-sm text-ink-400">이번 주 목표</p>
+            <h2 className="mt-1 text-2xl font-bold text-ink-100">{weeklyGoals.length ? `${weeklyGoalRate}%` : "-"}</h2>
+            {weeklyGoals.length ? (
+              <div className="mt-3 space-y-3">
+                <ProgressBar value={weeklyGoalRate} label={`${weeklyGoals.length}개 주간 목표`} />
+                <div className="flex flex-wrap gap-2">
+                  {weeklyGoals.slice(0, 3).map((goal) => (
+                    <span key={goal.id} className="rounded-full border border-ink-700 bg-ink-950/60 px-3 py-1 text-xs text-ink-200">
+                      {goal.title}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-ink-500">이번 주 목표가 없습니다.</p>
+            )}
           </div>
         </div>
       </section>
@@ -79,7 +112,14 @@ export function WeeklyView({ todos, getTodosByDate, onAdd, onToggle, onDelete, o
               <div className="mt-4 space-y-2">
                 {dayTodos.slice(0, 4).map((todo) => (
                   <div key={todo.id} className={`rounded-md border border-ink-700 bg-ink-950/50 p-2 ${todo.completed ? "opacity-50" : ""}`}>
-                    <p className={`truncate text-sm font-medium text-ink-100 ${todo.completed ? "line-through" : ""}`}>{todo.title}</p>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: todo.category?.color || "#475569" }}
+                        aria-hidden="true"
+                      />
+                      <p className={`truncate text-sm font-medium text-ink-100 ${todo.completed ? "line-through" : ""}`}>{todo.title}</p>
+                    </div>
                     <div className="mt-2">
                       <PriorityBadge priority={todo.priority} />
                     </div>
@@ -99,7 +139,7 @@ export function WeeklyView({ todos, getTodosByDate, onAdd, onToggle, onDelete, o
             <Plus size={18} className="text-accent-400" />
             <h3 className="font-semibold text-ink-100">{formatKoreanDate(selectedDate, "M월 d일 EEEE")}에 추가</h3>
           </div>
-          <TodoForm onAdd={onAdd} defaultDate={selectedDate} compact />
+          <TodoForm onAdd={onAdd} defaultDate={selectedDate} compact categories={categories} />
         </div>
         <div className="space-y-4">
           <h3 className="font-semibold text-ink-100">선택한 날짜 Todo</h3>
@@ -110,6 +150,7 @@ export function WeeklyView({ todos, getTodosByDate, onAdd, onToggle, onDelete, o
             onUpdate={onUpdate}
             onArchive={onArchive}
             onFocusTodo={onFocusTodo}
+            categories={categories}
             emptyTitle="이번 주 계획이 없습니다."
             emptyDescription="선택한 날짜에 새로운 Todo를 추가해보세요."
             groupByCompletion

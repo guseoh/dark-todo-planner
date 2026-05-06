@@ -1,27 +1,31 @@
 import { FormEvent, useState } from "react";
+import { createId } from "../../lib/id";
 import { todayKey } from "../../lib/date";
-import type { ReflectionType } from "../../types/reflection";
+import type { ReflectionSection, ReflectionType } from "../../types/reflection";
 
-const templates: Record<ReflectionType, string> = {
-  DAILY: "- 오늘 잘한 점\n- 아쉬운 점\n- 내일 할 일",
-  WEEKLY: "- 이번 주 완료한 것\n- 미룬 것\n- 다음 주 목표",
-  MONTHLY: "- 이번 달 잘한 점\n- 다음 달 목표",
+const templates: Record<ReflectionType, string[]> = {
+  DAILY: ["오늘 잘한 점", "아쉬운 점", "내일 할 일", "메모"],
+  WEEKLY: ["이번 주 완료한 것", "이번 주 아쉬웠던 것", "다음 주 목표", "메모"],
+  MONTHLY: ["이번 달 잘한 점", "이번 달 아쉬웠던 점", "다음 달 목표", "메모"],
 };
+
+const createSections = (type: ReflectionType): ReflectionSection[] =>
+  templates[type].map((title, order) => ({ id: createId(), title, content: "", order }));
 
 export function ReflectionForm({
   onAdd,
 }: {
-  onAdd: (input: { date: string; type: ReflectionType; content: string }) => void;
+  onAdd: (input: { date: string; type: ReflectionType; sections: ReflectionSection[]; content?: string }) => void;
 }) {
   const [type, setType] = useState<ReflectionType>("DAILY");
   const [date, setDate] = useState(todayKey());
-  const [content, setContent] = useState(templates.DAILY);
+  const [sections, setSections] = useState<ReflectionSection[]>(createSections("DAILY"));
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (!content.trim()) return;
-    onAdd({ date, type, content });
-    setContent(templates[type]);
+    if (!sections.some((section) => section.content.trim())) return;
+    onAdd({ date, type, sections, content: sections.map((section) => `${section.title}\n${section.content}`).join("\n\n") });
+    setSections(createSections(type));
   };
 
   return (
@@ -34,20 +38,31 @@ export function ReflectionForm({
           onChange={(event) => {
             const nextType = event.target.value as ReflectionType;
             setType(nextType);
-            setContent(templates[nextType]);
+            setSections(createSections(nextType));
           }}
         >
-          <option value="DAILY">오늘 회고</option>
+          <option value="DAILY">일간 회고</option>
           <option value="WEEKLY">주간 회고</option>
           <option value="MONTHLY">월간 회고</option>
         </select>
         <input className="field" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
       </div>
-      <textarea
-        className="field mt-3 min-h-40 resize-y"
-        value={content}
-        onChange={(event) => setContent(event.target.value)}
-      />
+      <div className="mt-4 space-y-4">
+        {sections.map((section) => (
+          <label key={section.id} className="block space-y-2 text-sm font-semibold text-ink-200">
+            {section.title}
+            <textarea
+              className="field min-h-24 resize-y"
+              value={section.content}
+              onChange={(event) =>
+                setSections((current) =>
+                  current.map((item) => (item.id === section.id ? { ...item, content: event.target.value } : item)),
+                )
+              }
+            />
+          </label>
+        ))}
+      </div>
       <button type="submit" className="btn-primary mt-4 w-full sm:w-auto">
         회고 저장
       </button>

@@ -8,7 +8,7 @@ export function ReflectionList({
   onDelete,
 }: {
   reflections: Reflection[];
-  onUpdate: (id: string, updates: Partial<Pick<Reflection, "date" | "type" | "content">>) => void;
+  onUpdate: (id: string, updates: Partial<Pick<Reflection, "date" | "type" | "content" | "sections">>) => void;
   onDelete: (id: string) => void;
 }) {
   if (!reflections.length) {

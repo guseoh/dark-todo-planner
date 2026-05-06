@@ -6,9 +6,11 @@ import type { Todo } from "./todo";
 export type BackupData = {
   version: number;
   exportedAt: string;
+  categories?: Category[];
   todos: Todo[];
   reflections?: Reflection[];
   goals?: Goal[];
   focusSessions?: FocusSession[];
   timerSettings?: TimerSettings;
 };
+import type { Category } from "./category";

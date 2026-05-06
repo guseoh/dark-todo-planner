@@ -3,6 +3,8 @@ export type TodoRepeat = "NONE" | "DAILY" | "WEEKLY" | "MONTHLY" | "WEEKDAY" | "
 
 export type Todo = {
   id: string;
+  userId?: string;
+  categoryId?: string;
   title: string;
   memo?: string;
   date: string;
@@ -16,10 +18,13 @@ export type Todo = {
   tags: string[];
   archived: boolean;
   archivedAt?: string;
+  order?: number;
+  category?: Category;
 };
 
 export type TodoInput = {
   title: string;
+  categoryId?: string;
   memo?: string;
   date?: string;
   startTime?: string;
@@ -38,6 +43,10 @@ export type TodoFilters = {
   status: TodoStatusFilter;
   priority: TodoPriorityFilter;
   tag: string;
+  categoryId: string;
+  repeat: "ALL" | TodoRepeat;
+  archived: "ACTIVE" | "ARCHIVED" | "ALL";
   date: string;
   sort: TodoSort;
 };
+import type { Category } from "./category";

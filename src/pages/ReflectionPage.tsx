@@ -4,8 +4,8 @@ import type { Reflection } from "../types/reflection";
 
 type ReflectionPageProps = {
   reflections: Reflection[];
-  onAdd: (input: { date: string; type: Reflection["type"]; content: string }) => void;
-  onUpdate: (id: string, updates: Partial<Pick<Reflection, "date" | "type" | "content">>) => void;
+  onAdd: (input: { date: string; type: Reflection["type"]; sections: Reflection["sections"]; content?: string }) => void;
+  onUpdate: (id: string, updates: Partial<Pick<Reflection, "date" | "type" | "content" | "sections">>) => void;
   onDelete: (id: string) => void;
 };
 

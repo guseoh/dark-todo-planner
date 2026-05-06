@@ -40,9 +40,13 @@ const beep = () => {
   oscillator.stop(audioContext.currentTime + 0.18);
 };
 
-export function usePomodoroTimer(addSession: (session: Omit<FocusSession, "id">) => void) {
+export function usePomodoroTimer(
+  addSession: (session: Omit<FocusSession, "id">) => void,
+  externalSettings?: TimerSettings,
+  persistSettings?: (settings: Partial<TimerSettings>) => void,
+) {
   const [settings, setSettings] = useState<TimerSettings>(() =>
-    normalizeTimerSettings(readJson<unknown>(STORAGE_KEYS.TIMER_SETTINGS, DEFAULT_TIMER_SETTINGS)),
+    normalizeTimerSettings(externalSettings || readJson<unknown>(STORAGE_KEYS.TIMER_SETTINGS, DEFAULT_TIMER_SETTINGS)),
   );
   const [state, setState] = useState<TimerState>(() =>
     normalizeTimerState(readJson<unknown>(STORAGE_KEYS.TIMER_STATE, null), createDefaultState(settings)),
@@ -53,6 +57,10 @@ export function usePomodoroTimer(addSession: (session: Omit<FocusSession, "id">)
   useEffect(() => {
     writeJson(STORAGE_KEYS.TIMER_SETTINGS, settings);
   }, [settings]);
+
+  useEffect(() => {
+    if (externalSettings) setSettings(normalizeTimerSettings(externalSettings));
+  }, [externalSettings]);
 
   useEffect(() => {
     writeJson(STORAGE_KEYS.TIMER_STATE, state);
@@ -196,16 +204,18 @@ export function usePomodoroTimer(addSession: (session: Omit<FocusSession, "id">)
   }, []);
 
   const updateSettings = useCallback((updates: Partial<TimerSettings>) => {
-    setSettings((current) => normalizeTimerSettings({ ...current, ...updates }));
+    const nextSettings = normalizeTimerSettings({ ...settings, ...updates });
+    setSettings(nextSettings);
+    persistSettings?.(nextSettings);
     setState((current) =>
       current.isRunning
         ? current
         : {
             ...current,
-            remainingSeconds: getDurationSeconds(current.mode, normalizeTimerSettings({ ...settings, ...updates })),
+            remainingSeconds: getDurationSeconds(current.mode, nextSettings),
           },
     );
-  }, [settings]);
+  }, [persistSettings, settings]);
 
   const requestNotificationPermission = useCallback(async () => {
     if (!("Notification" in window)) {

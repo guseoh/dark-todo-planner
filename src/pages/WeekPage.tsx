@@ -1,4 +1,6 @@
 import type { Todo, TodoInput } from "../types/todo";
+import type { Category } from "../types/category";
+import type { Goal } from "../types/goal";
 import { WeeklyView } from "../components/calendar/WeeklyView";
 
 type WeekPageProps = {
@@ -10,9 +12,11 @@ type WeekPageProps = {
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   onArchive: (id: string) => void;
   onFocusTodo: (todo: Todo) => void;
+  categories?: Category[];
+  goals?: Goal[];
 };
 
-export function WeekPage({ weekTodos, getTodosByDate, onAdd, onToggle, onDelete, onUpdate, onArchive, onFocusTodo }: WeekPageProps) {
+export function WeekPage({ weekTodos, getTodosByDate, onAdd, onToggle, onDelete, onUpdate, onArchive, onFocusTodo, categories = [], goals = [] }: WeekPageProps) {
   return (
     <div className="space-y-6">
       <section>
@@ -28,6 +32,8 @@ export function WeekPage({ weekTodos, getTodosByDate, onAdd, onToggle, onDelete,
         onUpdate={onUpdate}
         onArchive={onArchive}
         onFocusTodo={onFocusTodo}
+        categories={categories}
+        goals={goals}
       />
     </div>
   );

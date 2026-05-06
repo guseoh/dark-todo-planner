@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { sortByTime } from "../../lib/todo";
+import type { Category } from "../../types/category";
 import type { Todo } from "../../types/todo";
 import { EmptyState } from "../common/EmptyState";
 import { TodoEditModal } from "./TodoEditModal";
@@ -13,6 +14,7 @@ type TodoListProps = {
   onArchive?: (id: string) => void;
   onUnarchive?: (id: string) => void;
   onFocusTodo?: (todo: Todo) => void;
+  categories?: Category[];
   emptyTitle: string;
   emptyDescription?: string;
   groupByCompletion?: boolean;
@@ -27,6 +29,7 @@ export function TodoList({
   onArchive,
   onUnarchive,
   onFocusTodo,
+  categories = [],
   emptyTitle,
   emptyDescription,
   groupByCompletion = false,
@@ -82,7 +85,7 @@ export function TodoList({
         renderItems(sortedTodos)
       )}
 
-      <TodoEditModal todo={editingTodo} onClose={() => setEditingTodo(null)} onSave={onUpdate} />
+      <TodoEditModal todo={editingTodo} categories={categories} onClose={() => setEditingTodo(null)} onSave={onUpdate} />
     </>
   );
 }

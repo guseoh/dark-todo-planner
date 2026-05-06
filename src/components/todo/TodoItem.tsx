@@ -53,6 +53,9 @@ export function TodoItem({
               {todo.title}
             </h3>
             <PriorityBadge priority={todo.priority} />
+            <span className="rounded-full border border-ink-600 bg-ink-800 px-2.5 py-1 text-xs font-semibold text-ink-200">
+              {todo.category?.name || "미분류"}
+            </span>
             {todo.repeat !== "NONE" ? (
               <span className="rounded-full border border-accent-500/35 bg-accent-500/15 px-2.5 py-1 text-xs font-semibold text-indigo-100">
                 {repeatLabel[todo.repeat]}

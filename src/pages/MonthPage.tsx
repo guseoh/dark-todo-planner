@@ -1,4 +1,6 @@
 import type { Todo, TodoInput } from "../types/todo";
+import type { Category } from "../types/category";
+import type { Goal } from "../types/goal";
 import { MonthlyView } from "../components/calendar/MonthlyView";
 
 type MonthPageProps = {
@@ -10,9 +12,11 @@ type MonthPageProps = {
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   onArchive: (id: string) => void;
   onFocusTodo: (todo: Todo) => void;
+  categories?: Category[];
+  goals?: Goal[];
 };
 
-export function MonthPage({ todos, getTodosByDate, onAdd, onToggle, onDelete, onUpdate, onArchive, onFocusTodo }: MonthPageProps) {
+export function MonthPage({ todos, getTodosByDate, onAdd, onToggle, onDelete, onUpdate, onArchive, onFocusTodo, categories = [], goals = [] }: MonthPageProps) {
   return (
     <div className="space-y-6">
       <section>
@@ -28,6 +32,8 @@ export function MonthPage({ todos, getTodosByDate, onAdd, onToggle, onDelete, on
         onUpdate={onUpdate}
         onArchive={onArchive}
         onFocusTodo={onFocusTodo}
+        categories={categories}
+        goals={goals}
       />
     </div>
   );

@@ -25,6 +25,8 @@ export function useGoals() {
         id: createId(),
         title,
         description: input.description?.trim() || undefined,
+        type: "DAILY",
+        targetDate: input.dueDate,
         dueDate: input.dueDate,
         progress: clampProgress(input.progress),
         completed: false,
@@ -78,7 +80,7 @@ export function useGoals() {
     () =>
       [...goals]
         .filter((goal) => !goal.completed)
-        .sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0],
+        .sort((a, b) => (a.dueDate || a.targetDate || "").localeCompare(b.dueDate || b.targetDate || ""))[0],
     [goals],
   );
 

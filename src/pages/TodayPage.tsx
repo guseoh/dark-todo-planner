@@ -1,5 +1,6 @@
 import { CheckCircle2, CircleDot, ListChecks } from "lucide-react";
 import { todayKey } from "../lib/date";
+import type { Category } from "../types/category";
 import type { Todo, TodoInput } from "../types/todo";
 import { StatCard } from "../components/common/StatCard";
 import { TodoForm } from "../components/todo/TodoForm";
@@ -19,9 +20,10 @@ type TodayPageProps = {
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   onArchive: (id: string) => void;
   onFocusTodo: (todo: Todo) => void;
+  categories?: Category[];
 };
 
-export function TodayPage({ todayTodos, stats, onAdd, onToggle, onDelete, onUpdate, onArchive, onFocusTodo }: TodayPageProps) {
+export function TodayPage({ todayTodos, stats, onAdd, onToggle, onDelete, onUpdate, onArchive, onFocusTodo, categories = [] }: TodayPageProps) {
   return (
     <div className="space-y-6">
       <section>
@@ -36,7 +38,7 @@ export function TodayPage({ todayTodos, stats, onAdd, onToggle, onDelete, onUpda
         <StatCard title="완료율" value={`${stats.todayRate}%`} progress={stats.todayRate} />
       </section>
 
-      <TodoForm onAdd={onAdd} defaultDate={todayKey()} compact submitLabel="오늘 추가" />
+      <TodoForm onAdd={onAdd} defaultDate={todayKey()} compact submitLabel="오늘 추가" categories={categories} />
 
       <TodoList
         todos={todayTodos}
@@ -45,6 +47,7 @@ export function TodayPage({ todayTodos, stats, onAdd, onToggle, onDelete, onUpda
         onUpdate={onUpdate}
         onArchive={onArchive}
         onFocusTodo={onFocusTodo}
+        categories={categories}
         emptyTitle="오늘 할 일이 없습니다."
         emptyDescription="새로운 Todo를 추가해보세요."
         groupByCompletion
