@@ -20,6 +20,9 @@ export default {
           600: "#5457e8",
           400: "#8b5cf6",
         },
+        success: "#22c55e",
+        warning: "#f59e0b",
+        danger: "#ef4444",
       },
       boxShadow: {
         soft: "0 18px 45px rgba(2, 6, 23, 0.28)",

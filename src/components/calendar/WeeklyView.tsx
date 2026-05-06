@@ -40,6 +40,7 @@ export function WeeklyView({ todos, onAdd, onToggle, onDelete, onUpdate }: Weekl
         {weekDays.map((day) => {
           const dateKey = toDateKey(day);
           const dayTodos = todos.filter((todo) => todo.date === dateKey);
+          const activeCount = dayTodos.filter((todo) => !todo.completed).length;
           const isToday = dateKey === todayKey();
           const isSelected = dateKey === selectedDate;
 
@@ -50,15 +51,26 @@ export function WeeklyView({ todos, onAdd, onToggle, onDelete, onUpdate }: Weekl
               onClick={() => setSelectedDate(dateKey)}
               className={`app-card min-h-48 p-4 text-left transition hover:border-accent-500/60 ${
                 isSelected ? "border-accent-500/70 bg-accent-500/10" : ""
-              } ${isToday ? "ring-2 ring-accent-400/30" : ""}`}
+              } ${isToday ? "ring-2 ring-accent-500/60" : ""}`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-sm font-semibold text-ink-100">{formatKoreanDate(day, "E요일")}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold text-ink-100">{formatKoreanDate(day, "E요일")}</p>
+                    {isToday ? (
+                      <span className="rounded-full bg-accent-500 px-2 py-0.5 text-[11px] font-bold text-white">
+                        오늘
+                      </span>
+                    ) : null}
+                  </div>
                   <p className="mt-1 text-xs text-ink-400">{formatKoreanDate(day, "M월 d일")}</p>
                 </div>
-                <span className="rounded-full border border-ink-700 bg-ink-950/70 px-2 py-1 text-xs text-ink-300">
-                  {dayTodos.length}개
+                <span className={`rounded-full border px-2 py-1 text-xs font-semibold ${
+                  activeCount
+                    ? "border-warning/45 bg-warning/15 text-amber-100"
+                    : "border-success/45 bg-success/15 text-emerald-100"
+                }`}>
+                  미완료 {activeCount}
                 </span>
               </div>
               <div className="mt-4 space-y-2">

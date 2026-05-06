@@ -13,9 +13,9 @@ export const priorityLabel: Record<TodoPriority, string> = {
 };
 
 export const priorityClassName: Record<TodoPriority, string> = {
-  HIGH: "border-red-400/40 bg-red-500/15 text-red-100",
-  MEDIUM: "border-violet-400/40 bg-violet-500/15 text-violet-100",
-  LOW: "border-emerald-400/40 bg-emerald-500/15 text-emerald-100",
+  HIGH: "border-danger/45 bg-danger/15 text-red-100",
+  MEDIUM: "border-warning/45 bg-warning/15 text-amber-100",
+  LOW: "border-success/45 bg-success/15 text-emerald-100",
 };
 
 export const calculateRate = (todos: Todo[]) => {

@@ -67,15 +67,15 @@ button:disabled {
 
 @layer components {
   .app-card {
-    @apply rounded-lg border border-ink-700/80 bg-ink-800/90 shadow-soft backdrop-blur;
+    @apply rounded-lg border border-ink-700 bg-ink-800 shadow-soft backdrop-blur;
   }
 
   .field {
-    @apply min-h-11 w-full rounded-lg border border-ink-700 bg-ink-950/70 px-3 py-2 text-sm text-ink-100 outline-none transition placeholder:text-ink-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25;
+    @apply min-h-11 w-full rounded-lg border border-ink-700 bg-ink-950/70 px-3 py-2 text-sm text-ink-100 outline-none transition placeholder:text-ink-500 hover:border-ink-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30;
   }
 
   .btn {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-transparent px-4 py-2 text-sm font-semibold transition;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-transparent px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950;
   }
 
   .btn-primary {
@@ -83,14 +83,14 @@ button:disabled {
   }
 
   .btn-secondary {
-    @apply btn border-ink-700 bg-ink-850 text-ink-100 hover:border-ink-500 hover:bg-ink-700;
+    @apply btn border-ink-700 bg-ink-850 text-ink-100 hover:border-accent-500/60 hover:bg-ink-700;
   }
 
   .btn-danger {
-    @apply btn border-red-500/40 bg-red-500/10 text-red-100 hover:bg-red-500/20;
+    @apply btn border-danger/40 bg-danger/10 text-red-100 hover:border-danger/70 hover:bg-danger/20;
   }
 
   .icon-btn {
-    @apply inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-ink-700 bg-ink-950/50 text-ink-400 transition hover:border-ink-500 hover:text-ink-100;
+    @apply inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-ink-700 bg-ink-950/50 text-ink-400 transition hover:border-accent-500/60 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950;
   }
 }

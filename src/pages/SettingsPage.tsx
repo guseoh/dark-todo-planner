@@ -97,6 +97,10 @@ export function SettingsPage({ todos, stats, onImport, onClear }: SettingsPagePr
           Todo 데이터는 서버로 전송되지 않고 현재 브라우저의 LocalStorage에 저장됩니다. 같은 컴퓨터라도
           브라우저나 프로필이 바뀌면 별도의 데이터로 취급됩니다.
         </p>
+        <div className="mt-4 rounded-lg border border-accent-500/35 bg-accent-500/10 px-4 py-3 text-sm leading-6 text-indigo-100">
+          이 앱은 개인용 로컬 플래너입니다. JSON 내보내기는 백업 파일을 만들고, JSON 가져오기는 현재
+          LocalStorage 데이터를 선택한 파일 내용으로 복원합니다.
+        </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <button type="button" className="btn-secondary" onClick={exportJson}>

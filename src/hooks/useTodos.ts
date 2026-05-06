@@ -21,7 +21,7 @@ export const defaultFilters: TodoFilters = {
   status: "ALL",
   priority: "ALL",
   date: "",
-  sort: "NEWEST",
+  sort: "DATE_ASC",
 };
 
 export function useTodos() {
@@ -147,7 +147,13 @@ export function useTodos() {
       return [...result].sort((a, b) => {
         if (filters.sort === "OLDEST") return a.createdAt.localeCompare(b.createdAt);
         if (filters.sort === "PRIORITY") return priorityRank[b.priority] - priorityRank[a.priority];
-        if (filters.sort === "DATE_ASC") return a.date.localeCompare(b.date);
+        if (filters.sort === "DATE_ASC") {
+          const base = new Date(todayKey()).getTime();
+          const aDistance = Math.abs(new Date(a.date).getTime() - base);
+          const bDistance = Math.abs(new Date(b.date).getTime() - base);
+          if (aDistance !== bDistance) return aDistance - bDistance;
+          return a.date.localeCompare(b.date);
+        }
         return b.createdAt.localeCompare(a.createdAt);
       });
     },

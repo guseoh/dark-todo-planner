@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import {
   formatKoreanDate,
@@ -26,8 +26,18 @@ type MonthlyViewProps = {
 export function MonthlyView({ todos, onAdd, onToggle, onDelete, onUpdate }: MonthlyViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(todayKey());
+  const selectedPanelRef = useRef<HTMLElement | null>(null);
   const monthDays = useMemo(() => getMonthGrid(currentMonth), [currentMonth]);
   const selectedTodos = todos.filter((todo) => todo.date === selectedDate);
+
+  const selectDate = (dateKey: string) => {
+    setSelectedDate(dateKey);
+    if (window.innerWidth < 1280) {
+      window.requestAnimationFrame(() => {
+        selectedPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  };
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
@@ -62,7 +72,7 @@ export function MonthlyView({ todos, onAdd, onToggle, onDelete, onUpdate }: Mont
               <button
                 key={dateKey}
                 type="button"
-                onClick={() => setSelectedDate(dateKey)}
+                onClick={() => selectDate(dateKey)}
                 className={`min-h-24 rounded-lg border p-2 text-left transition hover:border-accent-500/60 sm:min-h-32 ${
                   selected
                     ? "border-accent-500 bg-accent-500/10"
@@ -90,7 +100,7 @@ export function MonthlyView({ todos, onAdd, onToggle, onDelete, onUpdate }: Mont
         </div>
       </section>
 
-      <aside className="space-y-5">
+      <aside ref={selectedPanelRef} className="scroll-mt-24 space-y-5">
         <section className="space-y-4">
           <div className="flex items-center gap-2">
             <Plus size={18} className="text-accent-400" />

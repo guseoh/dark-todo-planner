@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
 import { todayKey } from "../../lib/date";
 import type { TodoInput, TodoPriority } from "../../types/todo";
@@ -11,6 +11,7 @@ type TodoFormProps = {
 };
 
 export function TodoForm({ onAdd, defaultDate, compact = false, submitLabel = "ì¶”ê°€" }: TodoFormProps) {
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
   const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
   const [date, setDate] = useState(defaultDate || todayKey());
@@ -35,7 +36,10 @@ export function TodoForm({ onAdd, defaultDate, compact = false, submitLabel = "ì
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      titleInputRef.current?.focus();
+      return;
+    }
 
     onAdd({
       title,
@@ -46,12 +50,14 @@ export function TodoForm({ onAdd, defaultDate, compact = false, submitLabel = "ì
       priority,
     });
     reset();
+    window.requestAnimationFrame(() => titleInputRef.current?.focus());
   };
 
   return (
     <form onSubmit={handleSubmit} className="app-card p-4">
       <div className="flex flex-col gap-3 sm:flex-row">
         <input
+          ref={titleInputRef}
           className="field flex-1"
           value={title}
           onChange={(event) => setTitle(event.target.value)}
