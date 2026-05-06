@@ -14,9 +14,26 @@ type MonthPageProps = {
   onFocusTodo: (todo: Todo) => void;
   categories?: Category[];
   goals?: Goal[];
+  onAddCategory: (input: { name: string; description?: string; color?: string }) => void | Promise<void>;
+  onUpdateCategory: (id: string, input: Partial<Category>) => void | Promise<void>;
+  onDeleteCategory: (id: string, mode: "moveTodos" | "deleteTodos") => void | Promise<void>;
 };
 
-export function MonthPage({ todos, getTodosByDate, onAdd, onToggle, onDelete, onUpdate, onArchive, onFocusTodo, categories = [], goals = [] }: MonthPageProps) {
+export function MonthPage({
+  todos,
+  getTodosByDate,
+  onAdd,
+  onToggle,
+  onDelete,
+  onUpdate,
+  onArchive,
+  onFocusTodo,
+  categories = [],
+  goals = [],
+  onAddCategory,
+  onUpdateCategory,
+  onDeleteCategory,
+}: MonthPageProps) {
   return (
     <div className="space-y-6">
       <section>
@@ -34,6 +51,9 @@ export function MonthPage({ todos, getTodosByDate, onAdd, onToggle, onDelete, on
         onFocusTodo={onFocusTodo}
         categories={categories}
         goals={goals}
+        onAddCategory={onAddCategory}
+        onUpdateCategory={onUpdateCategory}
+        onDeleteCategory={onDeleteCategory}
       />
     </div>
   );

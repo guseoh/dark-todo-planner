@@ -4,7 +4,7 @@ import type { Category } from "../types/category";
 import type { Todo, TodoInput } from "../types/todo";
 import { StatCard } from "../components/common/StatCard";
 import { TodoForm } from "../components/todo/TodoForm";
-import { TodoList } from "../components/todo/TodoList";
+import { GroupedTodoList } from "../components/todo/GroupedTodoList";
 
 type TodayPageProps = {
   todayTodos: Todo[];
@@ -21,9 +21,25 @@ type TodayPageProps = {
   onArchive: (id: string) => void;
   onFocusTodo: (todo: Todo) => void;
   categories?: Category[];
+  onAddCategory: (input: { name: string; description?: string; color?: string }) => void | Promise<void>;
+  onUpdateCategory: (id: string, input: Partial<Category>) => void | Promise<void>;
+  onDeleteCategory: (id: string, mode: "moveTodos" | "deleteTodos") => void | Promise<void>;
 };
 
-export function TodayPage({ todayTodos, stats, onAdd, onToggle, onDelete, onUpdate, onArchive, onFocusTodo, categories = [] }: TodayPageProps) {
+export function TodayPage({
+  todayTodos,
+  stats,
+  onAdd,
+  onToggle,
+  onDelete,
+  onUpdate,
+  onArchive,
+  onFocusTodo,
+  categories = [],
+  onAddCategory,
+  onUpdateCategory,
+  onDeleteCategory,
+}: TodayPageProps) {
   return (
     <div className="space-y-6">
       <section>
@@ -40,18 +56,23 @@ export function TodayPage({ todayTodos, stats, onAdd, onToggle, onDelete, onUpda
 
       <TodoForm onAdd={onAdd} defaultDate={todayKey()} compact submitLabel="오늘 추가" categories={categories} />
 
-      <TodoList
+      <GroupedTodoList
         todos={todayTodos}
+        categories={categories}
+        onAddTodo={onAdd}
         onToggle={onToggle}
         onDelete={onDelete}
         onUpdate={onUpdate}
         onArchive={onArchive}
         onFocusTodo={onFocusTodo}
-        categories={categories}
+        onAddCategory={onAddCategory}
+        onUpdateCategory={onUpdateCategory}
+        onDeleteCategory={onDeleteCategory}
         emptyTitle="오늘 할 일이 없습니다."
         emptyDescription="새로운 Todo를 추가해보세요."
-        groupByCompletion
         showDate={false}
+        defaultDate={todayKey()}
+        showCategoryCreator={false}
       />
     </div>
   );

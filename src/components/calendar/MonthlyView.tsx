@@ -15,7 +15,7 @@ import type { Todo, TodoInput } from "../../types/todo";
 import type { Category } from "../../types/category";
 import type { Goal } from "../../types/goal";
 import { TodoForm } from "../todo/TodoForm";
-import { TodoList } from "../todo/TodoList";
+import { GroupedTodoList } from "../todo/GroupedTodoList";
 
 type MonthlyViewProps = {
   todos: Todo[];
@@ -28,9 +28,26 @@ type MonthlyViewProps = {
   onFocusTodo: (todo: Todo) => void;
   categories?: Category[];
   goals?: Goal[];
+  onAddCategory: (input: { name: string; description?: string; color?: string }) => void | Promise<void>;
+  onUpdateCategory: (id: string, input: Partial<Category>) => void | Promise<void>;
+  onDeleteCategory: (id: string, mode: "moveTodos" | "deleteTodos") => void | Promise<void>;
 };
 
-export function MonthlyView({ todos, getTodosByDate, onAdd, onToggle, onDelete, onUpdate, onArchive, onFocusTodo, categories = [], goals = [] }: MonthlyViewProps) {
+export function MonthlyView({
+  todos,
+  getTodosByDate,
+  onAdd,
+  onToggle,
+  onDelete,
+  onUpdate,
+  onArchive,
+  onFocusTodo,
+  categories = [],
+  goals = [],
+  onAddCategory,
+  onUpdateCategory,
+  onDeleteCategory,
+}: MonthlyViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(todayKey());
   const selectedPanelRef = useRef<HTMLElement | null>(null);
@@ -133,18 +150,23 @@ export function MonthlyView({ todos, getTodosByDate, onAdd, onToggle, onDelete, 
               {selectedTodos.length}개
             </span>
           </div>
-          <TodoList
+          <GroupedTodoList
             todos={selectedTodos}
+            categories={categories}
+            onAddTodo={onAdd}
             onToggle={onToggle}
             onDelete={onDelete}
             onUpdate={onUpdate}
             onArchive={onArchive}
             onFocusTodo={onFocusTodo}
-            categories={categories}
+            onAddCategory={onAddCategory}
+            onUpdateCategory={onUpdateCategory}
+            onDeleteCategory={onDeleteCategory}
             emptyTitle="선택한 날짜의 Todo가 없습니다."
             emptyDescription="달력에서 날짜를 고른 뒤 Todo를 추가해보세요."
-            groupByCompletion
             showDate={false}
+            defaultDate={selectedDate}
+            showCategoryCreator={false}
           />
         </section>
       </aside>

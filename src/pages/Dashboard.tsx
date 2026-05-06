@@ -8,7 +8,7 @@ import { EmptyState } from "../components/common/EmptyState";
 import { StatCard } from "../components/common/StatCard";
 import { ProgressBar } from "../components/common/ProgressBar";
 import { TodoForm } from "../components/todo/TodoForm";
-import { TodoList } from "../components/todo/TodoList";
+import { GroupedTodoList } from "../components/todo/GroupedTodoList";
 import { PriorityBadge } from "../components/todo/PriorityBadge";
 
 type DashboardProps = {
@@ -35,6 +35,9 @@ type DashboardProps = {
   onArchive: (id: string) => void;
   onFocusTodo: (todo: Todo) => void;
   categories?: Category[];
+  onAddCategory: (input: { name: string; description?: string; color?: string }) => void | Promise<void>;
+  onUpdateCategory: (id: string, input: Partial<Category>) => void | Promise<void>;
+  onDeleteCategory: (id: string, mode: "moveTodos" | "deleteTodos") => void | Promise<void>;
 };
 
 export function Dashboard({
@@ -51,6 +54,9 @@ export function Dashboard({
   onArchive,
   onFocusTodo,
   categories = [],
+  onAddCategory,
+  onUpdateCategory,
+  onDeleteCategory,
 }: DashboardProps) {
   const recentCompleted = [...todos]
     .filter((todo) => todo.completed)
@@ -172,18 +178,22 @@ export function Dashboard({
             <h3 className="text-lg font-bold text-ink-100">오늘 Todo</h3>
             <span className="text-sm text-ink-400">{todayTodos.length}개</span>
           </div>
-          <TodoList
+          <GroupedTodoList
             todos={todayTodos}
+            categories={categories}
+            onAddTodo={onAdd}
             onToggle={onToggle}
             onDelete={onDelete}
             onUpdate={onUpdate}
             onArchive={onArchive}
             onFocusTodo={onFocusTodo}
-            categories={categories}
+            onAddCategory={onAddCategory}
+            onUpdateCategory={onUpdateCategory}
+            onDeleteCategory={onDeleteCategory}
             emptyTitle="오늘 할 일이 없습니다."
             emptyDescription="새로운 Todo를 추가해보세요."
-            groupByCompletion
             showDate={false}
+            showCategoryCreator={false}
           />
         </div>
 

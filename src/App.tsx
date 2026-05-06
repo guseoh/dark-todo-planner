@@ -9,7 +9,6 @@ import { usePomodoroTimer } from "./hooks/usePomodoroTimer";
 import { AllTodosPage } from "./pages/AllTodosPage";
 import { ArchivePage } from "./pages/ArchivePage";
 import { AuthPage } from "./pages/AuthPage";
-import { CategoriesPage } from "./pages/CategoriesPage";
 import { Dashboard } from "./pages/Dashboard";
 import { GoalsPage } from "./pages/GoalsPage";
 import { MonthPage } from "./pages/MonthPage";
@@ -71,6 +70,9 @@ function App() {
         onArchive={planner.archiveTodo}
         onFocusTodo={focusTodo}
         categories={planner.categories}
+        onAddCategory={planner.addCategory}
+        onUpdateCategory={planner.updateCategory}
+        onDeleteCategory={planner.deleteCategory}
       />
     ),
     today: (
@@ -84,6 +86,9 @@ function App() {
         onArchive={planner.archiveTodo}
         onFocusTodo={focusTodo}
         categories={planner.categories}
+        onAddCategory={planner.addCategory}
+        onUpdateCategory={planner.updateCategory}
+        onDeleteCategory={planner.deleteCategory}
       />
     ),
     week: (
@@ -112,6 +117,9 @@ function App() {
         onFocusTodo={focusTodo}
         categories={planner.categories}
         goals={planner.goals}
+        onAddCategory={planner.addCategory}
+        onUpdateCategory={planner.updateCategory}
+        onDeleteCategory={planner.deleteCategory}
       />
     ),
     all: (
@@ -124,21 +132,10 @@ function App() {
         onUpdate={planner.updateTodo}
         onArchive={planner.archiveTodo}
         onFocusTodo={focusTodo}
-      />
-    ),
-    categories: (
-      <CategoriesPage
-        categories={planner.categories}
-        todos={planner.todos}
+        onAddTodo={planner.addTodo}
         onAddCategory={planner.addCategory}
         onUpdateCategory={planner.updateCategory}
         onDeleteCategory={planner.deleteCategory}
-        onAddTodo={planner.addTodo}
-        onToggle={planner.toggleTodo}
-        onDelete={planner.deleteTodo}
-        onUpdate={planner.updateTodo}
-        onArchive={planner.archiveTodo}
-        onFocusTodo={focusTodo}
       />
     ),
     timer: <TimerPage todos={planner.todos} timer={timer} focusStats={planner.focusStats} />,

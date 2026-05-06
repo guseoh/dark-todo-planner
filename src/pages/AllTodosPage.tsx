@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { defaultFilters } from "../hooks/usePlannerData";
 import type { Category } from "../types/category";
-import type { Todo, TodoFilters } from "../types/todo";
+import type { Todo, TodoFilters, TodoInput } from "../types/todo";
 import { TodoFilter } from "../components/todo/TodoFilter";
-import { TodoList } from "../components/todo/TodoList";
+import { GroupedTodoList } from "../components/todo/GroupedTodoList";
 
 type AllTodosPageProps = {
   filterTodos: (filters: TodoFilters) => Todo[];
@@ -14,9 +14,26 @@ type AllTodosPageProps = {
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   onArchive: (id: string) => void;
   onFocusTodo: (todo: Todo) => void;
+  onAddTodo: (todo: TodoInput) => void;
+  onAddCategory: (input: { name: string; description?: string; color?: string }) => void | Promise<void>;
+  onUpdateCategory: (id: string, input: Partial<Category>) => void | Promise<void>;
+  onDeleteCategory: (id: string, mode: "moveTodos" | "deleteTodos") => void | Promise<void>;
 };
 
-export function AllTodosPage({ filterTodos, tagOptions, categories = [], onToggle, onDelete, onUpdate, onArchive, onFocusTodo }: AllTodosPageProps) {
+export function AllTodosPage({
+  filterTodos,
+  tagOptions,
+  categories = [],
+  onToggle,
+  onDelete,
+  onUpdate,
+  onArchive,
+  onFocusTodo,
+  onAddTodo,
+  onAddCategory,
+  onUpdateCategory,
+  onDeleteCategory,
+}: AllTodosPageProps) {
   const [filters, setFilters] = useState<TodoFilters>(defaultFilters);
   const filteredTodos = useMemo(() => filterTodos(filters), [filterTodos, filters]);
 
@@ -33,16 +50,21 @@ export function AllTodosPage({ filterTodos, tagOptions, categories = [], onToggl
       </section>
 
       <TodoFilter filters={filters} onChange={setFilters} tagOptions={tagOptions} categories={categories} />
-      <TodoList
+      <GroupedTodoList
         todos={filteredTodos}
+        categories={categories}
+        onAddTodo={onAddTodo}
         onToggle={onToggle}
         onDelete={onDelete}
         onUpdate={onUpdate}
         onArchive={onArchive}
         onFocusTodo={onFocusTodo}
-        categories={categories}
+        onAddCategory={onAddCategory}
+        onUpdateCategory={onUpdateCategory}
+        onDeleteCategory={onDeleteCategory}
         emptyTitle="아직 등록된 Todo가 없습니다."
         emptyDescription="검색 조건을 바꾸거나 새로운 Todo를 추가해보세요."
+        includeEmptyCategories
       />
     </div>
   );
