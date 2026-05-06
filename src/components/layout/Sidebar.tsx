@@ -9,7 +9,10 @@ import {
   ListChecks,
   Settings,
   Target,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export type AppView =
   | "dashboard"
@@ -41,11 +44,36 @@ const navItems = [
   { id: "settings", label: "설정", icon: Settings },
 ] satisfies Array<{ id: AppView; label: string; icon: typeof LayoutDashboard }>;
 
+const SIDEBAR_COLLAPSED_KEY = "dark-todo-planner:sidebar-collapsed";
+
+const readInitialCollapsed = () => {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+};
+
 export function Sidebar({ activeView, onChangeView }: SidebarProps) {
+  const [collapsed, setCollapsed] = useState(readInitialCollapsed);
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
+  }, [collapsed]);
+
   return (
     <>
-      <aside className="hidden w-60 shrink-0 lg:block">
+      <aside className={`hidden shrink-0 transition-all duration-200 lg:block ${collapsed ? "w-16" : "w-60"}`}>
         <nav className="sticky top-24 space-y-2">
+          <button
+            type="button"
+            onClick={() => setCollapsed((value) => !value)}
+            className={`flex min-h-11 w-full items-center rounded-lg border border-ink-700 bg-ink-900/70 text-sm font-semibold text-ink-300 transition hover:border-accent-500/60 hover:bg-ink-800 hover:text-ink-100 ${
+              collapsed ? "justify-center px-2" : "justify-between px-4"
+            }`}
+            aria-label={collapsed ? "사이드바 펼치기" : "사이드바 접기"}
+            title={collapsed ? "펼치기" : "접기"}
+          >
+            {collapsed ? <PanelLeftOpen size={18} /> : <span>메뉴 접기</span>}
+            {!collapsed ? <PanelLeftClose size={18} /> : null}
+          </button>
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = activeView === item.id;
@@ -54,14 +82,15 @@ export function Sidebar({ activeView, onChangeView }: SidebarProps) {
                 key={item.id}
                 type="button"
                 onClick={() => onChangeView(item.id)}
-                className={`flex min-h-12 w-full items-center gap-3 rounded-lg border px-4 text-left text-sm font-semibold transition ${
+                title={collapsed ? item.label : undefined}
+                className={`flex min-h-12 w-full items-center rounded-lg border text-sm font-semibold transition ${
                   active
                     ? "border-accent-500/50 bg-accent-500/20 text-ink-100"
                     : "border-transparent text-ink-400 hover:border-ink-700 hover:bg-ink-800 hover:text-ink-100"
-                }`}
+                } ${collapsed ? "justify-center px-2" : "gap-3 px-4 text-left"}`}
               >
                 <Icon size={18} />
-                {item.label}
+                {!collapsed ? <span className="truncate">{item.label}</span> : null}
               </button>
             );
           })}

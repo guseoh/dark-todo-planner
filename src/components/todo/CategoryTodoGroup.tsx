@@ -66,7 +66,7 @@ export function CategoryTodoGroup({
   };
 
   return (
-    <section className="space-y-2">
+    <section className="space-y-1.5">
       <CategoryHeader
         category={group.category}
         totalCount={group.totalCount}
@@ -95,8 +95,8 @@ export function CategoryTodoGroup({
       ) : null}
 
       {!collapsed ? (
-        <div className="ml-3 border-l border-ink-700/80 pl-3 sm:ml-5 sm:pl-4">
-          <div className="space-y-2">
+        <div className="ml-2.5 border-l border-ink-700/80 pl-2.5 sm:ml-4 sm:pl-3">
+          <div className="space-y-1.5">
             {group.todos.length ? (
               group.todos.map((todo) => (
                 <TodoRow
@@ -128,7 +128,7 @@ export function CategoryTodoGroup({
             ) : (
               <button
                 type="button"
-                className="flex min-h-10 w-full items-center rounded-lg border border-dashed border-ink-700 px-3 text-sm font-semibold text-ink-400 transition hover:border-accent-500/60 hover:bg-ink-900/60 hover:text-ink-100"
+                className="flex min-h-9 w-full items-center rounded-lg border border-dashed border-ink-700 px-3 text-sm font-semibold text-ink-400 transition hover:border-accent-500/60 hover:bg-ink-900/60 hover:text-ink-100"
                 onClick={() => setAdding(true)}
               >
                 + 하위 Todo 추가

@@ -138,7 +138,7 @@ export function GroupedTodoList({
 
   if (!todos.length && !categories.length) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-3">
         {showCategoryCreator && onAddCategory ? (
           creatingCategory ? (
             <CategoryForm onSubmit={createCategory} onCancel={() => setCreatingCategory(false)} submitLabel="카테고리 추가" />
@@ -171,7 +171,7 @@ export function GroupedTodoList({
         {categoryError ? <p className="text-sm text-red-200">{categoryError}</p> : null}
 
         {groups.length ? (
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {groups.map((group) => {
               const groupId = group.category?.id || uncategorizedGroupId;
               return (

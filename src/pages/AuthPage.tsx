@@ -16,6 +16,7 @@ export function AuthPage({
   const [nickname, setNickname] = useState("");
   const [message, setMessage] = useState(error || "");
   const [submitting, setSubmitting] = useState(false);
+  const isGitHubPages = typeof window !== "undefined" && window.location.hostname.endsWith("github.io");
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -54,6 +55,12 @@ export function AuthPage({
             회원가입
           </button>
         </div>
+
+        {isGitHubPages ? (
+          <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-amber-100">
+            GitHub Pages는 정적 미리보기라 로그인과 DB 저장 API가 동작하지 않습니다. 실제 사용은 Express 서버 배포 주소에서 진행하세요.
+          </div>
+        ) : null}
 
         {mode === "register" ? (
           <input className="field mt-4" value={nickname} onChange={(event) => setNickname(event.target.value)} placeholder="닉네임" />

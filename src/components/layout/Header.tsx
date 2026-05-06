@@ -3,9 +3,12 @@ import { formatKoreanDate } from "../../lib/date";
 
 type HeaderProps = {
   todoCount: number;
+  storageStatus?: "server" | "offline";
 };
 
-export function Header({ todoCount }: HeaderProps) {
+export function Header({ todoCount, storageStatus = "server" }: HeaderProps) {
+  const storageLabel = storageStatus === "offline" ? "오프라인 / 로컬 모드" : "Server DB";
+
   return (
     <header className="sticky top-0 z-30 border-b border-ink-700/70 bg-ink-950/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
@@ -20,7 +23,7 @@ export function Header({ todoCount }: HeaderProps) {
         </div>
         <div className="hidden items-center gap-2 rounded-lg border border-ink-700 bg-ink-800 px-3 py-2 text-sm text-ink-400 sm:flex">
           <Database size={16} />
-          <span>LocalStorage</span>
+          <span>{storageLabel}</span>
           <span className="text-ink-100">{todoCount}개</span>
         </div>
       </div>
