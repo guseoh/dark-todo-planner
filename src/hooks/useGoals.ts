@@ -1,97 +1,106 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { createId } from "../lib/id";
-import { readJson, validateGoals, writeJson } from "../lib/storage";
-import { STORAGE_KEYS } from "../lib/storageKeys";
+import { useCallback, useMemo, useState } from "react";
 import type { Goal } from "../types/goal";
+import { api, jsonBody } from "../lib/api/client";
 
-const clampProgress = (value: number) => Math.min(100, Math.max(0, Math.round(value || 0)));
+const getMessage = (error: unknown) => (error instanceof Error ? error.message : "목표 요청 처리 중 오류가 발생했습니다.");
+const clampProgress = (value?: number) => Math.min(100, Math.max(0, Math.round(value || 0)));
+
+const normalizeGoalInput = (input: Partial<Goal> & { title: string }) => ({
+  ...input,
+  progress: clampProgress(input.progress),
+});
 
 export function useGoals() {
-  const [goals, setGoals] = useState<Goal[]>(() => {
-    const stored = validateGoals(readJson<unknown>(STORAGE_KEYS.GOALS, []));
-    return stored || [];
-  });
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    writeJson(STORAGE_KEYS.GOALS, goals);
+  const loadGoals = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await api<{ goals: Goal[] }>("/api/goals");
+      setGoals(result.goals);
+      setError("");
+      return result.goals;
+    } catch (err) {
+      setError(getMessage(err));
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const addGoal = useCallback(async (input: Partial<Goal> & { title: string }) => {
+    setSaving(true);
+    try {
+      const result = await api<{ goal: Goal }>("/api/goals", { method: "POST", ...jsonBody(normalizeGoalInput(input)) });
+      setGoals((current) => [result.goal, ...current]);
+      setError("");
+      return result.goal;
+    } catch (err) {
+      setError(getMessage(err));
+      return undefined;
+    } finally {
+      setSaving(false);
+    }
+  }, []);
+
+  const updateGoal = useCallback(async (id: string, input: Partial<Goal>) => {
+    const existing = goals.find((goal) => goal.id === id);
+    if (!existing) return undefined;
+    setSaving(true);
+    try {
+      const result = await api<{ goal: Goal }>(`/api/goals/${id}`, {
+        method: "PUT",
+        ...jsonBody(normalizeGoalInput({ ...existing, ...input })),
+      });
+      setGoals((current) => current.map((goal) => (goal.id === id ? result.goal : goal)));
+      setError("");
+      return result.goal;
+    } catch (err) {
+      setError(getMessage(err));
+      return undefined;
+    } finally {
+      setSaving(false);
+    }
   }, [goals]);
 
-  const addGoal = useCallback((input: { title: string; description?: string; dueDate: string; progress: number }) => {
-    const title = input.title.trim();
-    if (!title) return;
-    const now = new Date().toISOString();
-    setGoals((current) => [
-      {
-        id: createId(),
-        title,
-        description: input.description?.trim() || undefined,
-        type: "DAILY",
-        targetDate: input.dueDate,
-        dueDate: input.dueDate,
-        progress: clampProgress(input.progress),
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      },
-      ...current,
-    ]);
+  const toggleGoal = useCallback(async (id: string) => {
+    try {
+      const result = await api<{ goal: Goal }>(`/api/goals/${id}/toggle`, { method: "PATCH" });
+      setGoals((current) => current.map((goal) => (goal.id === id ? result.goal : goal)));
+      setError("");
+    } catch (err) {
+      setError(getMessage(err));
+    }
   }, []);
 
-  const updateGoal = useCallback((id: string, updates: Partial<Omit<Goal, "id" | "createdAt">>) => {
-    setGoals((current) =>
-      current.map((goal) =>
-        goal.id === id
-          ? {
-              ...goal,
-              ...updates,
-              title: updates.title?.trim() || goal.title,
-              description: updates.description?.trim() || undefined,
-              progress: updates.progress === undefined ? goal.progress : clampProgress(updates.progress),
-              updatedAt: new Date().toISOString(),
-            }
-          : goal,
-      ),
-    );
+  const deleteGoal = useCallback(async (id: string) => {
+    try {
+      await api(`/api/goals/${id}`, { method: "DELETE" });
+      setGoals((current) => current.filter((goal) => goal.id !== id));
+      setError("");
+    } catch (err) {
+      setError(getMessage(err));
+    }
   }, []);
-
-  const toggleGoal = useCallback((id: string) => {
-    setGoals((current) =>
-      current.map((goal) =>
-        goal.id === id
-          ? {
-              ...goal,
-              completed: !goal.completed,
-              progress: goal.completed ? goal.progress : 100,
-              updatedAt: new Date().toISOString(),
-            }
-          : goal,
-      ),
-    );
-  }, []);
-
-  const deleteGoal = useCallback((id: string) => {
-    setGoals((current) => current.filter((goal) => goal.id !== id));
-  }, []);
-
-  const replaceGoals = useCallback((next: Goal[]) => setGoals(next), []);
-  const clearGoals = useCallback(() => setGoals([]), []);
 
   const nearestGoal = useMemo(
-    () =>
-      [...goals]
-        .filter((goal) => !goal.completed)
-        .sort((a, b) => (a.dueDate || a.targetDate || "").localeCompare(b.dueDate || b.targetDate || ""))[0],
+    () => [...goals].filter((goal) => !goal.completed).sort((a, b) => (a.dueDate || a.targetDate || "").localeCompare(b.dueDate || b.targetDate || ""))[0],
     [goals],
   );
 
   return {
     goals,
     nearestGoal,
+    loading,
+    saving,
+    error,
+    loadGoals,
     addGoal,
     updateGoal,
     toggleGoal,
     deleteGoal,
-    replaceGoals,
-    clearGoals,
   };
 }

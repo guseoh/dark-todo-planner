@@ -59,7 +59,7 @@ export const goalInputSchema = z.object({
   weekEndDate: z.string().optional().nullable(),
   month: z.string().optional().nullable(),
   dueDate: z.string().optional().nullable(),
-  progress: z.number().int().min(0).max(100).default(0),
+  progress: z.coerce.number().int().min(0).max(100).default(0),
   completed: z.boolean().optional(),
 });
 

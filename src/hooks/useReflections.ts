@@ -1,71 +1,93 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { createId } from "../lib/id";
-import { readJson, validateReflections, writeJson } from "../lib/storage";
-import { STORAGE_KEYS } from "../lib/storageKeys";
-import type { Reflection, ReflectionType } from "../types/reflection";
+import { useCallback, useMemo, useState } from "react";
+import type { Reflection } from "../types/reflection";
+import { api, jsonBody } from "../lib/api/client";
+
+const getMessage = (error: unknown) => (error instanceof Error ? error.message : "회고 요청 처리 중 오류가 발생했습니다.");
+
+type ReflectionInput = {
+  date: string;
+  type: Reflection["type"];
+  sections: Reflection["sections"];
+  content?: string;
+};
 
 export function useReflections() {
-  const [reflections, setReflections] = useState<Reflection[]>(() => {
-    const stored = validateReflections(readJson<unknown>(STORAGE_KEYS.REFLECTIONS, []));
-    return stored || [];
-  });
+  const [reflections, setReflections] = useState<Reflection[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    writeJson(STORAGE_KEYS.REFLECTIONS, reflections);
+  const loadReflections = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await api<{ reflections: Reflection[] }>("/api/reflections");
+      setReflections(result.reflections);
+      setError("");
+      return result.reflections;
+    } catch (err) {
+      setError(getMessage(err));
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const addReflection = useCallback(async (input: ReflectionInput) => {
+    setSaving(true);
+    try {
+      const result = await api<{ reflection: Reflection }>("/api/reflections", { method: "POST", ...jsonBody(input) });
+      setReflections((current) => [result.reflection, ...current]);
+      setError("");
+      return result.reflection;
+    } catch (err) {
+      setError(getMessage(err));
+      return undefined;
+    } finally {
+      setSaving(false);
+    }
+  }, []);
+
+  const updateReflection = useCallback(async (id: string, input: Partial<Pick<Reflection, "date" | "type" | "content" | "sections">>) => {
+    const existing = reflections.find((reflection) => reflection.id === id);
+    if (!existing) return undefined;
+    setSaving(true);
+    try {
+      const result = await api<{ reflection: Reflection }>(`/api/reflections/${id}`, {
+        method: "PUT",
+        ...jsonBody({ ...existing, ...input }),
+      });
+      setReflections((current) => current.map((reflection) => (reflection.id === id ? result.reflection : reflection)));
+      setError("");
+      return result.reflection;
+    } catch (err) {
+      setError(getMessage(err));
+      return undefined;
+    } finally {
+      setSaving(false);
+    }
   }, [reflections]);
 
-  const addReflection = useCallback((input: { date: string; type: ReflectionType; content: string }) => {
-    const content = input.content.trim();
-    if (!content) return;
-    const now = new Date().toISOString();
-    setReflections((current) => [
-      {
-        id: createId(),
-        date: input.date,
-        type: input.type,
-        content,
-        sections: [{ id: "legacy-content", title: "메모", content, order: 0 }],
-        createdAt: now,
-        updatedAt: now,
-      },
-      ...current,
-    ]);
+  const deleteReflection = useCallback(async (id: string) => {
+    try {
+      await api(`/api/reflections/${id}`, { method: "DELETE" });
+      setReflections((current) => current.filter((reflection) => reflection.id !== id));
+      setError("");
+    } catch (err) {
+      setError(getMessage(err));
+    }
   }, []);
 
-  const updateReflection = useCallback((id: string, updates: Partial<Pick<Reflection, "date" | "type" | "content">>) => {
-    setReflections((current) =>
-      current.map((reflection) =>
-        reflection.id === id
-          ? {
-              ...reflection,
-              ...updates,
-              content: updates.content?.trim() || reflection.content,
-              updatedAt: new Date().toISOString(),
-            }
-          : reflection,
-      ),
-    );
-  }, []);
-
-  const deleteReflection = useCallback((id: string) => {
-    setReflections((current) => current.filter((reflection) => reflection.id !== id));
-  }, []);
-
-  const replaceReflections = useCallback((next: Reflection[]) => setReflections(next), []);
-  const clearReflections = useCallback(() => setReflections([]), []);
-
-  const recentReflection = useMemo(
-    () => [...reflections].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0],
-    [reflections],
-  );
+  const recentReflection = useMemo(() => [...reflections].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0], [reflections]);
 
   return {
     reflections,
     recentReflection,
+    loading,
+    saving,
+    error,
+    loadReflections,
     addReflection,
     updateReflection,
     deleteReflection,
-    replaceReflections,
-    clearReflections,
   };
 }

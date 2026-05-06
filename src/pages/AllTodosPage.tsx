@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { defaultFilters } from "../hooks/usePlannerData";
+import { defaultFilters } from "../hooks/useTodos";
 import type { Category } from "../types/category";
 import type { Todo, TodoFilters, TodoInput } from "../types/todo";
 import { TodoFilter } from "../components/todo/TodoFilter";

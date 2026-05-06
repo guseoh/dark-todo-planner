@@ -145,7 +145,7 @@ export function GroupedTodoList({
           ) : (
             <button type="button" className="btn-secondary" onClick={() => setCreatingCategory(true)}>
               <FolderPlus size={17} />
-              카테고리 추가
+              + 카테고리 추가
             </button>
           )
         ) : null}
@@ -164,7 +164,7 @@ export function GroupedTodoList({
           ) : (
             <button type="button" className="btn-secondary" onClick={() => setCreatingCategory(true)}>
               <FolderPlus size={17} />
-              카테고리 추가
+              + 카테고리 추가
             </button>
           )
         ) : null}

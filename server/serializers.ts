@@ -34,12 +34,26 @@ export const serializeTodo = (todo: TodoWithRelations) => ({
   updatedAt: todo.updatedAt.toISOString(),
 });
 
+const fallbackReflectionSections = (reflection: Reflection) =>
+  reflection.content
+    ? [{ id: "legacy-content", title: "메모", content: reflection.content, order: 0 }]
+    : [];
+
 export const parseSections = (reflection: Reflection) => {
   try {
     const parsed = JSON.parse(reflection.sectionsJson);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return fallbackReflectionSections(reflection);
+    const sections = parsed
+      .map((section, index) => ({
+        id: typeof section?.id === "string" ? section.id : `section-${index}`,
+        title: typeof section?.title === "string" && section.title.trim() ? section.title : `섹션 ${index + 1}`,
+        content: typeof section?.content === "string" ? section.content : "",
+        order: Number.isInteger(section?.order) ? section.order : index,
+      }))
+      .sort((a, b) => a.order - b.order);
+    return sections.length ? sections : fallbackReflectionSections(reflection);
   } catch {
-    return [];
+    return fallbackReflectionSections(reflection);
   }
 };
 

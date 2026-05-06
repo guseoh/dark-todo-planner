@@ -80,6 +80,8 @@ npm run dev
 
 ## 운영 빌드 실행 방법
 
+개발 또는 로컬 개인 실행:
+
 ```bash
 npm install
 npm run db:generate
@@ -88,7 +90,17 @@ npm run build
 npm run start
 ```
 
-운영 DB에 migration 파일이 준비되어 있다면 `npm run db:push` 대신 `npm run db:deploy`를 사용하세요.
+운영 DB에 migration 파일이 준비된 배포 환경:
+
+```bash
+npm install
+npm run db:generate
+npm run db:deploy
+npm run build
+npm run start
+```
+
+정리하면 개발 중 빠른 반영은 `db:push`, 운영 배포는 migration 이력을 보존하는 `db:deploy`를 권장합니다.
 
 운영 실행 후 접속:
 
@@ -376,6 +388,14 @@ src
  ┃ ┣ monthly
  ┃ ┣ todo
  ┣ hooks
+ ┃ ┣ usePlannerData.ts      # 도메인 hook 조합
+ ┃ ┣ useTodos.ts            # Todo 조회/수정/필터/통계
+ ┃ ┣ useCategories.ts       # 카테고리 CRUD
+ ┃ ┣ useReflections.ts      # 회고 CRUD
+ ┃ ┣ useGoals.ts            # 목표 CRUD
+ ┃ ┣ useFocusSessions.ts    # 집중 기록과 통계
+ ┃ ┣ useTimerSettings.ts    # 타이머 설정
+ ┃ ┗ useBackup.ts           # JSON 백업/복원/마이그레이션
  ┣ lib
  ┣ pages
  ┣ styles
