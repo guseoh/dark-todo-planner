@@ -1,6 +1,6 @@
 # Dark Todo Planner
 
-매일 브라우저에서 쓰기 위한 개인용 다크모드 Todo / Planner입니다. 기존 LocalStorage 중심 구조에서 Express API, Prisma, SQLite 기반 서버 저장 방식으로 전환했습니다.
+매일 브라우저에서 쓰기 위한 개인용 다크모드 Todo / Planner입니다. 현재 버전은 Express 서버 하나가 React 정적 파일과 `/api` 요청을 함께 처리하고, Prisma + SQLite에 데이터를 저장하는 구조입니다.
 
 ## 기술 스택
 
@@ -16,56 +16,238 @@
 - date-fns
 - lucide-react
 
-## 백엔드 추가 후 변경점
+## 현재 구조
 
-- Todo, 카테고리, 회고, 목표, 집중 기록, 타이머 설정을 서버 DB에 저장합니다.
-- 회원가입, 로그인, 로그아웃, 현재 사용자 조회 API가 추가되었습니다.
-- 비밀번호는 bcrypt 해시로 저장하고, API 응답에는 `passwordHash`를 포함하지 않습니다.
-- 로그인 세션은 HttpOnly Cookie로 관리하며 프론트 LocalStorage에 JWT를 저장하지 않습니다.
-- Todo를 카테고리 / 프로젝트 단위로 묶고, 카테고리별 진행률을 볼 수 있습니다.
-- 기존 LocalStorage 데이터는 설정 페이지에서 서버 DB로 가져올 수 있습니다.
+```text
+사용자 접속
+→ Express 서버
+→ React dist 정적 파일 제공
+→ /api 요청은 Express API에서 처리
+→ Prisma + SQLite에 데이터 저장
+```
 
-## 실행 방법
+주요 기능은 서버 DB 기준으로 동작합니다.
+
+- 회원가입 / 로그인 / 로그아웃 / 현재 사용자 조회
+- Todo / Category / Reflection / Goal / FocusSession / TimerSettings 서버 저장
+- 카테고리별 Todo 구조
+- JSON 백업 / 복원
+- LocalStorage 데이터 서버 마이그레이션
+
+## GitHub Pages 배포 한계
+
+기존 정적 배포 버전은 GitHub Pages에서 동작 가능했지만, 백엔드와 DB 기능이 추가된 이후에는 GitHub Pages만으로 전체 기능을 사용할 수 없습니다.
+
+GitHub Pages는 정적 프론트만 제공하므로 로그인, 저장, API 기능은 동작하지 않습니다.
+
+백엔드 포함 버전은 Vercel, Render, Railway, Fly.io, 개인 서버, VPS 등 서버 실행이 가능한 환경에 배포해야 합니다.
+
+## 배포 방식 정리
+
+1. GitHub Pages
+   - 정적 프론트 미리보기용
+   - API / DB 기능 사용 불가
+   - `GITHUB_PAGES=true`일 때 Vite base가 `/dark-todo-planner/`로 설정됩니다.
+
+2. Express 단일 서버 배포
+   - React 정적 파일 + API + DB를 한 서버에서 제공
+   - 실제 개인 사용 권장 방식
+   - 기본 Vite base는 `/`입니다.
+
+3. 프론트 / 백엔드 분리 배포
+   - 프론트: GitHub Pages 또는 Vercel
+   - 백엔드: Render / Railway / VPS
+   - CORS와 Cookie 설정이 더 복잡합니다.
+
+이번 프로젝트는 2번 Express 단일 서버 배포를 우선 지원합니다.
+
+## 로컬 개발 실행 방법
 
 ```bash
 npm install
-```
-
-`.env.example`을 참고해 `.env`를 만듭니다.
-
-```env
-DATABASE_URL="file:./dev.db"
-SESSION_SECRET="change-this-long-random-secret"
-PORT=3001
-CLIENT_ORIGIN="http://localhost:5173"
-```
-
-DB 스키마를 SQLite에 반영합니다.
-
-```bash
+npm run db:generate
 npm run db:push
-```
-
-개발 서버를 실행합니다.
-
-```bash
 npm run dev
 ```
 
-- 프론트엔드: `http://localhost:5173`
-- API 서버: `http://localhost:3001`
-- Vite 개발 서버는 `/api` 요청을 Express 서버로 프록시합니다.
+개발 주소:
 
-## DB 마이그레이션 방법
+- Frontend: `http://localhost:5173`
+- Backend/API: `http://localhost:3000`
 
-개발 환경에서는 Prisma push 방식으로 바로 스키마를 반영합니다.
+개발 환경에서는 Vite가 `/api` 요청을 Express 서버로 프록시합니다. 필요하면 `VITE_API_BASE_URL=http://localhost:3000`을 사용할 수 있습니다.
+
+## 운영 빌드 실행 방법
+
+```bash
+npm install
+npm run db:generate
+npm run db:push
+npm run build
+npm run start
+```
+
+운영 실행 후 접속:
+
+- App: `http://localhost:3000/`
+- Health Check: `http://localhost:3000/api/health`
+
+`npm run start`는 `server/dist/index.js`를 실행합니다. `npm run build`는 React `dist`와 Express 서버 build를 함께 생성합니다.
+
+## package.json scripts
+
+- `npm run dev`: Vite dev server와 Express dev server 동시 실행
+- `npm run client:dev`: Vite dev server 실행
+- `npm run server:dev`: Express server를 tsx watch로 실행
+- `npm run build`: React build + Express TypeScript build
+- `npm run start`: production Express 서버 실행
+- `npm run db:generate`: Prisma Client 생성
+- `npm run db:push`: Prisma schema를 DB에 반영
+- `npm run db:studio`: Prisma Studio 실행
+
+## 환경 변수 설정
+
+`.env.example`을 참고해 `.env`를 만듭니다. 실제 `.env`는 Git에 올리지 않습니다.
+
+로컬 예시:
+
+```env
+DATABASE_URL="file:../data/dev.db"
+JWT_SECRET="change-this-long-random-secret"
+COOKIE_SECURE=false
+CLIENT_URL="http://localhost:5173"
+PORT=3000
+NODE_ENV=development
+```
+
+운영 예시:
+
+```env
+DATABASE_URL="file:../data/prod.db"
+JWT_SECRET="strong-production-secret"
+COOKIE_SECURE=true
+PORT=3000
+NODE_ENV=production
+```
+
+주의:
+
+- 운영 환경에서 `JWT_SECRET`은 반드시 강력한 랜덤 문자열로 설정하세요.
+- `JWT_SECRET`이 없으면 production 서버는 시작되지 않습니다.
+- `SESSION_SECRET`은 이전 호환용으로만 지원하며 새 설정은 `JWT_SECRET`을 사용합니다.
+
+## Express 단일 서버 제공 방식
+
+서버 라우팅 순서는 다음 구조입니다.
+
+```text
+1. JSON / Cookie middleware
+2. 개발 환경 CORS middleware
+3. /api 라우트
+4. /api 404 JSON 응답
+5. React dist 정적 파일 제공
+6. React fallback
+7. 서버 에러 핸들러
+```
+
+`/api/*`는 Express API가 처리합니다. 그 외 요청은 `dist/index.html`로 fallback되어 새로고침이나 직접 URL 접근 시 404가 나지 않도록 했습니다.
+
+## CORS / Cookie 설정
+
+production에서는 React와 API가 같은 Express origin에서 제공되므로 CORS에 의존하지 않습니다.
+
+development에서는 `CLIENT_URL`과 일치하는 origin만 허용합니다.
+
+- `Access-Control-Allow-Credentials: true`
+- Cookie 인증은 HttpOnly Cookie 사용
+- 인증 토큰은 LocalStorage에 저장하지 않음
+- `COOKIE_SECURE=true`이면 secure cookie 사용
+
+GitHub Pages 프론트 + 별도 API 서버 구조는 SameSite / Secure / CORS 설정이 더 복잡하므로 기본 권장 방식이 아닙니다.
+
+## Prisma DB 생성 방법
 
 ```bash
 npm run db:generate
 npm run db:push
 ```
 
-운영 환경에서 장기적으로 사용할 경우에는 Prisma migrate 워크플로로 전환하는 것을 권장합니다.
+개발 환경에서는 `db:push`로 빠르게 SQLite 스키마를 반영합니다. 운영에서 장기적으로 관리하려면 Prisma migrate 워크플로로 전환하는 것을 권장합니다.
+
+## SQLite 파일 위치와 주의사항
+
+Prisma SQLite 경로는 `prisma/schema.prisma` 기준 상대 경로입니다. 이 프로젝트는 DB 파일을 루트 `data` 폴더에 모으기 위해 다음처럼 설정합니다.
+
+```env
+DATABASE_URL="file:../data/prod.db"
+```
+
+주의:
+
+- `data/*.db`와 journal 파일은 Git에 올리지 않습니다.
+- Render/Railway 같은 PaaS에서는 재배포나 재시작 시 SQLite 파일이 유지되는지 확인해야 합니다.
+- 영구 디스크를 설정하지 않으면 데이터가 사라질 수 있습니다.
+- 개인 VPS나 장기 운영 환경에서는 정기 백업을 권장합니다.
+
+## Render 배포 가이드
+
+Build Command:
+
+```bash
+npm install && npm run db:generate && npm run build
+```
+
+Start Command:
+
+```bash
+npm run db:push && npm run start
+```
+
+환경 변수 예시:
+
+```text
+DATABASE_URL=file:../data/prod.db
+JWT_SECRET=강력한_랜덤_문자열
+COOKIE_SECURE=true
+NODE_ENV=production
+PORT=10000
+```
+
+Render에서 SQLite를 안정적으로 쓰려면 Persistent Disk 설정이 필요할 수 있습니다. Persistent Disk를 사용하지 않으면 재배포 또는 재시작 시 DB 파일이 사라질 수 있습니다.
+
+## Railway 배포 가이드
+
+환경 변수 예시:
+
+```text
+DATABASE_URL=file:../data/prod.db
+JWT_SECRET=강력한_랜덤_문자열
+COOKIE_SECURE=true
+NODE_ENV=production
+```
+
+Railway에서 SQLite 파일 저장이 영구적으로 유지되는지 확인해야 합니다. 장기적으로는 Railway PostgreSQL을 사용하는 것이 더 안정적일 수 있습니다.
+
+## PostgreSQL 전환 안내
+
+SQLite는 개인용 로컬이나 VPS에서는 간단하고 좋지만, 서버 재배포 시 파일 유지가 중요한 환경에서는 주의가 필요합니다.
+
+Render/Railway 같은 환경에서 장기적으로 사용할 경우 PostgreSQL로 전환하는 것이 더 안정적입니다. Prisma를 사용하고 있으므로 `DATABASE_URL`과 `provider`를 변경하면 PostgreSQL 전환이 가능합니다.
+
+## API Health Check
+
+```bash
+curl http://localhost:3000/api/health
+```
+
+응답 예시:
+
+```json
+{
+  "status": "ok",
+  "database": "connected"
+}
+```
 
 ## 로그인 / 회원가입 사용 방법
 
@@ -75,7 +257,7 @@ npm run db:push
 - 로그인: 이메일과 비밀번호 입력
 - 로그아웃: 설정 페이지의 로그아웃 버튼 사용
 
-인증되지 않은 사용자는 Todo, 카테고리, 회고, 목표, 타이머 데이터를 조회할 수 없습니다.
+비밀번호는 bcrypt로 해시 저장되며 API 응답에 `passwordHash`는 포함되지 않습니다.
 
 ## 주요 기능
 
@@ -92,100 +274,6 @@ npm run db:push
 - JSON 백업 / 복원
 - LocalStorage 데이터 서버 마이그레이션
 - 로딩 / 에러 상태와 Todo 완료 낙관적 업데이트
-
-## 화면 구성
-
-- 대시보드: 오늘 Todo, 완료율, 카테고리 요약, 집중 시간, 가까운 목표, 최근 회고
-- 오늘: 오늘 표시 대상 Todo와 빠른 추가
-- 주간: 주간 목표, 요일별 Todo, 카테고리 색상, 완료율
-- 월간: 달력, 날짜별 Todo/목표 개수, 선택 날짜 상세
-- 전체 Todo: 검색과 복합 필터
-- 카테고리: 카테고리 목록, 카테고리별 Todo, 접기/펼치기, 빠른 추가
-- 타이머: Todo 선택형 집중 타이머와 통계
-- 회고: 일간 / 주간 / 월간 섹션 회고
-- 목표: 일간 / 주간 / 월간 목표 탭
-- 보관함: 보관된 Todo 확인, 복원, 삭제
-- 설정: 백업, 복원, LocalStorage 마이그레이션, 타이머 설정, 단축키, 로그아웃
-
-## 카테고리 기능 사용 방법
-
-카테고리 페이지에서 `JPA 책`, `Spring 프로젝트`처럼 큰 단위를 만든 뒤, 각 카테고리 안에 하위 Todo를 추가할 수 있습니다.
-
-- 카테고리 색상을 지정하면 Todo 카드와 캘린더에 배지 / dot으로 표시됩니다.
-- 카테고리 삭제 시 Todo를 `미분류`로 이동하거나 함께 삭제할 수 있습니다.
-- 전체 Todo 화면에서는 카테고리별 필터를 사용할 수 있습니다.
-
-## 회고 템플릿 사용 방법
-
-회고는 타입별 소제목 textarea로 작성합니다.
-
-- 일간: 오늘 잘한 점, 아쉬운 점, 내일 할 일, 메모
-- 주간: 이번 주 완료한 것, 이번 주 아쉬웠던 것, 다음 주 목표, 메모
-- 월간: 이번 달 잘한 점, 이번 달 아쉬웠던 점, 다음 달 목표, 메모
-
-전체 섹션이 비어 있으면 저장되지 않습니다.
-
-## 일간 / 주간 / 월간 목표 사용 방법
-
-목표 페이지에서 탭을 선택한 뒤 목표를 등록합니다.
-
-- 일간 목표: `targetDate`
-- 주간 목표: `weekStartDate`, `weekEndDate`
-- 월간 목표: `month`
-
-각 목표는 진행률, 완료 여부, D-Day 또는 기간 표시를 가집니다.
-
-## 데이터 저장 방식
-
-서버 DB가 기본 저장소입니다.
-
-- DB: SQLite
-- ORM: Prisma
-- 인증: HttpOnly Cookie 세션
-- LocalStorage는 기존 데이터 가져오기와 타이머 임시 상태 복원 용도로만 사용합니다.
-
-주요 LocalStorage 키:
-
-```ts
-const STORAGE_KEYS = {
-  TODOS: "dark-todo-planner:todos",
-  REFLECTIONS: "dark-todo-planner:reflections",
-  GOALS: "dark-todo-planner:goals",
-  FOCUS_SESSIONS: "dark-todo-planner:focus-sessions",
-  TIMER_SETTINGS: "dark-todo-planner:timer-settings",
-  TIMER_STATE: "dark-todo-planner:timer-state",
-};
-```
-
-## LocalStorage에서 DB로 마이그레이션하는 방법
-
-설정 페이지에서 `LocalStorage 데이터 서버로 가져오기`를 실행합니다.
-
-- 기존 Todo, 회고, 목표, 집중 기록, 타이머 설정을 읽어 서버로 업로드합니다.
-- 기존 Todo에 카테고리가 없으면 `미분류`로 처리합니다.
-- 기존 회고 `content`는 섹션 구조로 변환합니다.
-- 기존 목표에 타입이 없으면 `DAILY`로 처리합니다.
-- 마이그레이션 후 LocalStorage 데이터를 삭제할지 선택할 수 있습니다.
-
-## JSON 백업 / 복원 방법
-
-설정 페이지에서 서버 DB 기준 JSON 백업과 복원을 할 수 있습니다.
-
-```ts
-type BackupData = {
-  version: number;
-  exportedAt: string;
-  categories?: Category[];
-  todos: Todo[];
-  tags?: Tag[];
-  reflections?: Reflection[];
-  goals?: Goal[];
-  focusSessions?: FocusSession[];
-  timerSettings?: TimerSettings;
-};
-```
-
-가져오기 전 기존 서버 데이터를 덮어쓸지 확인합니다. 잘못된 JSON 또는 `todos` 배열이 없는 데이터는 거부됩니다.
 
 ## API 목록
 
@@ -226,6 +314,7 @@ type BackupData = {
 - `DELETE /api/reflections/:id`
 - `GET /api/goals`
 - `POST /api/goals`
+- `GET /api/goals/:id`
 - `PUT /api/goals/:id`
 - `PATCH /api/goals/:id/toggle`
 - `DELETE /api/goals/:id`
@@ -237,9 +326,19 @@ type BackupData = {
 - `POST /api/backup/import`
 - `POST /api/migrate/local-storage`
 
+## 문제 해결
+
+- `JWT_SECRET 환경 변수가 필요합니다.`: production에서 `JWT_SECRET`을 설정하세요.
+- 로그인 후 API가 401을 반환함: 같은 origin 배포인지, 개발 환경에서는 `CLIENT_URL`과 요청 origin이 일치하는지 확인하세요.
+- DB 파일이 생성되지 않음: `data` 폴더가 있는지, `DATABASE_URL=file:../data/prod.db`처럼 Prisma schema 기준 경로인지 확인하세요.
+- 재배포 후 데이터가 사라짐: 배포 환경의 persistent disk 설정을 확인하세요.
+- GitHub Pages에서 로그인이 안 됨: 정상입니다. GitHub Pages에는 `/api` 서버가 없습니다.
+
 ## 폴더 구조
 
 ```text
+data
+ ┗ .gitkeep
 prisma
  ┗ schema.prisma
 server
@@ -249,20 +348,12 @@ server
  ┣ index.ts
  ┣ serializers.ts
  ┗ validation.ts
+scripts
+ ┗ write-server-dist-package.cjs
 src
  ┣ components
- ┃ ┣ calendar
- ┃ ┣ category
- ┃ ┣ common
- ┃ ┣ goal
- ┃ ┣ layout
- ┃ ┣ reflection
- ┃ ┣ timer
- ┃ ┗ todo
  ┣ hooks
  ┣ lib
- ┃ ┣ api
- ┃ ┗ storage.ts
  ┣ pages
  ┣ styles
  ┣ types
@@ -270,29 +361,12 @@ src
  ┗ main.tsx
 ```
 
-## 배포 시 주의사항
-
-기존 정적 배포 버전은 GitHub Pages에서 동작 가능했지만, 백엔드와 DB 기능이 추가된 이후에는 GitHub Pages만으로 전체 기능을 사용할 수 없습니다.
-
-백엔드 포함 버전은 Vercel, Render, Railway, Fly.io, 개인 서버, VPS 등 서버 실행이 가능한 환경에 배포해야 합니다.
-
-Vite의 GitHub Pages 경로 호환을 위해 `vite.config.ts`의 base는 유지되어 있습니다.
-
-```ts
-base: "/dark-todo-planner/";
-```
-
-단, GitHub Pages에서는 `/api` 서버가 없으므로 로그인과 데이터 저장 기능은 동작하지 않습니다.
-
 ## 추후 개선 사항
 
 - Prisma migrate 기반 운영 배포 정리
 - Docker 배포 구성
-- 서버 배포 자동화
+- PostgreSQL 전환
+- 서버 백업 자동화
 - 캘린더 드래그 앤 드롭
-- 자동 백업 기능
 - 통계 차트
-- 태그별 통계
-- 반복 Todo 고급 설정
-- 브라우저 알림 고도화
 - PWA 지원

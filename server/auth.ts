@@ -3,7 +3,17 @@ import jwt from "jsonwebtoken";
 import { prisma } from "./db";
 
 const COOKIE_NAME = "dtp_session";
-const SESSION_SECRET = process.env.SESSION_SECRET || "dev-only-change-this-secret";
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET;
+
+if (!JWT_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error("JWT_SECRET 환경 변수가 필요합니다.");
+}
+
+const sessionSecret = JWT_SECRET || "dev-only-change-this-secret";
+
+const cookieSecure =
+  process.env.COOKIE_SECURE === "true" ||
+  (process.env.COOKIE_SECURE !== "false" && process.env.NODE_ENV === "production");
 
 type SessionPayload = {
   userId: string;
@@ -14,13 +24,13 @@ export type AuthenticatedRequest = Request & {
 };
 
 export const signSession = (userId: string) =>
-  jwt.sign({ userId } satisfies SessionPayload, SESSION_SECRET, { expiresIn: "14d" });
+  jwt.sign({ userId } satisfies SessionPayload, sessionSecret, { expiresIn: "14d" });
 
 export const setSessionCookie = (res: Response, token: string) => {
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: cookieSecure,
     maxAge: 14 * 24 * 60 * 60 * 1000,
     path: "/",
   });
@@ -35,7 +45,7 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
   if (!token) return res.status(401).json({ message: "로그인이 필요합니다." });
 
   try {
-    const payload = jwt.verify(token, SESSION_SECRET) as SessionPayload;
+    const payload = jwt.verify(token, sessionSecret) as SessionPayload;
     const user = await prisma.user.findUnique({ where: { id: payload.userId }, select: { id: true } });
     if (!user) return res.status(401).json({ message: "유효하지 않은 세션입니다." });
     (req as AuthenticatedRequest).userId = user.id;

@@ -1,7 +1,7 @@
+import "dotenv/config";
 import cookieParser from "cookie-parser";
-import express, { type Request, type Response } from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { clearSessionCookie, requireAuth, setSessionCookie, signSession, toSafeUser, type AuthenticatedRequest } from "./auth";
@@ -25,10 +25,29 @@ import {
 } from "./validation";
 
 const app = express();
-const port = Number(process.env.PORT || 3001);
+const port = Number(process.env.PORT || 3000);
+const isProduction = process.env.NODE_ENV === "production";
+const clientUrl = process.env.CLIENT_URL || process.env.CLIENT_ORIGIN || "http://localhost:5173";
 
 app.use(express.json({ limit: "4mb" }));
 app.use(cookieParser());
+
+if (!isProduction) {
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (!origin || origin === clientUrl) {
+      if (origin) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+        res.setHeader("Vary", "Origin");
+      }
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+    }
+    if (req.method === "OPTIONS") return res.sendStatus(204);
+    return next();
+  });
+}
 
 const asyncHandler =
   <TReq extends Request = Request>(handler: (req: TReq, res: Response) => Promise<unknown>) =>
@@ -42,7 +61,6 @@ const asyncHandler =
     });
   };
 
-const authReq = (req: Request) => req as AuthenticatedRequest;
 const paramId = (req: Request) => String(req.params.id);
 
 const authSchema = z.object({
@@ -87,7 +105,13 @@ const todoInclude = {
   todoTags: { include: { tag: true } },
 } as const;
 
-app.get("/api/health", (_req, res) => res.json({ ok: true }));
+app.get(
+  "/api/health",
+  asyncHandler(async (_req, res) => {
+    await prisma.$queryRaw`SELECT 1`;
+    return res.json({ status: "ok", database: "connected" });
+  }),
+);
 
 app.post(
   "/api/auth/register",
@@ -698,12 +722,23 @@ app.post(
   }),
 );
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const distPath = path.resolve(__dirname, "../dist");
-app.use("/dark-todo-planner", express.static(distPath));
-app.get(/^\/dark-todo-planner\/.*/, (_req, res) => res.sendFile(path.join(distPath, "index.html")));
+const clientDistPath = path.resolve(process.cwd(), "dist");
+
+app.use("/api", (_req, res) => {
+  return res.status(404).json({ message: "API 경로를 찾을 수 없습니다." });
+});
+
+app.use(express.static(clientDistPath));
+
+app.get(/^(?!\/api(?:\/|$)).*/, (_req, res) => {
+  return res.sendFile(path.join(clientDistPath, "index.html"));
+});
+
+app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(error);
+  return res.status(500).json({ message: "서버 오류가 발생했습니다." });
+});
 
 app.listen(port, () => {
-  console.log(`Dark Todo Planner API listening on http://localhost:${port}`);
+  console.log(`Dark Todo Planner listening on http://localhost:${port}`);
 });

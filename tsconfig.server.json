@@ -1,13 +1,15 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "rootDir": "server",
+    "outDir": "server/dist",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "noEmit": true,
     "types": ["node"]
   },
-  "include": ["server/**/*.ts", "prisma/**/*.ts"]
+  "include": ["server/**/*.ts"],
+  "exclude": ["server/dist", "node_modules"]
 }

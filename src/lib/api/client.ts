@@ -7,8 +7,16 @@ export class ApiError extends Error {
   }
 }
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+
+const resolveApiPath = (path: string) => {
+  if (/^https?:\/\//.test(path)) return path;
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE_URL}${normalizedPath}`;
+};
+
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(path, {
+  const response = await fetch(resolveApiPath(path), {
     ...options,
     credentials: "include",
     headers: {

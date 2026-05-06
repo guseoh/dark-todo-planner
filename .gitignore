@@ -1,8 +1,11 @@
 node_modules
 dist
+server/dist
 *.tsbuildinfo
 .env
 .env.local
+data/*.db
+data/*.db-journal
 prisma/*.db
 prisma/*.db-journal
 .DS_Store
