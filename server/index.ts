@@ -593,7 +593,7 @@ app.patch(
     if (!exists) return res.status(404).json({ message: "목표를 찾을 수 없습니다." });
     const goal = await prisma.goal.update({
       where: { id: exists.id },
-      data: { completed: !exists.completed, progress: exists.completed ? exists.progress : 100 },
+      data: { completed: !exists.completed, progress: exists.completed ? 0 : 100 },
     });
     return res.json({ goal: serializeGoal(goal) });
   }),

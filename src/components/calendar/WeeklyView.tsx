@@ -5,7 +5,6 @@ import { formatKoreanDate, getWeekDays, toDateKey, todayKey } from "../../lib/da
 import type { Todo, TodoInput } from "../../types/todo";
 import type { Category } from "../../types/category";
 import type { Goal } from "../../types/goal";
-import { ProgressBar } from "../common/ProgressBar";
 import { TodoForm } from "../todo/TodoForm";
 
 type WeeklyViewProps = {
@@ -50,11 +49,8 @@ export function WeeklyView({
       (!goal.weekStartDate || goal.weekStartDate <= weekEnd) &&
       (!goal.weekEndDate || goal.weekEndDate >= weekStart),
   );
-  const getGoalProgress = (goal: Goal) => Math.min(100, Math.max(0, goal.completed ? 100 : goal.progress));
   const completedWeeklyGoals = weeklyGoals.filter((goal) => goal.completed).length;
-  const weeklyGoalRate = weeklyGoals.length
-    ? Math.round(weeklyGoals.reduce((sum, goal) => sum + getGoalProgress(goal), 0) / weeklyGoals.length)
-    : 0;
+  const activeWeeklyGoals = weeklyGoals.length - completedWeeklyGoals;
 
   const submitGoal = (event: FormEvent) => {
     event.preventDefault();
@@ -77,7 +73,7 @@ export function WeeklyView({
         {[
           { label: "이번 주", value: `${formatKoreanDate(weekStart, "M.d")} ~ ${formatKoreanDate(weekEnd, "M.d")}` },
           { label: "주간 목표", value: `${weeklyGoals.length}개` },
-          { label: "완료한 목표", value: `${completedWeeklyGoals}개` },
+          { label: "완료 / 미완료", value: `${completedWeeklyGoals} / ${activeWeeklyGoals}` },
           { label: "Todo 완료율", value: `${weekRate}%` },
           { label: "집중 시간", value: `${focusStats?.weekMinutes || 0}분` },
         ].map((item) => (
@@ -97,6 +93,9 @@ export function WeeklyView({
             </div>
             <p className="mt-1 text-sm text-ink-400">
               {formatKoreanDate(weekStart, "yyyy.MM.dd")} ~ {formatKoreanDate(weekEnd, "yyyy.MM.dd")}
+            </p>
+            <p className="mt-1 text-xs text-ink-500">
+              주간 목표 {weeklyGoals.length}개 · 완료 {completedWeeklyGoals}개 · 미완료 {activeWeeklyGoals}개
             </p>
           </div>
           <form onSubmit={submitGoal} className="flex w-full gap-2 lg:max-w-md">
@@ -127,18 +126,21 @@ export function WeeklyView({
                             goal.completed ? "border-success bg-success text-ink-950" : "border-ink-600 text-transparent hover:border-accent-400"
                           }`}
                           onClick={() => onToggleGoal(goal.id)}
+                          aria-pressed={goal.completed}
                           aria-label="주간 목표 완료"
                         >
                           <CheckCircle2 size={13} />
                         </button>
-                        <h4 className={`truncate font-semibold text-ink-100 ${goal.completed ? "line-through" : ""}`}>{goal.title}</h4>
+                        <h4 className={`truncate font-semibold ${goal.completed ? "text-ink-500 line-through" : "text-ink-100"}`}>{goal.title}</h4>
+                        {goal.completed ? (
+                          <span className="rounded-full border border-success/35 bg-success/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-100">
+                            완료
+                          </span>
+                        ) : null}
                       </div>
                       {goal.description ? <p className="mt-1 line-clamp-1 text-xs text-ink-500">{goal.description}</p> : null}
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                      <span className="rounded-full border border-accent-500/35 bg-accent-500/15 px-2 py-0.5 text-xs font-bold text-indigo-100">
-                        {getGoalProgress(goal)}%
-                      </span>
                       <button
                         type="button"
                         className="icon-btn min-h-8 min-w-8 rounded-md hover:border-danger hover:text-red-100"
@@ -151,9 +153,6 @@ export function WeeklyView({
                   </div>
                 </article>
               ))}
-              <div className="pt-1">
-                <ProgressBar value={weeklyGoalRate} label={`${weeklyGoals.length}개 목표 평균 진행률`} />
-              </div>
             </div>
           ) : (
             <div className="rounded-lg border border-dashed border-ink-700 bg-ink-950/35 p-5 text-center">
