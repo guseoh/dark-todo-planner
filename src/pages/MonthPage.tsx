@@ -1,0 +1,28 @@
+import type { Todo, TodoInput } from "../types/todo";
+import { MonthlyView } from "../components/calendar/MonthlyView";
+
+type MonthPageProps = {
+  todos: Todo[];
+  onAdd: (todo: TodoInput) => void;
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+  onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
+};
+
+export function MonthPage({ todos, onAdd, onToggle, onDelete, onUpdate }: MonthPageProps) {
+  return (
+    <div className="space-y-6">
+      <section>
+        <h2 className="text-2xl font-bold text-ink-100 sm:text-3xl">월간 보기</h2>
+        <p className="mt-2 text-sm text-ink-400">달력에서 날짜를 선택하고 해당 날짜의 Todo를 관리합니다.</p>
+      </section>
+      <MonthlyView
+        todos={todos}
+        onAdd={onAdd}
+        onToggle={onToggle}
+        onDelete={onDelete}
+        onUpdate={onUpdate}
+      />
+    </div>
+  );
+}

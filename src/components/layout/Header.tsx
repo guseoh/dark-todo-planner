@@ -1,0 +1,29 @@
+import { CalendarCheck2, Database } from "lucide-react";
+import { formatKoreanDate } from "../../lib/date";
+
+type HeaderProps = {
+  todoCount: number;
+};
+
+export function Header({ todoCount }: HeaderProps) {
+  return (
+    <header className="sticky top-0 z-30 border-b border-ink-700/70 bg-ink-950/90 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-accent-500 text-white">
+            <CalendarCheck2 size={22} />
+          </div>
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-bold text-ink-100 sm:text-xl">Dark Todo Planner</h1>
+            <p className="truncate text-xs text-ink-400 sm:text-sm">{formatKoreanDate(new Date(), "yyyy년 M월 d일 EEEE")}</p>
+          </div>
+        </div>
+        <div className="hidden items-center gap-2 rounded-lg border border-ink-700 bg-ink-800 px-3 py-2 text-sm text-ink-400 sm:flex">
+          <Database size={16} />
+          <span>LocalStorage</span>
+          <span className="text-ink-100">{todoCount}개</span>
+        </div>
+      </div>
+    </header>
+  );
+}
