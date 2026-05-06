@@ -10,16 +10,19 @@ import { PriorityBadge } from "../todo/PriorityBadge";
 
 type WeeklyViewProps = {
   todos: Todo[];
+  getTodosByDate: (date: string) => Todo[];
   onAdd: (todo: TodoInput) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
+  onArchive: (id: string) => void;
+  onFocusTodo: (todo: Todo) => void;
 };
 
-export function WeeklyView({ todos, onAdd, onToggle, onDelete, onUpdate }: WeeklyViewProps) {
+export function WeeklyView({ todos, getTodosByDate, onAdd, onToggle, onDelete, onUpdate, onArchive, onFocusTodo }: WeeklyViewProps) {
   const [selectedDate, setSelectedDate] = useState(todayKey());
   const weekDays = useMemo(() => getWeekDays(), []);
-  const selectedTodos = todos.filter((todo) => todo.date === selectedDate);
+  const selectedTodos = getTodosByDate(selectedDate);
   const weekRate = calculateRate(todos);
 
   return (
@@ -39,7 +42,7 @@ export function WeeklyView({ todos, onAdd, onToggle, onDelete, onUpdate }: Weekl
       <section className="grid gap-3 xl:grid-cols-7">
         {weekDays.map((day) => {
           const dateKey = toDateKey(day);
-          const dayTodos = todos.filter((todo) => todo.date === dateKey);
+          const dayTodos = getTodosByDate(dateKey);
           const activeCount = dayTodos.filter((todo) => !todo.completed).length;
           const isToday = dateKey === todayKey();
           const isSelected = dateKey === selectedDate;
@@ -105,6 +108,8 @@ export function WeeklyView({ todos, onAdd, onToggle, onDelete, onUpdate }: Weekl
             onToggle={onToggle}
             onDelete={onDelete}
             onUpdate={onUpdate}
+            onArchive={onArchive}
+            onFocusTodo={onFocusTodo}
             emptyTitle="이번 주 계획이 없습니다."
             emptyDescription="선택한 날짜에 새로운 Todo를 추가해보세요."
             groupByCompletion

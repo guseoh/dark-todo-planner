@@ -5,9 +5,10 @@ import type { TodoFilters, TodoPriorityFilter, TodoStatusFilter } from "../../ty
 type TodoFilterProps = {
   filters: TodoFilters;
   onChange: (filters: TodoFilters) => void;
+  tagOptions?: string[];
 };
 
-export function TodoFilter({ filters, onChange }: TodoFilterProps) {
+export function TodoFilter({ filters, onChange, tagOptions = [] }: TodoFilterProps) {
   const quickFilters: Array<{
     label: string;
     status: TodoStatusFilter;
@@ -26,7 +27,7 @@ export function TodoFilter({ filters, onChange }: TodoFilterProps) {
 
   return (
     <div className="app-card p-4">
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,1fr)_minmax(0,0.72fr)_minmax(0,0.8fr)_auto]">
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,1fr)_minmax(0,0.72fr)_minmax(0,0.72fr)_minmax(0,0.8fr)_auto]">
         <label className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" size={17} />
           <input
@@ -60,6 +61,19 @@ export function TodoFilter({ filters, onChange }: TodoFilterProps) {
           onChange={(event) => onChange({ ...filters, date: event.target.value })}
           aria-label="날짜 필터"
         />
+        <select
+          className="field"
+          value={filters.tag}
+          onChange={(event) => onChange({ ...filters, tag: event.target.value })}
+          aria-label="태그 필터"
+        >
+          <option value="">모든 태그</option>
+          {tagOptions.map((tag) => (
+            <option key={tag} value={tag}>
+              #{tag}
+            </option>
+          ))}
+        </select>
         <select
           className="field"
           value={filters.sort}

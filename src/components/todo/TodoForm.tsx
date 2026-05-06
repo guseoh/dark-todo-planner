@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
 import { todayKey } from "../../lib/date";
-import type { TodoInput, TodoPriority } from "../../types/todo";
+import type { TodoInput, TodoPriority, TodoRepeat } from "../../types/todo";
 
 type TodoFormProps = {
   onAdd: (todo: TodoInput) => void;
@@ -18,6 +18,8 @@ export function TodoForm({ onAdd, defaultDate, compact = false, submitLabel = "�
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [priority, setPriority] = useState<TodoPriority>("MEDIUM");
+  const [repeat, setRepeat] = useState<TodoRepeat>("NONE");
+  const [tags, setTags] = useState("");
   const [showDetails, setShowDetails] = useState(!compact);
 
   useEffect(() => {
@@ -31,6 +33,8 @@ export function TodoForm({ onAdd, defaultDate, compact = false, submitLabel = "�
     setStartTime("");
     setEndTime("");
     setPriority("MEDIUM");
+    setRepeat("NONE");
+    setTags("");
     if (compact) setShowDetails(false);
   };
 
@@ -48,6 +52,8 @@ export function TodoForm({ onAdd, defaultDate, compact = false, submitLabel = "�
       startTime,
       endTime,
       priority,
+      repeat,
+      tags: tags.split(","),
     });
     reset();
     window.requestAnimationFrame(() => titleInputRef.current?.focus());
@@ -58,6 +64,7 @@ export function TodoForm({ onAdd, defaultDate, compact = false, submitLabel = "�
       <div className="flex flex-col gap-3 sm:flex-row">
         <input
           ref={titleInputRef}
+          data-quick-todo-input="true"
           className="field flex-1"
           value={title}
           onChange={(event) => setTitle(event.target.value)}
@@ -121,6 +128,30 @@ export function TodoForm({ onAdd, defaultDate, compact = false, submitLabel = "�
               <option value="MEDIUM">보통</option>
               <option value="HIGH">높음</option>
             </select>
+          </label>
+          <label className="space-y-1 text-sm text-ink-400">
+            반복
+            <select
+              className="field"
+              value={repeat}
+              onChange={(event) => setRepeat(event.target.value as TodoRepeat)}
+            >
+              <option value="NONE">반복 없음</option>
+              <option value="DAILY">매일</option>
+              <option value="WEEKLY">매주</option>
+              <option value="MONTHLY">매월</option>
+              <option value="WEEKDAY">평일만</option>
+              <option value="WEEKEND">주말만</option>
+            </select>
+          </label>
+          <label className="space-y-1 text-sm text-ink-400 xl:col-span-3">
+            태그
+            <input
+              className="field"
+              value={tags}
+              onChange={(event) => setTags(event.target.value)}
+              placeholder="공부, 개발, 운동"
+            />
           </label>
           <label className="space-y-1 text-sm text-ink-400 md:col-span-2 xl:col-span-4">
             메모

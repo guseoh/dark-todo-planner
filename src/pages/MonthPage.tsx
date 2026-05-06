@@ -3,13 +3,16 @@ import { MonthlyView } from "../components/calendar/MonthlyView";
 
 type MonthPageProps = {
   todos: Todo[];
+  getTodosByDate: (date: string) => Todo[];
   onAdd: (todo: TodoInput) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
+  onArchive: (id: string) => void;
+  onFocusTodo: (todo: Todo) => void;
 };
 
-export function MonthPage({ todos, onAdd, onToggle, onDelete, onUpdate }: MonthPageProps) {
+export function MonthPage({ todos, getTodosByDate, onAdd, onToggle, onDelete, onUpdate, onArchive, onFocusTodo }: MonthPageProps) {
   return (
     <div className="space-y-6">
       <section>
@@ -18,10 +21,13 @@ export function MonthPage({ todos, onAdd, onToggle, onDelete, onUpdate }: MonthP
       </section>
       <MonthlyView
         todos={todos}
+        getTodosByDate={getTodosByDate}
         onAdd={onAdd}
         onToggle={onToggle}
         onDelete={onDelete}
         onUpdate={onUpdate}
+        onArchive={onArchive}
+        onFocusTodo={onFocusTodo}
       />
     </div>
   );

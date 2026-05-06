@@ -10,6 +10,9 @@ type TodoListProps = {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
+  onArchive?: (id: string) => void;
+  onUnarchive?: (id: string) => void;
+  onFocusTodo?: (todo: Todo) => void;
   emptyTitle: string;
   emptyDescription?: string;
   groupByCompletion?: boolean;
@@ -21,6 +24,9 @@ export function TodoList({
   onToggle,
   onDelete,
   onUpdate,
+  onArchive,
+  onUnarchive,
+  onFocusTodo,
   emptyTitle,
   emptyDescription,
   groupByCompletion = false,
@@ -44,6 +50,9 @@ export function TodoList({
           onToggle={onToggle}
           onDelete={onDelete}
           onEdit={setEditingTodo}
+          onArchive={onArchive}
+          onUnarchive={onUnarchive}
+          onFocusTodo={onFocusTodo}
           showDate={showDate}
         />
       ))}

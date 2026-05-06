@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { X } from "lucide-react";
-import type { Todo, TodoPriority } from "../../types/todo";
+import type { Todo, TodoPriority, TodoRepeat } from "../../types/todo";
 
 type TodoEditModalProps = {
   todo: Todo | null;
@@ -15,6 +15,8 @@ export function TodoEditModal({ todo, onClose, onSave }: TodoEditModalProps) {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [priority, setPriority] = useState<TodoPriority>("MEDIUM");
+  const [repeat, setRepeat] = useState<TodoRepeat>("NONE");
+  const [tags, setTags] = useState("");
   const [completed, setCompleted] = useState(false);
 
   useEffect(() => {
@@ -25,13 +27,20 @@ export function TodoEditModal({ todo, onClose, onSave }: TodoEditModalProps) {
     setStartTime(todo.startTime || "");
     setEndTime(todo.endTime || "");
     setPriority(todo.priority);
+    setRepeat(todo.repeat || "NONE");
+    setTags((todo.tags || []).join(", "));
     setCompleted(todo.completed);
   }, [todo]);
 
+  useEffect(() => {
+    const close = () => onClose();
+    if (todo) document.addEventListener("planner:escape", close);
+    return () => document.removeEventListener("planner:escape", close);
+  }, [onClose, todo]);
+
   if (!todo) return null;
 
-  const handleSubmit = (event: FormEvent) => {
-    event.preventDefault();
+  const saveTodo = () => {
     if (!title.trim()) return;
 
     onSave(todo.id, {
@@ -41,15 +50,31 @@ export function TodoEditModal({ todo, onClose, onSave }: TodoEditModalProps) {
       startTime,
       endTime,
       priority,
+      repeat,
+      tags: tags.split(","),
       completed,
       updatedAt: new Date().toISOString(),
     });
     onClose();
   };
 
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    saveTodo();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-3 sm:items-center">
-      <form onSubmit={handleSubmit} className="app-card w-full max-w-2xl p-5">
+      <form
+        onSubmit={handleSubmit}
+        onKeyDown={(event) => {
+          if (event.ctrlKey && event.key === "Enter") {
+            event.preventDefault();
+            saveTodo();
+          }
+        }}
+        className="app-card w-full max-w-2xl p-5"
+      >
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-bold text-ink-100">Todo 수정</h2>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="닫기">
@@ -104,6 +129,30 @@ export function TodoEditModal({ todo, onClose, onSave }: TodoEditModalProps) {
               type="time"
               value={endTime}
               onChange={(event) => setEndTime(event.target.value)}
+            />
+          </label>
+          <label className="space-y-1 text-sm text-ink-400">
+            반복
+            <select
+              className="field"
+              value={repeat}
+              onChange={(event) => setRepeat(event.target.value as TodoRepeat)}
+            >
+              <option value="NONE">반복 없음</option>
+              <option value="DAILY">매일</option>
+              <option value="WEEKLY">매주</option>
+              <option value="MONTHLY">매월</option>
+              <option value="WEEKDAY">평일만</option>
+              <option value="WEEKEND">주말만</option>
+            </select>
+          </label>
+          <label className="space-y-1 text-sm text-ink-400">
+            태그
+            <input
+              className="field"
+              value={tags}
+              onChange={(event) => setTags(event.target.value)}
+              placeholder="공부, 개발, 운동"
             />
           </label>
           <label className="flex min-h-11 items-center gap-3 rounded-lg border border-ink-700 bg-ink-950/60 px-3 text-sm text-ink-300 md:col-span-2">

@@ -1,49 +1,268 @@
-import type { Todo, TodoPriority } from "../types/todo";
+import type { BackupData } from "../types/backup";
+import type { Goal } from "../types/goal";
+import type { Reflection, ReflectionType } from "../types/reflection";
+import type { FocusSession, TimerMode, TimerSettings, TimerState } from "../types/timer";
+import { DEFAULT_TIMER_SETTINGS } from "../types/timer";
+import type { Todo, TodoPriority, TodoRepeat } from "../types/todo";
+import { LEGACY_STORAGE_KEYS, STORAGE_KEYS } from "./storageKeys";
 
-export const TODO_STORAGE_KEY = "dark-todo-planner.todos";
+export const TODO_STORAGE_KEY = STORAGE_KEYS.TODOS;
+export const BACKUP_VERSION = 2;
 
 const priorities: TodoPriority[] = ["LOW", "MEDIUM", "HIGH"];
+const repeats: TodoRepeat[] = ["NONE", "DAILY", "WEEKLY", "MONTHLY", "WEEKDAY", "WEEKEND"];
+const reflectionTypes: ReflectionType[] = ["DAILY", "WEEKLY", "MONTHLY"];
+const timerModes: TimerMode[] = ["FOCUS", "SHORT_BREAK", "LONG_BREAK"];
 
 const isString = (value: unknown): value is string => typeof value === "string";
+const isNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
+const isBoolean = (value: unknown): value is boolean => typeof value === "boolean";
 
-const isTodo = (value: unknown): value is Todo => {
-  if (!value || typeof value !== "object") return false;
-  const todo = value as Todo;
-
-  return (
-    isString(todo.id) &&
-    isString(todo.title) &&
-    isString(todo.date) &&
-    priorities.includes(todo.priority) &&
-    typeof todo.completed === "boolean" &&
-    isString(todo.createdAt) &&
-    isString(todo.updatedAt) &&
-    (todo.memo === undefined || isString(todo.memo)) &&
-    (todo.startTime === undefined || isString(todo.startTime)) &&
-    (todo.endTime === undefined || isString(todo.endTime))
-  );
-};
-
-export const loadTodos = (): Todo[] => {
-  if (typeof window === "undefined") return [];
-
+export const readJson = <T,>(key: string, fallback: T): T => {
+  if (typeof window === "undefined") return fallback;
   try {
-    const raw = window.localStorage.getItem(TODO_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter(isTodo) : [];
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
   } catch {
-    return [];
+    return fallback;
   }
 };
 
-export const saveTodos = (todos: Todo[]) => {
+export const writeJson = (key: string, value: unknown) => {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(todos));
+  window.localStorage.setItem(key, JSON.stringify(value));
+};
+
+const normalizeOptional = (value: unknown) => (isString(value) && value.trim() ? value.trim() : undefined);
+
+export const parseTags = (value: string | string[] | undefined): string[] => {
+  const source = Array.isArray(value) ? value : value?.split(",") || [];
+  return Array.from(
+    new Set(
+      source
+        .map((tag) => tag.trim().replace(/^#/, ""))
+        .filter(Boolean),
+    ),
+  );
+};
+
+export const normalizeTodo = (value: unknown): Todo | null => {
+  if (!value || typeof value !== "object") return null;
+  const todo = value as Partial<Todo>;
+  if (!isString(todo.id) || !isString(todo.title) || !isString(todo.date)) return null;
+  if (!priorities.includes(todo.priority as TodoPriority)) return null;
+  if (!isString(todo.createdAt) || !isString(todo.updatedAt)) return null;
+
+  return {
+    id: todo.id,
+    title: todo.title,
+    memo: normalizeOptional(todo.memo),
+    date: todo.date,
+    startTime: normalizeOptional(todo.startTime),
+    endTime: normalizeOptional(todo.endTime),
+    priority: todo.priority as TodoPriority,
+    completed: isBoolean(todo.completed) ? todo.completed : false,
+    createdAt: todo.createdAt,
+    updatedAt: todo.updatedAt,
+    repeat: repeats.includes(todo.repeat as TodoRepeat) ? (todo.repeat as TodoRepeat) : "NONE",
+    tags: parseTags(todo.tags),
+    archived: isBoolean(todo.archived) ? todo.archived : false,
+    archivedAt: normalizeOptional(todo.archivedAt),
+  };
 };
 
 export const validateTodos = (value: unknown): Todo[] | null => {
   if (!Array.isArray(value)) return null;
-  if (!value.every(isTodo)) return null;
-  return value;
+  const normalized = value.map(normalizeTodo);
+  if (normalized.some((todo) => todo === null)) return null;
+  return normalized as Todo[];
+};
+
+export const loadTodos = (): Todo[] => {
+  if (typeof window === "undefined") return [];
+  const current = validateTodos(readJson<unknown>(STORAGE_KEYS.TODOS, null));
+  if (current) return current;
+
+  const legacy = validateTodos(readJson<unknown>(LEGACY_STORAGE_KEYS.TODOS, null));
+  if (legacy) {
+    writeJson(STORAGE_KEYS.TODOS, legacy);
+    return legacy;
+  }
+  return [];
+};
+
+export const saveTodos = (todos: Todo[]) => {
+  writeJson(STORAGE_KEYS.TODOS, todos.map((todo) => normalizeTodo(todo)).filter(Boolean));
+};
+
+export const normalizeReflection = (value: unknown): Reflection | null => {
+  if (!value || typeof value !== "object") return null;
+  const reflection = value as Partial<Reflection>;
+  if (
+    !isString(reflection.id) ||
+    !isString(reflection.date) ||
+    !reflectionTypes.includes(reflection.type as ReflectionType) ||
+    !isString(reflection.content) ||
+    !isString(reflection.createdAt) ||
+    !isString(reflection.updatedAt)
+  ) {
+    return null;
+  }
+  return reflection as Reflection;
+};
+
+export const validateReflections = (value: unknown): Reflection[] | null => {
+  if (!Array.isArray(value)) return null;
+  const normalized = value.map(normalizeReflection);
+  if (normalized.some((reflection) => reflection === null)) return null;
+  return normalized as Reflection[];
+};
+
+export const normalizeGoal = (value: unknown): Goal | null => {
+  if (!value || typeof value !== "object") return null;
+  const goal = value as Partial<Goal>;
+  if (
+    !isString(goal.id) ||
+    !isString(goal.title) ||
+    !isString(goal.dueDate) ||
+    !isNumber(goal.progress) ||
+    !isBoolean(goal.completed) ||
+    !isString(goal.createdAt) ||
+    !isString(goal.updatedAt)
+  ) {
+    return null;
+  }
+  return {
+    id: goal.id,
+    title: goal.title,
+    description: normalizeOptional(goal.description),
+    dueDate: goal.dueDate,
+    progress: Math.min(100, Math.max(0, Math.round(goal.progress))),
+    completed: goal.completed,
+    createdAt: goal.createdAt,
+    updatedAt: goal.updatedAt,
+  };
+};
+
+export const validateGoals = (value: unknown): Goal[] | null => {
+  if (!Array.isArray(value)) return null;
+  const normalized = value.map(normalizeGoal);
+  if (normalized.some((goal) => goal === null)) return null;
+  return normalized as Goal[];
+};
+
+export const normalizeFocusSession = (value: unknown): FocusSession | null => {
+  if (!value || typeof value !== "object") return null;
+  const session = value as Partial<FocusSession>;
+  if (
+    !isString(session.id) ||
+    !timerModes.includes(session.mode as TimerMode) ||
+    !isNumber(session.durationMinutes) ||
+    !isString(session.startedAt) ||
+    !isString(session.endedAt) ||
+    !isBoolean(session.completed)
+  ) {
+    return null;
+  }
+  return {
+    id: session.id,
+    todoId: normalizeOptional(session.todoId),
+    todoTitle: normalizeOptional(session.todoTitle),
+    mode: session.mode as TimerMode,
+    durationMinutes: Math.max(0, session.durationMinutes),
+    startedAt: session.startedAt,
+    endedAt: session.endedAt,
+    completed: session.completed,
+  };
+};
+
+export const validateFocusSessions = (value: unknown): FocusSession[] | null => {
+  if (!Array.isArray(value)) return null;
+  const normalized = value.map(normalizeFocusSession);
+  if (normalized.some((session) => session === null)) return null;
+  return normalized as FocusSession[];
+};
+
+export const normalizeTimerSettings = (value: unknown): TimerSettings => {
+  if (!value || typeof value !== "object") return DEFAULT_TIMER_SETTINGS;
+  const settings = value as Partial<TimerSettings>;
+  return {
+    focusMinutes: isNumber(settings.focusMinutes) ? Math.max(1, Math.round(settings.focusMinutes)) : DEFAULT_TIMER_SETTINGS.focusMinutes,
+    shortBreakMinutes: isNumber(settings.shortBreakMinutes) ? Math.max(1, Math.round(settings.shortBreakMinutes)) : DEFAULT_TIMER_SETTINGS.shortBreakMinutes,
+    longBreakMinutes: isNumber(settings.longBreakMinutes) ? Math.max(1, Math.round(settings.longBreakMinutes)) : DEFAULT_TIMER_SETTINGS.longBreakMinutes,
+    sessionsBeforeLongBreak: isNumber(settings.sessionsBeforeLongBreak)
+      ? Math.max(1, Math.round(settings.sessionsBeforeLongBreak))
+      : DEFAULT_TIMER_SETTINGS.sessionsBeforeLongBreak,
+    soundEnabled: isBoolean(settings.soundEnabled) ? settings.soundEnabled : DEFAULT_TIMER_SETTINGS.soundEnabled,
+    notificationEnabled: isBoolean(settings.notificationEnabled)
+      ? settings.notificationEnabled
+      : DEFAULT_TIMER_SETTINGS.notificationEnabled,
+  };
+};
+
+export const normalizeTimerState = (value: unknown, fallback: TimerState): TimerState => {
+  if (!value || typeof value !== "object") return fallback;
+  const state = value as Partial<TimerState>;
+  if (!timerModes.includes(state.mode as TimerMode) || !isBoolean(state.isRunning) || !isNumber(state.remainingSeconds)) {
+    return fallback;
+  }
+  return {
+    mode: state.mode as TimerMode,
+    isRunning: state.isRunning,
+    startedAt: normalizeOptional(state.startedAt),
+    pausedAt: normalizeOptional(state.pausedAt),
+    remainingSeconds: Math.max(0, Math.round(state.remainingSeconds)),
+    selectedTodoId: normalizeOptional(state.selectedTodoId),
+    selectedTodoTitle: normalizeOptional(state.selectedTodoTitle),
+    completedFocusCount: isNumber(state.completedFocusCount) ? Math.max(0, Math.round(state.completedFocusCount)) : 0,
+  };
+};
+
+export const buildBackupData = (input: Omit<BackupData, "version" | "exportedAt">): BackupData => ({
+  version: BACKUP_VERSION,
+  exportedAt: new Date().toISOString(),
+  todos: input.todos,
+  reflections: input.reflections || [],
+  goals: input.goals || [],
+  focusSessions: input.focusSessions || [],
+  timerSettings: input.timerSettings,
+});
+
+export const validateBackupData = (value: unknown): { data?: BackupData; error?: string } => {
+  if (Array.isArray(value)) {
+    const todos = validateTodos(value);
+    return todos ? { data: buildBackupData({ todos }) } : { error: "Todo 배열 구조가 올바르지 않습니다." };
+  }
+
+  if (!value || typeof value !== "object") return { error: "백업 JSON 객체가 아닙니다." };
+  const backup = value as Partial<BackupData>;
+  const version = isNumber(backup.version) ? backup.version : Array.isArray(backup.todos) ? 1 : undefined;
+  if (!version || version < 1 || version > BACKUP_VERSION) {
+    return { error: "지원하지 않는 백업 버전입니다." };
+  }
+
+  const todos = validateTodos(backup.todos);
+  if (!todos) return { error: "todos 필드는 배열이어야 하며 Todo 구조가 올바라야 합니다." };
+
+  const reflections = backup.reflections === undefined ? [] : validateReflections(backup.reflections);
+  if (!reflections) return { error: "reflections 데이터 구조가 올바르지 않습니다." };
+
+  const goals = backup.goals === undefined ? [] : validateGoals(backup.goals);
+  if (!goals) return { error: "goals 데이터 구조가 올바르지 않습니다." };
+
+  const focusSessions = backup.focusSessions === undefined ? [] : validateFocusSessions(backup.focusSessions);
+  if (!focusSessions) return { error: "focusSessions 데이터 구조가 올바르지 않습니다." };
+
+  return {
+    data: {
+      version,
+      exportedAt: isString(backup.exportedAt) ? backup.exportedAt : new Date().toISOString(),
+      todos,
+      reflections,
+      goals,
+      focusSessions,
+      timerSettings: normalizeTimerSettings(backup.timerSettings),
+    },
+  };
 };

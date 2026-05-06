@@ -3,13 +3,16 @@ import { WeeklyView } from "../components/calendar/WeeklyView";
 
 type WeekPageProps = {
   weekTodos: Todo[];
+  getTodosByDate: (date: string) => Todo[];
   onAdd: (todo: TodoInput) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
+  onArchive: (id: string) => void;
+  onFocusTodo: (todo: Todo) => void;
 };
 
-export function WeekPage({ weekTodos, onAdd, onToggle, onDelete, onUpdate }: WeekPageProps) {
+export function WeekPage({ weekTodos, getTodosByDate, onAdd, onToggle, onDelete, onUpdate, onArchive, onFocusTodo }: WeekPageProps) {
   return (
     <div className="space-y-6">
       <section>
@@ -18,10 +21,13 @@ export function WeekPage({ weekTodos, onAdd, onToggle, onDelete, onUpdate }: Wee
       </section>
       <WeeklyView
         todos={weekTodos}
+        getTodosByDate={getTodosByDate}
         onAdd={onAdd}
         onToggle={onToggle}
         onDelete={onDelete}
         onUpdate={onUpdate}
+        onArchive={onArchive}
+        onFocusTodo={onFocusTodo}
       />
     </div>
   );

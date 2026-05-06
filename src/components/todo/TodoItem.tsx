@@ -1,5 +1,6 @@
-import { CalendarDays, CheckCircle2, Clock3, Pencil, Trash2 } from "lucide-react";
+import { Archive, CalendarDays, CheckCircle2, Clock3, Pencil, Play, RotateCcw, Trash2 } from "lucide-react";
 import { formatKoreanDate } from "../../lib/date";
+import { repeatLabel } from "../../lib/todo";
 import type { Todo } from "../../types/todo";
 import { PriorityBadge } from "./PriorityBadge";
 
@@ -8,10 +9,22 @@ type TodoItemProps = {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onEdit: (todo: Todo) => void;
+  onArchive?: (id: string) => void;
+  onUnarchive?: (id: string) => void;
+  onFocusTodo?: (todo: Todo) => void;
   showDate?: boolean;
 };
 
-export function TodoItem({ todo, onToggle, onDelete, onEdit, showDate = true }: TodoItemProps) {
+export function TodoItem({
+  todo,
+  onToggle,
+  onDelete,
+  onEdit,
+  onArchive,
+  onUnarchive,
+  onFocusTodo,
+  showDate = true,
+}: TodoItemProps) {
   const handleDelete = () => {
     if (window.confirm(`"${todo.title}" Todo를 삭제할까요?`)) {
       onDelete(todo.id);
@@ -40,8 +53,27 @@ export function TodoItem({ todo, onToggle, onDelete, onEdit, showDate = true }: 
               {todo.title}
             </h3>
             <PriorityBadge priority={todo.priority} />
+            {todo.repeat !== "NONE" ? (
+              <span className="rounded-full border border-accent-500/35 bg-accent-500/15 px-2.5 py-1 text-xs font-semibold text-indigo-100">
+                {repeatLabel[todo.repeat]}
+              </span>
+            ) : null}
+            {todo.archived ? (
+              <span className="rounded-full border border-ink-600 bg-ink-700/60 px-2.5 py-1 text-xs font-semibold text-ink-200">
+                보관됨
+              </span>
+            ) : null}
           </div>
           {todo.memo ? <p className="mt-2 whitespace-pre-wrap text-sm text-ink-400">{todo.memo}</p> : null}
+          {todo.tags.length ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {todo.tags.map((tag) => (
+                <span key={tag} className="rounded-full border border-ink-600 bg-ink-800 px-2.5 py-1 text-xs text-ink-300">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          ) : null}
           <div className="mt-3 flex flex-wrap gap-3 text-xs text-ink-500">
             {showDate ? (
               <span className="inline-flex items-center gap-1">
@@ -59,6 +91,21 @@ export function TodoItem({ todo, onToggle, onDelete, onEdit, showDate = true }: 
         </div>
 
         <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+          {onFocusTodo && !todo.archived ? (
+            <button type="button" className="icon-btn" onClick={() => onFocusTodo(todo)} aria-label="집중 시작">
+              <Play size={16} />
+            </button>
+          ) : null}
+          {todo.archived && onUnarchive ? (
+            <button type="button" className="icon-btn" onClick={() => onUnarchive(todo.id)} aria-label="보관 해제">
+              <RotateCcw size={16} />
+            </button>
+          ) : null}
+          {!todo.archived && todo.completed && onArchive ? (
+            <button type="button" className="icon-btn" onClick={() => onArchive(todo.id)} aria-label="Todo 보관">
+              <Archive size={16} />
+            </button>
+          ) : null}
           <button type="button" className="icon-btn" onClick={() => onEdit(todo)} aria-label="Todo 수정">
             <Pencil size={16} />
           </button>

@@ -1,5 +1,7 @@
-import { CalendarClock, CheckCheck, ListTodo, TrendingUp } from "lucide-react";
-import { formatKoreanDate } from "../lib/date";
+import { CalendarClock, CheckCheck, ListTodo, NotebookPen, Target, TimerReset, TrendingUp } from "lucide-react";
+import { formatKoreanDate, getDdayLabel } from "../lib/date";
+import type { Goal } from "../types/goal";
+import type { Reflection } from "../types/reflection";
 import type { Todo, TodoInput } from "../types/todo";
 import { EmptyState } from "../components/common/EmptyState";
 import { StatCard } from "../components/common/StatCard";
@@ -18,20 +20,33 @@ type DashboardProps = {
     weekRate: number;
     monthTotal: number;
   };
+  focusStats: {
+    todayMinutes: number;
+    todayCompletedSessions: number;
+  };
+  nearestGoal?: Goal;
+  recentReflection?: Reflection;
   onAdd: (todo: TodoInput) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
+  onArchive: (id: string) => void;
+  onFocusTodo: (todo: Todo) => void;
 };
 
 export function Dashboard({
   todos,
   todayTodos,
   stats,
+  focusStats,
+  nearestGoal,
+  recentReflection,
   onAdd,
   onToggle,
   onDelete,
   onUpdate,
+  onArchive,
+  onFocusTodo,
 }: DashboardProps) {
   const recentCompleted = [...todos]
     .filter((todo) => todo.completed)
@@ -72,6 +87,24 @@ export function Dashboard({
           description="이번 달 등록된 전체 항목"
           icon={<CalendarClock size={20} />}
         />
+        <StatCard
+          title="오늘 집중 시간"
+          value={`${focusStats.todayMinutes}분`}
+          description={`${focusStats.todayCompletedSessions}회 완료`}
+          icon={<TimerReset size={20} />}
+        />
+        <StatCard
+          title="가까운 D-Day"
+          value={nearestGoal ? getDdayLabel(nearestGoal.dueDate) : "-"}
+          description={nearestGoal?.title || "등록된 목표가 없습니다."}
+          icon={<Target size={20} />}
+        />
+        <StatCard
+          title="최근 회고"
+          value={recentReflection ? formatKoreanDate(recentReflection.date, "M월 d일") : "-"}
+          description={recentReflection ? recentReflection.content.split("\n")[0] : "작성된 회고가 없습니다."}
+          icon={<NotebookPen size={20} />}
+        />
       </section>
 
       <TodoForm onAdd={onAdd} compact submitLabel="빠른 추가" />
@@ -87,6 +120,8 @@ export function Dashboard({
             onToggle={onToggle}
             onDelete={onDelete}
             onUpdate={onUpdate}
+            onArchive={onArchive}
+            onFocusTodo={onFocusTodo}
             emptyTitle="오늘 할 일이 없습니다."
             emptyDescription="새로운 Todo를 추가해보세요."
             groupByCompletion

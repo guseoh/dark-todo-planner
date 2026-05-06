@@ -1,10 +1,12 @@
 import {
   addDays,
   addMonths,
+  differenceInCalendarDays,
   eachDayOfInterval,
   endOfMonth,
   endOfWeek,
   format,
+  getDay,
   isSameDay,
   isSameMonth,
   parseISO,
@@ -62,3 +64,11 @@ export const getNextMonth = (date: Date) => addMonths(date, 1);
 export const getPrevMonth = (date: Date) => subMonths(date, 1);
 
 export const weekdayLabels = ["월", "화", "수", "목", "금", "토", "일"];
+
+export const getDdayLabel = (dateKey: string) => {
+  const diff = differenceInCalendarDays(parseDateKey(dateKey), parseDateKey(todayKey()));
+  if (diff === 0) return "D-Day";
+  return diff > 0 ? `D-${diff}` : `D+${Math.abs(diff)}`;
+};
+
+export const getDayIndex = (date: Date) => getDay(date);

@@ -17,9 +17,11 @@ type TodayPageProps = {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
+  onArchive: (id: string) => void;
+  onFocusTodo: (todo: Todo) => void;
 };
 
-export function TodayPage({ todayTodos, stats, onAdd, onToggle, onDelete, onUpdate }: TodayPageProps) {
+export function TodayPage({ todayTodos, stats, onAdd, onToggle, onDelete, onUpdate, onArchive, onFocusTodo }: TodayPageProps) {
   return (
     <div className="space-y-6">
       <section>
@@ -41,6 +43,8 @@ export function TodayPage({ todayTodos, stats, onAdd, onToggle, onDelete, onUpda
         onToggle={onToggle}
         onDelete={onDelete}
         onUpdate={onUpdate}
+        onArchive={onArchive}
+        onFocusTodo={onFocusTodo}
         emptyTitle="오늘 할 일이 없습니다."
         emptyDescription="새로운 Todo를 추가해보세요."
         groupByCompletion

@@ -6,12 +6,15 @@ import { TodoList } from "../components/todo/TodoList";
 
 type AllTodosPageProps = {
   filterTodos: (filters: TodoFilters) => Todo[];
+  tagOptions: string[];
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
+  onArchive: (id: string) => void;
+  onFocusTodo: (todo: Todo) => void;
 };
 
-export function AllTodosPage({ filterTodos, onToggle, onDelete, onUpdate }: AllTodosPageProps) {
+export function AllTodosPage({ filterTodos, tagOptions, onToggle, onDelete, onUpdate, onArchive, onFocusTodo }: AllTodosPageProps) {
   const [filters, setFilters] = useState<TodoFilters>(defaultFilters);
   const filteredTodos = useMemo(() => filterTodos(filters), [filterTodos, filters]);
 
@@ -27,12 +30,14 @@ export function AllTodosPage({ filterTodos, onToggle, onDelete, onUpdate }: AllT
         </span>
       </section>
 
-      <TodoFilter filters={filters} onChange={setFilters} />
+      <TodoFilter filters={filters} onChange={setFilters} tagOptions={tagOptions} />
       <TodoList
         todos={filteredTodos}
         onToggle={onToggle}
         onDelete={onDelete}
         onUpdate={onUpdate}
+        onArchive={onArchive}
+        onFocusTodo={onFocusTodo}
         emptyTitle="아직 등록된 Todo가 없습니다."
         emptyDescription="검색 조건을 바꾸거나 새로운 Todo를 추가해보세요."
       />

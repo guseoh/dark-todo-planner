@@ -17,18 +17,21 @@ import { TodoList } from "../todo/TodoList";
 
 type MonthlyViewProps = {
   todos: Todo[];
+  getTodosByDate: (date: string) => Todo[];
   onAdd: (todo: TodoInput) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
+  onArchive: (id: string) => void;
+  onFocusTodo: (todo: Todo) => void;
 };
 
-export function MonthlyView({ todos, onAdd, onToggle, onDelete, onUpdate }: MonthlyViewProps) {
+export function MonthlyView({ todos, getTodosByDate, onAdd, onToggle, onDelete, onUpdate, onArchive, onFocusTodo }: MonthlyViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(todayKey());
   const selectedPanelRef = useRef<HTMLElement | null>(null);
   const monthDays = useMemo(() => getMonthGrid(currentMonth), [currentMonth]);
-  const selectedTodos = todos.filter((todo) => todo.date === selectedDate);
+  const selectedTodos = getTodosByDate(selectedDate);
 
   const selectDate = (dateKey: string) => {
     setSelectedDate(dateKey);
@@ -63,7 +66,7 @@ export function MonthlyView({ todos, onAdd, onToggle, onDelete, onUpdate }: Mont
         <div className="mt-1 grid grid-cols-7 gap-1 sm:gap-2">
           {monthDays.map((day) => {
             const dateKey = toDateKey(day);
-            const dayTodos = todos.filter((todo) => todo.date === dateKey);
+            const dayTodos = getTodosByDate(dateKey);
             const selected = dateKey === selectedDate;
             const today = isTodayDate(day);
             const inMonth = isCurrentMonth(day, currentMonth);
@@ -120,6 +123,8 @@ export function MonthlyView({ todos, onAdd, onToggle, onDelete, onUpdate }: Mont
             onToggle={onToggle}
             onDelete={onDelete}
             onUpdate={onUpdate}
+            onArchive={onArchive}
+            onFocusTodo={onFocusTodo}
             emptyTitle="선택한 날짜의 Todo가 없습니다."
             emptyDescription="달력에서 날짜를 고른 뒤 Todo를 추가해보세요."
             groupByCompletion
