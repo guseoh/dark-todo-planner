@@ -23,6 +23,7 @@ type SettingsPageProps = {
   onUpdateTimerSettings: (settings: Partial<TimerSettings>) => void;
   onRequestNotificationPermission: () => void;
   onLogout: () => Promise<void>;
+  apiStatus?: "online" | "offline";
 };
 
 const shortcutItems = [
@@ -52,6 +53,7 @@ export function SettingsPage({
   onUpdateTimerSettings,
   onRequestNotificationPermission,
   onLogout,
+  apiStatus = "online",
 }: SettingsPageProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [message, setMessage] = useState("");
@@ -145,7 +147,8 @@ export function SettingsPage({
         </button>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <StatCard title="저장 방식" value="Server DB" description={apiStatus === "online" ? "API 연결됨" : "API 연결 오류"} />
         <StatCard title="Todo" value={stats.total} />
         <StatCard title="카테고리" value={categories.length} />
         <StatCard title="회고 / 목표" value={`${reflections.length}/${goals.length}`} />

@@ -57,12 +57,9 @@ function App() {
   const content = {
     dashboard: (
       <Dashboard
-        todos={planner.todos}
         todayTodos={todayTodos}
         stats={planner.stats}
         focusStats={planner.focusStats}
-        nearestGoal={planner.nearestGoal}
-        recentReflection={planner.recentReflection}
         onAdd={planner.addTodo}
         onToggle={planner.toggleTodo}
         onDelete={planner.deleteTodo}
@@ -103,7 +100,6 @@ function App() {
         onArchive={planner.archiveTodo}
         onFocusTodo={focusTodo}
         onAddGoal={planner.addGoal}
-        onUpdateGoal={planner.updateGoal}
         onToggleGoal={planner.toggleGoal}
         onDeleteGoal={planner.deleteGoal}
         categories={planner.categories}
@@ -186,13 +182,14 @@ function App() {
         onUpdateTimerSettings={planner.updateTimerSettings}
         onRequestNotificationPermission={timer.requestNotificationPermission}
         onLogout={auth.logout}
+        apiStatus={planner.error ? "offline" : "online"}
       />
     ),
   } satisfies Record<AppView, JSX.Element>;
 
   return (
     <div className="min-h-screen pb-24 lg:pb-0">
-      <Header todoCount={planner.todos.length} storageStatus={planner.error ? "offline" : "server"} />
+      <Header storageStatus={planner.error ? "offline" : "server"} />
       <div className="mx-auto flex max-w-7xl gap-8 px-4 py-6 sm:px-6 lg:px-8">
         <Sidebar activeView={activeView} onChangeView={setActiveView} />
         <main className="min-w-0 flex-1 space-y-4">

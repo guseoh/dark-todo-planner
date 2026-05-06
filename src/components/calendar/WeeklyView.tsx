@@ -21,7 +21,6 @@ type WeeklyViewProps = {
   onArchive: (id: string) => void;
   onFocusTodo: (todo: Todo) => void;
   onAddGoal: (input: Partial<Goal> & { title: string }) => void;
-  onUpdateGoal: (id: string, updates: Partial<Omit<Goal, "id" | "createdAt">>) => void;
   onToggleGoal: (id: string) => void;
   onDeleteGoal: (id: string) => void;
   categories?: Category[];
@@ -34,7 +33,6 @@ export function WeeklyView({
   focusStats,
   onAdd,
   onAddGoal,
-  onUpdateGoal,
   onToggleGoal,
   onDeleteGoal,
   categories = [],
@@ -52,9 +50,10 @@ export function WeeklyView({
       (!goal.weekStartDate || goal.weekStartDate <= weekEnd) &&
       (!goal.weekEndDate || goal.weekEndDate >= weekStart),
   );
+  const getGoalProgress = (goal: Goal) => Math.min(100, Math.max(0, goal.completed ? 100 : goal.progress));
   const completedWeeklyGoals = weeklyGoals.filter((goal) => goal.completed).length;
   const weeklyGoalRate = weeklyGoals.length
-    ? Math.round(weeklyGoals.reduce((sum, goal) => sum + goal.progress, 0) / weeklyGoals.length)
+    ? Math.round(weeklyGoals.reduce((sum, goal) => sum + getGoalProgress(goal), 0) / weeklyGoals.length)
     : 0;
 
   const submitGoal = (event: FormEvent) => {
@@ -119,7 +118,7 @@ export function WeeklyView({
             <div className="space-y-2">
               {weeklyGoals.map((goal) => (
                 <article key={goal.id} className={`rounded-lg border border-ink-700 bg-ink-950/45 p-3 ${goal.completed ? "opacity-60" : ""}`}>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                       <div className="flex min-w-0 items-center gap-2">
                         <button
@@ -133,31 +132,22 @@ export function WeeklyView({
                           <CheckCircle2 size={13} />
                         </button>
                         <h4 className={`truncate font-semibold text-ink-100 ${goal.completed ? "line-through" : ""}`}>{goal.title}</h4>
-                        <span className="rounded-full border border-ink-700 bg-ink-900 px-2 py-0.5 text-[11px] text-ink-300">
-                          {goal.progress}%
-                        </span>
                       </div>
                       {goal.description ? <p className="mt-1 line-clamp-1 text-xs text-ink-500">{goal.description}</p> : null}
                     </div>
-                    <button
-                      type="button"
-                      className="icon-btn min-h-8 min-w-8 rounded-md hover:border-danger hover:text-red-100"
-                      onClick={() => window.confirm("주간 목표를 삭제할까요?") && onDeleteGoal(goal.id)}
-                      aria-label="주간 목표 삭제"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_160px] sm:items-center">
-                    <ProgressBar value={goal.progress} label="" />
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={goal.progress}
-                      onChange={(event) => onUpdateGoal(goal.id, { progress: Number(event.target.value) })}
-                      className="w-full accent-accent-500"
-                    />
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className="rounded-full border border-accent-500/35 bg-accent-500/15 px-2 py-0.5 text-xs font-bold text-indigo-100">
+                        {getGoalProgress(goal)}%
+                      </span>
+                      <button
+                        type="button"
+                        className="icon-btn min-h-8 min-w-8 rounded-md hover:border-danger hover:text-red-100"
+                        onClick={() => window.confirm("주간 목표를 삭제할까요?") && onDeleteGoal(goal.id)}
+                        aria-label="주간 목표 삭제"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 </article>
               ))}

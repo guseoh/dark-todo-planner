@@ -41,13 +41,13 @@ export function TodayPage({
   onDeleteCategory,
 }: TodayPageProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <section>
         <h2 className="text-2xl font-bold text-ink-100 sm:text-3xl">오늘 보기</h2>
         <p className="mt-2 text-sm text-ink-400">오늘 날짜에 등록된 Todo만 모아봅니다.</p>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard title="전체" value={stats.todayTotal} icon={<ListChecks size={20} />} />
         <StatCard title="완료" value={stats.todayCompleted} icon={<CheckCircle2 size={20} />} />
         <StatCard title="미완료" value={stats.todayActive} icon={<CircleDot size={20} />} />

@@ -1,14 +1,11 @@
-import { CalendarCheck2, Database } from "lucide-react";
+import { AlertCircle, CalendarCheck2 } from "lucide-react";
 import { formatKoreanDate } from "../../lib/date";
 
 type HeaderProps = {
-  todoCount: number;
   storageStatus?: "server" | "offline";
 };
 
-export function Header({ todoCount, storageStatus = "server" }: HeaderProps) {
-  const storageLabel = storageStatus === "offline" ? "오프라인 / 로컬 모드" : "Server DB";
-
+export function Header({ storageStatus = "server" }: HeaderProps) {
   return (
     <header className="sticky top-0 z-30 border-b border-ink-700/70 bg-ink-950/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
@@ -21,11 +18,12 @@ export function Header({ todoCount, storageStatus = "server" }: HeaderProps) {
             <p className="truncate text-xs text-ink-400 sm:text-sm">{formatKoreanDate(new Date(), "yyyy년 M월 d일 EEEE")}</p>
           </div>
         </div>
-        <div className="hidden items-center gap-2 rounded-lg border border-ink-700 bg-ink-800 px-3 py-2 text-sm text-ink-400 sm:flex">
-          <Database size={16} />
-          <span>{storageLabel}</span>
-          <span className="text-ink-100">{todoCount}개</span>
-        </div>
+        {storageStatus === "offline" ? (
+          <div className="hidden items-center gap-2 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm font-semibold text-red-100 sm:flex">
+            <AlertCircle size={16} />
+            <span>서버 연결 오류</span>
+          </div>
+        ) : null}
       </div>
     </header>
   );
