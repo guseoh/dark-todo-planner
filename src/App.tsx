@@ -10,7 +10,6 @@ import { AllTodosPage } from "./pages/AllTodosPage";
 import { ArchivePage } from "./pages/ArchivePage";
 import { AuthPage } from "./pages/AuthPage";
 import { Dashboard } from "./pages/Dashboard";
-import { GoalsPage } from "./pages/GoalsPage";
 import { MonthPage } from "./pages/MonthPage";
 import { ReflectionPage } from "./pages/ReflectionPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -83,6 +82,11 @@ function App() {
         onArchive={planner.archiveTodo}
         onFocusTodo={focusTodo}
         categories={planner.categories}
+        goals={planner.goals}
+        onAddGoal={planner.addGoal}
+        onUpdateGoal={planner.updateGoal}
+        onToggleGoal={planner.toggleGoal}
+        onDeleteGoal={planner.deleteGoal}
         onAddCategory={planner.addCategory}
         onUpdateCategory={planner.updateCategory}
         onDeleteCategory={planner.deleteCategory}
@@ -100,6 +104,7 @@ function App() {
         onArchive={planner.archiveTodo}
         onFocusTodo={focusTodo}
         onAddGoal={planner.addGoal}
+        onUpdateGoal={planner.updateGoal}
         onToggleGoal={planner.toggleGoal}
         onDeleteGoal={planner.deleteGoal}
         categories={planner.categories}
@@ -118,6 +123,10 @@ function App() {
         onFocusTodo={focusTodo}
         categories={planner.categories}
         goals={planner.goals}
+        onAddGoal={planner.addGoal}
+        onUpdateGoal={planner.updateGoal}
+        onToggleGoal={planner.toggleGoal}
+        onDeleteGoal={planner.deleteGoal}
         onAddCategory={planner.addCategory}
         onUpdateCategory={planner.updateCategory}
         onDeleteCategory={planner.deleteCategory}
@@ -146,15 +155,6 @@ function App() {
         onAdd={planner.addReflection}
         onUpdate={planner.updateReflection}
         onDelete={planner.deleteReflection}
-      />
-    ),
-    goals: (
-      <GoalsPage
-        goals={planner.goals}
-        onAdd={planner.addGoal}
-        onUpdate={planner.updateGoal}
-        onToggle={planner.toggleGoal}
-        onDelete={planner.deleteGoal}
       />
     ),
     archive: (

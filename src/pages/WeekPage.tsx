@@ -16,6 +16,7 @@ type WeekPageProps = {
   onArchive: (id: string) => void;
   onFocusTodo: (todo: Todo) => void;
   onAddGoal: (input: Partial<Goal> & { title: string }) => void;
+  onUpdateGoal: (id: string, updates: Partial<Omit<Goal, "id" | "createdAt">>) => void;
   onToggleGoal: (id: string) => void;
   onDeleteGoal: (id: string) => void;
   categories?: Category[];
@@ -33,6 +34,7 @@ export function WeekPage({
   onArchive,
   onFocusTodo,
   onAddGoal,
+  onUpdateGoal,
   onToggleGoal,
   onDeleteGoal,
   categories = [],
@@ -55,6 +57,7 @@ export function WeekPage({
         onArchive={onArchive}
         onFocusTodo={onFocusTodo}
         onAddGoal={onAddGoal}
+        onUpdateGoal={onUpdateGoal}
         onToggleGoal={onToggleGoal}
         onDeleteGoal={onDeleteGoal}
         categories={categories}

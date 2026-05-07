@@ -3,6 +3,7 @@ import { getMonthGrid, todayKey } from "../../lib/date";
 import type { Todo, TodoInput } from "../../types/todo";
 import type { Category } from "../../types/category";
 import type { Goal } from "../../types/goal";
+import { DAY_STATUS_GOAL_TITLE, getDayStatusGoal } from "../../lib/goals";
 import { MonthlyCalendar } from "../monthly/MonthlyCalendar";
 import { MonthlySidePanel } from "../monthly/MonthlySidePanel";
 
@@ -17,6 +18,10 @@ type MonthlyViewProps = {
   onFocusTodo: (todo: Todo) => void;
   categories?: Category[];
   goals?: Goal[];
+  onAddGoal: (input: Partial<Goal> & { title: string }) => void;
+  onUpdateGoal: (id: string, updates: Partial<Omit<Goal, "id" | "createdAt">>) => void;
+  onToggleGoal: (id: string) => void;
+  onDeleteGoal: (id: string) => void;
   onAddCategory: (input: { name: string; description?: string; color?: string }) => void | Promise<void>;
   onUpdateCategory: (id: string, input: Partial<Category>) => void | Promise<void>;
   onDeleteCategory: (id: string, mode: "moveTodos" | "deleteTodos") => void | Promise<void>;
@@ -33,6 +38,10 @@ export function MonthlyView({
   onFocusTodo,
   categories = [],
   goals = [],
+  onAddGoal,
+  onUpdateGoal,
+  onToggleGoal,
+  onDeleteGoal,
   onAddCategory,
   onUpdateCategory,
   onDeleteCategory,
@@ -42,6 +51,26 @@ export function MonthlyView({
   const selectedPanelRef = useRef<HTMLDivElement | null>(null);
   const monthDays = useMemo(() => getMonthGrid(currentMonth), [currentMonth]);
   const selectedTodos = getTodosByDate(selectedDate);
+
+  const cycleDayStatus = (dateKey: string) => {
+    const statusGoal = getDayStatusGoal(goals, dateKey);
+    if (!statusGoal) {
+      onAddGoal({
+        title: DAY_STATUS_GOAL_TITLE,
+        type: "DAILY",
+        targetDate: dateKey,
+        dueDate: dateKey,
+        progress: 100,
+        completed: true,
+      });
+      return;
+    }
+    if (statusGoal.completed) {
+      onToggleGoal(statusGoal.id);
+      return;
+    }
+    onDeleteGoal(statusGoal.id);
+  };
 
   const selectDate = (dateKey: string) => {
     setSelectedDate(dateKey);
@@ -62,19 +91,26 @@ export function MonthlyView({
         getTodosByDate={getTodosByDate}
         onMonthChange={setCurrentMonth}
         onSelectDate={selectDate}
+        onCycleDayStatus={cycleDayStatus}
       />
 
       <div ref={selectedPanelRef}>
         <MonthlySidePanel
+          currentMonth={currentMonth}
           selectedDate={selectedDate}
           selectedTodos={selectedTodos}
           categories={categories}
+          goals={goals}
           onAdd={onAdd}
           onToggle={onToggle}
           onDelete={onDelete}
           onUpdate={onUpdate}
           onArchive={onArchive}
           onFocusTodo={onFocusTodo}
+          onAddGoal={onAddGoal}
+          onUpdateGoal={onUpdateGoal}
+          onToggleGoal={onToggleGoal}
+          onDeleteGoal={onDeleteGoal}
           onAddCategory={onAddCategory}
           onUpdateCategory={onUpdateCategory}
           onDeleteCategory={onDeleteCategory}

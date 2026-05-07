@@ -72,3 +72,16 @@ export const getDdayLabel = (dateKey: string) => {
 };
 
 export const getDayIndex = (date: Date) => getDay(date);
+
+const fixedKoreanHolidays: Record<string, string> = {
+  "01-01": "신정",
+  "03-01": "삼일절",
+  "05-05": "어린이날",
+  "06-06": "현충일",
+  "08-15": "광복절",
+  "10-03": "개천절",
+  "10-09": "한글날",
+  "12-25": "성탄절",
+};
+
+export const getKoreanHolidayName = (dateKey: string) => fixedKoreanHolidays[dateKey.slice(5)];

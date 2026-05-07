@@ -14,6 +14,10 @@ type MonthPageProps = {
   onFocusTodo: (todo: Todo) => void;
   categories?: Category[];
   goals?: Goal[];
+  onAddGoal: (input: Partial<Goal> & { title: string }) => void;
+  onUpdateGoal: (id: string, updates: Partial<Omit<Goal, "id" | "createdAt">>) => void;
+  onToggleGoal: (id: string) => void;
+  onDeleteGoal: (id: string) => void;
   onAddCategory: (input: { name: string; description?: string; color?: string }) => void | Promise<void>;
   onUpdateCategory: (id: string, input: Partial<Category>) => void | Promise<void>;
   onDeleteCategory: (id: string, mode: "moveTodos" | "deleteTodos") => void | Promise<void>;
@@ -30,6 +34,10 @@ export function MonthPage({
   onFocusTodo,
   categories = [],
   goals = [],
+  onAddGoal,
+  onUpdateGoal,
+  onToggleGoal,
+  onDeleteGoal,
   onAddCategory,
   onUpdateCategory,
   onDeleteCategory,
@@ -51,6 +59,10 @@ export function MonthPage({
         onFocusTodo={onFocusTodo}
         categories={categories}
         goals={goals}
+        onAddGoal={onAddGoal}
+        onUpdateGoal={onUpdateGoal}
+        onToggleGoal={onToggleGoal}
+        onDeleteGoal={onDeleteGoal}
         onAddCategory={onAddCategory}
         onUpdateCategory={onUpdateCategory}
         onDeleteCategory={onDeleteCategory}

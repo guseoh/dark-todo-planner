@@ -8,7 +8,6 @@ import {
   LayoutDashboard,
   ListChecks,
   Settings,
-  Target,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
@@ -22,7 +21,6 @@ export type AppView =
   | "all"
   | "timer"
   | "reflection"
-  | "goals"
   | "archive"
   | "settings";
 
@@ -39,7 +37,6 @@ const navItems = [
   { id: "all", label: "전체 Todo", icon: ListChecks },
   { id: "timer", label: "타이머", icon: Clock3 },
   { id: "reflection", label: "회고", icon: NotebookPen },
-  { id: "goals", label: "목표", icon: Target },
   { id: "archive", label: "보관함", icon: Archive },
   { id: "settings", label: "설정", icon: Settings },
 ] satisfies Array<{ id: AppView; label: string; icon: typeof LayoutDashboard }>;

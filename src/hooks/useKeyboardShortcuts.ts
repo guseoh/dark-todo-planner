@@ -38,7 +38,6 @@ export function useKeyboardShortcuts({
         m: "month",
         a: "all",
         r: "reflection",
-        g: "goals",
         f: "timer",
       };
       const nextView = viewMap[key];
