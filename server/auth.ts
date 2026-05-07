@@ -1,64 +1,35 @@
 import type { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
 import { prisma } from "./db";
 
-const COOKIE_NAME = "dtp_session";
-const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET;
-
-if (!JWT_SECRET && process.env.NODE_ENV === "production") {
-  throw new Error("JWT_SECRET 환경 변수가 필요합니다.");
-}
-
-const sessionSecret = JWT_SECRET || "dev-only-change-this-secret";
-
-const cookieSecure =
-  process.env.COOKIE_SECURE === "true" ||
-  (process.env.COOKIE_SECURE !== "false" && process.env.NODE_ENV === "production");
-
-type SessionPayload = {
-  userId: string;
-};
+const DEFAULT_USER_EMAIL = "single-user@dark-todo-planner.local";
 
 export type AuthenticatedRequest = Request & {
   userId: string;
 };
 
-export const signSession = (userId: string) =>
-  jwt.sign({ userId } satisfies SessionPayload, sessionSecret, { expiresIn: "14d" });
+export const ensureDefaultUser = async () => {
+  const existingUser = await prisma.user.findFirst({
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  if (existingUser) return existingUser;
 
-export const setSessionCookie = (res: Response, token: string) => {
-  res.cookie(COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: cookieSecure,
-    maxAge: 14 * 24 * 60 * 60 * 1000,
-    path: "/",
+  return prisma.user.create({
+    data: {
+      email: DEFAULT_USER_EMAIL,
+      passwordHash: "single-user-mode",
+      nickname: "개인 사용자",
+    },
+    select: { id: true },
   });
 };
 
-export const clearSessionCookie = (res: Response) => {
-  res.clearCookie(COOKIE_NAME, { path: "/" });
-};
-
 export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
-  const token = req.cookies?.[COOKIE_NAME];
-  if (!token) return res.status(401).json({ message: "로그인이 필요합니다." });
-
   try {
-    const payload = jwt.verify(token, sessionSecret) as SessionPayload;
-    const user = await prisma.user.findUnique({ where: { id: payload.userId }, select: { id: true } });
-    if (!user) return res.status(401).json({ message: "유효하지 않은 세션입니다." });
+    const user = await ensureDefaultUser();
     (req as AuthenticatedRequest).userId = user.id;
     return next();
-  } catch {
-    return res.status(401).json({ message: "세션이 만료되었거나 유효하지 않습니다." });
+  } catch (error) {
+    return next(error);
   }
 };
-
-export const toSafeUser = (user: { id: string; email: string; nickname: string | null; createdAt: Date; updatedAt: Date }) => ({
-  id: user.id,
-  email: user.email,
-  nickname: user.nickname,
-  createdAt: user.createdAt.toISOString(),
-  updatedAt: user.updatedAt.toISOString(),
-});

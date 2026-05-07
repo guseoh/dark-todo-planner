@@ -2,12 +2,10 @@ import { useCallback, useMemo, useState } from "react";
 import { ErrorState, LoadingState } from "./components/common/LoadingState";
 import { Header } from "./components/layout/Header";
 import { AppView, Sidebar } from "./components/layout/Sidebar";
-import { useAuth } from "./hooks/useAuth";
 import { usePlannerData } from "./hooks/usePlannerData";
 import { usePomodoroTimer } from "./hooks/usePomodoroTimer";
 import { AllTodosPage } from "./pages/AllTodosPage";
 import { ArchivePage } from "./pages/ArchivePage";
-import { AuthPage } from "./pages/AuthPage";
 import { Dashboard } from "./pages/Dashboard";
 import { MonthPage } from "./pages/MonthPage";
 import { ReflectionPage } from "./pages/ReflectionPage";
@@ -18,7 +16,6 @@ import { WeekPage } from "./pages/WeekPage";
 import type { Todo } from "./types/todo";
 
 function App() {
-  const auth = useAuth();
   const [activeView, setActiveView] = useState<AppView>("dashboard");
   const planner = usePlannerData();
   const timer = usePomodoroTimer(planner.addFocusSession, planner.timerSettings, planner.updateTimerSettings);
@@ -33,18 +30,6 @@ function App() {
     },
     [timer],
   );
-
-  if (auth.loading) {
-    return (
-      <div className="min-h-screen p-6">
-        <LoadingState message="로그인 상태를 확인하는 중입니다." />
-      </div>
-    );
-  }
-
-  if (!auth.user) {
-    return <AuthPage onLogin={auth.login} onRegister={auth.register} error={auth.error} />;
-  }
 
   const content = {
     dashboard: (
@@ -173,7 +158,6 @@ function App() {
         onMigrateLocalStorage={planner.migrateLocalStorage}
         onUpdateTimerSettings={planner.updateTimerSettings}
         onRequestNotificationPermission={timer.requestNotificationPermission}
-        onLogout={auth.logout}
         apiStatus={planner.error ? "offline" : "online"}
       />
     ),
@@ -182,7 +166,7 @@ function App() {
   return (
     <div className="min-h-screen pb-24 lg:pb-0">
       <Header storageStatus={planner.error ? "offline" : "server"} />
-      <div className="mx-auto flex max-w-7xl gap-8 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-[1600px] gap-5 px-4 py-5 sm:px-5 lg:px-6">
         <Sidebar activeView={activeView} onChangeView={setActiveView} />
         <main className="min-w-0 flex-1 space-y-4">
           {planner.loading ? <LoadingState /> : null}

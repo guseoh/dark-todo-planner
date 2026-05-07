@@ -8,7 +8,7 @@ type HeaderProps = {
 export function Header({ storageStatus = "server" }: HeaderProps) {
   return (
     <header className="sticky top-0 z-30 border-b border-ink-700/70 bg-ink-950/90 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-4 px-4 py-4 sm:px-5 lg:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-accent-500 text-white">
             <CalendarCheck2 size={22} />

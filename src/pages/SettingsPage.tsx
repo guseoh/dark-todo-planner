@@ -1,5 +1,5 @@
 import { ChangeEvent, useEffect, useRef, useState } from "react";
-import { Bell, Download, ExternalLink, LogOut, Music2, RotateCcw, Trash2, Upload, Volume2 } from "lucide-react";
+import { Bell, Download, ExternalLink, Music2, RotateCcw, Trash2, Upload, Volume2 } from "lucide-react";
 import type { Category } from "../types/category";
 import type { FocusMusicLink, FocusMusicProvider } from "../types/focusMusic";
 import type { FocusSession, TimerSettings } from "../types/timer";
@@ -22,7 +22,6 @@ type SettingsPageProps = {
   onMigrateLocalStorage: (data: unknown) => Promise<void>;
   onUpdateTimerSettings: (settings: Partial<TimerSettings>) => void;
   onRequestNotificationPermission: () => void;
-  onLogout: () => Promise<void>;
   apiStatus?: "online" | "offline";
 };
 
@@ -64,7 +63,6 @@ export function SettingsPage({
   onMigrateLocalStorage,
   onUpdateTimerSettings,
   onRequestNotificationPermission,
-  onLogout,
   apiStatus = "online",
 }: SettingsPageProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -178,19 +176,15 @@ export function SettingsPage({
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <section>
         <div>
           <h2 className="text-2xl font-bold text-ink-100 sm:text-3xl">설정</h2>
-          <p className="mt-2 text-sm text-ink-400">서버 DB, 백업, 타이머 설정, 집중 음악 링크를 관리합니다.</p>
+          <p className="mt-2 text-sm text-ink-400">단일 사용자 모드, 서버 DB, 백업, 타이머 설정, 집중 음악 링크를 관리합니다.</p>
         </div>
-        <button type="button" className="btn-secondary" onClick={onLogout}>
-          <LogOut size={18} />
-          로그아웃
-        </button>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <StatCard title="저장 방식" value="Server DB" description={apiStatus === "online" ? "API 연결됨" : "API 연결 오류"} />
+        <StatCard title="사용 모드" value="단일 사용자" description={apiStatus === "online" ? "Server DB 연결됨" : "API 연결 오류"} />
         <StatCard title="Todo" value={stats.total} />
         <StatCard title="카테고리" value={categories.length} />
         <StatCard title="회고 / 목표" value={`${reflections.length}/${goals.length}`} />
@@ -206,7 +200,7 @@ export function SettingsPage({
       <section className="app-card p-5">
         <h3 className="text-lg font-bold text-ink-100">서버 데이터 관리</h3>
         <p className="mt-2 text-sm leading-6 text-ink-400">
-          현재 데이터는 LocalStorage가 아니라 로그인한 사용자의 SQLite DB에 저장됩니다. GitHub Pages만으로는 이 서버 기능을 사용할 수 없습니다.
+          현재 데이터는 LocalStorage가 아니라 단일 사용자 default user 기준의 SQLite DB에 저장됩니다. GitHub Pages만으로는 이 서버 기능을 사용할 수 없습니다.
         </p>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <button type="button" className="btn-secondary" onClick={exportJson}><Download size={18} />JSON 내보내기</button>

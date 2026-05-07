@@ -1,10 +1,8 @@
 import "dotenv/config";
-import cookieParser from "cookie-parser";
 import express, { type NextFunction, type Request, type Response } from "express";
 import path from "node:path";
-import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { clearSessionCookie, requireAuth, setSessionCookie, signSession, toSafeUser, type AuthenticatedRequest } from "./auth";
+import { requireAuth, type AuthenticatedRequest } from "./auth";
 import { importBackupForUser } from "./backup";
 import { prisma } from "./db";
 import {
@@ -30,7 +28,6 @@ const isProduction = process.env.NODE_ENV === "production";
 const clientUrl = process.env.CLIENT_URL || process.env.CLIENT_ORIGIN || "http://localhost:5173";
 
 app.use(express.json({ limit: "4mb" }));
-app.use(cookieParser());
 
 if (!isProduction) {
   app.use((req, res, next) => {
@@ -62,12 +59,6 @@ const asyncHandler =
   };
 
 const paramId = (req: Request) => String(req.params.id);
-
-const authSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-  nickname: z.string().optional(),
-});
 
 const defaultTimerSettings = {
   focusMinutes: 25,
@@ -110,56 +101,6 @@ app.get(
   asyncHandler(async (_req, res) => {
     await prisma.$queryRaw`SELECT 1`;
     return res.json({ status: "ok", database: "connected" });
-  }),
-);
-
-app.post(
-  "/api/auth/register",
-  asyncHandler(async (req, res) => {
-    const input = authSchema.parse(req.body);
-    const exists = await prisma.user.findUnique({ where: { email: input.email } });
-    if (exists) return res.status(409).json({ message: "이미 가입된 이메일입니다." });
-
-    const passwordHash = await bcrypt.hash(input.password, 12);
-    const user = await prisma.user.create({
-      data: {
-        email: input.email,
-        passwordHash,
-        nickname: input.nickname?.trim() || undefined,
-        timerSettings: { create: defaultTimerSettings },
-      },
-    });
-    setSessionCookie(res, signSession(user.id));
-    return res.status(201).json({ user: toSafeUser(user) });
-  }),
-);
-
-app.post(
-  "/api/auth/login",
-  asyncHandler(async (req, res) => {
-    const input = authSchema.omit({ nickname: true }).parse(req.body);
-    const user = await prisma.user.findUnique({ where: { email: input.email } });
-    if (!user) return res.status(401).json({ message: "이메일 또는 비밀번호가 올바르지 않습니다." });
-
-    const ok = await bcrypt.compare(input.password, user.passwordHash);
-    if (!ok) return res.status(401).json({ message: "이메일 또는 비밀번호가 올바르지 않습니다." });
-
-    setSessionCookie(res, signSession(user.id));
-    return res.json({ user: toSafeUser(user) });
-  }),
-);
-
-app.post("/api/auth/logout", (_req, res) => {
-  clearSessionCookie(res);
-  res.json({ ok: true });
-});
-
-app.get(
-  "/api/auth/me",
-  requireAuth,
-  asyncHandler<AuthenticatedRequest>(async (req, res) => {
-    const user = await prisma.user.findUniqueOrThrow({ where: { id: req.userId } });
-    return res.json({ user: toSafeUser(user) });
   }),
 );
 
