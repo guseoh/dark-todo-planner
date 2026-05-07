@@ -18,7 +18,6 @@ type MonthlySidePanelProps = {
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   onArchive: (id: string) => void;
-  onFocusTodo: (todo: Todo) => void;
   onAddGoal: (input: Partial<Goal> & { title: string }) => void;
   onUpdateGoal: (id: string, updates: Partial<Omit<Goal, "id" | "createdAt">>) => void;
   onToggleGoal: (id: string) => void;
@@ -39,7 +38,6 @@ export function MonthlySidePanel({
   onDelete,
   onUpdate,
   onArchive,
-  onFocusTodo,
   onAddGoal,
   onUpdateGoal,
   onToggleGoal,
@@ -82,7 +80,6 @@ export function MonthlySidePanel({
           onDelete={onDelete}
           onUpdate={onUpdate}
           onArchive={onArchive}
-          onFocusTodo={onFocusTodo}
           onAddCategory={onAddCategory}
           onUpdateCategory={onUpdateCategory}
           onDeleteCategory={onDeleteCategory}

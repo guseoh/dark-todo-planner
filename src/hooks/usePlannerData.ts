@@ -2,11 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Category } from "../types/category";
 import { useBackup } from "./useBackup";
 import { useCategories } from "./useCategories";
-import { useFocusSessions } from "./useFocusSessions";
 import { useGoals } from "./useGoals";
 import { useReflections } from "./useReflections";
-import { useTimerSettings } from "./useTimerSettings";
 import { useTodos } from "./useTodos";
+import { useTopics } from "./useTopics";
 
 const getMessage = (error: unknown) => (error instanceof Error ? error.message : "요청 처리 중 오류가 발생했습니다.");
 
@@ -15,8 +14,7 @@ export function usePlannerData() {
   const todosState = useTodos();
   const reflectionsState = useReflections();
   const goalsState = useGoals();
-  const focusSessionsState = useFocusSessions();
-  const timerSettingsState = useTimerSettings();
+  const topicsState = useTopics();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -28,8 +26,7 @@ export function usePlannerData() {
         todosState.loadTodos(),
         reflectionsState.loadReflections(),
         goalsState.loadGoals(),
-        focusSessionsState.loadFocusSessions(),
-        timerSettingsState.loadTimerSettings(),
+        topicsState.loadTopics(),
       ]);
       setLoadError("");
     } catch (err) {
@@ -39,10 +36,9 @@ export function usePlannerData() {
     }
   }, [
     categoriesState.loadCategories,
-    focusSessionsState.loadFocusSessions,
     goalsState.loadGoals,
     reflectionsState.loadReflections,
-    timerSettingsState.loadTimerSettings,
+    topicsState.loadTopics,
     todosState.loadTodos,
   ]);
 
@@ -72,16 +68,14 @@ export function usePlannerData() {
       categoriesState.saving ||
       reflectionsState.saving ||
       goalsState.saving ||
-      focusSessionsState.saving ||
-      timerSettingsState.saving ||
+      topicsState.saving ||
       backupState.saving,
     [
       backupState.saving,
       categoriesState.saving,
-      focusSessionsState.saving,
       goalsState.saving,
       reflectionsState.saving,
-      timerSettingsState.saving,
+      topicsState.saving,
       todosState.saving,
     ],
   );
@@ -92,8 +86,7 @@ export function usePlannerData() {
     categoriesState.error ||
     reflectionsState.error ||
     goalsState.error ||
-    focusSessionsState.error ||
-    timerSettingsState.error ||
+    topicsState.error ||
     backupState.error;
 
   return {
@@ -104,13 +97,13 @@ export function usePlannerData() {
     tagOptions: todosState.tagOptions,
     reflections: reflectionsState.reflections,
     goals: goalsState.goals,
-    focusSessions: focusSessionsState.focusSessions,
-    timerSettings: timerSettingsState.timerSettings,
+    topics: topicsState.topics,
+    topicTags: topicsState.topicTags,
+    topicCounts: topicsState.topicCounts,
     loading,
     saving,
     error,
     stats: todosState.stats,
-    focusStats: focusSessionsState.focusStats,
     nearestGoal: goalsState.nearestGoal,
     recentReflection: reflectionsState.recentReflection,
     loadAll,
@@ -135,8 +128,12 @@ export function usePlannerData() {
     updateGoal: goalsState.updateGoal,
     toggleGoal: goalsState.toggleGoal,
     deleteGoal: goalsState.deleteGoal,
-    addFocusSession: focusSessionsState.addFocusSession,
-    updateTimerSettings: timerSettingsState.updateTimerSettings,
+    addTopic: topicsState.addTopic,
+    updateTopic: topicsState.updateTopic,
+    deleteTopic: topicsState.deleteTopic,
+    addTopicLink: topicsState.addTopicLink,
+    updateTopicLink: topicsState.updateTopicLink,
+    deleteTopicLink: topicsState.deleteTopicLink,
     exportBackup: backupState.exportBackup,
     importBackup: backupState.importBackup,
     migrateLocalStorage: backupState.migrateLocalStorage,

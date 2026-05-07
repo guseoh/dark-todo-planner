@@ -10,32 +10,14 @@ const parseTags = (tags?: unknown) =>
     ? Array.from(new Set(tags.map((tag) => String(tag).trim().replace(/^#/, "")).filter(Boolean)))
     : [];
 
-const defaultTimerSettings = {
-  focusMinutes: 25,
-  shortBreakMinutes: 5,
-  longBreakMinutes: 15,
-  sessionsBeforeLongBreak: 4,
-  soundEnabled: true,
-  notificationEnabled: false,
-};
-
-const normalizeTimerSettings = (settings: Record<string, any>) => ({
-  focusMinutes: Number(settings.focusMinutes) || defaultTimerSettings.focusMinutes,
-  shortBreakMinutes: Number(settings.shortBreakMinutes) || defaultTimerSettings.shortBreakMinutes,
-  longBreakMinutes: Number(settings.longBreakMinutes) || defaultTimerSettings.longBreakMinutes,
-  sessionsBeforeLongBreak:
-    Number(settings.sessionsBeforeLongBreak) || defaultTimerSettings.sessionsBeforeLongBreak,
-  soundEnabled: settings.soundEnabled !== false,
-  notificationEnabled: settings.notificationEnabled === true,
-});
-
 export const importBackupForUser = async (userId: string, data: Record<string, any>) => {
-  if (!data || !Array.isArray(data.todos)) {
+  if (!data || (data.todos !== undefined && !Array.isArray(data.todos))) {
     throw new Error("todos 배열이 필요합니다.");
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.focusSession.deleteMany({ where: { userId } });
+    await tx.topicLink.deleteMany({ where: { topic: { userId } } });
+    await tx.topic.deleteMany({ where: { userId } });
     await tx.todoTag.deleteMany({ where: { todo: { userId } } });
     await tx.todo.deleteMany({ where: { userId } });
     await tx.tag.deleteMany({ where: { userId } });
@@ -90,6 +72,47 @@ export const importBackupForUser = async (userId: string, data: Record<string, a
       }
     }
 
+    const topicIds = new Set<string>();
+    for (const topic of data.topics || []) {
+      if (!topic?.id || !topic?.title) continue;
+      topicIds.add(topic.id);
+      await tx.topic.create({
+        data: {
+          id: topic.id,
+          userId,
+          title: topic.title,
+          memo: normalizeOptional(topic.memo),
+          status: topic.status || "IDEA",
+          tagsJson: JSON.stringify(parseTags(topic.tags)),
+        },
+      });
+    }
+
+    const topicLinkMap = new Map<string, any>();
+    const collectTopicLink = (link: any) => {
+      if (!link?.url || !link?.topicId) return;
+      const key = link.id || `${link.topicId}:${link.url}`;
+      if (!topicLinkMap.has(key)) topicLinkMap.set(key, link);
+    };
+    (data.topicLinks || []).forEach(collectTopicLink);
+    (data.topics || []).forEach((topic: any) => {
+      if (!Array.isArray(topic?.links)) return;
+      topic.links.forEach((link: any) => collectTopicLink({ ...link, topicId: topic.id }));
+    });
+    const topicLinks = Array.from(topicLinkMap.values());
+    for (const link of topicLinks) {
+      if (!link?.url || !link?.topicId || !topicIds.has(link.topicId)) continue;
+      await tx.topicLink.create({
+        data: {
+          id: link.id || undefined,
+          topicId: link.topicId,
+          title: normalizeOptional(link.title),
+          url: String(link.url),
+          description: normalizeOptional(link.description),
+        },
+      });
+    }
+
     for (const reflection of data.reflections || []) {
       if (!reflection?.id || !reflection?.date) continue;
       const sections = Array.isArray(reflection.sections)
@@ -126,32 +149,6 @@ export const importBackupForUser = async (userId: string, data: Record<string, a
           progress: Math.min(100, Math.max(0, Number(goal.progress) || 0)),
           completed: !!goal.completed,
         },
-      });
-    }
-
-    for (const session of data.focusSessions || []) {
-      if (!session?.id || !session?.startedAt || !session?.endedAt) continue;
-      await tx.focusSession.create({
-        data: {
-          id: session.id,
-          userId,
-          todoId: session.todoId || null,
-          todoTitle: normalizeOptional(session.todoTitle),
-          mode: session.mode || "FOCUS",
-          durationMinutes: Number(session.durationMinutes) || 0,
-          startedAt: new Date(session.startedAt),
-          endedAt: new Date(session.endedAt),
-          completed: session.completed !== false,
-        },
-      });
-    }
-
-    if (data.timerSettings) {
-      const timerSettings = normalizeTimerSettings(data.timerSettings);
-      await tx.timerSettings.upsert({
-        where: { userId },
-        update: timerSettings,
-        create: { userId, ...timerSettings },
       });
     }
   });

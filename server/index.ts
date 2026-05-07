@@ -7,19 +7,19 @@ import { importBackupForUser } from "./backup";
 import { prisma } from "./db";
 import {
   serializeCategory,
-  serializeFocusSession,
   serializeGoal,
   serializeReflection,
-  serializeTimerSettings,
   serializeTodo,
+  serializeTopic,
+  serializeTopicLink,
 } from "./serializers";
 import {
   categoryInputSchema,
-  focusSessionInputSchema,
   goalInputSchema,
   reflectionInputSchema,
-  timerSettingsInputSchema,
   todoInputSchema,
+  topicInputSchema,
+  topicLinkInputSchema,
 } from "./validation";
 
 const app = express();
@@ -60,15 +60,6 @@ const asyncHandler =
 
 const paramId = (req: Request) => String(req.params.id);
 
-const defaultTimerSettings = {
-  focusMinutes: 25,
-  shortBreakMinutes: 5,
-  longBreakMinutes: 15,
-  sessionsBeforeLongBreak: 4,
-  soundEnabled: true,
-  notificationEnabled: false,
-};
-
 const normalizeOptional = (value?: string | null) => {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
@@ -94,6 +85,10 @@ const syncTodoTags = async (userId: string, todoId: string, tags: string[]) => {
 const todoInclude = {
   category: true,
   todoTags: { include: { tag: true } },
+} as const;
+
+const topicInclude = {
+  links: { orderBy: { createdAt: "asc" } },
 } as const;
 
 app.get(
@@ -550,84 +545,164 @@ app.delete(
 );
 
 app.get(
-  "/api/focus-sessions",
+  "/api/topics",
   requireAuth,
   asyncHandler<AuthenticatedRequest>(async (req, res) => {
-    const sessions = await prisma.focusSession.findMany({ where: { userId: req.userId }, orderBy: { endedAt: "desc" } });
-    return res.json({ focusSessions: sessions.map(serializeFocusSession) });
+    const { keyword, status, tag } = req.query;
+    const topics = await prisma.topic.findMany({
+      where: {
+        userId: req.userId,
+        ...(status === "IDEA" || status === "WRITING" || status === "DONE" ? { status } : {}),
+      },
+      include: topicInclude,
+      orderBy: { updatedAt: "desc" },
+    });
+    const normalizedKeyword = typeof keyword === "string" ? keyword.trim().toLowerCase() : "";
+    const normalizedTag = typeof tag === "string" ? tag.trim().replace(/^#/, "").toLowerCase() : "";
+    const filtered = topics.filter((topic) => {
+      const serialized = serializeTopic(topic);
+      const matchesKeyword = normalizedKeyword
+        ? `${serialized.title} ${serialized.memo || ""} ${serialized.tags.join(" ")} ${serialized.links
+            .map((link) => `${link.title || ""} ${link.url} ${link.description || ""}`)
+            .join(" ")}`
+            .toLowerCase()
+            .includes(normalizedKeyword)
+        : true;
+      const matchesTag = normalizedTag ? serialized.tags.some((item) => item.toLowerCase() === normalizedTag) : true;
+      return matchesKeyword && matchesTag;
+    });
+    return res.json({ topics: filtered.map(serializeTopic) });
   }),
 );
 
 app.post(
-  "/api/focus-sessions",
+  "/api/topics",
   requireAuth,
   asyncHandler<AuthenticatedRequest>(async (req, res) => {
-    const input = focusSessionInputSchema.parse(req.body);
-    if (input.todoId) {
-      const todo = await prisma.todo.findFirst({ where: { id: input.todoId, userId: req.userId } });
-      if (!todo) return res.status(400).json({ message: "연결할 Todo를 찾을 수 없습니다." });
-    }
-    const session = await prisma.focusSession.create({
+    const input = topicInputSchema.parse(req.body);
+    const topic = await prisma.topic.create({
       data: {
         userId: req.userId,
-        todoId: input.todoId || null,
-        todoTitle: normalizeOptional(input.todoTitle),
-        mode: input.mode,
-        durationMinutes: input.durationMinutes,
-        startedAt: new Date(input.startedAt),
-        endedAt: new Date(input.endedAt),
-        completed: input.completed,
+        title: input.title,
+        memo: normalizeOptional(input.memo),
+        status: input.status,
+        tagsJson: JSON.stringify(input.tags),
       },
+      include: topicInclude,
     });
-    return res.status(201).json({ focusSession: serializeFocusSession(session) });
+    return res.status(201).json({ topic: serializeTopic(topic) });
   }),
 );
 
 app.get(
-  "/api/timer-settings",
+  "/api/topics/:id",
   requireAuth,
   asyncHandler<AuthenticatedRequest>(async (req, res) => {
-    const settings = await prisma.timerSettings.upsert({
-      where: { userId: req.userId },
-      update: {},
-      create: { userId: req.userId, ...defaultTimerSettings },
-    });
-    return res.json({ timerSettings: serializeTimerSettings(settings) });
+    const topic = await prisma.topic.findFirst({ where: { id: paramId(req), userId: req.userId }, include: topicInclude });
+    if (!topic) return res.status(404).json({ message: "주제를 찾을 수 없습니다." });
+    return res.json({ topic: serializeTopic(topic) });
   }),
 );
 
 app.put(
-  "/api/timer-settings",
+  "/api/topics/:id",
   requireAuth,
   asyncHandler<AuthenticatedRequest>(async (req, res) => {
-    const input = timerSettingsInputSchema.parse(req.body);
-    const settings = await prisma.timerSettings.upsert({
-      where: { userId: req.userId },
-      update: input,
-      create: { userId: req.userId, ...input },
+    const input = topicInputSchema.parse(req.body);
+    const exists = await prisma.topic.findFirst({ where: { id: paramId(req), userId: req.userId } });
+    if (!exists) return res.status(404).json({ message: "주제를 찾을 수 없습니다." });
+    const topic = await prisma.topic.update({
+      where: { id: exists.id },
+      data: {
+        title: input.title,
+        memo: normalizeOptional(input.memo),
+        status: input.status,
+        tagsJson: JSON.stringify(input.tags),
+      },
+      include: topicInclude,
     });
-    return res.json({ timerSettings: serializeTimerSettings(settings) });
+    return res.json({ topic: serializeTopic(topic) });
+  }),
+);
+
+app.delete(
+  "/api/topics/:id",
+  requireAuth,
+  asyncHandler<AuthenticatedRequest>(async (req, res) => {
+    await prisma.topic.deleteMany({ where: { id: paramId(req), userId: req.userId } });
+    return res.json({ ok: true });
+  }),
+);
+
+app.post(
+  "/api/topics/:id/links",
+  requireAuth,
+  asyncHandler<AuthenticatedRequest>(async (req, res) => {
+    const topic = await prisma.topic.findFirst({ where: { id: paramId(req), userId: req.userId } });
+    if (!topic) return res.status(404).json({ message: "주제를 찾을 수 없습니다." });
+    const input = topicLinkInputSchema.parse(req.body);
+    const link = await prisma.topicLink.create({
+      data: {
+        topicId: topic.id,
+        title: normalizeOptional(input.title),
+        url: input.url,
+        description: normalizeOptional(input.description),
+      },
+    });
+    return res.status(201).json({ link: serializeTopicLink(link) });
+  }),
+);
+
+app.put(
+  "/api/topics/:id/links/:linkId",
+  requireAuth,
+  asyncHandler<AuthenticatedRequest>(async (req, res) => {
+    const link = await prisma.topicLink.findFirst({
+      where: { id: String(req.params.linkId), topic: { id: paramId(req), userId: req.userId } },
+    });
+    if (!link) return res.status(404).json({ message: "링크를 찾을 수 없습니다." });
+    const input = topicLinkInputSchema.parse(req.body);
+    const updated = await prisma.topicLink.update({
+      where: { id: link.id },
+      data: {
+        title: normalizeOptional(input.title),
+        url: input.url,
+        description: normalizeOptional(input.description),
+      },
+    });
+    return res.json({ link: serializeTopicLink(updated) });
+  }),
+);
+
+app.delete(
+  "/api/topics/:id/links/:linkId",
+  requireAuth,
+  asyncHandler<AuthenticatedRequest>(async (req, res) => {
+    await prisma.topicLink.deleteMany({
+      where: { id: String(req.params.linkId), topic: { id: paramId(req), userId: req.userId } },
+    });
+    return res.json({ ok: true });
   }),
 );
 
 const buildBackup = async (userId: string) => {
-  const [categories, todos, reflections, goals, focusSessions, timerSettings] = await Promise.all([
+  const [categories, todos, reflections, goals, topics] = await Promise.all([
     prisma.category.findMany({ where: { userId }, orderBy: [{ order: "asc" }] }),
     prisma.todo.findMany({ where: { userId }, include: todoInclude }),
     prisma.reflection.findMany({ where: { userId } }),
     prisma.goal.findMany({ where: { userId } }),
-    prisma.focusSession.findMany({ where: { userId } }),
-    prisma.timerSettings.findUnique({ where: { userId } }),
+    prisma.topic.findMany({ where: { userId }, include: topicInclude, orderBy: { updatedAt: "desc" } }),
   ]);
+  const serializedTopics = topics.map(serializeTopic);
   return {
-    version: 3,
+    version: 4,
     exportedAt: new Date().toISOString(),
     categories: categories.map(serializeCategory),
     todos: todos.map(serializeTodo),
     reflections: reflections.map(serializeReflection),
     goals: goals.map(serializeGoal),
-    focusSessions: focusSessions.map(serializeFocusSession),
-    timerSettings: timerSettings ? serializeTimerSettings(timerSettings) : defaultTimerSettings,
+    topics: serializedTopics,
+    topicLinks: serializedTopics.flatMap((topic) => topic.links),
   };
 };
 
@@ -643,9 +718,9 @@ app.post(
   "/api/backup/import",
   requireAuth,
   asyncHandler<AuthenticatedRequest>(async (req, res) => {
-    if (!req.body || !Array.isArray(req.body.todos)) return res.status(400).json({ message: "todos 배열이 필요합니다." });
+    if (!req.body || (req.body.todos !== undefined && !Array.isArray(req.body.todos))) return res.status(400).json({ message: "todos 배열이 필요합니다." });
     const version = Number(req.body.version ?? 1);
-    if (!Number.isInteger(version) || version < 1 || version > 3) {
+    if (!Number.isInteger(version) || version < 1 || version > 4) {
       return res.status(400).json({ message: "지원하지 않는 백업 버전입니다." });
     }
     await importBackupForUser(req.userId, req.body);
@@ -657,8 +732,8 @@ app.post(
   "/api/migrate/local-storage",
   requireAuth,
   asyncHandler<AuthenticatedRequest>(async (req, res) => {
-    if (!req.body || !Array.isArray(req.body.todos)) return res.status(400).json({ message: "마이그레이션할 todos 배열이 필요합니다." });
-    await importBackupForUser(req.userId, { version: req.body.version || 3, ...req.body });
+    if (!req.body || (req.body.todos !== undefined && !Array.isArray(req.body.todos))) return res.status(400).json({ message: "마이그레이션할 todos 배열이 필요합니다." });
+    await importBackupForUser(req.userId, { version: req.body.version || 4, ...req.body });
     return res.json({ ok: true });
   }),
 );
@@ -683,5 +758,5 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 app.listen(port, () => {
-  console.log(`Dark Todo Planner listening on http://localhost:${port}`);
+  console.log(`Todo Planner listening on http://localhost:${port}`);
 });

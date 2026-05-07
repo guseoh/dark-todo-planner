@@ -1,6 +1,6 @@
-# Dark Todo Planner
+# Todo Planner
 
-매일 브라우저에서 쓰기 위한 개인용 다크모드 Todo / Planner입니다. 현재 버전은 단일 사용자 모드이며, Express 서버 하나가 React 정적 파일과 `/api` 요청을 함께 처리하고 Prisma + SQLite에 데이터를 저장합니다.
+개인용으로 매일 쓰기 위한 다크모드 Todo / Planner입니다. 현재 버전은 단일 사용자 모드이며, Express 서버 하나가 React 정적 파일과 `/api` 요청을 함께 처리하고 Prisma + SQLite에 데이터를 저장합니다.
 
 ## 기술 스택
 
@@ -28,14 +28,43 @@
 
 - 앱 접속 시 바로 대시보드 진입
 - 단일 사용자 default user 기반 데이터 저장
-- Todo / Category / Reflection / Goal / FocusSession / TimerSettings 서버 저장
-- 카테고리별 Todo 구조
+- Todo / Category / Reflection / Goal / Topic 서버 저장
+- 카테고리별 Todo 보드
 - JSON 백업 / 복원
 - LocalStorage 데이터 서버 마이그레이션
 
+## 주요 기능
+
+- Todo 등록, 수정, 삭제, 완료 처리
+- 카테고리 생성, 수정, 삭제, 카테고리별 Todo 관리
+- 카테고리 없는 Todo는 `미분류`로 표시
+- 오늘 / 주간 / 월간 / 전체 Todo 보기
+- 일간 / 주간 / 월간 목표
+- 회고 섹션 템플릿
+- 주제 보관함
+- 반복 Todo, 태그, 보관함
+- 검색, 완료 여부, 우선순위, 날짜, 반복, 보관, 카테고리 필터
+- JSON 백업 / 복원
+- LocalStorage 데이터 서버 마이그레이션
+- 로딩 / 에러 상태와 Todo 완료 낙관적 업데이트
+
+## 주제 보관함
+
+작업하거나 공부하다가 떠오른 블로그 글감, 공부 주제, 참고 링크를 저장하는 공간입니다.
+
+저장할 수 있는 내용:
+
+- 주제 제목
+- 메모
+- 상태: 아이디어 / 작성 중 / 완료
+- 태그
+- 참고 링크 목록
+
+링크는 앱 안에서 직접 콘텐츠를 가져오거나 재생하지 않고, 새 탭으로 여는 방식만 제공합니다.
+
 ## 단일 사용자 모드
 
-이 프로젝트는 개인용으로 쓰기 쉽도록 로그인/회원가입 화면을 제거했습니다. 서버는 요청이 들어오면 내부 default user를 자동으로 준비하고, 모든 Todo와 카테고리, 목표, 회고, 집중 기록을 그 userId로 저장합니다.
+이 프로젝트는 개인용으로 쓰기 쉽도록 로그인/회원가입 화면을 제거했습니다. 서버는 요청이 들어오면 내부 default user를 자동으로 준비하고, 모든 Todo와 카테고리, 목표, 회고, 주제를 그 userId로 저장합니다.
 
 기존 DB 호환을 위해 `User` 모델과 각 데이터의 `userId` 관계는 유지합니다. 이미 사용자가 있는 DB라면 가장 먼저 생성된 사용자를 default user처럼 사용하고, 사용자가 없다면 서버가 자동으로 하나를 생성합니다.
 
@@ -173,16 +202,6 @@ NODE_ENV=production
 
 `/api/*`는 Express API가 처리합니다. 그 외 요청은 `dist/index.html`로 fallback되어 새로고침이나 직접 URL 접근 시 404가 나지 않도록 했습니다.
 
-## CORS 설정
-
-production에서는 React와 API가 같은 Express origin에서 제공되므로 CORS에 의존하지 않습니다.
-
-development에서는 `CLIENT_URL`과 일치하는 origin만 허용합니다.
-
-- `Access-Control-Allow-Headers: Content-Type, Authorization`
-- `Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS`
-- GitHub Pages 프론트 + 별도 API 서버 구조는 CORS와 API origin 설정이 더 복잡하므로 기본 권장 방식이 아닙니다.
-
 ## Prisma DB 생성 방법
 
 ```bash
@@ -215,7 +234,7 @@ DATABASE_URL="file:../data/prod.db"
 - `data/*.db`와 journal 파일은 Git에 올리지 않습니다.
 - SQLite는 로컬 PC, 개인 VPS, 단일 서버에서 쓰기 간단한 개인용 저장소에 적합합니다.
 - Render/Railway 같은 PaaS에서는 재배포나 재시작 시 SQLite 파일이 유지되는지 반드시 확인해야 합니다.
-- 영구 디스크를 설정하지 않으면 DB 파일이 사라져 Todo, 목표, 회고 데이터가 유실될 수 있습니다.
+- 영구 디스크를 설정하지 않으면 DB 파일이 사라져 Todo, 목표, 회고, 주제 데이터가 유실될 수 있습니다.
 - 장기 운영에서는 JSON 백업을 주기적으로 내려받거나 서버 파일 백업을 자동화하는 것을 권장합니다.
 - 여러 기기에서 오래 사용할 계획이라면 PostgreSQL 전환을 고려하세요.
 
@@ -254,15 +273,11 @@ NODE_ENV=production
 
 Railway에서 SQLite 파일 저장이 영구적으로 유지되는지 확인해야 합니다. 장기적으로는 Railway PostgreSQL을 사용하는 것이 더 안정적일 수 있습니다.
 
-운영 DB를 유지하면서 스키마를 바꿀 때는 `db:push`보다 `db:deploy`를 사용하는 것이 안전합니다. 단, `db:deploy`는 `prisma/migrations` 폴더에 migration 파일이 있을 때 의미가 있습니다.
-
 ## PostgreSQL 전환 안내
 
 SQLite는 개인용 로컬이나 VPS에서는 간단하고 좋지만, 서버 재배포 시 파일 유지가 중요한 환경에서는 주의가 필요합니다.
 
 Render/Railway 같은 환경에서 장기적으로 사용할 경우 PostgreSQL로 전환하는 것이 더 안정적입니다. Prisma를 사용하고 있으므로 `DATABASE_URL`과 `provider`를 변경하면 PostgreSQL 전환이 가능합니다.
-
-PostgreSQL로 전환하면 파일 유실 걱정은 줄어들지만, 백업과 migration 관리는 계속 필요합니다. 개인용으로도 중요한 일정 데이터라면 JSON 백업 기능과 DB 백업을 함께 사용하는 것이 좋습니다.
 
 ## API Health Check
 
@@ -278,22 +293,6 @@ curl http://localhost:3000/api/health
   "database": "connected"
 }
 ```
-
-## 주요 기능
-
-- Todo 등록, 수정, 삭제, 완료 처리
-- 카테고리 생성, 수정, 삭제, 카테고리별 Todo 관리
-- 카테고리 없는 Todo는 `미분류`로 표시
-- 오늘 / 주간 / 월간 / 전체 Todo 보기
-- 반복 Todo, 태그, 보관함
-- 검색, 완료 여부, 우선순위, 날짜, 반복, 보관, 카테고리 필터
-- 회고 섹션 템플릿
-- 일간 / 주간 / 월간 목표
-- 타이머 / 뽀모도로와 집중 세션 기록
-- 집중 음악 링크 저장과 새 탭 열기
-- JSON 백업 / 복원
-- LocalStorage 데이터 서버 마이그레이션
-- 로딩 / 에러 상태와 Todo 완료 낙관적 업데이트
 
 ## API 목록
 
@@ -319,22 +318,35 @@ curl http://localhost:3000/api/health
 - `PATCH /api/todos/:id/unarchive`
 - `PATCH /api/todos/reorder`
 
-### Reflections / Goals / Timer / Backup
+### Reflections
 
 - `GET /api/reflections`
 - `POST /api/reflections`
 - `PUT /api/reflections/:id`
 - `DELETE /api/reflections/:id`
+
+### Goals
+
 - `GET /api/goals`
 - `POST /api/goals`
 - `GET /api/goals/:id`
 - `PUT /api/goals/:id`
 - `PATCH /api/goals/:id/toggle`
 - `DELETE /api/goals/:id`
-- `GET /api/focus-sessions`
-- `POST /api/focus-sessions`
-- `GET /api/timer-settings`
-- `PUT /api/timer-settings`
+
+### Topics
+
+- `GET /api/topics`
+- `POST /api/topics`
+- `GET /api/topics/:id`
+- `PUT /api/topics/:id`
+- `DELETE /api/topics/:id`
+- `POST /api/topics/:id/links`
+- `PUT /api/topics/:id/links/:linkId`
+- `DELETE /api/topics/:id/links/:linkId`
+
+### Backup
+
 - `GET /api/backup/export`
 - `POST /api/backup/import`
 - `POST /api/migrate/local-storage`
@@ -365,16 +377,19 @@ scripts
  ┗ write-server-dist-package.cjs
 src
  ┣ components
+ ┃ ┣ calendar
+ ┃ ┣ common
+ ┃ ┣ goal
+ ┃ ┣ layout
  ┃ ┣ monthly
- ┃ ┣ todo
+ ┃ ┗ todo
  ┣ hooks
  ┃ ┣ usePlannerData.ts      # 도메인 hook 조합
  ┃ ┣ useTodos.ts            # Todo 조회/수정/필터/통계
  ┃ ┣ useCategories.ts       # 카테고리 CRUD
  ┃ ┣ useReflections.ts      # 회고 CRUD
  ┃ ┣ useGoals.ts            # 목표 CRUD
- ┃ ┣ useFocusSessions.ts    # 집중 기록과 통계
- ┃ ┣ useTimerSettings.ts    # 타이머 설정
+ ┃ ┣ useTopics.ts           # 주제 보관함 CRUD
  ┃ ┗ useBackup.ts           # JSON 백업/복원/마이그레이션
  ┣ lib
  ┣ pages
@@ -383,10 +398,6 @@ src
  ┣ App.tsx
  ┗ main.tsx
 ```
-
-## 집중 음악 링크
-
-YouTube Music, YouTube, Melon, Spotify 같은 음악 서비스는 앱 안에서 직접 재생하거나 제어하지 않습니다. 공식 API 제약, 약관, 저작권 이슈를 피하기 위해 설정 페이지에서 플레이리스트 이름과 URL만 저장하고, 필요할 때 새 탭으로 여는 방식으로 사용합니다.
 
 ## 추후 개선 사항
 
@@ -399,7 +410,7 @@ YouTube Music, YouTube, Melon, Spotify 같은 음악 서비스는 앱 안에서 
 ### 2순위
 
 - PostgreSQL 전환: 가능. 장기 배포나 PaaS 환경에서는 SQLite보다 안정적입니다. Prisma provider와 `DATABASE_URL`을 변경하고 migration을 새로 적용해야 합니다.
-- 통계 차트: 가능. Todo 완료율, 카테고리별 완료율, 집중 시간 등을 차트로 볼 수 있습니다. 대시보드가 무거워지지 않도록 별도 통계 페이지로 분리하는 것이 좋습니다.
+- 통계 차트: 가능. Todo 완료율, 카테고리별 완료율, 주제 작성 상태 등을 차트로 볼 수 있습니다. 대시보드가 무거워지지 않도록 별도 통계 페이지로 분리하는 것이 좋습니다.
 
 ### 3순위
 

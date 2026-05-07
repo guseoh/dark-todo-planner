@@ -3,7 +3,7 @@ import {
   CalendarRange,
   CheckSquare,
   Archive,
-  Clock3,
+  BookOpenText,
   NotebookPen,
   LayoutDashboard,
   ListChecks,
@@ -19,8 +19,8 @@ export type AppView =
   | "week"
   | "month"
   | "all"
-  | "timer"
   | "reflection"
+  | "topics"
   | "archive"
   | "settings";
 
@@ -35,8 +35,8 @@ const navItems = [
   { id: "week", label: "주간", icon: CalendarRange },
   { id: "month", label: "월간", icon: CalendarDays },
   { id: "all", label: "전체 Todo", icon: ListChecks },
-  { id: "timer", label: "타이머", icon: Clock3 },
   { id: "reflection", label: "회고", icon: NotebookPen },
+  { id: "topics", label: "주제 보관함", icon: BookOpenText },
   { id: "archive", label: "보관함", icon: Archive },
   { id: "settings", label: "설정", icon: Settings },
 ] satisfies Array<{ id: AppView; label: string; icon: typeof LayoutDashboard }>;

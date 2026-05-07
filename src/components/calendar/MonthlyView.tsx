@@ -15,7 +15,6 @@ type MonthlyViewProps = {
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   onArchive: (id: string) => void;
-  onFocusTodo: (todo: Todo) => void;
   categories?: Category[];
   goals?: Goal[];
   onAddGoal: (input: Partial<Goal> & { title: string }) => void;
@@ -35,7 +34,6 @@ export function MonthlyView({
   onDelete,
   onUpdate,
   onArchive,
-  onFocusTodo,
   categories = [],
   goals = [],
   onAddGoal,
@@ -82,7 +80,7 @@ export function MonthlyView({
   };
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.82fr)] 2xl:grid-cols-[minmax(0,1.9fr)_minmax(320px,0.75fr)]">
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,1.75fr)_minmax(340px,0.82fr)] 2xl:grid-cols-[minmax(0,1.95fr)_minmax(360px,0.75fr)]">
       <MonthlyCalendar
         currentMonth={currentMonth}
         monthDays={monthDays}
@@ -106,7 +104,6 @@ export function MonthlyView({
           onDelete={onDelete}
           onUpdate={onUpdate}
           onArchive={onArchive}
-          onFocusTodo={onFocusTodo}
           onAddGoal={onAddGoal}
           onUpdateGoal={onUpdateGoal}
           onToggleGoal={onToggleGoal}

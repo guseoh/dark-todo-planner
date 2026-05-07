@@ -1,8 +1,12 @@
-import type { Category, FocusSession, Goal, Reflection, Tag, TimerSettings, Todo, TodoTag } from "@prisma/client";
+import type { Category, Goal, Reflection, Tag, Todo, TodoTag, Topic, TopicLink } from "@prisma/client";
 
 type TodoWithRelations = Todo & {
   category?: Category | null;
   todoTags?: Array<TodoTag & { tag: Tag }>;
+};
+
+export type TopicWithLinks = Topic & {
+  links?: TopicLink[];
 };
 
 const toIso = (date: Date | null | undefined) => (date ? date.toISOString() : undefined);
@@ -80,17 +84,33 @@ export const serializeGoal = (goal: Goal) => ({
   updatedAt: goal.updatedAt.toISOString(),
 });
 
-export const serializeFocusSession = (session: FocusSession) => ({
-  ...session,
-  todoId: session.todoId || undefined,
-  todoTitle: session.todoTitle || undefined,
-  startedAt: session.startedAt.toISOString(),
-  endedAt: session.endedAt.toISOString(),
-  createdAt: session.createdAt.toISOString(),
+const parseTopicTags = (tagsJson: string) => {
+  try {
+    const parsed = JSON.parse(tagsJson);
+    return Array.isArray(parsed) ? parsed.map((tag) => String(tag).trim()).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const serializeTopicLink = (link: TopicLink) => ({
+  id: link.id,
+  topicId: link.topicId,
+  title: link.title || undefined,
+  url: link.url,
+  description: link.description || undefined,
+  createdAt: link.createdAt.toISOString(),
+  updatedAt: link.updatedAt.toISOString(),
 });
 
-export const serializeTimerSettings = (settings: TimerSettings) => ({
-  ...settings,
-  createdAt: settings.createdAt.toISOString(),
-  updatedAt: settings.updatedAt.toISOString(),
+export const serializeTopic = (topic: TopicWithLinks) => ({
+  id: topic.id,
+  userId: topic.userId,
+  title: topic.title,
+  memo: topic.memo || undefined,
+  status: topic.status,
+  tags: parseTopicTags(topic.tagsJson),
+  links: topic.links?.map(serializeTopicLink) || [],
+  createdAt: topic.createdAt.toISOString(),
+  updatedAt: topic.updatedAt.toISOString(),
 });

@@ -1,4 +1,4 @@
-import { CheckCheck, ListTodo, TimerReset, TrendingUp } from "lucide-react";
+import { CheckCheck, ListTodo, TrendingUp } from "lucide-react";
 import { formatKoreanDate } from "../lib/date";
 import type { Category } from "../types/category";
 import type { Todo, TodoInput } from "../types/todo";
@@ -17,16 +17,11 @@ type DashboardProps = {
     todayRate: number;
     weekRate: number;
   };
-  focusStats: {
-    todayMinutes: number;
-    todayCompletedSessions: number;
-  };
   onAdd: (todo: TodoInput) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   onArchive: (id: string) => void;
-  onFocusTodo: (todo: Todo) => void;
   categories?: Category[];
   onAddCategory: (input: { name: string; description?: string; color?: string }) => void | Promise<void>;
   onUpdateCategory: (id: string, input: Partial<Category>) => void | Promise<void>;
@@ -36,13 +31,11 @@ type DashboardProps = {
 export function Dashboard({
   todayTodos,
   stats,
-  focusStats,
   onAdd,
   onToggle,
   onDelete,
   onUpdate,
   onArchive,
-  onFocusTodo,
   categories = [],
   onAddCategory,
   onUpdateCategory,
@@ -87,7 +80,7 @@ export function Dashboard({
         <h2 className="text-2xl font-bold text-ink-100 sm:text-3xl">오늘의 계획</h2>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard
           title="오늘 완료율"
           value={`${stats.todayRate}%`}
@@ -107,12 +100,6 @@ export function Dashboard({
           description="이번 주 기준"
           icon={<TrendingUp size={20} />}
           progress={stats.weekRate}
-        />
-        <StatCard
-          title="오늘 집중 시간"
-          value={`${focusStats.todayMinutes}분`}
-          description={`${focusStats.todayCompletedSessions}회 완료`}
-          icon={<TimerReset size={20} />}
         />
       </section>
 
@@ -161,7 +148,6 @@ export function Dashboard({
           onDelete={onDelete}
           onUpdate={onUpdate}
           onArchive={onArchive}
-          onFocusTodo={onFocusTodo}
           onAddCategory={onAddCategory}
           onUpdateCategory={onUpdateCategory}
           onDeleteCategory={onDeleteCategory}

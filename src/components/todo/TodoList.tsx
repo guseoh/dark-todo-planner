@@ -13,7 +13,6 @@ type TodoListProps = {
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   onArchive?: (id: string) => void;
   onUnarchive?: (id: string) => void;
-  onFocusTodo?: (todo: Todo) => void;
   categories?: Category[];
   emptyTitle: string;
   emptyDescription?: string;
@@ -28,7 +27,6 @@ export function TodoList({
   onUpdate,
   onArchive,
   onUnarchive,
-  onFocusTodo,
   categories = [],
   emptyTitle,
   emptyDescription,
@@ -55,7 +53,6 @@ export function TodoList({
           onEdit={setEditingTodo}
           onArchive={onArchive}
           onUnarchive={onUnarchive}
-          onFocusTodo={onFocusTodo}
           showDate={showDate}
         />
       ))}

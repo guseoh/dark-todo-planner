@@ -1,4 +1,4 @@
-import { Archive, CalendarDays, CheckCircle2, Pencil, Play, RotateCcw, Trash2 } from "lucide-react";
+import { Archive, CalendarDays, CheckCircle2, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { formatKoreanDate } from "../../lib/date";
 import { repeatLabel } from "../../lib/todo";
 import type { Todo } from "../../types/todo";
@@ -11,7 +11,6 @@ type TodoItemProps = {
   onEdit: (todo: Todo) => void;
   onArchive?: (id: string) => void;
   onUnarchive?: (id: string) => void;
-  onFocusTodo?: (todo: Todo) => void;
   showDate?: boolean;
 };
 
@@ -22,7 +21,6 @@ export function TodoItem({
   onEdit,
   onArchive,
   onUnarchive,
-  onFocusTodo,
   showDate = true,
 }: TodoItemProps) {
   const handleDelete = () => {
@@ -88,11 +86,6 @@ export function TodoItem({
         </div>
 
         <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-          {onFocusTodo && !todo.archived ? (
-            <button type="button" className="icon-btn" onClick={() => onFocusTodo(todo)} aria-label="집중 시작">
-              <Play size={16} />
-            </button>
-          ) : null}
           {todo.archived && onUnarchive ? (
             <button type="button" className="icon-btn" onClick={() => onUnarchive(todo.id)} aria-label="보관 해제">
               <RotateCcw size={16} />

@@ -13,15 +13,11 @@ import { TodoForm } from "../todo/TodoForm";
 type WeeklyViewProps = {
   todos: Todo[];
   getTodosByDate: (date: string) => Todo[];
-  focusStats?: {
-    weekMinutes: number;
-  };
   onAdd: (todo: TodoInput) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   onArchive: (id: string) => void;
-  onFocusTodo: (todo: Todo) => void;
   onAddGoal: (input: Partial<Goal> & { title: string }) => void;
   onUpdateGoal: (id: string, updates: Partial<Omit<Goal, "id" | "createdAt">>) => void;
   onToggleGoal: (id: string) => void;
@@ -33,13 +29,11 @@ type WeeklyViewProps = {
 export function WeeklyView({
   todos,
   getTodosByDate,
-  focusStats,
   onAdd,
   onToggle,
   onDelete,
   onUpdate,
   onArchive,
-  onFocusTodo,
   onAddGoal,
   onUpdateGoal,
   onToggleGoal,
@@ -64,13 +58,12 @@ export function WeeklyView({
 
   return (
     <div className="space-y-5">
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           { label: "이번 주", value: `${formatKoreanDate(weekStart, "M.d")} ~ ${formatKoreanDate(weekEnd, "M.d")}` },
           { label: "주간 목표", value: `${weeklyGoals.length}개` },
           { label: "완료 / 미완료", value: `${completedWeeklyGoals} / ${activeWeeklyGoals}` },
           { label: "Todo 완료율", value: `${weekRate}%` },
-          { label: "집중 시간", value: `${focusStats?.weekMinutes || 0}분` },
         ].map((item) => (
           <article key={item.label} className="app-card p-3">
             <p className="text-xs font-semibold text-ink-500">{item.label}</p>
@@ -168,7 +161,6 @@ export function WeeklyView({
             onDelete={onDelete}
             onUpdate={onUpdate}
             onArchive={onArchive}
-            onFocusTodo={onFocusTodo}
             emptyTitle="선택한 날짜의 Todo가 없습니다."
             emptyDescription="아래 빠른 추가로 계획을 넣을 수 있습니다."
             showDate={false}

@@ -6,15 +6,11 @@ import { WeeklyView } from "../components/calendar/WeeklyView";
 type WeekPageProps = {
   weekTodos: Todo[];
   getTodosByDate: (date: string) => Todo[];
-  focusStats?: {
-    weekMinutes: number;
-  };
   onAdd: (todo: TodoInput) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   onArchive: (id: string) => void;
-  onFocusTodo: (todo: Todo) => void;
   onAddGoal: (input: Partial<Goal> & { title: string }) => void;
   onUpdateGoal: (id: string, updates: Partial<Omit<Goal, "id" | "createdAt">>) => void;
   onToggleGoal: (id: string) => void;
@@ -26,13 +22,11 @@ type WeekPageProps = {
 export function WeekPage({
   weekTodos,
   getTodosByDate,
-  focusStats,
   onAdd,
   onToggle,
   onDelete,
   onUpdate,
   onArchive,
-  onFocusTodo,
   onAddGoal,
   onUpdateGoal,
   onToggleGoal,
@@ -49,13 +43,11 @@ export function WeekPage({
       <WeeklyView
         todos={weekTodos}
         getTodosByDate={getTodosByDate}
-        focusStats={focusStats}
         onAdd={onAdd}
         onToggle={onToggle}
         onDelete={onDelete}
         onUpdate={onUpdate}
         onArchive={onArchive}
-        onFocusTodo={onFocusTodo}
         onAddGoal={onAddGoal}
         onUpdateGoal={onUpdateGoal}
         onToggleGoal={onToggleGoal}

@@ -22,7 +22,6 @@ type GroupedTodoListProps = {
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   onArchive?: (id: string) => void;
   onUnarchive?: (id: string) => void;
-  onFocusTodo?: (todo: Todo) => void;
   onAddCategory?: (input: { name: string; description?: string; color?: string }) => void | Promise<void>;
   onUpdateCategory?: (id: string, input: Partial<Category>) => void | Promise<void>;
   onDeleteCategory?: (id: string, mode: "moveTodos" | "deleteTodos") => void | Promise<void>;
@@ -100,7 +99,6 @@ export function GroupedTodoList({
   onUpdate,
   onArchive,
   onUnarchive,
-  onFocusTodo,
   onAddCategory,
   onUpdateCategory,
   onDeleteCategory,
@@ -194,7 +192,6 @@ export function GroupedTodoList({
                   onDelete={onDelete}
                   onArchive={onArchive}
                   onUnarchive={onUnarchive}
-                  onFocusTodo={onFocusTodo}
                   onEditTodo={setEditingTodo}
                   variant={layout === "board" ? "card" : "plain"}
                 />

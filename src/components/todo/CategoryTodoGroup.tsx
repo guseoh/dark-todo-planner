@@ -31,7 +31,6 @@ type CategoryTodoGroupProps = {
   onDelete: (id: string) => void;
   onArchive?: (id: string) => void;
   onUnarchive?: (id: string) => void;
-  onFocusTodo?: (todo: Todo) => void;
   onEditTodo: (todo: Todo) => void;
   variant?: "card" | "plain";
 };
@@ -52,7 +51,6 @@ export function CategoryTodoGroup({
   onDelete,
   onArchive,
   onUnarchive,
-  onFocusTodo,
   onEditTodo,
   variant = "card",
 }: CategoryTodoGroupProps) {
@@ -112,7 +110,6 @@ export function CategoryTodoGroup({
                   onEdit={onEditTodo}
                   onArchive={onArchive}
                   onUnarchive={onUnarchive}
-                  onFocusTodo={onFocusTodo}
                   showDate={showDate}
                   showCategoryBadge={false}
                 />

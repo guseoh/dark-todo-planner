@@ -20,6 +20,7 @@ model User {
   tags          Tag[]
   reflections   Reflection[]
   goals         Goal[]
+  topics        Topic[]
   focusSessions FocusSession[]
   timerSettings TimerSettings?
 }
@@ -123,6 +124,32 @@ model Goal {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model Topic {
+  id        String      @id @default(cuid())
+  userId    String
+  title     String
+  memo      String?
+  status    TopicStatus @default(IDEA)
+  tagsJson  String      @default("[]")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  links TopicLink[]
+}
+
+model TopicLink {
+  id          String   @id @default(cuid())
+  topicId     String
+  title       String?
+  url         String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+}
+
 model FocusSession {
   id              String    @id @default(cuid())
   userId          String
@@ -179,6 +206,12 @@ enum GoalType {
   DAILY
   WEEKLY
   MONTHLY
+}
+
+enum TopicStatus {
+  IDEA
+  WRITING
+  DONE
 }
 
 enum TimerMode {

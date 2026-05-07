@@ -4,7 +4,7 @@ export const prioritySchema = z.enum(["LOW", "MEDIUM", "HIGH"]);
 export const repeatSchema = z.enum(["NONE", "DAILY", "WEEKLY", "MONTHLY", "WEEKDAY", "WEEKEND"]);
 export const reflectionTypeSchema = z.enum(["DAILY", "WEEKLY", "MONTHLY"]);
 export const goalTypeSchema = z.enum(["DAILY", "WEEKLY", "MONTHLY"]);
-export const timerModeSchema = z.enum(["FOCUS", "SHORT_BREAK", "LONG_BREAK"]);
+export const topicStatusSchema = z.enum(["IDEA", "WRITING", "DONE"]);
 
 export const tagsSchema = z
   .array(z.string())
@@ -63,21 +63,15 @@ export const goalInputSchema = z.object({
   completed: z.boolean().optional(),
 });
 
-export const focusSessionInputSchema = z.object({
-  todoId: z.string().optional().nullable(),
-  todoTitle: z.string().optional().nullable(),
-  mode: timerModeSchema,
-  durationMinutes: z.number().int().min(0),
-  startedAt: z.string().datetime(),
-  endedAt: z.string().datetime(),
-  completed: z.boolean().default(true),
+export const topicInputSchema = z.object({
+  title: z.string().trim().min(1),
+  memo: z.string().optional().nullable(),
+  status: topicStatusSchema.default("IDEA"),
+  tags: tagsSchema,
 });
 
-export const timerSettingsInputSchema = z.object({
-  focusMinutes: z.number().int().min(1),
-  shortBreakMinutes: z.number().int().min(1),
-  longBreakMinutes: z.number().int().min(1),
-  sessionsBeforeLongBreak: z.number().int().min(1),
-  soundEnabled: z.boolean(),
-  notificationEnabled: z.boolean(),
+export const topicLinkInputSchema = z.object({
+  title: z.string().optional().nullable(),
+  url: z.string().url(),
+  description: z.string().optional().nullable(),
 });

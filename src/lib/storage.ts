@@ -1,18 +1,15 @@
 import type { BackupData } from "../types/backup";
 import type { Goal } from "../types/goal";
 import type { Reflection, ReflectionType } from "../types/reflection";
-import type { FocusSession, TimerMode, TimerSettings, TimerState } from "../types/timer";
-import { DEFAULT_TIMER_SETTINGS } from "../types/timer";
 import type { Todo, TodoPriority, TodoRepeat } from "../types/todo";
 import { LEGACY_STORAGE_KEYS, STORAGE_KEYS } from "./storageKeys";
 
 export const TODO_STORAGE_KEY = STORAGE_KEYS.TODOS;
-export const BACKUP_VERSION = 2;
+export const BACKUP_VERSION = 4;
 
 const priorities: TodoPriority[] = ["LOW", "MEDIUM", "HIGH"];
 const repeats: TodoRepeat[] = ["NONE", "DAILY", "WEEKLY", "MONTHLY", "WEEKDAY", "WEEKEND"];
 const reflectionTypes: ReflectionType[] = ["DAILY", "WEEKLY", "MONTHLY"];
-const timerModes: TimerMode[] = ["FOCUS", "SHORT_BREAK", "LONG_BREAK"];
 
 const isString = (value: unknown): value is string => typeof value === "string";
 const isNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
@@ -157,81 +154,14 @@ export const validateGoals = (value: unknown): Goal[] | null => {
   return normalized as Goal[];
 };
 
-export const normalizeFocusSession = (value: unknown): FocusSession | null => {
-  if (!value || typeof value !== "object") return null;
-  const session = value as Partial<FocusSession>;
-  if (
-    !isString(session.id) ||
-    !timerModes.includes(session.mode as TimerMode) ||
-    !isNumber(session.durationMinutes) ||
-    !isString(session.startedAt) ||
-    !isString(session.endedAt) ||
-    !isBoolean(session.completed)
-  ) {
-    return null;
-  }
-  return {
-    id: session.id,
-    todoId: normalizeOptional(session.todoId),
-    todoTitle: normalizeOptional(session.todoTitle),
-    mode: session.mode as TimerMode,
-    durationMinutes: Math.max(0, session.durationMinutes),
-    startedAt: session.startedAt,
-    endedAt: session.endedAt,
-    completed: session.completed,
-  };
-};
-
-export const validateFocusSessions = (value: unknown): FocusSession[] | null => {
-  if (!Array.isArray(value)) return null;
-  const normalized = value.map(normalizeFocusSession);
-  if (normalized.some((session) => session === null)) return null;
-  return normalized as FocusSession[];
-};
-
-export const normalizeTimerSettings = (value: unknown): TimerSettings => {
-  if (!value || typeof value !== "object") return DEFAULT_TIMER_SETTINGS;
-  const settings = value as Partial<TimerSettings>;
-  return {
-    focusMinutes: isNumber(settings.focusMinutes) ? Math.max(1, Math.round(settings.focusMinutes)) : DEFAULT_TIMER_SETTINGS.focusMinutes,
-    shortBreakMinutes: isNumber(settings.shortBreakMinutes) ? Math.max(1, Math.round(settings.shortBreakMinutes)) : DEFAULT_TIMER_SETTINGS.shortBreakMinutes,
-    longBreakMinutes: isNumber(settings.longBreakMinutes) ? Math.max(1, Math.round(settings.longBreakMinutes)) : DEFAULT_TIMER_SETTINGS.longBreakMinutes,
-    sessionsBeforeLongBreak: isNumber(settings.sessionsBeforeLongBreak)
-      ? Math.max(1, Math.round(settings.sessionsBeforeLongBreak))
-      : DEFAULT_TIMER_SETTINGS.sessionsBeforeLongBreak,
-    soundEnabled: isBoolean(settings.soundEnabled) ? settings.soundEnabled : DEFAULT_TIMER_SETTINGS.soundEnabled,
-    notificationEnabled: isBoolean(settings.notificationEnabled)
-      ? settings.notificationEnabled
-      : DEFAULT_TIMER_SETTINGS.notificationEnabled,
-  };
-};
-
-export const normalizeTimerState = (value: unknown, fallback: TimerState): TimerState => {
-  if (!value || typeof value !== "object") return fallback;
-  const state = value as Partial<TimerState>;
-  if (!timerModes.includes(state.mode as TimerMode) || !isBoolean(state.isRunning) || !isNumber(state.remainingSeconds)) {
-    return fallback;
-  }
-  return {
-    mode: state.mode as TimerMode,
-    isRunning: state.isRunning,
-    startedAt: normalizeOptional(state.startedAt),
-    pausedAt: normalizeOptional(state.pausedAt),
-    remainingSeconds: Math.max(0, Math.round(state.remainingSeconds)),
-    selectedTodoId: normalizeOptional(state.selectedTodoId),
-    selectedTodoTitle: normalizeOptional(state.selectedTodoTitle),
-    completedFocusCount: isNumber(state.completedFocusCount) ? Math.max(0, Math.round(state.completedFocusCount)) : 0,
-  };
-};
-
 export const buildBackupData = (input: Omit<BackupData, "version" | "exportedAt">): BackupData => ({
   version: BACKUP_VERSION,
   exportedAt: new Date().toISOString(),
   todos: input.todos,
   reflections: input.reflections || [],
   goals: input.goals || [],
-  focusSessions: input.focusSessions || [],
-  timerSettings: input.timerSettings,
+  topics: input.topics || [],
+  topicLinks: input.topicLinks || [],
 });
 
 export const validateBackupData = (value: unknown): { data?: BackupData; error?: string } => {
@@ -247,7 +177,7 @@ export const validateBackupData = (value: unknown): { data?: BackupData; error?:
     return { error: "지원하지 않는 백업 버전입니다." };
   }
 
-  const todos = validateTodos(backup.todos);
+  const todos = backup.todos === undefined ? [] : validateTodos(backup.todos);
   if (!todos) return { error: "todos 필드는 배열이어야 하며 Todo 구조가 올바라야 합니다." };
 
   const reflections = backup.reflections === undefined ? [] : validateReflections(backup.reflections);
@@ -256,9 +186,6 @@ export const validateBackupData = (value: unknown): { data?: BackupData; error?:
   const goals = backup.goals === undefined ? [] : validateGoals(backup.goals);
   if (!goals) return { error: "goals 데이터 구조가 올바르지 않습니다." };
 
-  const focusSessions = backup.focusSessions === undefined ? [] : validateFocusSessions(backup.focusSessions);
-  if (!focusSessions) return { error: "focusSessions 데이터 구조가 올바르지 않습니다." };
-
   return {
     data: {
       version,
@@ -266,8 +193,8 @@ export const validateBackupData = (value: unknown): { data?: BackupData; error?:
       todos,
       reflections,
       goals,
-      focusSessions,
-      timerSettings: normalizeTimerSettings(backup.timerSettings),
+      topics: Array.isArray(backup.topics) ? backup.topics : [],
+      topicLinks: Array.isArray(backup.topicLinks) ? backup.topicLinks : [],
     },
   };
 };
