@@ -3,7 +3,6 @@ import { ErrorState, LoadingState } from "./components/common/LoadingState";
 import { Header } from "./components/layout/Header";
 import { AppView, Sidebar } from "./components/layout/Sidebar";
 import { useAuth } from "./hooks/useAuth";
-import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { usePlannerData } from "./hooks/usePlannerData";
 import { usePomodoroTimer } from "./hooks/usePomodoroTimer";
 import { AllTodosPage } from "./pages/AllTodosPage";
@@ -34,12 +33,6 @@ function App() {
     },
     [timer],
   );
-
-  const focusQuickAdd = useCallback(() => {
-    document.querySelector<HTMLInputElement>("[data-quick-todo-input='true']")?.focus();
-  }, []);
-
-  useKeyboardShortcuts({ onChangeView: setActiveView, onFocusTodoInput: focusQuickAdd });
 
   if (auth.loading) {
     return (
@@ -169,7 +162,6 @@ function App() {
     ),
     settings: (
       <SettingsPage
-        todos={planner.allTodos}
         stats={planner.stats}
         categories={planner.categories}
         reflections={planner.reflections}

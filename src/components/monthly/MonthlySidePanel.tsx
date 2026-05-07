@@ -91,6 +91,7 @@ export function MonthlySidePanel({
           showDate={false}
           defaultDate={selectedDate}
           showCategoryCreator={false}
+          layout="list"
         />
       </section>
 

@@ -33,9 +33,12 @@ export function TodoEditModal({ todo, categories = [], onClose, onSave }: TodoEd
   }, [todo]);
 
   useEffect(() => {
-    const close = () => onClose();
-    if (todo) document.addEventListener("planner:escape", close);
-    return () => document.removeEventListener("planner:escape", close);
+    if (!todo) return undefined;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose, todo]);
 
   if (!todo) return null;
@@ -66,12 +69,6 @@ export function TodoEditModal({ todo, categories = [], onClose, onSave }: TodoEd
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-3 sm:items-center">
       <form
         onSubmit={handleSubmit}
-        onKeyDown={(event) => {
-          if (event.ctrlKey && event.key === "Enter") {
-            event.preventDefault();
-            saveTodo();
-          }
-        }}
         className="app-card w-full max-w-2xl p-5"
       >
         <div className="flex items-center justify-between gap-3">

@@ -174,6 +174,7 @@ export function WeeklyView({
             showDate={false}
             defaultDate={selectedDate}
             showCategoryCreator={false}
+            layout="list"
           />
           <div className="mt-4 border-t border-ink-700/70 pt-3">
             <div className="mb-2 flex items-center gap-2">

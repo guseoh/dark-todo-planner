@@ -1,16 +1,16 @@
-import { ChangeEvent, useRef, useState } from "react";
-import { Bell, Download, Keyboard, LogOut, RotateCcw, Upload, Volume2 } from "lucide-react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
+import { Bell, Download, ExternalLink, LogOut, Music2, RotateCcw, Trash2, Upload, Volume2 } from "lucide-react";
 import type { Category } from "../types/category";
+import type { FocusMusicLink, FocusMusicProvider } from "../types/focusMusic";
 import type { FocusSession, TimerSettings } from "../types/timer";
 import type { Goal } from "../types/goal";
 import type { Reflection } from "../types/reflection";
-import type { Todo } from "../types/todo";
 import { StatCard } from "../components/common/StatCard";
 import { STORAGE_KEYS } from "../lib/storageKeys";
 import { LEGACY_STORAGE_KEYS } from "../lib/storageKeys";
+import { createId } from "../lib/id";
 
 type SettingsPageProps = {
-  todos: Todo[];
   categories: Category[];
   stats: { total: number; completedTotal: number; archivedTotal: number };
   reflections: Reflection[];
@@ -26,20 +26,33 @@ type SettingsPageProps = {
   apiStatus?: "online" | "offline";
 };
 
-const shortcutItems = [
-  ["N", "새 Todo 입력창 포커스"],
-  ["T", "오늘 보기"],
-  ["W", "주간 보기"],
-  ["M", "월간 보기"],
-  ["A", "전체 Todo"],
-  ["R", "회고 페이지"],
-  ["F", "타이머 페이지"],
-  ["Esc", "모달 닫기"],
-  ["Ctrl + Enter", "저장"],
-];
+const providerLabel: Record<FocusMusicProvider, string> = {
+  YOUTUBE: "YouTube",
+  YOUTUBE_MUSIC: "YouTube Music",
+  MELON: "Melon",
+  SPOTIFY: "Spotify",
+  ETC: "기타",
+};
+
+const inferProvider = (url: string): FocusMusicProvider => {
+  const normalized = url.toLowerCase();
+  if (normalized.includes("music.youtube.com")) return "YOUTUBE_MUSIC";
+  if (normalized.includes("youtube.com") || normalized.includes("youtu.be")) return "YOUTUBE";
+  if (normalized.includes("melon.com")) return "MELON";
+  if (normalized.includes("spotify.com")) return "SPOTIFY";
+  return "ETC";
+};
+
+const readMusicLinks = () => {
+  if (typeof localStorage === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEYS.FOCUS_MUSIC_LINKS) || "[]") as FocusMusicLink[];
+  } catch {
+    return [];
+  }
+};
 
 export function SettingsPage({
-  todos,
   categories,
   stats,
   reflections,
@@ -57,6 +70,13 @@ export function SettingsPage({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [musicLinks, setMusicLinks] = useState<FocusMusicLink[]>(readMusicLinks);
+  const [musicTitle, setMusicTitle] = useState("");
+  const [musicUrl, setMusicUrl] = useState("");
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.FOCUS_MUSIC_LINKS, JSON.stringify(musicLinks));
+  }, [musicLinks]);
 
   const exportJson = async () => {
     try {
@@ -133,12 +153,35 @@ export function SettingsPage({
     onUpdateTimerSettings({ [key]: Number(value) } as Partial<TimerSettings>);
   };
 
+  const addMusicLink = () => {
+    const title = musicTitle.trim();
+    const url = musicUrl.trim();
+    if (!title || !url) return;
+    try {
+      const parsed = new URL(url);
+      const nextLink: FocusMusicLink = {
+        id: createId(),
+        title,
+        url: parsed.toString(),
+        provider: inferProvider(parsed.toString()),
+        createdAt: new Date().toISOString(),
+      };
+      setMusicLinks((current) => [nextLink, ...current]);
+      setMusicTitle("");
+      setMusicUrl("");
+      setMessage("집중 음악 링크를 저장했습니다.");
+      setError("");
+    } catch {
+      setError("올바른 URL을 입력해주세요.");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <section className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold text-ink-100 sm:text-3xl">설정</h2>
-          <p className="mt-2 text-sm text-ink-400">서버 DB, 백업, 타이머 설정, 단축키를 관리합니다.</p>
+          <p className="mt-2 text-sm text-ink-400">서버 DB, 백업, 타이머 설정, 집중 음악 링크를 관리합니다.</p>
         </div>
         <button type="button" className="btn-secondary" onClick={onLogout}>
           <LogOut size={18} />
@@ -193,14 +236,46 @@ export function SettingsPage({
       </section>
 
       <section className="app-card p-5">
-        <div className="flex items-center gap-2"><Keyboard size={18} className="text-accent-400" /><h3 className="text-lg font-bold text-ink-100">단축키</h3></div>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {shortcutItems.map(([key, description]) => (
-            <div key={key} className="flex items-center justify-between gap-3 rounded-lg border border-ink-700 bg-ink-950/45 px-3 py-2 text-sm">
-              <kbd className="rounded border border-ink-600 bg-ink-800 px-2 py-1 font-semibold text-ink-100">{key}</kbd>
-              <span className="text-right text-ink-400">{description}</span>
+        <div className="flex items-center gap-2"><Music2 size={18} className="text-accent-400" /><h3 className="text-lg font-bold text-ink-100">집중 음악 링크</h3></div>
+        <p className="mt-2 text-sm leading-6 text-ink-400">
+          음원을 앱 안에서 직접 재생하지 않고, YouTube Music, Melon, Spotify 같은 외부 플레이리스트 링크만 저장합니다. 링크는 이 브라우저의 LocalStorage에 보관됩니다.
+        </p>
+        <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_auto]">
+          <input className="field" value={musicTitle} onChange={(event) => setMusicTitle(event.target.value)} placeholder="예: Lo-fi 집중 플레이리스트" />
+          <input className="field" value={musicUrl} onChange={(event) => setMusicUrl(event.target.value)} placeholder="https://..." />
+          <button type="button" className="btn-primary" onClick={addMusicLink} disabled={!musicTitle.trim() || !musicUrl.trim()}>
+            링크 저장
+          </button>
+        </div>
+        <div className="mt-4 space-y-2">
+          {musicLinks.length ? (
+            musicLinks.map((link) => (
+              <article key={link.id} className="flex flex-col gap-2 rounded-lg border border-ink-700 bg-ink-950/45 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-ink-100">{link.title}</p>
+                  <p className="mt-0.5 truncate text-xs text-ink-500">{providerLabel[link.provider || "ETC"]} · {link.url}</p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <a className="btn-secondary min-h-9 px-3 py-1.5 text-sm" href={link.url} target="_blank" rel="noreferrer">
+                    <ExternalLink size={15} />
+                    열기
+                  </a>
+                  <button
+                    type="button"
+                    className="icon-btn min-h-9 min-w-9 rounded-md hover:border-danger hover:text-red-100"
+                    onClick={() => setMusicLinks((current) => current.filter((item) => item.id !== link.id))}
+                    aria-label="집중 음악 링크 삭제"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </article>
+            ))
+          ) : (
+            <div className="rounded-lg border border-dashed border-ink-700 bg-ink-950/35 px-4 py-4 text-center text-sm text-ink-500">
+              아직 저장된 집중 음악 링크가 없습니다.
             </div>
-          ))}
+          )}
         </div>
       </section>
     </div>

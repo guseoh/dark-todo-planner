@@ -32,6 +32,7 @@ type GroupedTodoListProps = {
   defaultDate?: string;
   includeEmptyCategories?: boolean;
   showCategoryCreator?: boolean;
+  layout?: "board" | "list";
 };
 
 const readCollapsedState = (): CollapsedState => {
@@ -109,6 +110,7 @@ export function GroupedTodoList({
   defaultDate,
   includeEmptyCategories = false,
   showCategoryCreator = true,
+  layout = "board",
 }: GroupedTodoListProps) {
   const [collapsedGroups, setCollapsedGroups] = useState<CollapsedState>(() => readCollapsedState());
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
@@ -171,7 +173,7 @@ export function GroupedTodoList({
         {categoryError ? <p className="text-sm text-red-200">{categoryError}</p> : null}
 
         {groups.length ? (
-          <div className="space-y-2.5">
+          <div className={layout === "board" ? "grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-3" : "space-y-2.5"}>
             {groups.map((group) => {
               const groupId = group.category?.id || uncategorizedGroupId;
               return (
@@ -194,6 +196,7 @@ export function GroupedTodoList({
                   onUnarchive={onUnarchive}
                   onFocusTodo={onFocusTodo}
                   onEditTodo={setEditingTodo}
+                  variant={layout === "board" ? "card" : "plain"}
                 />
               );
             })}

@@ -13,6 +13,7 @@ type TodoRowProps = {
   onUnarchive?: (id: string) => void;
   onFocusTodo?: (todo: Todo) => void;
   showDate?: boolean;
+  showCategoryBadge?: boolean;
 };
 
 export function TodoRow({
@@ -24,6 +25,7 @@ export function TodoRow({
   onUnarchive,
   onFocusTodo,
   showDate = true,
+  showCategoryBadge = true,
 }: TodoRowProps) {
   const handleDelete = () => {
     if (window.confirm(`"${todo.title}" Todo를 삭제할까요?`)) {
@@ -57,9 +59,11 @@ export function TodoRow({
               {todo.title}
             </h4>
             <PriorityBadge priority={todo.priority} compact />
-            <span className="rounded-full border border-ink-700 bg-ink-900 px-2 py-0.5 text-[11px] font-semibold leading-4 text-ink-300">
-              {todo.category?.name || "미분류"}
-            </span>
+            {showCategoryBadge ? (
+              <span className="rounded-full border border-ink-700 bg-ink-900 px-2 py-0.5 text-[11px] font-semibold leading-4 text-ink-300">
+                {todo.category?.name || "미분류"}
+              </span>
+            ) : null}
             {todo.repeat !== "NONE" ? (
               <span className="rounded-full border border-accent-500/35 bg-accent-500/15 px-2 py-0.5 text-[11px] font-semibold leading-4 text-indigo-100">
                 {repeatLabel[todo.repeat]}

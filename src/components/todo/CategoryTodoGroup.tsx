@@ -33,6 +33,7 @@ type CategoryTodoGroupProps = {
   onUnarchive?: (id: string) => void;
   onFocusTodo?: (todo: Todo) => void;
   onEditTodo: (todo: Todo) => void;
+  variant?: "card" | "plain";
 };
 
 export function CategoryTodoGroup({
@@ -53,10 +54,14 @@ export function CategoryTodoGroup({
   onUnarchive,
   onFocusTodo,
   onEditTodo,
+  variant = "card",
 }: CategoryTodoGroupProps) {
   const [adding, setAdding] = useState(false);
+  const [showAllTodos, setShowAllTodos] = useState(false);
   const categoryId = group.category?.id;
   const isEditing = Boolean(categoryId && editingCategoryId === categoryId);
+  const visibleTodos = showAllTodos ? group.todos : group.todos.slice(0, 5);
+  const hiddenTodoCount = Math.max(group.todos.length - visibleTodos.length, 0);
 
   const handleDeleteCategory = async () => {
     if (!group.category) return;
@@ -66,7 +71,7 @@ export function CategoryTodoGroup({
   };
 
   return (
-    <section className="space-y-1.5">
+    <section className={variant === "card" ? "app-card space-y-2 p-3" : "space-y-2"}>
       <CategoryHeader
         category={group.category}
         totalCount={group.totalCount}
@@ -95,10 +100,10 @@ export function CategoryTodoGroup({
       ) : null}
 
       {!collapsed ? (
-        <div className="ml-2.5 border-l border-ink-700/80 pl-2.5 sm:ml-4 sm:pl-3">
+        <div className="border-l border-ink-700/80 pl-2.5">
           <div className="space-y-1.5">
             {group.todos.length ? (
-              group.todos.map((todo) => (
+              visibleTodos.map((todo) => (
                 <TodoRow
                   key={todo.id}
                   todo={todo}
@@ -109,6 +114,7 @@ export function CategoryTodoGroup({
                   onUnarchive={onUnarchive}
                   onFocusTodo={onFocusTodo}
                   showDate={showDate}
+                  showCategoryBadge={false}
                 />
               ))
             ) : (
@@ -117,6 +123,24 @@ export function CategoryTodoGroup({
                 description={group.category ? "첫 번째 하위 Todo를 추가해보세요." : "카테고리를 정하지 않은 Todo가 이곳에 표시됩니다."}
               />
             )}
+
+            {hiddenTodoCount ? (
+              <button
+                type="button"
+                className="flex min-h-8 w-full items-center justify-center rounded-lg border border-ink-700 bg-ink-950/45 px-3 text-xs font-semibold text-ink-400 transition hover:border-accent-500/60 hover:bg-ink-900 hover:text-ink-100"
+                onClick={() => setShowAllTodos(true)}
+              >
+                +{hiddenTodoCount}개 더보기
+              </button>
+            ) : showAllTodos && group.todos.length > 5 ? (
+              <button
+                type="button"
+                className="flex min-h-8 w-full items-center justify-center rounded-lg border border-ink-700 bg-ink-950/45 px-3 text-xs font-semibold text-ink-400 transition hover:border-accent-500/60 hover:bg-ink-900 hover:text-ink-100"
+                onClick={() => setShowAllTodos(false)}
+              >
+                접기
+              </button>
+            ) : null}
 
             {adding ? (
               <InlineTodoAdd
