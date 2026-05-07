@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { X } from "lucide-react";
 import type { Category } from "../../types/category";
 import type { Todo, TodoPriority, TodoRepeat } from "../../types/todo";
+import { MarkdownEditor } from "../editor/MarkdownEditor";
 
 type TodoEditModalProps = {
   todo: Todo | null;
@@ -153,15 +154,7 @@ export function TodoEditModal({ todo, categories = [], onClose, onSave }: TodoEd
             />
             완료된 Todo로 표시
           </label>
-          <label className="space-y-1 text-sm text-ink-400 md:col-span-2">
-            메모
-            <textarea
-              className="field min-h-24 resize-y"
-              value={memo}
-              onChange={(event) => setMemo(event.target.value)}
-              placeholder="메모"
-            />
-          </label>
+          <MarkdownEditor className="md:col-span-2" label="메모" value={memo} onChange={setMemo} placeholder="메모" />
         </div>
 
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

@@ -1,5 +1,6 @@
 import type { Category } from "../../types/category";
 import type { TodoPriority, TodoRepeat } from "../../types/todo";
+import { MarkdownEditor } from "../editor/MarkdownEditor";
 
 type TodoDetailFieldsProps = {
   date: string;
@@ -80,15 +81,7 @@ export function TodoDetailFields({
         <input className="field h-10 min-h-10 py-1.5" value={tags} onChange={(event) => onTagsChange(event.target.value)} placeholder="공부, 개발, 운동" />
       </label>
 
-      <label className="space-y-1 text-xs font-semibold text-ink-400">
-        메모
-        <textarea
-          className="field min-h-20 resize-y"
-          value={memo}
-          onChange={(event) => onMemoChange(event.target.value)}
-          placeholder="간단한 메모를 남겨두세요"
-        />
-      </label>
+      <MarkdownEditor label="메모" value={memo} onChange={onMemoChange} placeholder="간단한 메모를 남겨두세요" />
     </div>
   );
 }

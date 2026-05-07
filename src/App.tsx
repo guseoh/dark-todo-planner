@@ -5,7 +5,6 @@ import { AppView, Sidebar } from "./components/layout/Sidebar";
 import { usePlannerData } from "./hooks/usePlannerData";
 import { AllTodosPage } from "./pages/AllTodosPage";
 import { ArchivePage } from "./pages/ArchivePage";
-import { Dashboard } from "./pages/Dashboard";
 import { MonthPage } from "./pages/MonthPage";
 import { ReflectionPage } from "./pages/ReflectionPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -14,28 +13,13 @@ import { TopicsPage } from "./pages/TopicsPage";
 import { WeekPage } from "./pages/WeekPage";
 
 function App() {
-  const [activeView, setActiveView] = useState<AppView>("dashboard");
+  const [activeView, setActiveView] = useState<AppView>("today");
   const planner = usePlannerData();
 
   const todayTodos = useMemo(() => planner.getTodayTodos(), [planner]);
   const weekTodos = useMemo(() => planner.getWeekTodos(), [planner]);
 
   const content = {
-    dashboard: (
-      <Dashboard
-        todayTodos={todayTodos}
-        stats={planner.stats}
-        onAdd={planner.addTodo}
-        onToggle={planner.toggleTodo}
-        onDelete={planner.deleteTodo}
-        onUpdate={planner.updateTodo}
-        onArchive={planner.archiveTodo}
-        categories={planner.categories}
-        onAddCategory={planner.addCategory}
-        onUpdateCategory={planner.updateCategory}
-        onDeleteCategory={planner.deleteCategory}
-      />
-    ),
     today: (
       <TodayPage
         todayTodos={todayTodos}
@@ -85,7 +69,6 @@ function App() {
         categories={planner.categories}
         goals={planner.goals}
         onAddGoal={planner.addGoal}
-        onUpdateGoal={planner.updateGoal}
         onToggleGoal={planner.toggleGoal}
         onDeleteGoal={planner.deleteGoal}
         onAddCategory={planner.addCategory}
@@ -146,9 +129,13 @@ function App() {
         reflections={planner.reflections}
         goals={planner.goals}
         topics={planner.topics}
+        musicLinks={planner.musicLinks}
         onExportBackup={planner.exportBackup}
         onImportBackup={planner.importBackup}
         onMigrateLocalStorage={planner.migrateLocalStorage}
+        onAddMusicLink={planner.addMusicLink}
+        onUpdateMusicLink={planner.updateMusicLink}
+        onDeleteMusicLink={planner.deleteMusicLink}
         apiStatus={planner.error ? "offline" : "online"}
       />
     ),

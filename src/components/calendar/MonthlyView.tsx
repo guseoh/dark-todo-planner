@@ -18,7 +18,6 @@ type MonthlyViewProps = {
   categories?: Category[];
   goals?: Goal[];
   onAddGoal: (input: Partial<Goal> & { title: string }) => void;
-  onUpdateGoal: (id: string, updates: Partial<Omit<Goal, "id" | "createdAt">>) => void;
   onToggleGoal: (id: string) => void;
   onDeleteGoal: (id: string) => void;
   onAddCategory: (input: { name: string; description?: string; color?: string }) => void | Promise<void>;
@@ -37,7 +36,6 @@ export function MonthlyView({
   categories = [],
   goals = [],
   onAddGoal,
-  onUpdateGoal,
   onToggleGoal,
   onDeleteGoal,
   onAddCategory,
@@ -94,20 +92,14 @@ export function MonthlyView({
 
       <div ref={selectedPanelRef}>
         <MonthlySidePanel
-          currentMonth={currentMonth}
           selectedDate={selectedDate}
           selectedTodos={selectedTodos}
           categories={categories}
-          goals={goals}
           onAdd={onAdd}
           onToggle={onToggle}
           onDelete={onDelete}
           onUpdate={onUpdate}
           onArchive={onArchive}
-          onAddGoal={onAddGoal}
-          onUpdateGoal={onUpdateGoal}
-          onToggleGoal={onToggleGoal}
-          onDeleteGoal={onDeleteGoal}
           onAddCategory={onAddCategory}
           onUpdateCategory={onUpdateCategory}
           onDeleteCategory={onDeleteCategory}

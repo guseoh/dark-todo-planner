@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { createId } from "../../lib/id";
 import { todayKey } from "../../lib/date";
 import type { ReflectionSection, ReflectionType } from "../../types/reflection";
+import { MarkdownEditor } from "../editor/MarkdownEditor";
 
 const templates: Record<ReflectionType, string[]> = {
   DAILY: ["오늘 잘한 점", "아쉬운 점", "내일 할 일", "메모"],
@@ -49,18 +50,16 @@ export function ReflectionForm({
       </div>
       <div className="mt-4 space-y-4">
         {sections.map((section) => (
-          <label key={section.id} className="block space-y-2 text-sm font-semibold text-ink-200">
-            {section.title}
-            <textarea
-              className="field min-h-24 resize-y"
-              value={section.content}
-              onChange={(event) =>
+          <MarkdownEditor
+            key={section.id}
+            label={section.title}
+            value={section.content}
+            onChange={(value) =>
                 setSections((current) =>
-                  current.map((item) => (item.id === section.id ? { ...item, content: event.target.value } : item)),
+                  current.map((item) => (item.id === section.id ? { ...item, content: value } : item)),
                 )
-              }
-            />
-          </label>
+            }
+          />
         ))}
       </div>
       <button type="submit" className="btn-primary mt-4 w-full sm:w-auto">

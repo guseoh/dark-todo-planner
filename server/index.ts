@@ -8,6 +8,7 @@ import { prisma } from "./db";
 import {
   serializeCategory,
   serializeGoal,
+  serializeMusicLink,
   serializeReflection,
   serializeTodo,
   serializeTopic,
@@ -16,6 +17,7 @@ import {
 import {
   categoryInputSchema,
   goalInputSchema,
+  musicLinkInputSchema,
   reflectionInputSchema,
   todoInputSchema,
   topicInputSchema,
@@ -685,17 +687,77 @@ app.delete(
   }),
 );
 
+app.get(
+  "/api/music-links",
+  requireAuth,
+  asyncHandler<AuthenticatedRequest>(async (req, res) => {
+    const musicLinks = await prisma.musicLink.findMany({
+      where: { userId: req.userId },
+      orderBy: { updatedAt: "desc" },
+    });
+    return res.json({ musicLinks: musicLinks.map(serializeMusicLink) });
+  }),
+);
+
+app.post(
+  "/api/music-links",
+  requireAuth,
+  asyncHandler<AuthenticatedRequest>(async (req, res) => {
+    const input = musicLinkInputSchema.parse(req.body);
+    const musicLink = await prisma.musicLink.create({
+      data: {
+        userId: req.userId,
+        title: input.title,
+        url: input.url,
+        provider: input.provider || "ETC",
+        memo: normalizeOptional(input.memo),
+      },
+    });
+    return res.status(201).json({ musicLink: serializeMusicLink(musicLink) });
+  }),
+);
+
+app.put(
+  "/api/music-links/:id",
+  requireAuth,
+  asyncHandler<AuthenticatedRequest>(async (req, res) => {
+    const input = musicLinkInputSchema.parse(req.body);
+    const exists = await prisma.musicLink.findFirst({ where: { id: paramId(req), userId: req.userId } });
+    if (!exists) return res.status(404).json({ message: "음악 링크를 찾을 수 없습니다." });
+    const musicLink = await prisma.musicLink.update({
+      where: { id: exists.id },
+      data: {
+        title: input.title,
+        url: input.url,
+        provider: input.provider || "ETC",
+        memo: normalizeOptional(input.memo),
+      },
+    });
+    return res.json({ musicLink: serializeMusicLink(musicLink) });
+  }),
+);
+
+app.delete(
+  "/api/music-links/:id",
+  requireAuth,
+  asyncHandler<AuthenticatedRequest>(async (req, res) => {
+    await prisma.musicLink.deleteMany({ where: { id: paramId(req), userId: req.userId } });
+    return res.json({ ok: true });
+  }),
+);
+
 const buildBackup = async (userId: string) => {
-  const [categories, todos, reflections, goals, topics] = await Promise.all([
+  const [categories, todos, reflections, goals, topics, musicLinks] = await Promise.all([
     prisma.category.findMany({ where: { userId }, orderBy: [{ order: "asc" }] }),
     prisma.todo.findMany({ where: { userId }, include: todoInclude }),
     prisma.reflection.findMany({ where: { userId } }),
     prisma.goal.findMany({ where: { userId } }),
     prisma.topic.findMany({ where: { userId }, include: topicInclude, orderBy: { updatedAt: "desc" } }),
+    prisma.musicLink.findMany({ where: { userId }, orderBy: { updatedAt: "desc" } }),
   ]);
   const serializedTopics = topics.map(serializeTopic);
   return {
-    version: 4,
+    version: 5,
     exportedAt: new Date().toISOString(),
     categories: categories.map(serializeCategory),
     todos: todos.map(serializeTodo),
@@ -703,6 +765,7 @@ const buildBackup = async (userId: string) => {
     goals: goals.map(serializeGoal),
     topics: serializedTopics,
     topicLinks: serializedTopics.flatMap((topic) => topic.links),
+    musicLinks: musicLinks.map(serializeMusicLink),
   };
 };
 
@@ -720,7 +783,7 @@ app.post(
   asyncHandler<AuthenticatedRequest>(async (req, res) => {
     if (!req.body || (req.body.todos !== undefined && !Array.isArray(req.body.todos))) return res.status(400).json({ message: "todos 배열이 필요합니다." });
     const version = Number(req.body.version ?? 1);
-    if (!Number.isInteger(version) || version < 1 || version > 4) {
+    if (!Number.isInteger(version) || version < 1 || version > 5) {
       return res.status(400).json({ message: "지원하지 않는 백업 버전입니다." });
     }
     await importBackupForUser(req.userId, req.body);
@@ -733,7 +796,7 @@ app.post(
   requireAuth,
   asyncHandler<AuthenticatedRequest>(async (req, res) => {
     if (!req.body || (req.body.todos !== undefined && !Array.isArray(req.body.todos))) return res.status(400).json({ message: "마이그레이션할 todos 배열이 필요합니다." });
-    await importBackupForUser(req.userId, { version: req.body.version || 4, ...req.body });
+    await importBackupForUser(req.userId, { version: req.body.version || 5, ...req.body });
     return res.json({ ok: true });
   }),
 );

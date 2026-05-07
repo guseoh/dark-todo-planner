@@ -57,7 +57,7 @@ export function WeeklyView({
   const activeWeeklyGoals = weeklyGoals.length - completedWeeklyGoals;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           { label: "이번 주", value: `${formatKoreanDate(weekStart, "M.d")} ~ ${formatKoreanDate(weekEnd, "M.d")}` },
@@ -86,8 +86,8 @@ export function WeeklyView({
         onDelete={onDeleteGoal}
       />
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-7">
+      <section className="grid gap-4 2xl:grid-cols-[minmax(0,1.28fr)_minmax(340px,0.72fr)]">
+        <div className="grid gap-2 md:grid-cols-7">
           {weekDays.map((day) => {
             const dateKey = toDateKey(day);
             const dayTodos = getTodosByDate(dateKey);
@@ -104,7 +104,7 @@ export function WeeklyView({
                 key={dateKey}
                 type="button"
                 onClick={() => setSelectedDate(dateKey)}
-                className={`min-h-32 rounded-lg border p-3 text-left transition hover:border-accent-500/60 ${
+                className={`min-h-24 rounded-lg border p-2.5 text-left transition hover:border-accent-500/60 md:min-h-32 xl:min-h-28 ${
                   isSelected ? "border-accent-500/70 bg-accent-500/10" : "border-ink-700 bg-ink-800/85"
                 } ${isToday ? "ring-2 ring-accent-500/50" : ""}`}
               >
@@ -117,8 +117,8 @@ export function WeeklyView({
                     <p className="mt-1 text-xs text-ink-400">{formatKoreanDate(day, "M월 d일")}</p>
                   </div>
                 </div>
-                <p className="mt-3 text-sm font-semibold text-ink-200">{statusText}</p>
-                <div className="mt-2 flex flex-wrap gap-1.5">
+                <p className="mt-2 text-sm font-semibold text-ink-200">{statusText}</p>
+                <div className="mt-1.5 flex flex-wrap gap-1">
                   <span className="rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-[11px] font-semibold text-amber-100">
                     미완료 {activeCount}
                   </span>
@@ -132,7 +132,7 @@ export function WeeklyView({
                   ) : null}
                 </div>
                 {categoryColors.length ? (
-                  <div className="mt-3 flex items-center gap-1.5">
+                  <div className="mt-2 flex items-center gap-1.5">
                     {categoryColors.map((color) => (
                       <span key={color} className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} aria-hidden="true" />
                     ))}
@@ -168,7 +168,7 @@ export function WeeklyView({
             showCategoryCreator={false}
             layout="list"
           />
-          <div className="mt-4 border-t border-ink-700/70 pt-3">
+          <div className="mt-3 border-t border-ink-700/70 pt-3">
             <div className="mb-2 flex items-center gap-2">
               <Plus size={16} className="text-accent-400" />
               <h4 className="text-sm font-semibold text-ink-100">선택 날짜 빠른 추가</h4>

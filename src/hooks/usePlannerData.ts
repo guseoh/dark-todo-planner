@@ -3,6 +3,7 @@ import type { Category } from "../types/category";
 import { useBackup } from "./useBackup";
 import { useCategories } from "./useCategories";
 import { useGoals } from "./useGoals";
+import { useMusicLinks } from "./useMusicLinks";
 import { useReflections } from "./useReflections";
 import { useTodos } from "./useTodos";
 import { useTopics } from "./useTopics";
@@ -15,6 +16,7 @@ export function usePlannerData() {
   const reflectionsState = useReflections();
   const goalsState = useGoals();
   const topicsState = useTopics();
+  const musicLinksState = useMusicLinks();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -27,6 +29,7 @@ export function usePlannerData() {
         reflectionsState.loadReflections(),
         goalsState.loadGoals(),
         topicsState.loadTopics(),
+        musicLinksState.loadMusicLinks(),
       ]);
       setLoadError("");
     } catch (err) {
@@ -37,6 +40,7 @@ export function usePlannerData() {
   }, [
     categoriesState.loadCategories,
     goalsState.loadGoals,
+    musicLinksState.loadMusicLinks,
     reflectionsState.loadReflections,
     topicsState.loadTopics,
     todosState.loadTodos,
@@ -69,11 +73,13 @@ export function usePlannerData() {
       reflectionsState.saving ||
       goalsState.saving ||
       topicsState.saving ||
+      musicLinksState.saving ||
       backupState.saving,
     [
       backupState.saving,
       categoriesState.saving,
       goalsState.saving,
+      musicLinksState.saving,
       reflectionsState.saving,
       topicsState.saving,
       todosState.saving,
@@ -87,6 +93,7 @@ export function usePlannerData() {
     reflectionsState.error ||
     goalsState.error ||
     topicsState.error ||
+    musicLinksState.error ||
     backupState.error;
 
   return {
@@ -100,6 +107,7 @@ export function usePlannerData() {
     topics: topicsState.topics,
     topicTags: topicsState.topicTags,
     topicCounts: topicsState.topicCounts,
+    musicLinks: musicLinksState.musicLinks,
     loading,
     saving,
     error,
@@ -134,6 +142,9 @@ export function usePlannerData() {
     addTopicLink: topicsState.addTopicLink,
     updateTopicLink: topicsState.updateTopicLink,
     deleteTopicLink: topicsState.deleteTopicLink,
+    addMusicLink: musicLinksState.addMusicLink,
+    updateMusicLink: musicLinksState.updateMusicLink,
+    deleteMusicLink: musicLinksState.deleteMusicLink,
     exportBackup: backupState.exportBackup,
     importBackup: backupState.importBackup,
     migrateLocalStorage: backupState.migrateLocalStorage,

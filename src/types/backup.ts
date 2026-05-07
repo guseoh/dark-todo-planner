@@ -1,4 +1,5 @@
 import type { Goal } from "./goal";
+import type { MusicLink } from "./music";
 import type { Reflection } from "./reflection";
 import type { Todo } from "./todo";
 import type { Topic, TopicLink } from "./topic";
@@ -13,4 +14,5 @@ export type BackupData = {
   goals?: Goal[];
   topics?: Topic[];
   topicLinks?: TopicLink[];
+  musicLinks?: MusicLink[];
 };

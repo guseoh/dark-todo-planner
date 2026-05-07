@@ -5,6 +5,7 @@ export const repeatSchema = z.enum(["NONE", "DAILY", "WEEKLY", "MONTHLY", "WEEKD
 export const reflectionTypeSchema = z.enum(["DAILY", "WEEKLY", "MONTHLY"]);
 export const goalTypeSchema = z.enum(["DAILY", "WEEKLY", "MONTHLY"]);
 export const topicStatusSchema = z.enum(["IDEA", "WRITING", "DONE"]);
+export const musicProviderSchema = z.enum(["YOUTUBE", "YOUTUBE_MUSIC", "MELON", "SPOTIFY", "ETC"]);
 
 export const tagsSchema = z
   .array(z.string())
@@ -74,4 +75,11 @@ export const topicLinkInputSchema = z.object({
   title: z.string().optional().nullable(),
   url: z.string().url(),
   description: z.string().optional().nullable(),
+});
+
+export const musicLinkInputSchema = z.object({
+  title: z.string().trim().min(1),
+  url: z.string().url(),
+  provider: musicProviderSchema.optional().default("ETC"),
+  memo: z.string().optional().nullable(),
 });

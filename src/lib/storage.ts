@@ -5,7 +5,7 @@ import type { Todo, TodoPriority, TodoRepeat } from "../types/todo";
 import { LEGACY_STORAGE_KEYS, STORAGE_KEYS } from "./storageKeys";
 
 export const TODO_STORAGE_KEY = STORAGE_KEYS.TODOS;
-export const BACKUP_VERSION = 4;
+export const BACKUP_VERSION = 5;
 
 const priorities: TodoPriority[] = ["LOW", "MEDIUM", "HIGH"];
 const repeats: TodoRepeat[] = ["NONE", "DAILY", "WEEKLY", "MONTHLY", "WEEKDAY", "WEEKEND"];
@@ -162,6 +162,7 @@ export const buildBackupData = (input: Omit<BackupData, "version" | "exportedAt"
   goals: input.goals || [],
   topics: input.topics || [],
   topicLinks: input.topicLinks || [],
+  musicLinks: input.musicLinks || [],
 });
 
 export const validateBackupData = (value: unknown): { data?: BackupData; error?: string } => {
@@ -195,6 +196,7 @@ export const validateBackupData = (value: unknown): { data?: BackupData; error?:
       goals,
       topics: Array.isArray(backup.topics) ? backup.topics : [],
       topicLinks: Array.isArray(backup.topicLinks) ? backup.topicLinks : [],
+      musicLinks: Array.isArray(backup.musicLinks) ? backup.musicLinks : [],
     },
   };
 };

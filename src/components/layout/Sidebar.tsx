@@ -5,7 +5,6 @@ import {
   Archive,
   BookOpenText,
   NotebookPen,
-  LayoutDashboard,
   ListChecks,
   Settings,
   PanelLeftClose,
@@ -14,7 +13,6 @@ import {
 import { useEffect, useState } from "react";
 
 export type AppView =
-  | "dashboard"
   | "today"
   | "week"
   | "month"
@@ -30,7 +28,6 @@ type SidebarProps = {
 };
 
 const navItems = [
-  { id: "dashboard", label: "대시보드", icon: LayoutDashboard },
   { id: "today", label: "오늘", icon: CheckSquare },
   { id: "week", label: "주간", icon: CalendarRange },
   { id: "month", label: "월간", icon: CalendarDays },
@@ -39,7 +36,7 @@ const navItems = [
   { id: "topics", label: "주제 보관함", icon: BookOpenText },
   { id: "archive", label: "보관함", icon: Archive },
   { id: "settings", label: "설정", icon: Settings },
-] satisfies Array<{ id: AppView; label: string; icon: typeof LayoutDashboard }>;
+] satisfies Array<{ id: AppView; label: string; icon: typeof CheckSquare }>;
 
 const SIDEBAR_COLLAPSED_KEY = "dark-todo-planner:sidebar-collapsed";
 
@@ -62,7 +59,7 @@ export function Sidebar({ activeView, onChangeView }: SidebarProps) {
           <button
             type="button"
             onClick={() => setCollapsed((value) => !value)}
-            className={`flex min-h-11 w-full items-center rounded-lg border border-ink-700 bg-ink-900/70 text-sm font-semibold text-ink-300 transition hover:border-accent-500/60 hover:bg-ink-800 hover:text-ink-100 ${
+            className={`flex min-h-10 w-full items-center rounded-lg border border-ink-700 bg-ink-900/70 text-sm font-semibold text-ink-300 transition hover:border-accent-500/60 hover:bg-ink-800 hover:text-ink-100 ${
               collapsed ? "justify-center px-2" : "justify-between px-4"
             }`}
             aria-label={collapsed ? "사이드바 펼치기" : "사이드바 접기"}
@@ -80,7 +77,7 @@ export function Sidebar({ activeView, onChangeView }: SidebarProps) {
                 type="button"
                 onClick={() => onChangeView(item.id)}
                 title={collapsed ? item.label : undefined}
-                className={`flex min-h-12 w-full items-center rounded-lg border text-sm font-semibold transition ${
+                className={`flex min-h-11 w-full items-center rounded-lg border text-sm font-semibold transition ${
                   active
                     ? "border-accent-500/50 bg-accent-500/20 text-ink-100"
                     : "border-transparent text-ink-400 hover:border-ink-700 hover:bg-ink-800 hover:text-ink-100"

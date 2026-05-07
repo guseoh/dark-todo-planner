@@ -1,10 +1,12 @@
-import { ChangeEvent, useRef, useState } from "react";
-import { Download, RotateCcw, Upload } from "lucide-react";
+import { ChangeEvent, FormEvent, useRef, useState } from "react";
+import { Download, ExternalLink, Music2, Pencil, Plus, RotateCcw, Save, Trash2, Upload, X } from "lucide-react";
 import type { Category } from "../types/category";
 import type { Goal } from "../types/goal";
+import type { MusicLink, MusicLinkInput, MusicProvider } from "../types/music";
 import type { Reflection } from "../types/reflection";
 import type { Topic } from "../types/topic";
 import { StatCard } from "../components/common/StatCard";
+import { MarkdownEditor } from "../components/editor/MarkdownEditor";
 import { STORAGE_KEYS } from "../lib/storageKeys";
 import { LEGACY_STORAGE_KEYS } from "../lib/storageKeys";
 
@@ -14,11 +16,105 @@ type SettingsPageProps = {
   reflections: Reflection[];
   goals: Goal[];
   topics: Topic[];
+  musicLinks: MusicLink[];
   onExportBackup: () => Promise<Record<string, unknown>>;
   onImportBackup: (data: unknown) => Promise<void>;
   onMigrateLocalStorage: (data: unknown) => Promise<void>;
+  onAddMusicLink: (input: MusicLinkInput) => unknown | Promise<unknown>;
+  onUpdateMusicLink: (id: string, input: MusicLinkInput) => unknown | Promise<unknown>;
+  onDeleteMusicLink: (id: string) => unknown | Promise<unknown>;
   apiStatus?: "online" | "offline";
 };
+
+const providerLabel: Record<MusicProvider, string> = {
+  YOUTUBE: "YouTube",
+  YOUTUBE_MUSIC: "YouTube Music",
+  MELON: "Melon",
+  SPOTIFY: "Spotify",
+  ETC: "기타",
+};
+
+const providerOptions = Object.keys(providerLabel) as MusicProvider[];
+
+const inferProvider = (url: string): MusicProvider => {
+  const normalized = url.toLowerCase();
+  if (normalized.includes("music.youtube.com")) return "YOUTUBE_MUSIC";
+  if (normalized.includes("youtube.com") || normalized.includes("youtu.be")) return "YOUTUBE";
+  if (normalized.includes("melon.com")) return "MELON";
+  if (normalized.includes("spotify.com")) return "SPOTIFY";
+  return "ETC";
+};
+
+function MusicLinkForm({
+  initial,
+  submitLabel,
+  onSubmit,
+  onCancel,
+}: {
+  initial?: MusicLink;
+  submitLabel: string;
+  onSubmit: (input: MusicLinkInput) => unknown | Promise<unknown>;
+  onCancel?: () => void;
+}) {
+  const [title, setTitle] = useState(initial?.title || "");
+  const [url, setUrl] = useState(initial?.url || "");
+  const [provider, setProvider] = useState<MusicProvider>(initial?.provider || "ETC");
+  const [memo, setMemo] = useState(initial?.memo || "");
+  const [error, setError] = useState("");
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    try {
+      const parsed = new URL(url.trim());
+      await onSubmit({
+        title: title.trim(),
+        url: parsed.toString(),
+        provider: provider === "ETC" ? inferProvider(parsed.toString()) : provider,
+        memo: memo.trim() || undefined,
+      });
+      if (!initial) {
+        setTitle("");
+        setUrl("");
+        setProvider("ETC");
+        setMemo("");
+      }
+      setError("");
+      onCancel?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "올바른 URL을 입력해주세요.");
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-3">
+      <div className="grid gap-2 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_9rem]">
+        <input className="field" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="링크 이름" />
+        <input className="field" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://..." />
+        <select className="field" value={provider} onChange={(event) => setProvider(event.target.value as MusicProvider)}>
+          {providerOptions.map((item) => (
+            <option key={item} value={item}>
+              {providerLabel[item]}
+            </option>
+          ))}
+        </select>
+      </div>
+      <MarkdownEditor value={memo} onChange={setMemo} placeholder="언제 들으면 좋은지 짧게 메모" />
+      {error ? <p className="text-xs text-red-200">{error}</p> : null}
+      <div className="flex flex-wrap gap-2">
+        <button type="submit" className="btn-primary" disabled={!title.trim() || !url.trim()}>
+          {initial ? <Save size={16} /> : <Plus size={16} />}
+          {submitLabel}
+        </button>
+        {onCancel ? (
+          <button type="button" className="btn-secondary" onClick={onCancel}>
+            <X size={16} />
+            취소
+          </button>
+        ) : null}
+      </div>
+    </form>
+  );
+}
 
 export function SettingsPage({
   categories,
@@ -26,14 +122,19 @@ export function SettingsPage({
   reflections,
   goals,
   topics,
+  musicLinks,
   onExportBackup,
   onImportBackup,
   onMigrateLocalStorage,
+  onAddMusicLink,
+  onUpdateMusicLink,
+  onDeleteMusicLink,
   apiStatus = "online",
 }: SettingsPageProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [editingMusicId, setEditingMusicId] = useState<string | null>(null);
 
   const exportJson = async () => {
     try {
@@ -78,7 +179,7 @@ export function SettingsPage({
       const reflectionsRaw = localStorage.getItem(STORAGE_KEYS.REFLECTIONS);
       const goalsRaw = localStorage.getItem(STORAGE_KEYS.GOALS);
       const data = {
-        version: 4,
+        version: 5,
         exportedAt: new Date().toISOString(),
         categories: [],
         todos: todosRaw ? JSON.parse(todosRaw) : [],
@@ -116,7 +217,7 @@ export function SettingsPage({
         <StatCard title="Todo" value={stats.total} />
         <StatCard title="카테고리" value={categories.length} />
         <StatCard title="회고 / 목표" value={`${reflections.length}/${goals.length}`} />
-        <StatCard title="주제 보관함" value={`${topics.length}개`} />
+        <StatCard title="주제 / 음악" value={`${topics.length}/${musicLinks.length}`} />
       </section>
 
       {(message || error) ? (
@@ -136,6 +237,68 @@ export function SettingsPage({
           <button type="button" className="btn-secondary" onClick={migrateLocalStorage}><RotateCcw size={18} />LocalStorage 가져오기</button>
         </div>
         <input ref={fileInputRef} type="file" accept="application/json,.json" className="hidden" onChange={handleImport} />
+      </section>
+
+      <section className="app-card space-y-4 p-4">
+        <div className="flex items-center gap-2">
+          <Music2 size={17} className="text-accent-400" />
+          <div>
+            <h3 className="text-base font-bold text-ink-100">음악 링크</h3>
+            <p className="mt-1 text-xs text-ink-500">음악 API를 직접 연결하지 않고 플레이리스트 URL만 저장합니다.</p>
+          </div>
+        </div>
+
+        <MusicLinkForm submitLabel="링크 저장" onSubmit={onAddMusicLink} />
+
+        <div className="space-y-2">
+          {musicLinks.length ? (
+            musicLinks.map((link) => (
+              <article key={link.id} className="rounded-lg border border-ink-700 bg-ink-950/40 px-3 py-2">
+                {editingMusicId === link.id ? (
+                  <MusicLinkForm
+                    initial={link}
+                    submitLabel="수정 저장"
+                    onSubmit={(input) => onUpdateMusicLink(link.id, input)}
+                    onCancel={() => setEditingMusicId(null)}
+                  />
+                ) : (
+                  <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <p className="truncate text-sm font-semibold text-ink-100">{link.title}</p>
+                        <span className="rounded-full border border-ink-700 bg-ink-900 px-2 py-0.5 text-[11px] text-ink-300">
+                          {providerLabel[link.provider || "ETC"]}
+                        </span>
+                      </div>
+                      <p className="mt-1 truncate text-xs text-ink-500">{link.url}</p>
+                      {link.memo ? <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-xs leading-5 text-ink-400">{link.memo}</p> : null}
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                      <a className="icon-btn min-h-8 min-w-8 rounded-md" href={link.url} target="_blank" rel="noreferrer" aria-label="음악 링크 열기">
+                        <ExternalLink size={14} />
+                      </a>
+                      <button type="button" className="icon-btn min-h-8 min-w-8 rounded-md" onClick={() => setEditingMusicId(link.id)} aria-label="음악 링크 수정">
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="icon-btn min-h-8 min-w-8 rounded-md hover:border-danger hover:text-red-100"
+                        onClick={() => window.confirm("음악 링크를 삭제할까요?") && onDeleteMusicLink(link.id)}
+                        aria-label="음악 링크 삭제"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </article>
+            ))
+          ) : (
+            <div className="rounded-lg border border-dashed border-ink-700 bg-ink-950/35 px-4 py-3 text-center text-sm text-ink-500">
+              저장된 음악 링크가 없습니다.
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );

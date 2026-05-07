@@ -1,4 +1,4 @@
-import type { Category, Goal, Reflection, Tag, Todo, TodoTag, Topic, TopicLink } from "@prisma/client";
+import type { Category, Goal, MusicLink, Reflection, Tag, Todo, TodoTag, Topic, TopicLink } from "@prisma/client";
 
 type TodoWithRelations = Todo & {
   category?: Category | null;
@@ -113,4 +113,15 @@ export const serializeTopic = (topic: TopicWithLinks) => ({
   links: topic.links?.map(serializeTopicLink) || [],
   createdAt: topic.createdAt.toISOString(),
   updatedAt: topic.updatedAt.toISOString(),
+});
+
+export const serializeMusicLink = (link: MusicLink) => ({
+  id: link.id,
+  userId: link.userId,
+  title: link.title,
+  url: link.url,
+  provider: link.provider || "ETC",
+  memo: link.memo || undefined,
+  createdAt: link.createdAt.toISOString(),
+  updatedAt: link.updatedAt.toISOString(),
 });

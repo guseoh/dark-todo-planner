@@ -1,0 +1,14 @@
+services:
+  todo-planner:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL:-file:../data/prod.db}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

@@ -74,7 +74,7 @@ export function MonthlyCalendar({
         {monthDays.map((day) => {
           const dateKey = toDateKey(day);
           const dayTodos = getTodosByDate(dateKey);
-          const dayGoals = goals.filter((goal) => !isDayStatusGoal(goal) && (goal.targetDate === dateKey || goal.dueDate === dateKey));
+          const dayGoals = goals.filter((goal) => goal.type === "DAILY" && !isDayStatusGoal(goal) && (goal.targetDate === dateKey || goal.dueDate === dateKey));
           const categoryColors = Array.from(new Set(dayTodos.map((todo) => todo.category?.color).filter(Boolean)));
           const selected = dateKey === selectedDate;
           const today = isTodayDate(day);

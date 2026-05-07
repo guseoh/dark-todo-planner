@@ -18,6 +18,7 @@ export const importBackupForUser = async (userId: string, data: Record<string, a
   await prisma.$transaction(async (tx) => {
     await tx.topicLink.deleteMany({ where: { topic: { userId } } });
     await tx.topic.deleteMany({ where: { userId } });
+    await tx.musicLink.deleteMany({ where: { userId } });
     await tx.todoTag.deleteMany({ where: { todo: { userId } } });
     await tx.todo.deleteMany({ where: { userId } });
     await tx.tag.deleteMany({ where: { userId } });
@@ -109,6 +110,20 @@ export const importBackupForUser = async (userId: string, data: Record<string, a
           title: normalizeOptional(link.title),
           url: String(link.url),
           description: normalizeOptional(link.description),
+        },
+      });
+    }
+
+    for (const link of data.musicLinks || []) {
+      if (!link?.id || !link?.title || !link?.url) continue;
+      await tx.musicLink.create({
+        data: {
+          id: link.id,
+          userId,
+          title: link.title,
+          url: String(link.url),
+          provider: link.provider || "ETC",
+          memo: normalizeOptional(link.memo),
         },
       });
     }

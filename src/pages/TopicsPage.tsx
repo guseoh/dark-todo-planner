@@ -1,6 +1,8 @@
 import { FormEvent, useMemo, useState } from "react";
 import { ExternalLink, Link2, Pencil, Plus, Save, Search, Trash2 } from "lucide-react";
 import { EmptyState } from "../components/common/EmptyState";
+import { MarkdownEditor } from "../components/editor/MarkdownEditor";
+import { MarkdownPreview } from "../components/editor/MarkdownPreview";
 import type { Topic, TopicInput, TopicLink, TopicLinkInput, TopicStatus } from "../types/topic";
 
 const statusLabel: Record<TopicStatus | "ALL", string> = {
@@ -70,10 +72,9 @@ function TopicForm({
           주제 추가
         </button>
       </div>
-      <textarea
-        className="field min-h-20 resize-y py-3"
+      <MarkdownEditor
         value={memo}
-        onChange={(event) => setMemo(event.target.value)}
+        onChange={setMemo}
         placeholder="메모: 정리할 내용, 비교 포인트, 코드 예시 등을 가볍게 적어두세요."
       />
     </form>
@@ -185,7 +186,7 @@ function TopicCard({
             </select>
             <input className="field min-h-10 py-1.5 text-sm" value={tags} onChange={(event) => setTags(event.target.value)} placeholder="태그" />
           </div>
-          <textarea className="field min-h-24 resize-y py-2 text-sm" value={memo} onChange={(event) => setMemo(event.target.value)} />
+          <MarkdownEditor value={memo} onChange={setMemo} placeholder="주제 메모" />
           <div className="flex gap-2">
             <button type="button" className="btn-primary min-h-9 px-3 py-1.5 text-sm" onClick={saveTopic}>
               <Save size={15} />
@@ -219,7 +220,7 @@ function TopicCard({
               </button>
             </div>
           </div>
-          {topic.memo ? <p className="line-clamp-3 whitespace-pre-wrap text-sm leading-6 text-ink-400">{topic.memo}</p> : null}
+          {topic.memo ? <MarkdownPreview className="line-clamp-4" value={topic.memo} /> : null}
           {topic.tags.length ? (
             <div className="flex flex-wrap gap-1.5">
               {topic.tags.map((tag) => (

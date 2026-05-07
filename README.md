@@ -4,15 +4,12 @@
 
 ## 기술 스택
 
-- React 18
-- TypeScript
-- Vite
-- Tailwind CSS
+- React 18, TypeScript, Vite
+- Tailwind CSS, lucide-react
 - Express
 - Prisma
 - SQLite
-- date-fns
-- lucide-react
+- Docker / Docker Compose
 
 ## 현재 구조
 
@@ -24,81 +21,24 @@
 → 서버 내부 default user 기준으로 Prisma + SQLite에 저장
 ```
 
-주요 기능은 서버 DB 기준으로 동작합니다.
-
-- 앱 접속 시 바로 대시보드 진입
-- 단일 사용자 default user 기반 데이터 저장
-- Todo / Category / Reflection / Goal / Topic 서버 저장
-- 카테고리별 Todo 보드
-- JSON 백업 / 복원
-- LocalStorage 데이터 서버 마이그레이션
-
 ## 주요 기능
 
-- Todo 등록, 수정, 삭제, 완료 처리
-- 카테고리 생성, 수정, 삭제, 카테고리별 Todo 관리
-- 카테고리 없는 Todo는 `미분류`로 표시
-- 오늘 / 주간 / 월간 / 전체 Todo 보기
-- 일간 / 주간 / 월간 목표
+- 오늘 중심 Todo 관리
+- 카테고리별 Todo 보드
+- 주간 요약 보기와 주간 목표 체크리스트
+- 월간 달력, 날짜별 Todo, O/X 수행 체크
+- 전체 Todo 검색 / 필터 / 정렬
+- 일간 목표와 주간 목표
 - 회고 섹션 템플릿
-- 주제 보관함
-- 반복 Todo, 태그, 보관함
-- 검색, 완료 여부, 우선순위, 날짜, 반복, 보관, 카테고리 필터
+- 주제 보관함과 참고 링크
+- 음악 링크 저장과 새 탭 열기
+- Todo / 회고 / 주제 메모 Markdown 편집
 - JSON 백업 / 복원
 - LocalStorage 데이터 서버 마이그레이션
-- 로딩 / 에러 상태와 Todo 완료 낙관적 업데이트
 
-## 주제 보관함
+## 실행 방법
 
-작업하거나 공부하다가 떠오른 블로그 글감, 공부 주제, 참고 링크를 저장하는 공간입니다.
-
-저장할 수 있는 내용:
-
-- 주제 제목
-- 메모
-- 상태: 아이디어 / 작성 중 / 완료
-- 태그
-- 참고 링크 목록
-
-링크는 앱 안에서 직접 콘텐츠를 가져오거나 재생하지 않고, 새 탭으로 여는 방식만 제공합니다.
-
-## 단일 사용자 모드
-
-이 프로젝트는 개인용으로 쓰기 쉽도록 로그인/회원가입 화면을 제거했습니다. 서버는 요청이 들어오면 내부 default user를 자동으로 준비하고, 모든 Todo와 카테고리, 목표, 회고, 주제를 그 userId로 저장합니다.
-
-기존 DB 호환을 위해 `User` 모델과 각 데이터의 `userId` 관계는 유지합니다. 이미 사용자가 있는 DB라면 가장 먼저 생성된 사용자를 default user처럼 사용하고, 사용자가 없다면 서버가 자동으로 하나를 생성합니다.
-
-공개 인터넷에 배포하면 URL을 아는 사람이 앱에 접근할 수 있습니다. 외부 공개 배포가 필요하다면 로그인 기능을 다시 활성화하거나, reverse proxy 기본 인증, VPN, 방화벽, 사설 네트워크 같은 접근 제한을 추가하는 것을 권장합니다. 현재 구조는 로컬 PC, 개인 VPS, 사설 네트워크에서 혼자 쓰는 용도에 가장 잘 맞습니다.
-
-## GitHub Pages 배포 한계
-
-기존 정적 배포 버전은 GitHub Pages에서 화면 미리보기 용도로 동작할 수 있지만, 백엔드와 DB 기능이 추가된 이후에는 GitHub Pages만으로 전체 기능을 사용할 수 없습니다.
-
-GitHub Pages는 정적 프론트만 제공하므로 서버 저장, API, DB 기능은 동작하지 않습니다.
-
-백엔드 포함 버전은 Render, Railway, Fly.io, 개인 서버, VPS 등 서버 실행이 가능한 환경에 배포해야 합니다.
-
-## 배포 방식 정리
-
-1. GitHub Pages
-   - 정적 프론트 미리보기용
-   - API / DB 기능 사용 불가
-   - `GITHUB_PAGES=true`일 때 Vite base가 `/dark-todo-planner/`로 설정됩니다.
-   - GitHub Actions에서는 `npm run build:pages`로 정적 빌드를 생성합니다.
-
-2. Express 단일 서버 배포
-   - React 정적 파일 + API + DB를 한 서버에서 제공
-   - 실제 개인 사용 권장 방식
-   - 기본 Vite base는 `/`입니다.
-
-3. 프론트 / 백엔드 분리 배포
-   - 프론트: GitHub Pages 또는 Vercel
-   - 백엔드: Render / Railway / VPS
-   - CORS와 API origin 설정을 별도로 맞춰야 합니다.
-
-이번 프로젝트는 2번 Express 단일 서버 배포를 우선 지원합니다.
-
-## 로컬 개발 실행 방법
+### 로컬 개발
 
 ```bash
 npm install
@@ -107,16 +47,14 @@ npm run db:push
 npm run dev
 ```
 
-개발 주소:
+접속:
 
 - Frontend: `http://localhost:5173`
 - Backend/API: `http://localhost:3000`
 
-개발 환경에서는 Vite가 `/api` 요청을 Express 서버로 프록시합니다. 필요하면 `VITE_API_BASE_URL=http://localhost:3000`을 사용할 수 있습니다.
+개발 환경에서는 Vite가 `/api` 요청을 Express 서버로 프록시합니다.
 
-## 운영 빌드 실행 방법
-
-개발 또는 로컬 개인 실행:
+### 운영 빌드
 
 ```bash
 npm install
@@ -126,42 +64,27 @@ npm run build
 npm run start
 ```
 
-운영 DB에 migration 파일이 준비된 배포 환경:
+접속:
 
-```bash
-npm install
-npm run db:generate
-npm run db:deploy
-npm run build
-npm run start
-```
-
-정리하면 개발 중 빠른 반영은 `db:push`, 운영 배포는 migration 이력을 보존하는 `db:deploy`를 권장합니다.
-
-운영 실행 후 접속:
-
-- App: `http://localhost:3000/`
+- App: `http://localhost:3000`
 - Health Check: `http://localhost:3000/api/health`
 
-`npm run start`는 `server/dist/index.js`를 실행합니다. `npm run build`는 React `dist`와 Express 서버 build를 함께 생성합니다.
+운영 DB에 migration 파일이 준비된 환경에서는 `db:push` 대신 `npm run db:deploy`를 권장합니다.
 
-## package.json scripts
+### Docker
 
-- `npm run dev`: Vite dev server와 Express dev server 동시 실행
-- `npm run client:dev`: Vite dev server 실행
-- `npm run server:dev`: Express server를 tsx watch로 실행
-- `npm run build`: React build + Express TypeScript build
-- `npm run build:pages`: GitHub Pages용 `/dark-todo-planner/` base 정적 build
-- `npm run start`: production Express 서버 실행
-- `npm run db:generate`: Prisma Client 생성
-- `npm run db:push`: Prisma schema를 DB에 반영
-- `npm run db:migrate`: 개발 환경에서 Prisma migration 생성 및 적용
-- `npm run db:deploy`: 운영 환경에서 이미 생성된 migration 적용
-- `npm run db:studio`: Prisma Studio 실행
+```bash
+cp .env.example .env
+docker compose up --build
+```
 
-## 환경 변수 설정
+접속:
 
-`.env.example`을 참고해 `.env`를 만듭니다. 실제 `.env`는 Git에 올리지 않습니다.
+- App: `http://localhost:3000`
+
+Docker Compose는 `./data:/app/data` 볼륨을 연결합니다. SQLite DB 파일을 유지하려면 `data` 폴더를 삭제하지 마세요.
+
+## 환경 변수
 
 로컬 예시:
 
@@ -172,7 +95,7 @@ PORT=3000
 NODE_ENV=development
 ```
 
-운영 예시:
+Docker / 운영 예시:
 
 ```env
 DATABASE_URL="file:../data/prod.db"
@@ -180,119 +103,44 @@ PORT=3000
 NODE_ENV=production
 ```
 
-주의:
+Prisma SQLite 경로는 `prisma/schema.prisma` 기준 상대 경로입니다. `file:../data/prod.db`는 프로젝트 루트의 `data/prod.db`를 가리킵니다.
 
-- 단일 사용자 모드이므로 별도 세션 secret은 필요하지 않습니다.
-- 외부 공개 배포 시에는 앱 접근 자체를 보호할 방법을 별도로 마련하세요.
-- `CLIENT_URL`은 개발 환경에서 Vite dev server와 Express server가 다른 origin일 때 CORS 허용 기준으로 사용합니다.
+## 단일 사용자 모드
 
-## Express 단일 서버 제공 방식
+이 프로젝트는 개인용으로 쓰기 쉽도록 로그인/회원가입 화면을 제거했습니다. 서버는 요청이 들어오면 내부 default user를 자동으로 준비하고, 모든 Todo와 카테고리, 목표, 회고, 주제, 음악 링크를 그 userId로 저장합니다.
 
-서버 라우팅 순서는 다음 구조입니다.
+공개 인터넷에 배포하면 URL을 아는 사람이 앱에 접근할 수 있습니다. 외부 공개 배포가 필요하다면 reverse proxy 기본 인증, VPN, 방화벽, 사설 네트워크 같은 접근 제한을 추가하는 것을 권장합니다.
 
-```text
-1. JSON middleware
-2. 개발 환경 CORS middleware
-3. /api 라우트
-4. /api 404 JSON 응답
-5. React dist 정적 파일 제공
-6. React fallback
-7. 서버 에러 핸들러
-```
+## GitHub Pages 배포 한계
 
-`/api/*`는 Express API가 처리합니다. 그 외 요청은 `dist/index.html`로 fallback되어 새로고침이나 직접 URL 접근 시 404가 나지 않도록 했습니다.
+GitHub Pages는 정적 프론트만 제공하므로 서버 저장, API, DB 기능은 동작하지 않습니다.
 
-## Prisma DB 생성 방법
+- GitHub Pages: 정적 미리보기용
+- Express 단일 서버: 실제 개인 사용 권장 방식
+- Docker / VPS / Render / Railway / Fly.io: 백엔드 포함 배포 가능
 
-```bash
-npm run db:generate
-npm run db:push
-```
+`GITHUB_PAGES=true`일 때 Vite base가 `/dark-todo-planner/`로 설정됩니다.
 
-개발 환경에서는 `db:push`로 빠르게 SQLite 스키마를 반영할 수 있습니다. 다만 장기 운영이나 실제 배포 DB에는 migration 이력이 남는 방식이 더 안전합니다.
+## 데이터 저장과 백업
 
-권장 흐름:
+- 기본 저장소: SQLite
+- DB 파일 위치: `data/*.db`
+- JSON 백업: 설정 페이지에서 내보내기 / 가져오기
+- 백업 포함 데이터: categories, todos, reflections, goals, topics, topicLinks, musicLinks
 
-```text
-개발 초기 / 빠른 실험: npm run db:push
-개발에서 migration 생성: npm run db:migrate
-운영 배포에서 migration 적용: npm run db:deploy
-```
+SQLite는 개인용 로컬 PC, VPS, 단일 서버에 적합합니다. Render/Railway 같은 PaaS에서는 persistent disk 설정이 없으면 재배포나 재시작 시 DB 파일이 사라질 수 있습니다.
 
-현재 저장소는 초기 개발 단계에서 `db:push` 중심으로 구성되어 있으므로, production에서 `db:deploy`를 사용하려면 먼저 개발 환경에서 baseline migration을 생성한 뒤 배포에 포함해야 합니다.
+## Markdown 편집
 
-## SQLite 파일 위치와 주의사항
+Todo 메모, 회고 섹션, 주제 메모, 음악 링크 메모에는 compact Markdown 툴바가 제공됩니다.
 
-Prisma SQLite 경로는 `prisma/schema.prisma` 기준 상대 경로입니다. 이 프로젝트는 DB 파일을 루트 `data` 폴더에 모으기 위해 다음처럼 설정합니다.
+지원:
 
-```env
-DATABASE_URL="file:../data/prod.db"
-```
+- 굵게 / 기울임 / 취소선
+- 글머리 / 번호 목록 / 체크리스트
+- 인용 / 코드 / 링크
 
-주의:
-
-- `data/*.db`와 journal 파일은 Git에 올리지 않습니다.
-- SQLite는 로컬 PC, 개인 VPS, 단일 서버에서 쓰기 간단한 개인용 저장소에 적합합니다.
-- Render/Railway 같은 PaaS에서는 재배포나 재시작 시 SQLite 파일이 유지되는지 반드시 확인해야 합니다.
-- 영구 디스크를 설정하지 않으면 DB 파일이 사라져 Todo, 목표, 회고, 주제 데이터가 유실될 수 있습니다.
-- 장기 운영에서는 JSON 백업을 주기적으로 내려받거나 서버 파일 백업을 자동화하는 것을 권장합니다.
-- 여러 기기에서 오래 사용할 계획이라면 PostgreSQL 전환을 고려하세요.
-
-## Render 배포 가이드
-
-Build Command:
-
-```bash
-npm install && npm run db:generate && npm run build
-```
-
-Start Command:
-
-```bash
-npm run db:deploy && npm run start
-```
-
-환경 변수 예시:
-
-```text
-DATABASE_URL=file:../data/prod.db
-NODE_ENV=production
-PORT=10000
-```
-
-Render에서 SQLite를 안정적으로 쓰려면 Persistent Disk 설정이 필요할 수 있습니다. Persistent Disk를 사용하지 않으면 재배포 또는 재시작 시 DB 파일이 사라질 수 있습니다. 아직 Prisma migration을 만들지 않은 상태라면 첫 배포 전에는 `db:push`로 초기화하고, 이후 운영에서는 migration 기반으로 전환하는 방식을 권장합니다.
-
-## Railway 배포 가이드
-
-환경 변수 예시:
-
-```text
-DATABASE_URL=file:../data/prod.db
-NODE_ENV=production
-```
-
-Railway에서 SQLite 파일 저장이 영구적으로 유지되는지 확인해야 합니다. 장기적으로는 Railway PostgreSQL을 사용하는 것이 더 안정적일 수 있습니다.
-
-## PostgreSQL 전환 안내
-
-SQLite는 개인용 로컬이나 VPS에서는 간단하고 좋지만, 서버 재배포 시 파일 유지가 중요한 환경에서는 주의가 필요합니다.
-
-Render/Railway 같은 환경에서 장기적으로 사용할 경우 PostgreSQL로 전환하는 것이 더 안정적입니다. Prisma를 사용하고 있으므로 `DATABASE_URL`과 `provider`를 변경하면 PostgreSQL 전환이 가능합니다.
-
-## API Health Check
-
-```bash
-curl http://localhost:3000/api/health
-```
-
-응답 예시:
-
-```json
-{
-  "status": "ok",
-  "database": "connected"
-}
-```
+저장 형식은 기존 plain text와 호환되는 Markdown 문자열입니다.
 
 ## API 목록
 
@@ -345,74 +193,87 @@ curl http://localhost:3000/api/health
 - `PUT /api/topics/:id/links/:linkId`
 - `DELETE /api/topics/:id/links/:linkId`
 
+### Music Links
+
+- `GET /api/music-links`
+- `POST /api/music-links`
+- `PUT /api/music-links/:id`
+- `DELETE /api/music-links/:id`
+
 ### Backup
 
 - `GET /api/backup/export`
 - `POST /api/backup/import`
 - `POST /api/migrate/local-storage`
 
-## 문제 해결
+## package.json scripts
 
-- 앱 접속 시 데이터가 비어 있음: `.env`의 `DATABASE_URL`이 기존 DB 파일을 가리키는지 확인하세요.
-- DB 파일이 생성되지 않음: `data` 폴더가 있는지, `DATABASE_URL=file:../data/prod.db`처럼 Prisma schema 기준 경로인지 확인하세요.
-- 재배포 후 데이터가 사라짐: 배포 환경의 persistent disk 설정을 확인하세요.
-- GitHub Pages에서 저장이 안 됨: 정상입니다. GitHub Pages에는 `/api` 서버와 SQLite DB가 없습니다.
-- 공개 URL에서 누구나 앱에 들어올 수 있음: 단일 사용자 모드의 의도된 특성입니다. 공개 배포 시 서버 접근 제한을 추가하세요.
+- `npm run dev`: Vite dev server와 Express dev server 동시 실행
+- `npm run build`: React build + Express TypeScript build
+- `npm run build:pages`: GitHub Pages용 `/dark-todo-planner/` base 정적 build
+- `npm run start`: production Express 서버 실행
+- `npm run db:generate`: Prisma Client 생성
+- `npm run db:push`: Prisma schema를 DB에 반영
+- `npm run db:migrate`: 개발 환경에서 Prisma migration 생성 및 적용
+- `npm run db:deploy`: 운영 환경에서 이미 생성된 migration 적용
+- `npm run db:studio`: Prisma Studio 실행
 
 ## 폴더 구조
 
 ```text
 data
- ┗ .gitkeep
 prisma
- ┗ schema.prisma
 server
- ┣ auth.ts              # 단일 사용자 default user middleware
- ┣ backup.ts
- ┣ db.ts
- ┣ index.ts
- ┣ serializers.ts
- ┗ validation.ts
-scripts
- ┗ write-server-dist-package.cjs
 src
  ┣ components
  ┃ ┣ calendar
  ┃ ┣ common
+ ┃ ┣ editor
  ┃ ┣ goal
  ┃ ┣ layout
  ┃ ┣ monthly
  ┃ ┗ todo
  ┣ hooks
- ┃ ┣ usePlannerData.ts      # 도메인 hook 조합
- ┃ ┣ useTodos.ts            # Todo 조회/수정/필터/통계
- ┃ ┣ useCategories.ts       # 카테고리 CRUD
- ┃ ┣ useReflections.ts      # 회고 CRUD
- ┃ ┣ useGoals.ts            # 목표 CRUD
- ┃ ┣ useTopics.ts           # 주제 보관함 CRUD
- ┃ ┗ useBackup.ts           # JSON 백업/복원/마이그레이션
+ ┃ ┣ usePlannerData.ts
+ ┃ ┣ useTodos.ts
+ ┃ ┣ useCategories.ts
+ ┃ ┣ useReflections.ts
+ ┃ ┣ useGoals.ts
+ ┃ ┣ useTopics.ts
+ ┃ ┣ useMusicLinks.ts
+ ┃ ┗ useBackup.ts
  ┣ lib
  ┣ pages
  ┣ styles
  ┣ types
  ┣ App.tsx
  ┗ main.tsx
+Dockerfile
+docker-compose.yml
 ```
+
+## 문제 해결
+
+- 앱 접속 시 데이터가 비어 있음: `.env`의 `DATABASE_URL`이 기존 DB 파일을 가리키는지 확인하세요.
+- DB 파일이 생성되지 않음: `data` 폴더가 있는지, Prisma schema 기준 경로가 맞는지 확인하세요.
+- Docker 재실행 후 데이터가 사라짐: `./data:/app/data` 볼륨이 유지되는지 확인하세요.
+- GitHub Pages에서 저장이 안 됨: 정상입니다. GitHub Pages에는 `/api` 서버와 SQLite DB가 없습니다.
+- 공개 URL에서 누구나 앱에 들어올 수 있음: 단일 사용자 모드의 특성입니다. 공개 배포 시 접근 제한을 추가하세요.
 
 ## 추후 개선 사항
 
 ### 1순위
 
-- Prisma migrate 기반 운영 배포 정리: 가능. 운영에서는 `db:push`보다 `migrate deploy`를 사용하는 것이 안전합니다. 배포 전 migration 파일을 관리하는 방식으로 전환할 때 진행하면 좋습니다.
-- Docker 배포 구성: 가능. Express 서버, React build, Prisma 실행 환경을 하나의 컨테이너로 묶을 수 있습니다. VPS, NAS, 개인 서버 배포를 정리할 때 유용합니다.
-- 서버 백업 자동화: 가능. SQLite는 DB 파일 백업, PostgreSQL은 dump 방식으로 백업할 수 있습니다. 개인용이라도 데이터 유실 방지를 위해 우선순위가 높습니다.
+- Prisma migrate 기반 운영 배포 정리
+- 서버 백업 자동화
+- PostgreSQL 전환 검토
 
 ### 2순위
 
-- PostgreSQL 전환: 가능. 장기 배포나 PaaS 환경에서는 SQLite보다 안정적입니다. Prisma provider와 `DATABASE_URL`을 변경하고 migration을 새로 적용해야 합니다.
-- 통계 차트: 가능. Todo 완료율, 카테고리별 완료율, 주제 작성 상태 등을 차트로 볼 수 있습니다. 대시보드가 무거워지지 않도록 별도 통계 페이지로 분리하는 것이 좋습니다.
+- 통계 차트
+- 태그별/카테고리별 통계
 
 ### 3순위
 
-- 캘린더 드래그 앤 드롭: 가능하지만 UI 복잡도가 올라갑니다. 기본 Todo/목표 UX가 안정된 뒤 진행하는 편이 좋습니다.
-- PWA 지원: 가능. 설치형 웹앱, 앱 아이콘, 오프라인 캐시를 제공할 수 있습니다. 서버 DB와 오프라인 동기화까지 하려면 별도 설계가 필요합니다.
+- 캘린더 드래그 앤 드롭
+- PWA 지원

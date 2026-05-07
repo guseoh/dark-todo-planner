@@ -2,6 +2,7 @@ import { Archive, CalendarDays, CheckCircle2, Pencil, RotateCcw, Trash2 } from "
 import { formatKoreanDate } from "../../lib/date";
 import { repeatLabel } from "../../lib/todo";
 import type { Todo } from "../../types/todo";
+import { MarkdownPreview } from "../editor/MarkdownPreview";
 import { PriorityBadge } from "./PriorityBadge";
 
 type TodoItemProps = {
@@ -65,7 +66,7 @@ export function TodoItem({
               </span>
             ) : null}
           </div>
-          {todo.memo ? <p className="mt-2 whitespace-pre-wrap text-sm text-ink-400">{todo.memo}</p> : null}
+          {todo.memo ? <MarkdownPreview className="mt-2" value={todo.memo} /> : null}
           {todo.tags.length ? (
             <div className="mt-3 flex flex-wrap gap-2">
               {todo.tags.map((tag) => (

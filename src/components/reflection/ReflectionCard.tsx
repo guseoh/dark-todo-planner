@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { formatKoreanDate } from "../../lib/date";
 import type { Reflection, ReflectionType } from "../../types/reflection";
+import { MarkdownEditor } from "../editor/MarkdownEditor";
+import { MarkdownPreview } from "../editor/MarkdownPreview";
 
 const typeLabel: Record<ReflectionType, string> = {
   DAILY: "오늘 회고",
@@ -55,18 +57,16 @@ export function ReflectionCard({
       {editing ? (
         <div className="mt-4 space-y-3">
           {sections.map((section) => (
-            <label key={section.id} className="block space-y-2 text-sm font-semibold text-ink-200">
-              {section.title}
-              <textarea
-                className="field min-h-24 resize-y"
-                value={section.content}
-                onChange={(event) =>
+            <MarkdownEditor
+              key={section.id}
+              label={section.title}
+              value={section.content}
+              onChange={(value) =>
                   setSections((current) =>
-                    current.map((item) => (item.id === section.id ? { ...item, content: event.target.value } : item)),
+                    current.map((item) => (item.id === section.id ? { ...item, content: value } : item)),
                   )
-                }
-              />
-            </label>
+              }
+            />
           ))}
           <button type="button" className="btn-primary" onClick={save}>
             저장
@@ -77,7 +77,7 @@ export function ReflectionCard({
           {(reflection.sections || []).map((section) => (
             <section key={section.id}>
               <h4 className="text-sm font-bold text-ink-100">{section.title}</h4>
-              <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-ink-400">{section.content || "비어 있음"}</p>
+              <MarkdownPreview className="mt-1" value={section.content} />
             </section>
           ))}
         </div>
