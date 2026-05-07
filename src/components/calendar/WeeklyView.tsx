@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CalendarCheck2, Plus } from "lucide-react";
+import { CalendarCheck2 } from "lucide-react";
 import { calculateRate } from "../../lib/todo";
 import { formatKoreanDate, getWeekDays, toDateKey, todayKey } from "../../lib/date";
 import type { Todo, TodoInput } from "../../types/todo";
@@ -8,7 +8,6 @@ import type { Goal } from "../../types/goal";
 import { isDayStatusGoal } from "../../lib/goals";
 import { GoalChecklist } from "../goal/GoalChecklist";
 import { GroupedTodoList } from "../todo/GroupedTodoList";
-import { TodoForm } from "../todo/TodoForm";
 
 type WeeklyViewProps = {
   todos: Todo[];
@@ -86,7 +85,7 @@ export function WeeklyView({
         onDelete={onDeleteGoal}
       />
 
-      <section className="grid gap-4 2xl:grid-cols-[minmax(0,1.28fr)_minmax(340px,0.72fr)]">
+      <section className="space-y-3">
         <div className="grid gap-2 md:grid-cols-7">
           {weekDays.map((day) => {
             const dateKey = toDateKey(day);
@@ -142,41 +141,34 @@ export function WeeklyView({
             );
           })}
         </div>
-
-        <aside className="app-card p-4">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-2">
-              <CalendarCheck2 size={17} className="text-accent-400" />
-              <h3 className="truncate font-semibold text-ink-100">{formatKoreanDate(selectedDate, "M월 d일 EEEE")}</h3>
-            </div>
-            <span className="rounded-full border border-ink-700 bg-ink-950/70 px-2 py-0.5 text-xs text-ink-400">
-              {selectedTodos.length}개
-            </span>
-          </div>
-          <GroupedTodoList
-            todos={selectedTodos}
-            categories={categories}
-            onAddTodo={onAdd}
-            onToggle={onToggle}
-            onDelete={onDelete}
-            onUpdate={onUpdate}
-            onArchive={onArchive}
-            emptyTitle="선택한 날짜의 Todo가 없습니다."
-            emptyDescription="아래 빠른 추가로 계획을 넣을 수 있습니다."
-            showDate={false}
-            defaultDate={selectedDate}
-            showCategoryCreator={false}
-            layout="list"
-          />
-          <div className="mt-3 border-t border-ink-700/70 pt-3">
-            <div className="mb-2 flex items-center gap-2">
-              <Plus size={16} className="text-accent-400" />
-              <h4 className="text-sm font-semibold text-ink-100">선택 날짜 빠른 추가</h4>
-            </div>
-            <TodoForm onAdd={onAdd} defaultDate={selectedDate} compact categories={categories} submitLabel="추가" />
-          </div>
-        </aside>
       </section>
+
+      <aside className="app-card p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <CalendarCheck2 size={17} className="text-accent-400" />
+            <h3 className="truncate font-semibold text-ink-100">{formatKoreanDate(selectedDate, "M월 d일 EEEE")}</h3>
+          </div>
+          <span className="rounded-full border border-ink-700 bg-ink-950/70 px-2 py-0.5 text-xs text-ink-400">
+            {selectedTodos.length}개
+          </span>
+        </div>
+        <GroupedTodoList
+          todos={selectedTodos}
+          categories={categories}
+          onAddTodo={onAdd}
+          onToggle={onToggle}
+          onDelete={onDelete}
+          onUpdate={onUpdate}
+          onArchive={onArchive}
+          emptyTitle="선택한 날짜의 Todo가 없습니다."
+          emptyDescription="오늘 페이지나 카테고리 내부 추가에서 계획을 등록할 수 있습니다."
+          showDate={false}
+          defaultDate={selectedDate}
+          showCategoryCreator={false}
+          layout="list"
+        />
+      </aside>
     </div>
   );
 }

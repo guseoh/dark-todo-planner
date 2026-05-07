@@ -1,4 +1,5 @@
-import { CheckCheck, CircleDot, ListTodo, TrendingUp } from "lucide-react";
+import { useState } from "react";
+import { CheckCheck, CircleDot, CopyPlus, ListTodo, MoveRight, TrendingUp } from "lucide-react";
 import { formatKoreanDate, todayKey } from "../lib/date";
 import type { Category } from "../types/category";
 import type { Goal } from "../types/goal";
@@ -34,6 +35,8 @@ type TodayPageProps = {
   onAddCategory: (input: { name: string; description?: string; color?: string }) => void | Promise<void>;
   onUpdateCategory: (id: string, input: Partial<Category>) => void | Promise<void>;
   onDeleteCategory: (id: string, mode: "moveTodos" | "deleteTodos") => void | Promise<void>;
+  yesterdayActiveCount: number;
+  onBringYesterdayTodos: (mode: "copy" | "move") => Promise<{ total: number; imported: number; skipped: number; mode: "copy" | "move" }>;
 };
 
 export function TodayPage({
@@ -53,7 +56,10 @@ export function TodayPage({
   onAddCategory,
   onUpdateCategory,
   onDeleteCategory,
+  yesterdayActiveCount,
+  onBringYesterdayTodos,
 }: TodayPageProps) {
+  const [importMessage, setImportMessage] = useState("");
   const today = todayKey();
   const todayGoals = goals.filter((goal) => goal.type === "DAILY" && !isDayStatusGoal(goal) && (goal.targetDate === today || goal.dueDate === today));
   const categorySummaries = [
@@ -88,10 +94,22 @@ export function TodayPage({
     .sort((a, b) => b.active - a.active)
     .slice(0, 4);
 
+  const bringYesterdayTodos = async (mode: "copy" | "move") => {
+    if (!yesterdayActiveCount) return;
+    const actionLabel = mode === "copy" ? "복사" : "이동";
+    const confirmed = window.confirm(
+      `어제 미완료 Todo ${yesterdayActiveCount}개를 오늘로 ${actionLabel}할까요?\n\n이미 오늘 같은 제목과 카테고리로 등록된 Todo는 건너뜁니다.`,
+    );
+    if (!confirmed) return;
+    const result = await onBringYesterdayTodos(mode);
+    const skipped = result.skipped ? `, 중복 ${result.skipped}개 제외` : "";
+    setImportMessage(`${actionLabel} ${result.imported}개 완료${skipped}`);
+  };
+
   return (
     <div className="space-y-4">
       <section>
-        <p className="text-sm text-ink-400">{formatKoreanDate(new Date(), "yyyy년 M월 d일 EEEE")}</p>
+        <p className="text-sm text-ink-400">{formatKoreanDate(today, "yyyy년 M월 d일 EEEE")} · 오전 3시 기준</p>
         <h2 className="mt-1 text-2xl font-bold text-ink-100">오늘</h2>
       </section>
 
@@ -115,6 +133,36 @@ export function TodayPage({
         onToggle={onToggleGoal}
         onDelete={onDeleteGoal}
       />
+
+      <section className="app-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-ink-100">어제 미완료 가져오기</h3>
+          <p className="mt-1 text-xs text-ink-500">
+            오전 3시 기준 어제 남은 Todo {yesterdayActiveCount}개를 오늘로 가져올 수 있습니다.
+          </p>
+          {importMessage ? <p className="mt-2 text-xs font-semibold text-emerald-200">{importMessage}</p> : null}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn-secondary min-h-10 px-3 py-2 text-sm"
+            onClick={() => bringYesterdayTodos("copy")}
+            disabled={!yesterdayActiveCount}
+          >
+            <CopyPlus size={15} />
+            복사하기
+          </button>
+          <button
+            type="button"
+            className="btn-secondary min-h-10 px-3 py-2 text-sm"
+            onClick={() => bringYesterdayTodos("move")}
+            disabled={!yesterdayActiveCount}
+          >
+            <MoveRight size={15} />
+            이동하기
+          </button>
+        </div>
+      </section>
 
       <TodoForm onAdd={onAdd} defaultDate={today} compact submitLabel="오늘 추가" categories={categories} />
 

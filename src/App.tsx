@@ -17,6 +17,7 @@ function App() {
   const planner = usePlannerData();
 
   const todayTodos = useMemo(() => planner.getTodayTodos(), [planner]);
+  const yesterdayActiveTodos = useMemo(() => planner.getYesterdayTodos().filter((todo) => !todo.completed), [planner]);
   const weekTodos = useMemo(() => planner.getWeekTodos(), [planner]);
 
   const content = {
@@ -38,6 +39,8 @@ function App() {
         onAddCategory={planner.addCategory}
         onUpdateCategory={planner.updateCategory}
         onDeleteCategory={planner.deleteCategory}
+        yesterdayActiveCount={yesterdayActiveTodos.length}
+        onBringYesterdayTodos={planner.bringYesterdayTodosToToday}
       />
     ),
     week: (

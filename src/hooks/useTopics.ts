@@ -7,6 +7,8 @@ const getMessage = (error: unknown) => (error instanceof Error ? error.message :
 const normalizeTags = (tags?: string[]) =>
   Array.from(new Set((tags || []).map((tag) => tag.trim().replace(/^#/, "")).filter(Boolean)));
 
+const hasOwn = (value: object, key: PropertyKey) => Object.prototype.hasOwnProperty.call(value, key);
+
 export function useTopics() {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(false);
@@ -55,9 +57,9 @@ export function useTopics() {
         method: "PUT",
         ...jsonBody({
           title: input.title ?? existing.title,
-          memo: input.memo ?? existing.memo,
+          memo: hasOwn(input, "memo") ? input.memo : existing.memo,
           status: input.status ?? existing.status,
-          tags: normalizeTags(input.tags ?? existing.tags),
+          tags: normalizeTags(hasOwn(input, "tags") ? input.tags : existing.tags),
         }),
       });
       setTopics((current) => current.map((topic) => (topic.id === id ? result.topic : topic)));

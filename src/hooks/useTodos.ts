@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import type { Category } from "../types/category";
 import type { Todo, TodoFilters, TodoInput } from "../types/todo";
 import { api, jsonBody } from "../lib/api/client";
-import { getMonthGrid, getWeekDays, todayKey, toDateKey } from "../lib/date";
+import { getMonthGrid, getPlannerToday, getPlannerYesterday, getWeekDays, todayKey, toDateKey } from "../lib/date";
 import { calculateRate, getAllTags, priorityRank, todoOccursOnDate } from "../lib/todo";
 
 export const defaultFilters: TodoFilters = {
@@ -18,6 +18,14 @@ export const defaultFilters: TodoFilters = {
 };
 
 const getMessage = (error: unknown) => (error instanceof Error ? error.message : "Todo 요청 처리 중 오류가 발생했습니다.");
+export type YesterdayTodoImportMode = "copy" | "move";
+
+export type YesterdayTodoImportResult = {
+  total: number;
+  imported: number;
+  skipped: number;
+  mode: YesterdayTodoImportMode;
+};
 
 const toTodoRequestBody = (todo: Todo | (Partial<Todo> & TodoInput)) => {
   const { id, userId, createdAt, updatedAt, category, startTime, endTime, ...body } = todo;
@@ -154,10 +162,53 @@ export function useTodos() {
 
   const getTodosByDate = useCallback((date: string) => todos.filter((todo) => todoOccursOnDate(todo, date)), [todos]);
   const getTodayTodos = useCallback(() => getTodosByDate(todayKey()), [getTodosByDate]);
+  const getYesterdayTodos = useCallback(() => getTodosByDate(getPlannerYesterday()), [getTodosByDate]);
   const getWeekTodos = useCallback(() => {
     const days = getWeekDays().map(toDateKey);
     return todos.filter((todo) => days.some((day) => todoOccursOnDate(todo, day)));
   }, [todos]);
+
+  const bringYesterdayTodosToToday = useCallback(async (mode: YesterdayTodoImportMode): Promise<YesterdayTodoImportResult> => {
+    const today = getPlannerToday();
+    const yesterdayIncomplete = getYesterdayTodos().filter((todo) => !todo.completed);
+    const todayTodos = getTodosByDate(today);
+    const makeDuplicateKey = (todo: Todo) => `${todo.title.trim().toLowerCase()}::${todo.categoryId || ""}`;
+    const seenToday = new Set(todayTodos.map(makeDuplicateKey));
+    const targets = yesterdayIncomplete.filter((todo) => {
+      const key = makeDuplicateKey(todo);
+      if (seenToday.has(key)) return false;
+      seenToday.add(key);
+      return true;
+    });
+    let imported = 0;
+
+    if (mode === "copy") {
+      for (const todo of targets) {
+        const created = await addTodo({
+          title: todo.title,
+          memo: todo.memo,
+          categoryId: todo.categoryId,
+          date: today,
+          priority: todo.priority,
+          repeat: todo.repeat,
+          tags: todo.tags,
+        });
+        if (created) imported += 1;
+      }
+    } else {
+      for (const todo of targets) {
+        const updated = await updateTodo(todo.id, { date: today });
+        if (updated) imported += 1;
+      }
+    }
+
+    return {
+      total: yesterdayIncomplete.length,
+      imported,
+      skipped: yesterdayIncomplete.length - targets.length,
+      mode,
+    };
+  }, [addTodo, getTodosByDate, getYesterdayTodos, updateTodo]);
   const getMonthTodos = useCallback(() => {
     const days = getMonthGrid().map(toDateKey);
     return todos.filter((todo) => days.some((day) => todoOccursOnDate(todo, day)));
@@ -225,8 +276,10 @@ export function useTodos() {
     removeCategoryFromTodos,
     getTodosByDate,
     getTodayTodos,
+    getYesterdayTodos,
     getWeekTodos,
     getMonthTodos,
     filterTodos,
+    bringYesterdayTodosToToday,
   };
 }

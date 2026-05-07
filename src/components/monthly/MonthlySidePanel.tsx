@@ -1,9 +1,6 @@
-import { Plus } from "lucide-react";
-import { formatKoreanDate } from "../../lib/date";
 import type { Category } from "../../types/category";
 import type { Todo, TodoInput } from "../../types/todo";
 import { GroupedTodoList } from "../todo/GroupedTodoList";
-import { TodoForm } from "../todo/TodoForm";
 
 type MonthlySidePanelProps = {
   selectedDate: string;
@@ -53,22 +50,12 @@ export function MonthlySidePanel({
           onUpdateCategory={onUpdateCategory}
           onDeleteCategory={onDeleteCategory}
           emptyTitle="선택한 날짜의 Todo가 없습니다."
-          emptyDescription="오른쪽 위 빠른 추가로 바로 등록할 수 있습니다."
+          emptyDescription="오늘 페이지나 카테고리 내부 추가에서 계획을 등록할 수 있습니다."
           showDate={false}
           defaultDate={selectedDate}
           showCategoryCreator={false}
           layout="list"
         />
-      </section>
-
-      <section className="app-card space-y-3 p-4">
-        <div className="flex items-center gap-2">
-          <Plus size={17} className="text-accent-400" />
-          <h3 className="truncate text-sm font-semibold text-ink-100">
-            {formatKoreanDate(selectedDate, "M월 d일 EEEE")}에 추가
-          </h3>
-        </div>
-        <TodoForm onAdd={onAdd} defaultDate={selectedDate} compact categories={categories} />
       </section>
     </aside>
   );

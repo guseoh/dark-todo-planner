@@ -103,7 +103,7 @@ function LinkForm({
     await onSubmit({
       title: title.trim() || undefined,
       url: urlValue,
-      description: description.trim() || undefined,
+      description: description.trim(),
     });
     if (!initial) {
       setTitle("");
@@ -166,7 +166,7 @@ function TopicCard({
     if (!titleValue) return;
     await onUpdateTopic(topic.id, {
       title: titleValue,
-      memo: memo.trim() || undefined,
+      memo: memo.trim(),
       status,
       tags: parseTagsInput(tags),
     });
