@@ -10,7 +10,6 @@ type MonthPageProps = {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
-  onArchive: (id: string) => void;
   categories?: Category[];
   goals?: Goal[];
   onAddGoal: (input: Partial<Goal> & { title: string }) => void;
@@ -28,7 +27,6 @@ export function MonthPage({
   onToggle,
   onDelete,
   onUpdate,
-  onArchive,
   categories = [],
   goals = [],
   onAddGoal,
@@ -51,7 +49,6 @@ export function MonthPage({
         onToggle={onToggle}
         onDelete={onDelete}
         onUpdate={onUpdate}
-        onArchive={onArchive}
         categories={categories}
         goals={goals}
         onAddGoal={onAddGoal}

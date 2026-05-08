@@ -87,6 +87,18 @@ export function MonthlyCalendar({
           const isHolidayLike = dayIndex === 0 || !!holidayName;
           const dateTone = isHolidayLike ? "text-red-200" : isSaturday ? "text-sky-200" : "text-ink-100";
           const borderTone = isHolidayLike ? "border-red-400/25" : isSaturday ? "border-sky-400/25" : "border-ink-700";
+          const statusTone =
+            dayStatus === "O"
+              ? "border-emerald-400/45 bg-emerald-500/10"
+              : dayStatus === "X"
+                ? "border-rose-400/45 bg-rose-500/10"
+                : `${borderTone} bg-ink-950/40`;
+          const selectedTone =
+            dayStatus === "O"
+              ? "border-accent-500 bg-emerald-500/15"
+              : dayStatus === "X"
+                ? "border-accent-500 bg-rose-500/15"
+                : "border-accent-500 bg-accent-500/10";
 
           return (
             <article
@@ -101,7 +113,7 @@ export function MonthlyCalendar({
               role="button"
               tabIndex={0}
               className={`min-h-[5.8rem] cursor-pointer rounded-lg border p-2 text-left transition hover:border-accent-500/60 sm:min-h-[6.8rem] lg:min-h-[7.2rem] ${
-                selected ? "border-accent-500 bg-accent-500/10" : `${borderTone} bg-ink-950/40`
+                selected ? selectedTone : statusTone
               } ${inMonth ? "text-ink-100" : "text-ink-600"} ${today ? "ring-2 ring-accent-400/30" : ""}`}
             >
               <div className="flex min-w-0 items-start justify-between gap-1">
@@ -114,12 +126,12 @@ export function MonthlyCalendar({
                   ) : null}
                   <button
                     type="button"
-                    className={`rounded-full border px-1.5 py-0.5 text-[10px] font-bold leading-4 transition hover:border-accent-400 ${
+                    className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full border px-1 text-[10px] font-bold leading-4 transition hover:border-accent-400 ${
                       dayStatus === "O"
-                        ? "border-success/50 bg-success/15 text-emerald-100"
+                        ? "border-success/45 bg-success/10 text-emerald-100"
                         : dayStatus === "X"
-                          ? "border-danger/50 bg-danger/15 text-red-100"
-                          : "border-ink-700 bg-ink-950/55 text-ink-500"
+                          ? "border-danger/45 bg-danger/10 text-red-100"
+                          : "border-ink-700 bg-transparent text-ink-500"
                     }`}
                     onClick={(event) => {
                       event.stopPropagation();

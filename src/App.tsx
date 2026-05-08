@@ -4,7 +4,7 @@ import { Header } from "./components/layout/Header";
 import { AppView, Sidebar } from "./components/layout/Sidebar";
 import { usePlannerData } from "./hooks/usePlannerData";
 import { AllTodosPage } from "./pages/AllTodosPage";
-import { ArchivePage } from "./pages/ArchivePage";
+import { MemoPage } from "./pages/MemoPage";
 import { MonthPage } from "./pages/MonthPage";
 import { ReflectionPage } from "./pages/ReflectionPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -29,7 +29,6 @@ function App() {
         onToggle={planner.toggleTodo}
         onDelete={planner.deleteTodo}
         onUpdate={planner.updateTodo}
-        onArchive={planner.archiveTodo}
         categories={planner.categories}
         goals={planner.goals}
         onAddGoal={planner.addGoal}
@@ -51,7 +50,6 @@ function App() {
         onToggle={planner.toggleTodo}
         onDelete={planner.deleteTodo}
         onUpdate={planner.updateTodo}
-        onArchive={planner.archiveTodo}
         onAddGoal={planner.addGoal}
         onUpdateGoal={planner.updateGoal}
         onToggleGoal={planner.toggleGoal}
@@ -68,7 +66,6 @@ function App() {
         onToggle={planner.toggleTodo}
         onDelete={planner.deleteTodo}
         onUpdate={planner.updateTodo}
-        onArchive={planner.archiveTodo}
         categories={planner.categories}
         goals={planner.goals}
         onAddGoal={planner.addGoal}
@@ -87,7 +84,7 @@ function App() {
         onToggle={planner.toggleTodo}
         onDelete={planner.deleteTodo}
         onUpdate={planner.updateTodo}
-        onArchive={planner.archiveTodo}
+        onUnarchive={planner.unarchiveTodo}
         onAddTodo={planner.addTodo}
         onAddCategory={planner.addCategory}
         onUpdateCategory={planner.updateCategory}
@@ -100,6 +97,15 @@ function App() {
         onAdd={planner.addReflection}
         onUpdate={planner.updateReflection}
         onDelete={planner.deleteReflection}
+      />
+    ),
+    memo: (
+      <MemoPage
+        memos={planner.memos}
+        onAdd={planner.addMemo}
+        onUpdate={planner.updateMemo}
+        onDelete={planner.deleteMemo}
+        onTogglePin={planner.toggleMemoPin}
       />
     ),
     topics: (
@@ -115,22 +121,13 @@ function App() {
         onDeleteTopicLink={planner.deleteTopicLink}
       />
     ),
-    archive: (
-      <ArchivePage
-        archivedTodos={planner.archivedTodos}
-        onToggle={planner.toggleTodo}
-        onDelete={planner.deleteTodo}
-        onUpdate={planner.updateTodo}
-        onUnarchive={planner.unarchiveTodo}
-        categories={planner.categories}
-      />
-    ),
     settings: (
       <SettingsPage
         stats={planner.stats}
         categories={planner.categories}
         reflections={planner.reflections}
         goals={planner.goals}
+        memos={planner.memos}
         topics={planner.topics}
         musicLinks={planner.musicLinks}
         onExportBackup={planner.exportBackup}

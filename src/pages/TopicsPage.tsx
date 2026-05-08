@@ -330,9 +330,15 @@ export function TopicsPage({
           <h2 className="text-2xl font-bold text-ink-100 sm:text-3xl">주제 보관함</h2>
           <p className="mt-2 text-sm text-ink-400">나중에 블로그로 작성할 공부 주제와 참고 링크를 모아둡니다.</p>
         </div>
-        <span className="rounded-full border border-ink-700 bg-ink-800 px-3 py-1 text-sm text-ink-300">
-          {filteredTopics.length}개 표시
-        </span>
+        <div className="flex flex-wrap gap-2">
+          <a className="btn-secondary min-h-10 px-3 py-2 text-sm" href="https://guseoh.github.io/" target="_blank" rel="noopener noreferrer">
+            <ExternalLink size={15} />
+            내 블로그 열기
+          </a>
+          <span className="inline-flex min-h-10 items-center rounded-full border border-ink-700 bg-ink-800 px-3 py-1 text-sm text-ink-300">
+            {filteredTopics.length}개 표시
+          </span>
+        </div>
       </section>
 
       <TopicForm onSubmit={onAddTopic} />

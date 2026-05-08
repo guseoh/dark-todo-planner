@@ -16,7 +16,6 @@ type WeeklyViewProps = {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
-  onArchive: (id: string) => void;
   onAddGoal: (input: Partial<Goal> & { title: string }) => void;
   onUpdateGoal: (id: string, updates: Partial<Omit<Goal, "id" | "createdAt">>) => void;
   onToggleGoal: (id: string) => void;
@@ -32,7 +31,6 @@ export function WeeklyView({
   onToggle,
   onDelete,
   onUpdate,
-  onArchive,
   onAddGoal,
   onUpdateGoal,
   onToggleGoal,
@@ -160,7 +158,6 @@ export function WeeklyView({
           onToggle={onToggle}
           onDelete={onDelete}
           onUpdate={onUpdate}
-          onArchive={onArchive}
           emptyTitle="선택한 날짜의 Todo가 없습니다."
           emptyDescription="오늘 페이지나 카테고리 내부 추가에서 계획을 등록할 수 있습니다."
           showDate={false}

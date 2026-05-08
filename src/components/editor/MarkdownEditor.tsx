@@ -1,5 +1,6 @@
 import { TextareaHTMLAttributes, useRef } from "react";
 import { Bold, CheckSquare, Code2, Italic, Link, List, ListOrdered, Quote, Strikethrough } from "lucide-react";
+import { SmartTextarea } from "./SmartTextarea";
 
 type MarkdownEditorProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "value" | "onChange"> & {
   value: string;
@@ -91,11 +92,11 @@ export function MarkdownEditor({ value, onChange, label, className = "", ...prop
             );
           })}
         </div>
-        <textarea
+        <SmartTextarea
           ref={textareaRef}
           className="min-h-20 w-full resize-y rounded-b-lg bg-transparent px-3 py-2 text-sm leading-6 text-ink-100 outline-none placeholder:text-ink-500"
           value={value}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={onChange}
           {...props}
         />
       </div>

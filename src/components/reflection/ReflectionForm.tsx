@@ -5,9 +5,9 @@ import type { ReflectionSection, ReflectionType } from "../../types/reflection";
 import { MarkdownEditor } from "../editor/MarkdownEditor";
 
 const templates: Record<ReflectionType, string[]> = {
-  DAILY: ["오늘 잘한 점", "아쉬운 점", "내일 할 일", "메모"],
-  WEEKLY: ["이번 주 완료한 것", "이번 주 아쉬웠던 것", "다음 주 목표", "메모"],
-  MONTHLY: ["이번 달 잘한 점", "이번 달 아쉬웠던 점", "다음 달 목표", "메모"],
+  DAILY: ["오늘 잘한 점", "아쉬운 점", "내일 할 일"],
+  WEEKLY: ["이번 주 완료한 것", "이번 주 아쉬웠던 것", "다음 주 목표"],
+  MONTHLY: ["이번 달 잘한 점", "이번 달 아쉬웠던 점", "다음 달 목표"],
 };
 
 const createSections = (type: ReflectionType): ReflectionSection[] =>

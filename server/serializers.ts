@@ -1,4 +1,4 @@
-import type { Category, Goal, MusicLink, Reflection, Tag, Todo, TodoTag, Topic, TopicLink } from "@prisma/client";
+import type { Category, Goal, Memo, MusicLink, Reflection, Tag, Todo, TodoTag, Topic, TopicLink } from "@prisma/client";
 
 type TodoWithRelations = Todo & {
   category?: Category | null;
@@ -40,7 +40,7 @@ export const serializeTodo = (todo: TodoWithRelations) => ({
 
 const fallbackReflectionSections = (reflection: Reflection) =>
   reflection.content
-    ? [{ id: "legacy-content", title: "메모", content: reflection.content, order: 0 }]
+    ? [{ id: "legacy-content", title: "기존 회고", content: reflection.content, order: 0 }]
     : [];
 
 export const parseSections = (reflection: Reflection) => {
@@ -82,6 +82,17 @@ export const serializeGoal = (goal: Goal) => ({
   dueDate: goal.dueDate || undefined,
   createdAt: goal.createdAt.toISOString(),
   updatedAt: goal.updatedAt.toISOString(),
+});
+
+export const serializeMemo = (memo: Memo) => ({
+  id: memo.id,
+  userId: memo.userId,
+  title: memo.title || undefined,
+  content: memo.content,
+  color: memo.color || undefined,
+  pinned: memo.pinned,
+  createdAt: memo.createdAt.toISOString(),
+  updatedAt: memo.updatedAt.toISOString(),
 });
 
 const parseTopicTags = (tagsJson: string) => {

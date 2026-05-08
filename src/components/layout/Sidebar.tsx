@@ -2,9 +2,9 @@ import {
   CalendarDays,
   CalendarRange,
   CheckSquare,
-  Archive,
   BookOpenText,
   NotebookPen,
+  StickyNote,
   ListChecks,
   Settings,
   PanelLeftClose,
@@ -18,8 +18,8 @@ export type AppView =
   | "month"
   | "all"
   | "reflection"
+  | "memo"
   | "topics"
-  | "archive"
   | "settings";
 
 type SidebarProps = {
@@ -33,8 +33,8 @@ const navItems = [
   { id: "month", label: "월간", icon: CalendarDays },
   { id: "all", label: "전체 Todo", icon: ListChecks },
   { id: "reflection", label: "회고", icon: NotebookPen },
+  { id: "memo", label: "메모", icon: StickyNote },
   { id: "topics", label: "주제 보관함", icon: BookOpenText },
-  { id: "archive", label: "보관함", icon: Archive },
   { id: "settings", label: "설정", icon: Settings },
 ] satisfies Array<{ id: AppView; label: string; icon: typeof CheckSquare }>;
 

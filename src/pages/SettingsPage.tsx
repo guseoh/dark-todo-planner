@@ -2,6 +2,7 @@ import { ChangeEvent, FormEvent, useRef, useState } from "react";
 import { Download, ExternalLink, Music2, Pencil, Plus, RotateCcw, Save, Trash2, Upload, X } from "lucide-react";
 import type { Category } from "../types/category";
 import type { Goal } from "../types/goal";
+import type { Memo } from "../types/memo";
 import type { MusicLink, MusicLinkInput, MusicProvider } from "../types/music";
 import type { Reflection } from "../types/reflection";
 import type { Topic } from "../types/topic";
@@ -15,6 +16,7 @@ type SettingsPageProps = {
   stats: { total: number; completedTotal: number; archivedTotal: number };
   reflections: Reflection[];
   goals: Goal[];
+  memos: Memo[];
   topics: Topic[];
   musicLinks: MusicLink[];
   onExportBackup: () => Promise<Record<string, unknown>>;
@@ -121,6 +123,7 @@ export function SettingsPage({
   stats,
   reflections,
   goals,
+  memos,
   topics,
   musicLinks,
   onExportBackup,
@@ -179,7 +182,7 @@ export function SettingsPage({
       const reflectionsRaw = localStorage.getItem(STORAGE_KEYS.REFLECTIONS);
       const goalsRaw = localStorage.getItem(STORAGE_KEYS.GOALS);
       const data = {
-        version: 5,
+        version: 6,
         exportedAt: new Date().toISOString(),
         categories: [],
         todos: todosRaw ? JSON.parse(todosRaw) : [],
@@ -216,8 +219,8 @@ export function SettingsPage({
         <StatCard title="사용 모드" value="단일 사용자" description={apiStatus === "online" ? "Server DB 연결됨" : "API 연결 오류"} />
         <StatCard title="Todo" value={stats.total} />
         <StatCard title="카테고리" value={categories.length} />
-        <StatCard title="회고 / 목표" value={`${reflections.length}/${goals.length}`} />
-        <StatCard title="주제 / 음악" value={`${topics.length}/${musicLinks.length}`} />
+        <StatCard title="회고 / 메모" value={`${reflections.length}/${memos.length}`} />
+        <StatCard title="목표 / 주제 / 음악" value={`${goals.length}/${topics.length}/${musicLinks.length}`} />
       </section>
 
       {(message || error) ? (

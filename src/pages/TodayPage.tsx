@@ -25,7 +25,6 @@ type TodayPageProps = {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
-  onArchive: (id: string) => void;
   categories?: Category[];
   goals?: Goal[];
   onAddGoal: (input: Partial<Goal> & { title: string }) => void;
@@ -46,7 +45,6 @@ export function TodayPage({
   onToggle,
   onDelete,
   onUpdate,
-  onArchive,
   categories = [],
   goals = [],
   onAddGoal,
@@ -203,7 +201,6 @@ export function TodayPage({
         onToggle={onToggle}
         onDelete={onDelete}
         onUpdate={onUpdate}
-        onArchive={onArchive}
         onAddCategory={onAddCategory}
         onUpdateCategory={onUpdateCategory}
         onDeleteCategory={onDeleteCategory}

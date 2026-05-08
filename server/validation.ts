@@ -77,6 +77,13 @@ export const topicLinkInputSchema = z.object({
   description: z.string().optional().nullable(),
 });
 
+export const memoInputSchema = z.object({
+  title: z.string().optional().nullable(),
+  content: z.string().trim().min(1),
+  color: z.string().optional().nullable(),
+  pinned: z.boolean().optional(),
+});
+
 export const musicLinkInputSchema = z.object({
   title: z.string().trim().min(1),
   url: z.string().url(),

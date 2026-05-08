@@ -3,6 +3,7 @@ import type { Category } from "../types/category";
 import { useBackup } from "./useBackup";
 import { useCategories } from "./useCategories";
 import { useGoals } from "./useGoals";
+import { useMemos } from "./useMemos";
 import { useMusicLinks } from "./useMusicLinks";
 import { useReflections } from "./useReflections";
 import { useTodos } from "./useTodos";
@@ -15,6 +16,7 @@ export function usePlannerData() {
   const todosState = useTodos();
   const reflectionsState = useReflections();
   const goalsState = useGoals();
+  const memosState = useMemos();
   const topicsState = useTopics();
   const musicLinksState = useMusicLinks();
   const [loading, setLoading] = useState(true);
@@ -28,6 +30,7 @@ export function usePlannerData() {
         todosState.loadTodos(),
         reflectionsState.loadReflections(),
         goalsState.loadGoals(),
+        memosState.loadMemos(),
         topicsState.loadTopics(),
         musicLinksState.loadMusicLinks(),
       ]);
@@ -40,6 +43,7 @@ export function usePlannerData() {
   }, [
     categoriesState.loadCategories,
     goalsState.loadGoals,
+    memosState.loadMemos,
     musicLinksState.loadMusicLinks,
     reflectionsState.loadReflections,
     topicsState.loadTopics,
@@ -72,6 +76,7 @@ export function usePlannerData() {
       categoriesState.saving ||
       reflectionsState.saving ||
       goalsState.saving ||
+      memosState.saving ||
       topicsState.saving ||
       musicLinksState.saving ||
       backupState.saving,
@@ -79,6 +84,7 @@ export function usePlannerData() {
       backupState.saving,
       categoriesState.saving,
       goalsState.saving,
+      memosState.saving,
       musicLinksState.saving,
       reflectionsState.saving,
       topicsState.saving,
@@ -92,6 +98,7 @@ export function usePlannerData() {
     categoriesState.error ||
     reflectionsState.error ||
     goalsState.error ||
+    memosState.error ||
     topicsState.error ||
     musicLinksState.error ||
     backupState.error;
@@ -104,6 +111,7 @@ export function usePlannerData() {
     tagOptions: todosState.tagOptions,
     reflections: reflectionsState.reflections,
     goals: goalsState.goals,
+    memos: memosState.memos,
     topics: topicsState.topics,
     topicTags: topicsState.topicTags,
     topicCounts: topicsState.topicCounts,
@@ -138,6 +146,10 @@ export function usePlannerData() {
     updateGoal: goalsState.updateGoal,
     toggleGoal: goalsState.toggleGoal,
     deleteGoal: goalsState.deleteGoal,
+    addMemo: memosState.addMemo,
+    updateMemo: memosState.updateMemo,
+    toggleMemoPin: memosState.toggleMemoPin,
+    deleteMemo: memosState.deleteMemo,
     addTopic: topicsState.addTopic,
     updateTopic: topicsState.updateTopic,
     deleteTopic: topicsState.deleteTopic,

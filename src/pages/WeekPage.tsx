@@ -10,7 +10,6 @@ type WeekPageProps = {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
-  onArchive: (id: string) => void;
   onAddGoal: (input: Partial<Goal> & { title: string }) => void;
   onUpdateGoal: (id: string, updates: Partial<Omit<Goal, "id" | "createdAt">>) => void;
   onToggleGoal: (id: string) => void;
@@ -26,7 +25,6 @@ export function WeekPage({
   onToggle,
   onDelete,
   onUpdate,
-  onArchive,
   onAddGoal,
   onUpdateGoal,
   onToggleGoal,
@@ -47,7 +45,6 @@ export function WeekPage({
         onToggle={onToggle}
         onDelete={onDelete}
         onUpdate={onUpdate}
-        onArchive={onArchive}
         onAddGoal={onAddGoal}
         onUpdateGoal={onUpdateGoal}
         onToggleGoal={onToggleGoal}

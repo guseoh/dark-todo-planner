@@ -12,7 +12,7 @@ type AllTodosPageProps = {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
-  onArchive: (id: string) => void;
+  onUnarchive: (id: string) => void;
   onAddTodo: (todo: TodoInput) => void;
   onAddCategory: (input: { name: string; description?: string; color?: string }) => void | Promise<void>;
   onUpdateCategory: (id: string, input: Partial<Category>) => void | Promise<void>;
@@ -26,7 +26,7 @@ export function AllTodosPage({
   onToggle,
   onDelete,
   onUpdate,
-  onArchive,
+  onUnarchive,
   onAddTodo,
   onAddCategory,
   onUpdateCategory,
@@ -55,7 +55,7 @@ export function AllTodosPage({
         onToggle={onToggle}
         onDelete={onDelete}
         onUpdate={onUpdate}
-        onArchive={onArchive}
+        onUnarchive={onUnarchive}
         onAddCategory={onAddCategory}
         onUpdateCategory={onUpdateCategory}
         onDeleteCategory={onDeleteCategory}

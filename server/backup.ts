@@ -25,6 +25,7 @@ export const importBackupForUser = async (userId: string, data: Record<string, a
     await tx.category.deleteMany({ where: { userId } });
     await tx.reflection.deleteMany({ where: { userId } });
     await tx.goal.deleteMany({ where: { userId } });
+    await tx.memo.deleteMany({ where: { userId } });
 
     const categoryIds = new Set<string>();
     for (const category of data.categories || []) {
@@ -128,12 +129,26 @@ export const importBackupForUser = async (userId: string, data: Record<string, a
       });
     }
 
+    for (const memo of data.memos || []) {
+      if (!memo?.id || !memo?.content) continue;
+      await tx.memo.create({
+        data: {
+          id: memo.id,
+          userId,
+          title: normalizeOptional(memo.title),
+          content: String(memo.content),
+          color: normalizeOptional(memo.color),
+          pinned: !!memo.pinned,
+        },
+      });
+    }
+
     for (const reflection of data.reflections || []) {
       if (!reflection?.id || !reflection?.date) continue;
       const sections = Array.isArray(reflection.sections)
         ? reflection.sections
         : reflection.content
-          ? [{ id: "legacy-content", title: "메모", content: reflection.content, order: 0 }]
+          ? [{ id: "legacy-content", title: "기존 회고", content: reflection.content, order: 0 }]
           : [];
       await tx.reflection.create({
         data: {

@@ -136,7 +136,7 @@ export function TodoFilterBar({ filters, onChange, tagOptions = [], categories =
             aria-label="보관 필터"
           >
             <option value="ACTIVE">보관 제외</option>
-            <option value="ARCHIVED">보관함</option>
+            <option value="ARCHIVED">보관됨</option>
             <option value="ALL">전체</option>
           </select>
           <select

@@ -10,7 +10,6 @@ type MonthlySidePanelProps = {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
-  onArchive: (id: string) => void;
   onAddCategory: (input: { name: string; description?: string; color?: string }) => void | Promise<void>;
   onUpdateCategory: (id: string, input: Partial<Category>) => void | Promise<void>;
   onDeleteCategory: (id: string, mode: "moveTodos" | "deleteTodos") => void | Promise<void>;
@@ -24,7 +23,6 @@ export function MonthlySidePanel({
   onToggle,
   onDelete,
   onUpdate,
-  onArchive,
   onAddCategory,
   onUpdateCategory,
   onDeleteCategory,
@@ -45,7 +43,6 @@ export function MonthlySidePanel({
           onToggle={onToggle}
           onDelete={onDelete}
           onUpdate={onUpdate}
-          onArchive={onArchive}
           onAddCategory={onAddCategory}
           onUpdateCategory={onUpdateCategory}
           onDeleteCategory={onDeleteCategory}

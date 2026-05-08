@@ -8,6 +8,7 @@ import { prisma } from "./db";
 import {
   serializeCategory,
   serializeGoal,
+  serializeMemo,
   serializeMusicLink,
   serializeReflection,
   serializeTodo,
@@ -17,6 +18,7 @@ import {
 import {
   categoryInputSchema,
   goalInputSchema,
+  memoInputSchema,
   musicLinkInputSchema,
   reflectionInputSchema,
   todoInputSchema,
@@ -547,6 +549,89 @@ app.delete(
 );
 
 app.get(
+  "/api/memos",
+  requireAuth,
+  asyncHandler<AuthenticatedRequest>(async (req, res) => {
+    const memos = await prisma.memo.findMany({
+      where: { userId: req.userId },
+      orderBy: [{ pinned: "desc" }, { updatedAt: "desc" }],
+    });
+    return res.json({ memos: memos.map(serializeMemo) });
+  }),
+);
+
+app.post(
+  "/api/memos",
+  requireAuth,
+  asyncHandler<AuthenticatedRequest>(async (req, res) => {
+    const input = memoInputSchema.parse(req.body);
+    const memo = await prisma.memo.create({
+      data: {
+        userId: req.userId,
+        title: normalizeOptional(input.title),
+        content: input.content,
+        color: normalizeOptional(input.color),
+        pinned: input.pinned || false,
+      },
+    });
+    return res.status(201).json({ memo: serializeMemo(memo) });
+  }),
+);
+
+app.get(
+  "/api/memos/:id",
+  requireAuth,
+  asyncHandler<AuthenticatedRequest>(async (req, res) => {
+    const memo = await prisma.memo.findFirst({ where: { id: paramId(req), userId: req.userId } });
+    if (!memo) return res.status(404).json({ message: "메모를 찾을 수 없습니다." });
+    return res.json({ memo: serializeMemo(memo) });
+  }),
+);
+
+app.put(
+  "/api/memos/:id",
+  requireAuth,
+  asyncHandler<AuthenticatedRequest>(async (req, res) => {
+    const input = memoInputSchema.parse(req.body);
+    const exists = await prisma.memo.findFirst({ where: { id: paramId(req), userId: req.userId } });
+    if (!exists) return res.status(404).json({ message: "메모를 찾을 수 없습니다." });
+    const memo = await prisma.memo.update({
+      where: { id: exists.id },
+      data: {
+        title: normalizeOptional(input.title),
+        content: input.content,
+        color: normalizeOptional(input.color),
+        pinned: input.pinned ?? exists.pinned,
+      },
+    });
+    return res.json({ memo: serializeMemo(memo) });
+  }),
+);
+
+app.delete(
+  "/api/memos/:id",
+  requireAuth,
+  asyncHandler<AuthenticatedRequest>(async (req, res) => {
+    await prisma.memo.deleteMany({ where: { id: paramId(req), userId: req.userId } });
+    return res.json({ ok: true });
+  }),
+);
+
+app.patch(
+  "/api/memos/:id/pin",
+  requireAuth,
+  asyncHandler<AuthenticatedRequest>(async (req, res) => {
+    const exists = await prisma.memo.findFirst({ where: { id: paramId(req), userId: req.userId } });
+    if (!exists) return res.status(404).json({ message: "메모를 찾을 수 없습니다." });
+    const memo = await prisma.memo.update({
+      where: { id: exists.id },
+      data: { pinned: !exists.pinned },
+    });
+    return res.json({ memo: serializeMemo(memo) });
+  }),
+);
+
+app.get(
   "/api/topics",
   requireAuth,
   asyncHandler<AuthenticatedRequest>(async (req, res) => {
@@ -747,22 +832,24 @@ app.delete(
 );
 
 const buildBackup = async (userId: string) => {
-  const [categories, todos, reflections, goals, topics, musicLinks] = await Promise.all([
+  const [categories, todos, reflections, goals, memos, topics, musicLinks] = await Promise.all([
     prisma.category.findMany({ where: { userId }, orderBy: [{ order: "asc" }] }),
     prisma.todo.findMany({ where: { userId }, include: todoInclude }),
     prisma.reflection.findMany({ where: { userId } }),
     prisma.goal.findMany({ where: { userId } }),
+    prisma.memo.findMany({ where: { userId }, orderBy: [{ pinned: "desc" }, { updatedAt: "desc" }] }),
     prisma.topic.findMany({ where: { userId }, include: topicInclude, orderBy: { updatedAt: "desc" } }),
     prisma.musicLink.findMany({ where: { userId }, orderBy: { updatedAt: "desc" } }),
   ]);
   const serializedTopics = topics.map(serializeTopic);
   return {
-    version: 5,
+    version: 6,
     exportedAt: new Date().toISOString(),
     categories: categories.map(serializeCategory),
     todos: todos.map(serializeTodo),
     reflections: reflections.map(serializeReflection),
     goals: goals.map(serializeGoal),
+    memos: memos.map(serializeMemo),
     topics: serializedTopics,
     topicLinks: serializedTopics.flatMap((topic) => topic.links),
     musicLinks: musicLinks.map(serializeMusicLink),
@@ -783,7 +870,7 @@ app.post(
   asyncHandler<AuthenticatedRequest>(async (req, res) => {
     if (!req.body || (req.body.todos !== undefined && !Array.isArray(req.body.todos))) return res.status(400).json({ message: "todos 배열이 필요합니다." });
     const version = Number(req.body.version ?? 1);
-    if (!Number.isInteger(version) || version < 1 || version > 5) {
+    if (!Number.isInteger(version) || version < 1 || version > 6) {
       return res.status(400).json({ message: "지원하지 않는 백업 버전입니다." });
     }
     await importBackupForUser(req.userId, req.body);
@@ -796,7 +883,7 @@ app.post(
   requireAuth,
   asyncHandler<AuthenticatedRequest>(async (req, res) => {
     if (!req.body || (req.body.todos !== undefined && !Array.isArray(req.body.todos))) return res.status(400).json({ message: "마이그레이션할 todos 배열이 필요합니다." });
-    await importBackupForUser(req.userId, { version: req.body.version || 5, ...req.body });
+    await importBackupForUser(req.userId, { version: req.body.version || 6, ...req.body });
     return res.json({ ok: true });
   }),
 );
