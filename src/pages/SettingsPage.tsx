@@ -8,6 +8,7 @@ import type { Reflection } from "../types/reflection";
 import type { Topic } from "../types/topic";
 import { StatCard } from "../components/common/StatCard";
 import { MarkdownEditor } from "../components/editor/MarkdownEditor";
+import { BACKUP_VERSION } from "../lib/storage";
 import { STORAGE_KEYS } from "../lib/storageKeys";
 import { LEGACY_STORAGE_KEYS } from "../lib/storageKeys";
 
@@ -20,8 +21,8 @@ type SettingsPageProps = {
   topics: Topic[];
   musicLinks: MusicLink[];
   onExportBackup: () => Promise<Record<string, unknown>>;
-  onImportBackup: (data: unknown) => Promise<void>;
-  onMigrateLocalStorage: (data: unknown) => Promise<void>;
+  onImportBackup: (data: unknown) => Promise<Record<string, unknown> | void>;
+  onMigrateLocalStorage: (data: unknown) => Promise<Record<string, unknown> | void>;
   onAddMusicLink: (input: MusicLinkInput) => unknown | Promise<unknown>;
   onUpdateMusicLink: (id: string, input: MusicLinkInput) => unknown | Promise<unknown>;
   onDeleteMusicLink: (id: string) => unknown | Promise<unknown>;
@@ -164,8 +165,9 @@ export function SettingsPage({
       try {
         const parsed = JSON.parse(String(reader.result));
         if (!window.confirm("서버 DB의 기존 데이터를 백업 파일로 덮어쓸까요?")) return;
-        await onImportBackup(parsed);
-        setMessage("서버 DB로 백업 데이터를 가져왔습니다.");
+        const result = await onImportBackup(parsed);
+        const warnings = Array.isArray(result?.warnings) ? result.warnings : [];
+        setMessage(warnings.length ? `서버 DB로 백업 데이터를 가져왔습니다. 일부 필드는 건너뛰었습니다: ${warnings.join(" ")}` : "서버 DB로 백업 데이터를 가져왔습니다.");
         setError("");
       } catch (err) {
         setError(err instanceof Error ? err.message : "잘못된 JSON 파일입니다.");
@@ -182,7 +184,7 @@ export function SettingsPage({
       const reflectionsRaw = localStorage.getItem(STORAGE_KEYS.REFLECTIONS);
       const goalsRaw = localStorage.getItem(STORAGE_KEYS.GOALS);
       const data = {
-        version: 6,
+        version: BACKUP_VERSION,
         exportedAt: new Date().toISOString(),
         categories: [],
         todos: todosRaw ? JSON.parse(todosRaw) : [],

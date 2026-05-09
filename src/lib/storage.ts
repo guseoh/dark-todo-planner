@@ -5,7 +5,7 @@ import type { Todo, TodoPriority, TodoRepeat } from "../types/todo";
 import { LEGACY_STORAGE_KEYS, STORAGE_KEYS } from "./storageKeys";
 
 export const TODO_STORAGE_KEY = STORAGE_KEYS.TODOS;
-export const BACKUP_VERSION = 5;
+export const BACKUP_VERSION = 6;
 
 const priorities: TodoPriority[] = ["LOW", "MEDIUM", "HIGH"];
 const repeats: TodoRepeat[] = ["NONE", "DAILY", "WEEKLY", "MONTHLY", "WEEKDAY", "WEEKEND"];
@@ -157,9 +157,10 @@ export const validateGoals = (value: unknown): Goal[] | null => {
 export const buildBackupData = (input: Omit<BackupData, "version" | "exportedAt">): BackupData => ({
   version: BACKUP_VERSION,
   exportedAt: new Date().toISOString(),
-  todos: input.todos,
+  todos: input.todos || [],
   reflections: input.reflections || [],
   goals: input.goals || [],
+  memos: input.memos || [],
   topics: input.topics || [],
   topicLinks: input.topicLinks || [],
   musicLinks: input.musicLinks || [],
@@ -173,10 +174,7 @@ export const validateBackupData = (value: unknown): { data?: BackupData; error?:
 
   if (!value || typeof value !== "object") return { error: "백업 JSON 객체가 아닙니다." };
   const backup = value as Partial<BackupData>;
-  const version = isNumber(backup.version) ? backup.version : Array.isArray(backup.todos) ? 1 : undefined;
-  if (!version || version < 1 || version > BACKUP_VERSION) {
-    return { error: "지원하지 않는 백업 버전입니다." };
-  }
+  const version = isNumber(backup.version) ? backup.version : undefined;
 
   const todos = backup.todos === undefined ? [] : validateTodos(backup.todos);
   if (!todos) return { error: "todos 필드는 배열이어야 하며 Todo 구조가 올바라야 합니다." };
@@ -194,6 +192,7 @@ export const validateBackupData = (value: unknown): { data?: BackupData; error?:
       todos,
       reflections,
       goals,
+      memos: Array.isArray(backup.memos) ? backup.memos : [],
       topics: Array.isArray(backup.topics) ? backup.topics : [],
       topicLinks: Array.isArray(backup.topicLinks) ? backup.topicLinks : [],
       musicLinks: Array.isArray(backup.musicLinks) ? backup.musicLinks : [],

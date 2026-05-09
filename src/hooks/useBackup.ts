@@ -12,9 +12,10 @@ export function useBackup(onImported: () => Promise<void>) {
   const importBackup = useCallback(async (data: unknown) => {
     setSaving(true);
     try {
-      await api("/api/backup/import", { method: "POST", ...jsonBody(data) });
+      const result = await api<Record<string, unknown>>("/api/backup/import", { method: "POST", ...jsonBody(data) });
       await onImported();
       setError("");
+      return result;
     } catch (err) {
       setError(getMessage(err));
       throw err;
@@ -26,9 +27,10 @@ export function useBackup(onImported: () => Promise<void>) {
   const migrateLocalStorage = useCallback(async (data: unknown) => {
     setSaving(true);
     try {
-      await api("/api/migrate/local-storage", { method: "POST", ...jsonBody(data) });
+      const result = await api<Record<string, unknown>>("/api/migrate/local-storage", { method: "POST", ...jsonBody(data) });
       await onImported();
       setError("");
+      return result;
     } catch (err) {
       setError(getMessage(err));
       throw err;

@@ -3,7 +3,8 @@ import express, { type NextFunction, type Request, type Response } from "express
 import path from "node:path";
 import { z } from "zod";
 import { requireAuth, type AuthenticatedRequest } from "./auth";
-import { importBackupForUser } from "./backup";
+import { BackupValidationError, importBackupForUser } from "./backup";
+import { BACKUP_VERSION } from "./backupConstants";
 import { prisma } from "./db";
 import {
   serializeCategory,
@@ -843,7 +844,7 @@ const buildBackup = async (userId: string) => {
   ]);
   const serializedTopics = topics.map(serializeTopic);
   return {
-    version: 6,
+    version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
     categories: categories.map(serializeCategory),
     todos: todos.map(serializeTodo),
@@ -868,13 +869,15 @@ app.post(
   "/api/backup/import",
   requireAuth,
   asyncHandler<AuthenticatedRequest>(async (req, res) => {
-    if (!req.body || (req.body.todos !== undefined && !Array.isArray(req.body.todos))) return res.status(400).json({ message: "todos 배열이 필요합니다." });
-    const version = Number(req.body.version ?? 1);
-    if (!Number.isInteger(version) || version < 1 || version > 6) {
-      return res.status(400).json({ message: "지원하지 않는 백업 버전입니다." });
+    try {
+      const result = await importBackupForUser(req.userId, req.body);
+      return res.json({ ok: true, ...result });
+    } catch (error) {
+      if (error instanceof BackupValidationError) {
+        return res.status(400).json({ message: error.message });
+      }
+      throw error;
     }
-    await importBackupForUser(req.userId, req.body);
-    return res.json({ ok: true });
   }),
 );
 
@@ -882,9 +885,15 @@ app.post(
   "/api/migrate/local-storage",
   requireAuth,
   asyncHandler<AuthenticatedRequest>(async (req, res) => {
-    if (!req.body || (req.body.todos !== undefined && !Array.isArray(req.body.todos))) return res.status(400).json({ message: "마이그레이션할 todos 배열이 필요합니다." });
-    await importBackupForUser(req.userId, { version: req.body.version || 6, ...req.body });
-    return res.json({ ok: true });
+    try {
+      const result = await importBackupForUser(req.userId, { version: req.body?.version || BACKUP_VERSION, ...req.body });
+      return res.json({ ok: true, ...result });
+    } catch (error) {
+      if (error instanceof BackupValidationError) {
+        return res.status(400).json({ message: error.message });
+      }
+      throw error;
+    }
   }),
 );
 
