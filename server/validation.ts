@@ -34,6 +34,7 @@ export const categoryInputSchema = z.object({
   name: z.string().trim().min(1),
   description: z.string().optional().nullable(),
   color: z.string().optional().nullable(),
+  icon: z.string().optional().nullable(),
   order: z.number().int().optional(),
 });
 

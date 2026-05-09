@@ -56,7 +56,7 @@ export function usePlannerData() {
     loadAll();
   }, [loadAll]);
 
-  const addCategory = useCallback(async (input: { name: string; description?: string; color?: string }) => {
+  const addCategory = useCallback(async (input: { name: string; description?: string; color?: string; icon?: string }) => {
     await categoriesState.addCategory(input);
   }, [categoriesState.addCategory]);
 
@@ -69,6 +69,10 @@ export function usePlannerData() {
     await categoriesState.deleteCategory(id, mode);
     todosState.removeCategoryFromTodos(id, mode);
   }, [categoriesState.deleteCategory, todosState.removeCategoryFromTodos]);
+
+  const reorderCategories = useCallback(async (ids: string[]) => {
+    await categoriesState.reorderCategories(ids);
+  }, [categoriesState.reorderCategories]);
 
   const saving = useMemo(
     () =>
@@ -139,6 +143,7 @@ export function usePlannerData() {
     addCategory,
     updateCategory,
     deleteCategory,
+    reorderCategories,
     addReflection: reflectionsState.addReflection,
     updateReflection: reflectionsState.updateReflection,
     deleteReflection: reflectionsState.deleteReflection,

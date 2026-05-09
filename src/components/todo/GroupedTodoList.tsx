@@ -1,5 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
-import { FolderPlus } from "lucide-react";
+import {
+  closestCenter,
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  rectSortingStrategy,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { FolderPlus, GripVertical } from "lucide-react";
 import type { Category } from "../../types/category";
 import type { Todo, TodoInput } from "../../types/todo";
 import { CategoryForm } from "../category/CategoryForm";
@@ -22,9 +39,10 @@ type GroupedTodoListProps = {
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   onArchive?: (id: string) => void;
   onUnarchive?: (id: string) => void;
-  onAddCategory?: (input: { name: string; description?: string; color?: string }) => void | Promise<void>;
+  onAddCategory?: (input: { name: string; description?: string; color?: string; icon?: string }) => void | Promise<void>;
   onUpdateCategory?: (id: string, input: Partial<Category>) => void | Promise<void>;
   onDeleteCategory?: (id: string, mode: "moveTodos" | "deleteTodos") => void | Promise<void>;
+  onReorderCategories?: (ids: string[]) => void | Promise<void>;
   emptyTitle: string;
   emptyDescription?: string;
   showDate?: boolean;
@@ -32,6 +50,7 @@ type GroupedTodoListProps = {
   includeEmptyCategories?: boolean;
   showCategoryCreator?: boolean;
   layout?: "board" | "list";
+  sortableCategories?: boolean;
 };
 
 const readCollapsedState = (): CollapsedState => {
@@ -90,6 +109,43 @@ const buildGroups = (todos: Todo[], categories: Category[], includeEmptyCategori
   return groups;
 };
 
+type SortableCategoryTodoGroupProps = {
+  group: TodoGroup;
+  children: (options: { dragHandle: JSX.Element; dragging: boolean }) => JSX.Element;
+};
+
+function SortableCategoryTodoGroup({ group, children }: SortableCategoryTodoGroupProps) {
+  const id = group.category?.id || uncategorizedGroupId;
+  const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 20 : undefined,
+  };
+  const name = group.category?.name || "미분류";
+
+  return (
+    <div ref={setNodeRef} style={style} className={isDragging ? "relative" : undefined}>
+      {children({
+        dragging: isDragging,
+        dragHandle: (
+          <button
+            type="button"
+            ref={setActivatorNodeRef}
+            className="hidden h-7 w-7 shrink-0 cursor-grab items-center justify-center rounded-md border border-ink-700 bg-ink-950/70 text-ink-500 transition hover:border-accent-500/60 hover:text-ink-100 active:cursor-grabbing sm:inline-flex"
+            aria-label={`${name} 카테고리 순서 변경`}
+            title="드래그해서 카테고리 순서 변경"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical size={15} />
+          </button>
+        ),
+      })}
+    </div>
+  );
+}
+
 export function GroupedTodoList({
   todos,
   categories,
@@ -102,6 +158,7 @@ export function GroupedTodoList({
   onAddCategory,
   onUpdateCategory,
   onDeleteCategory,
+  onReorderCategories,
   emptyTitle,
   emptyDescription,
   showDate = true,
@@ -109,6 +166,7 @@ export function GroupedTodoList({
   includeEmptyCategories = false,
   showCategoryCreator = true,
   layout = "board",
+  sortableCategories = false,
 }: GroupedTodoListProps) {
   const [collapsedGroups, setCollapsedGroups] = useState<CollapsedState>(() => readCollapsedState());
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
@@ -116,6 +174,13 @@ export function GroupedTodoList({
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [categoryError, setCategoryError] = useState("");
   const groups = useMemo(() => buildGroups(todos, categories, includeEmptyCategories), [todos, categories, includeEmptyCategories]);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  const categoryGroups = groups.filter((group) => group.category);
+  const uncategorizedGroups = groups.filter((group) => !group.category);
+  const sortableIds = categoryGroups.map((group) => group.category!.id);
 
   useEffect(() => {
     localStorage.setItem(COLLAPSE_STORAGE_KEY, JSON.stringify(collapsedGroups));
@@ -125,7 +190,7 @@ export function GroupedTodoList({
     setCollapsedGroups((current) => ({ ...current, [groupId]: !current[groupId] }));
   };
 
-  const createCategory = async (input: { name: string; description?: string; color?: string }) => {
+  const createCategory = async (input: { name: string; description?: string; color?: string; icon?: string }) => {
     if (!onAddCategory) return;
     try {
       setCategoryError("");
@@ -133,6 +198,21 @@ export function GroupedTodoList({
       setCreatingCategory(false);
     } catch (error) {
       setCategoryError(error instanceof Error ? error.message : "카테고리를 저장하지 못했습니다.");
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !onReorderCategories) return;
+    const oldIndex = sortableIds.indexOf(String(active.id));
+    const newIndex = sortableIds.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    const nextIds = arrayMove(sortableIds, oldIndex, newIndex);
+    try {
+      setCategoryError("");
+      await onReorderCategories(nextIds);
+    } catch (error) {
+      setCategoryError(error instanceof Error ? error.message : "카테고리 순서를 저장하지 못했습니다.");
     }
   };
 
@@ -172,8 +252,71 @@ export function GroupedTodoList({
 
         {groups.length ? (
           <div className={layout === "board" ? "grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-3" : "space-y-2.5"}>
-            {groups.map((group) => {
-              const groupId = group.category?.id || uncategorizedGroupId;
+            {sortableCategories && onReorderCategories ? (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={sortableIds} strategy={rectSortingStrategy}>
+                  {categoryGroups.map((group) => {
+                    const groupId = group.category!.id;
+                    return (
+                      <SortableCategoryTodoGroup key={groupId} group={group}>
+                        {({ dragHandle, dragging }) => (
+                          <CategoryTodoGroup
+                            group={group}
+                            collapsed={Boolean(collapsedGroups[groupId])}
+                            editingCategoryId={editingCategoryId}
+                            defaultDate={defaultDate}
+                            showDate={showDate}
+                            onToggleCollapse={() => toggleCollapse(groupId)}
+                            onStartEditCategory={(category) => setEditingCategoryId(category.id)}
+                            onCancelEditCategory={() => setEditingCategoryId(null)}
+                            onUpdateCategory={onUpdateCategory || (() => undefined)}
+                            onDeleteCategory={onDeleteCategory || (() => undefined)}
+                            onAddTodo={onAddTodo}
+                            onToggle={onToggle}
+                            onDelete={onDelete}
+                            onArchive={onArchive}
+                            onUnarchive={onUnarchive}
+                            onEditTodo={setEditingTodo}
+                            variant={layout === "board" ? "card" : "plain"}
+                            dragHandle={dragHandle}
+                            dragging={dragging}
+                          />
+                        )}
+                      </SortableCategoryTodoGroup>
+                    );
+                  })}
+                </SortableContext>
+              </DndContext>
+            ) : (
+              categoryGroups.map((group) => {
+                const groupId = group.category!.id;
+                return (
+                  <CategoryTodoGroup
+                    key={groupId}
+                    group={group}
+                    collapsed={Boolean(collapsedGroups[groupId])}
+                    editingCategoryId={editingCategoryId}
+                    defaultDate={defaultDate}
+                    showDate={showDate}
+                    onToggleCollapse={() => toggleCollapse(groupId)}
+                    onStartEditCategory={(category) => setEditingCategoryId(category.id)}
+                    onCancelEditCategory={() => setEditingCategoryId(null)}
+                    onUpdateCategory={onUpdateCategory || (() => undefined)}
+                    onDeleteCategory={onDeleteCategory || (() => undefined)}
+                    onAddTodo={onAddTodo}
+                    onToggle={onToggle}
+                    onDelete={onDelete}
+                    onArchive={onArchive}
+                    onUnarchive={onUnarchive}
+                    onEditTodo={setEditingTodo}
+                    variant={layout === "board" ? "card" : "plain"}
+                  />
+                );
+              })
+            )}
+
+            {uncategorizedGroups.map((group) => {
+              const groupId = uncategorizedGroupId;
               return (
                 <CategoryTodoGroup
                   key={groupId}

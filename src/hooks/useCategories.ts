@@ -4,6 +4,13 @@ import { api, jsonBody } from "../lib/api/client";
 
 const getMessage = (error: unknown) => (error instanceof Error ? error.message : "카테고리 요청 처리 중 오류가 발생했습니다.");
 
+const sortCategories = (categories: Category[]) =>
+  [...categories].sort((a, b) => {
+    const orderDiff = a.order - b.order;
+    if (orderDiff) return orderDiff;
+    return a.name.localeCompare(b.name, "ko");
+  });
+
 export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
@@ -14,7 +21,7 @@ export function useCategories() {
     setLoading(true);
     try {
       const result = await api<{ categories: Category[] }>("/api/categories");
-      setCategories(result.categories);
+      setCategories(sortCategories(result.categories));
       setError("");
       return result.categories;
     } catch (err) {
@@ -25,11 +32,11 @@ export function useCategories() {
     }
   }, []);
 
-  const addCategory = useCallback(async (input: { name: string; description?: string; color?: string }) => {
+  const addCategory = useCallback(async (input: { name: string; description?: string; color?: string; icon?: string }) => {
     setSaving(true);
     try {
       const result = await api<{ category: Category }>("/api/categories", { method: "POST", ...jsonBody(input) });
-      setCategories((current) => [...current, result.category]);
+      setCategories((current) => sortCategories([...current, result.category]));
       setError("");
       return result.category;
     } catch (err) {
@@ -49,7 +56,7 @@ export function useCategories() {
         method: "PUT",
         ...jsonBody({ ...existing, ...input }),
       });
-      setCategories((current) => current.map((category) => (category.id === id ? result.category : category)));
+      setCategories((current) => sortCategories(current.map((category) => (category.id === id ? result.category : category))));
       setError("");
       return result.category;
     } catch (err) {
@@ -74,6 +81,27 @@ export function useCategories() {
     }
   }, []);
 
+  const reorderCategories = useCallback(async (ids: string[]) => {
+    const previous = categories;
+    const orderMap = new Map(ids.map((id, order) => [id, order]));
+    setCategories((current) =>
+      sortCategories(
+        current.map((category) => ({
+          ...category,
+          order: orderMap.get(category.id) ?? category.order,
+        })),
+      ),
+    );
+    try {
+      await api("/api/categories/reorder", { method: "PATCH", ...jsonBody({ ids }) });
+      setError("");
+    } catch (err) {
+      setCategories(previous);
+      setError(getMessage(err));
+      throw err;
+    }
+  }, [categories]);
+
   return {
     categories,
     loading,
@@ -83,5 +111,6 @@ export function useCategories() {
     addCategory,
     updateCategory,
     deleteCategory,
+    reorderCategories,
   };
 }

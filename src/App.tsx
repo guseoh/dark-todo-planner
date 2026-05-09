@@ -30,14 +30,10 @@ function App() {
         onDelete={planner.deleteTodo}
         onUpdate={planner.updateTodo}
         categories={planner.categories}
-        goals={planner.goals}
-        onAddGoal={planner.addGoal}
-        onUpdateGoal={planner.updateGoal}
-        onToggleGoal={planner.toggleGoal}
-        onDeleteGoal={planner.deleteGoal}
         onAddCategory={planner.addCategory}
         onUpdateCategory={planner.updateCategory}
         onDeleteCategory={planner.deleteCategory}
+        onReorderCategories={planner.reorderCategories}
         yesterdayActiveCount={yesterdayActiveTodos.length}
         onBringYesterdayTodos={planner.bringYesterdayTodosToToday}
       />

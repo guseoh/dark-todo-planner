@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireAuth, type AuthenticatedRequest } from "./auth";
 import { BackupValidationError, importBackupForUser } from "./backup";
 import { BACKUP_VERSION } from "./backupConstants";
+import { normalizeCategoryIcon } from "./categoryIcon";
 import { prisma } from "./db";
 import {
   serializeCategory,
@@ -128,6 +129,7 @@ app.post(
         name: input.name,
         description: normalizeOptional(input.description),
         color: input.color || "#6366f1",
+        icon: normalizeCategoryIcon(input.icon),
         order: input.order ?? (max._max.order ?? -1) + 1,
       },
     });
@@ -158,6 +160,7 @@ app.put(
         name: input.name,
         description: normalizeOptional(input.description),
         color: input.color || "#6366f1",
+        icon: normalizeCategoryIcon(input.icon),
         order: input.order ?? exists.order,
       },
     });

@@ -1,5 +1,6 @@
 import { prisma } from "./db";
 import { BACKUP_COLLECTION_KEYS, BACKUP_VERSION, SUPPORTED_BACKUP_VERSIONS, type BackupCollectionKey } from "./backupConstants";
+import { normalizeCategoryIcon } from "./categoryIcon";
 
 export type BackupData = {
   version?: number;
@@ -142,6 +143,7 @@ export const importBackupForUser = async (userId: string, input: unknown) => {
           name: String(category.name),
           description: normalizeOptional(category.description),
           color: category.color || "#6366f1",
+          icon: normalizeCategoryIcon(category.icon),
           order: Number(category.order) || 0,
         },
       });

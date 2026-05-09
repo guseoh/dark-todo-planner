@@ -1,11 +1,11 @@
 import {
-  CalendarDays,
+  Calendar,
+  CalendarCheck,
   CalendarRange,
-  CheckSquare,
-  BookOpenText,
+  ClipboardList,
+  Lightbulb,
   NotebookPen,
   StickyNote,
-  ListChecks,
   Settings,
   PanelLeftClose,
   PanelLeftOpen,
@@ -28,15 +28,15 @@ type SidebarProps = {
 };
 
 const navItems = [
-  { id: "today", label: "오늘", icon: CheckSquare },
+  { id: "today", label: "오늘", icon: CalendarCheck },
   { id: "week", label: "주간", icon: CalendarRange },
-  { id: "month", label: "월간", icon: CalendarDays },
-  { id: "all", label: "전체 Todo", icon: ListChecks },
+  { id: "month", label: "월간", icon: Calendar },
+  { id: "all", label: "전체 Todo", icon: ClipboardList },
   { id: "reflection", label: "회고", icon: NotebookPen },
   { id: "memo", label: "메모", icon: StickyNote },
-  { id: "topics", label: "주제 보관함", icon: BookOpenText },
+  { id: "topics", label: "주제 보관함", icon: Lightbulb },
   { id: "settings", label: "설정", icon: Settings },
-] satisfies Array<{ id: AppView; label: string; icon: typeof CheckSquare }>;
+] satisfies Array<{ id: AppView; label: string; icon: typeof CalendarCheck }>;
 
 const SIDEBAR_COLLAPSED_KEY = "dark-todo-planner:sidebar-collapsed";
 
@@ -76,8 +76,8 @@ export function Sidebar({ activeView, onChangeView }: SidebarProps) {
                 key={item.id}
                 type="button"
                 onClick={() => onChangeView(item.id)}
-                title={collapsed ? item.label : undefined}
-                className={`flex min-h-11 w-full items-center rounded-lg border text-sm font-semibold transition ${
+                aria-label={item.label}
+                className={`group relative flex min-h-11 w-full items-center rounded-lg border text-sm font-semibold transition ${
                   active
                     ? "border-accent-500/50 bg-accent-500/20 text-ink-100"
                     : "border-transparent text-ink-400 hover:border-ink-700 hover:bg-ink-800 hover:text-ink-100"
@@ -85,6 +85,11 @@ export function Sidebar({ activeView, onChangeView }: SidebarProps) {
               >
                 <Icon size={18} />
                 {!collapsed ? <span className="truncate">{item.label}</span> : null}
+                {collapsed ? (
+                  <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md border border-ink-700 bg-ink-950 px-2 py-1 text-xs font-semibold text-ink-100 shadow-xl group-hover:block group-focus-visible:block">
+                    {item.label}
+                  </span>
+                ) : null}
               </button>
             );
           })}

@@ -14,7 +14,7 @@ type AllTodosPageProps = {
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   onUnarchive: (id: string) => void;
   onAddTodo: (todo: TodoInput) => void;
-  onAddCategory: (input: { name: string; description?: string; color?: string }) => void | Promise<void>;
+  onAddCategory: (input: { name: string; description?: string; color?: string; icon?: string }) => void | Promise<void>;
   onUpdateCategory: (id: string, input: Partial<Category>) => void | Promise<void>;
   onDeleteCategory: (id: string, mode: "moveTodos" | "deleteTodos") => void | Promise<void>;
 };

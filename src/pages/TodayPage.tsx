@@ -1,14 +1,11 @@
 import { useState } from "react";
-import { CheckCheck, CircleDot, CopyPlus, ListTodo, MoveRight, TrendingUp } from "lucide-react";
+import { CheckCheck, CopyPlus, ListTodo, MoveRight, TrendingUp } from "lucide-react";
 import { formatKoreanDate, todayKey } from "../lib/date";
 import type { Category } from "../types/category";
-import type { Goal } from "../types/goal";
 import type { Todo, TodoInput } from "../types/todo";
-import { isDayStatusGoal } from "../lib/goals";
 import { StatCard } from "../components/common/StatCard";
 import { EmptyState } from "../components/common/EmptyState";
 import { ProgressBar } from "../components/common/ProgressBar";
-import { GoalChecklist } from "../components/goal/GoalChecklist";
 import { TodoForm } from "../components/todo/TodoForm";
 import { GroupedTodoList } from "../components/todo/GroupedTodoList";
 
@@ -26,14 +23,10 @@ type TodayPageProps = {
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   categories?: Category[];
-  goals?: Goal[];
-  onAddGoal: (input: Partial<Goal> & { title: string }) => void;
-  onUpdateGoal: (id: string, updates: Partial<Omit<Goal, "id" | "createdAt">>) => void;
-  onToggleGoal: (id: string) => void;
-  onDeleteGoal: (id: string) => void;
-  onAddCategory: (input: { name: string; description?: string; color?: string }) => void | Promise<void>;
+  onAddCategory: (input: { name: string; description?: string; color?: string; icon?: string }) => void | Promise<void>;
   onUpdateCategory: (id: string, input: Partial<Category>) => void | Promise<void>;
   onDeleteCategory: (id: string, mode: "moveTodos" | "deleteTodos") => void | Promise<void>;
+  onReorderCategories: (ids: string[]) => void | Promise<void>;
   yesterdayActiveCount: number;
   onBringYesterdayTodos: (mode: "copy" | "move") => Promise<{ total: number; imported: number; skipped: number; mode: "copy" | "move" }>;
 };
@@ -46,20 +39,15 @@ export function TodayPage({
   onDelete,
   onUpdate,
   categories = [],
-  goals = [],
-  onAddGoal,
-  onUpdateGoal,
-  onToggleGoal,
-  onDeleteGoal,
   onAddCategory,
   onUpdateCategory,
   onDeleteCategory,
+  onReorderCategories,
   yesterdayActiveCount,
   onBringYesterdayTodos,
 }: TodayPageProps) {
   const [importMessage, setImportMessage] = useState("");
   const today = todayKey();
-  const todayGoals = goals.filter((goal) => goal.type === "DAILY" && !isDayStatusGoal(goal) && (goal.targetDate === today || goal.dueDate === today));
   const categorySummaries = [
     ...categories.map((category) => {
       const categoryTodos = todayTodos.filter((todo) => todo.categoryId === category.id);
@@ -111,26 +99,11 @@ export function TodayPage({
         <h2 className="mt-1 text-2xl font-bold text-ink-100">오늘</h2>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard title="오늘 완료율" value={`${stats.todayRate}%`} description={`${stats.todayCompleted}/${stats.todayTotal} 완료`} icon={<CheckCheck size={19} />} progress={stats.todayRate} />
         <StatCard title="남은 Todo" value={stats.todayActive} description="오늘 처리할 항목" icon={<ListTodo size={19} />} />
         <StatCard title="이번 주 완료율" value={`${stats.weekRate}%`} description="이번 주 Todo 기준" icon={<TrendingUp size={19} />} progress={stats.weekRate} />
-        <StatCard title="오늘 목표" value={`${todayGoals.filter((goal) => goal.completed).length}/${todayGoals.length}`} description="완료 / 전체" icon={<CircleDot size={19} />} />
       </section>
-
-      <GoalChecklist
-        title="오늘 목표"
-        subtitle="오늘 꼭 챙길 핵심 목표"
-        goals={todayGoals}
-        type="DAILY"
-        addDefaults={{ targetDate: today, dueDate: today }}
-        placeholder="오늘 목표"
-        emptyTitle="오늘 목표가 없습니다."
-        onAdd={onAddGoal}
-        onUpdate={onUpdateGoal}
-        onToggle={onToggleGoal}
-        onDelete={onDeleteGoal}
-      />
 
       <section className="app-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -204,12 +177,14 @@ export function TodayPage({
         onAddCategory={onAddCategory}
         onUpdateCategory={onUpdateCategory}
         onDeleteCategory={onDeleteCategory}
+        onReorderCategories={onReorderCategories}
         emptyTitle="오늘 할 일이 없습니다."
         emptyDescription="새로운 Todo를 추가해보세요."
         showDate={false}
         defaultDate={today}
         includeEmptyCategories
         showCategoryCreator
+        sortableCategories
       />
     </div>
   );

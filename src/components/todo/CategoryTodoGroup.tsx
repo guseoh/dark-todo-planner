@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ReactNode } from "react";
 import type { Category } from "../../types/category";
 import type { Todo, TodoInput } from "../../types/todo";
 import { CategoryForm } from "../category/CategoryForm";
@@ -33,6 +34,8 @@ type CategoryTodoGroupProps = {
   onUnarchive?: (id: string) => void;
   onEditTodo: (todo: Todo) => void;
   variant?: "card" | "plain";
+  dragHandle?: ReactNode;
+  dragging?: boolean;
 };
 
 export function CategoryTodoGroup({
@@ -53,6 +56,8 @@ export function CategoryTodoGroup({
   onUnarchive,
   onEditTodo,
   variant = "card",
+  dragHandle,
+  dragging = false,
 }: CategoryTodoGroupProps) {
   const [adding, setAdding] = useState(false);
   const [showAllTodos, setShowAllTodos] = useState(false);
@@ -69,7 +74,7 @@ export function CategoryTodoGroup({
   };
 
   return (
-    <section className={variant === "card" ? "app-card space-y-2 p-3" : "space-y-2"}>
+    <section className={`${variant === "card" ? "app-card space-y-2 p-3" : "space-y-2"} ${dragging ? "opacity-80 ring-2 ring-accent-400/45" : ""}`}>
       <CategoryHeader
         category={group.category}
         totalCount={group.totalCount}
@@ -83,6 +88,7 @@ export function CategoryTodoGroup({
         }}
         onEdit={group.category ? () => onStartEditCategory(group.category as Category) : undefined}
         onDelete={group.category ? handleDeleteCategory : undefined}
+        dragHandle={dragHandle}
       />
 
       {isEditing && group.category ? (
