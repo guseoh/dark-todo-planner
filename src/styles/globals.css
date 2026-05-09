@@ -18,16 +18,22 @@
 html {
   min-width: 320px;
   background: #0f172a;
+  overflow-x: hidden;
 }
 
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(99, 102, 241, 0.14), transparent 34rem),
     linear-gradient(135deg, #0f172a 0%, #111827 46%, #101827 100%);
   color: #f8fafc;
+}
+
+#root {
+  overflow-x: hidden;
 }
 
 button,

@@ -15,11 +15,13 @@ import {
   sortableKeyboardCoordinates,
   useSortable,
 } from "@dnd-kit/sortable";
+import { restrictToParentElement, restrictToWindowEdges } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import { FolderPlus, GripVertical } from "lucide-react";
 import type { Category } from "../../types/category";
 import type { Todo, TodoInput } from "../../types/todo";
 import { CategoryForm } from "../category/CategoryForm";
+import { Modal } from "../common/Modal";
 import { EmptyState } from "../common/EmptyState";
 import { TodoEditModal } from "./TodoEditModal";
 import { CategoryTodoGroup, type TodoGroup } from "./CategoryTodoGroup";
@@ -125,7 +127,7 @@ function SortableCategoryTodoGroup({ group, children }: SortableCategoryTodoGrou
   const name = group.category?.name || "미분류";
 
   return (
-    <div ref={setNodeRef} style={style} className={isDragging ? "relative" : undefined}>
+    <div ref={setNodeRef} style={style} className={`min-w-0 ${isDragging ? "relative" : ""}`}>
       {children({
         dragging: isDragging,
         dragHandle: (
@@ -174,6 +176,10 @@ export function GroupedTodoList({
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [categoryError, setCategoryError] = useState("");
   const groups = useMemo(() => buildGroups(todos, categories, includeEmptyCategories), [todos, categories, includeEmptyCategories]);
+  const editingCategory = useMemo(
+    () => (editingCategoryId ? categories.find((category) => category.id === editingCategoryId) || null : null),
+    [categories, editingCategoryId],
+  );
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -201,6 +207,17 @@ export function GroupedTodoList({
     }
   };
 
+  const updateCategory = async (input: { name: string; description?: string; color?: string; icon?: string }) => {
+    if (!onUpdateCategory || !editingCategory) return;
+    try {
+      setCategoryError("");
+      await onUpdateCategory(editingCategory.id, input);
+      setEditingCategoryId(null);
+    } catch (error) {
+      setCategoryError(error instanceof Error ? error.message : "카테고리를 저장하지 못했습니다.");
+    }
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id || !onReorderCategories) return;
@@ -216,21 +233,28 @@ export function GroupedTodoList({
     }
   };
 
+  const startEditCategory = (category: Category) => {
+    setCategoryError("");
+    setEditingCategoryId(category.id);
+  };
+
   if (!todos.length && !categories.length) {
     return (
       <div className="space-y-3">
         {showCategoryCreator && onAddCategory ? (
-          creatingCategory ? (
-            <CategoryForm onSubmit={createCategory} onCancel={() => setCreatingCategory(false)} submitLabel="카테고리 추가" />
-          ) : (
-            <button type="button" className="btn-secondary" onClick={() => setCreatingCategory(true)}>
-              <FolderPlus size={17} />
-              + 카테고리 추가
-            </button>
-          )
+          <button type="button" className="btn-secondary" onClick={() => { setCategoryError(""); setCreatingCategory(true); }}>
+            <FolderPlus size={17} />
+            + 카테고리 추가
+          </button>
         ) : null}
         {categoryError ? <p className="text-sm text-red-200">{categoryError}</p> : null}
         <EmptyState title={emptyTitle} description={emptyDescription} />
+        {creatingCategory ? (
+          <Modal title="새 카테고리 추가" description="Todo를 묶을 카테고리 이름, 색상, 아이콘을 설정합니다." onClose={() => setCreatingCategory(false)}>
+            {categoryError ? <p className="mb-3 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-red-100">{categoryError}</p> : null}
+            <CategoryForm onSubmit={createCategory} onCancel={() => setCreatingCategory(false)} submitLabel="카테고리 추가" />
+          </Modal>
+        ) : null}
       </div>
     );
   }
@@ -239,21 +263,22 @@ export function GroupedTodoList({
     <>
       <div className="space-y-4">
         {showCategoryCreator && onAddCategory ? (
-          creatingCategory ? (
-            <CategoryForm onSubmit={createCategory} onCancel={() => setCreatingCategory(false)} submitLabel="카테고리 추가" />
-          ) : (
-            <button type="button" className="btn-secondary" onClick={() => setCreatingCategory(true)}>
-              <FolderPlus size={17} />
-              + 카테고리 추가
-            </button>
-          )
+          <button type="button" className="btn-secondary" onClick={() => { setCategoryError(""); setCreatingCategory(true); }}>
+            <FolderPlus size={17} />
+            + 카테고리 추가
+          </button>
         ) : null}
         {categoryError ? <p className="text-sm text-red-200">{categoryError}</p> : null}
 
         {groups.length ? (
-          <div className={layout === "board" ? "grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-3" : "space-y-2.5"}>
+          <div className={layout === "board" ? "grid min-w-0 grid-cols-1 items-start gap-4 overflow-x-clip md:grid-cols-2 xl:grid-cols-3" : "min-w-0 space-y-2.5 overflow-x-clip"}>
             {sortableCategories && onReorderCategories ? (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                modifiers={[restrictToParentElement, restrictToWindowEdges]}
+                onDragEnd={handleDragEnd}
+              >
                 <SortableContext items={sortableIds} strategy={rectSortingStrategy}>
                   {categoryGroups.map((group) => {
                     const groupId = group.category!.id;
@@ -263,13 +288,10 @@ export function GroupedTodoList({
                           <CategoryTodoGroup
                             group={group}
                             collapsed={Boolean(collapsedGroups[groupId])}
-                            editingCategoryId={editingCategoryId}
                             defaultDate={defaultDate}
                             showDate={showDate}
                             onToggleCollapse={() => toggleCollapse(groupId)}
-                            onStartEditCategory={(category) => setEditingCategoryId(category.id)}
-                            onCancelEditCategory={() => setEditingCategoryId(null)}
-                            onUpdateCategory={onUpdateCategory || (() => undefined)}
+                            onStartEditCategory={startEditCategory}
                             onDeleteCategory={onDeleteCategory || (() => undefined)}
                             onAddTodo={onAddTodo}
                             onToggle={onToggle}
@@ -295,13 +317,10 @@ export function GroupedTodoList({
                     key={groupId}
                     group={group}
                     collapsed={Boolean(collapsedGroups[groupId])}
-                    editingCategoryId={editingCategoryId}
                     defaultDate={defaultDate}
                     showDate={showDate}
                     onToggleCollapse={() => toggleCollapse(groupId)}
-                    onStartEditCategory={(category) => setEditingCategoryId(category.id)}
-                    onCancelEditCategory={() => setEditingCategoryId(null)}
-                    onUpdateCategory={onUpdateCategory || (() => undefined)}
+                    onStartEditCategory={startEditCategory}
                     onDeleteCategory={onDeleteCategory || (() => undefined)}
                     onAddTodo={onAddTodo}
                     onToggle={onToggle}
@@ -322,13 +341,10 @@ export function GroupedTodoList({
                   key={groupId}
                   group={group}
                   collapsed={Boolean(collapsedGroups[groupId])}
-                  editingCategoryId={editingCategoryId}
                   defaultDate={defaultDate}
                   showDate={showDate}
                   onToggleCollapse={() => toggleCollapse(groupId)}
-                  onStartEditCategory={(category) => setEditingCategoryId(category.id)}
-                  onCancelEditCategory={() => setEditingCategoryId(null)}
-                  onUpdateCategory={onUpdateCategory || (() => undefined)}
+                  onStartEditCategory={startEditCategory}
                   onDeleteCategory={onDeleteCategory || (() => undefined)}
                   onAddTodo={onAddTodo}
                   onToggle={onToggle}
@@ -345,6 +361,20 @@ export function GroupedTodoList({
           <EmptyState title={emptyTitle} description={emptyDescription} />
         )}
       </div>
+
+      {creatingCategory ? (
+        <Modal title="새 카테고리 추가" description="Todo를 묶을 카테고리 이름, 색상, 아이콘을 설정합니다." onClose={() => setCreatingCategory(false)}>
+          {categoryError ? <p className="mb-3 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-red-100">{categoryError}</p> : null}
+          <CategoryForm onSubmit={createCategory} onCancel={() => setCreatingCategory(false)} submitLabel="카테고리 추가" />
+        </Modal>
+      ) : null}
+
+      {editingCategory ? (
+        <Modal title="카테고리 수정" description="카테고리 카드에 표시할 이름, 설명, 색상, 아이콘을 정리합니다." onClose={() => setEditingCategoryId(null)}>
+          {categoryError ? <p className="mb-3 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-red-100">{categoryError}</p> : null}
+          <CategoryForm category={editingCategory} onSubmit={updateCategory} onCancel={() => setEditingCategoryId(null)} submitLabel="저장" />
+        </Modal>
+      ) : null}
 
       <TodoEditModal todo={editingTodo} categories={categories} onClose={() => setEditingTodo(null)} onSave={onUpdate} />
     </>

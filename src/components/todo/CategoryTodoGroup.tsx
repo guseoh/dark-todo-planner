@@ -2,7 +2,6 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import type { Category } from "../../types/category";
 import type { Todo, TodoInput } from "../../types/todo";
-import { CategoryForm } from "../category/CategoryForm";
 import { CategoryHeader } from "../category/CategoryHeader";
 import { EmptyState } from "../common/EmptyState";
 import { InlineTodoAdd } from "./InlineTodoAdd";
@@ -19,13 +18,10 @@ export type TodoGroup = {
 type CategoryTodoGroupProps = {
   group: TodoGroup;
   collapsed: boolean;
-  editingCategoryId: string | null;
   defaultDate?: string;
   showDate?: boolean;
   onToggleCollapse: () => void;
   onStartEditCategory: (category: Category) => void;
-  onCancelEditCategory: () => void;
-  onUpdateCategory: (id: string, input: Partial<Category>) => void | Promise<void>;
   onDeleteCategory: (id: string, mode: "moveTodos" | "deleteTodos") => void | Promise<void>;
   onAddTodo: (todo: TodoInput) => void | Promise<void>;
   onToggle: (id: string) => void;
@@ -41,13 +37,10 @@ type CategoryTodoGroupProps = {
 export function CategoryTodoGroup({
   group,
   collapsed,
-  editingCategoryId,
   defaultDate,
   showDate = true,
   onToggleCollapse,
   onStartEditCategory,
-  onCancelEditCategory,
-  onUpdateCategory,
   onDeleteCategory,
   onAddTodo,
   onToggle,
@@ -62,7 +55,6 @@ export function CategoryTodoGroup({
   const [adding, setAdding] = useState(false);
   const [showAllTodos, setShowAllTodos] = useState(false);
   const categoryId = group.category?.id;
-  const isEditing = Boolean(categoryId && editingCategoryId === categoryId);
   const visibleTodos = showAllTodos ? group.todos : group.todos.slice(0, 5);
   const hiddenTodoCount = Math.max(group.todos.length - visibleTodos.length, 0);
 
@@ -90,18 +82,6 @@ export function CategoryTodoGroup({
         onDelete={group.category ? handleDeleteCategory : undefined}
         dragHandle={dragHandle}
       />
-
-      {isEditing && group.category ? (
-        <CategoryForm
-          category={group.category}
-          submitLabel="카테고리 저장"
-          onCancel={onCancelEditCategory}
-          onSubmit={async (input) => {
-            await onUpdateCategory(group.category!.id, input);
-            onCancelEditCategory();
-          }}
-        />
-      ) : null}
 
       {!collapsed ? (
         <div className="border-l border-ink-700/80 pl-2.5">

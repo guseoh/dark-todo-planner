@@ -1,14 +1,14 @@
-import { ClipboardEvent, FormEvent, useEffect, useState } from "react";
-import { ExternalLink, X } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
 import type { Category } from "../../types/category";
-import { CATEGORY_ICON_MAX_BYTES, normalizeCategoryIcon } from "../../lib/categoryIcon";
-import { CategoryIcon } from "./CategoryIcon";
+import { normalizeCategoryIcon } from "../../lib/categoryIcon";
+import { IconPicker } from "../common/IconPicker";
+import { IconRenderer } from "../common/IconRenderer";
 
 const colorOptions = ["#6366f1", "#8b5cf6", "#22c55e", "#f59e0b", "#ef4444", "#06b6d4", "#ec4899"];
 
 type CategoryFormProps = {
   category?: Category;
-  onSubmit: (input: { name: string; description?: string; color?: string; icon?: string }) => void;
+  onSubmit: (input: { name: string; description?: string; color?: string; icon?: string }) => void | Promise<void>;
   onCancel: () => void;
   submitLabel?: string;
 };
@@ -19,6 +19,7 @@ export function CategoryForm({ category, onSubmit, onCancel, submitLabel = "저�
   const [color, setColor] = useState(category?.color || colorOptions[0]);
   const [icon, setIcon] = useState(category?.icon || "");
   const [iconError, setIconError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setName(category?.name || "");
@@ -30,46 +31,30 @@ export function CategoryForm({ category, onSubmit, onCancel, submitLabel = "저�
 
   const updateIcon = (value: string) => {
     setIcon(value);
-    setIconError(value.trim() && !normalizeCategoryIcon(value) ? "http/https, data:image, emoji 또는 일반 텍스트만 사용할 수 있습니다." : "");
+    setIconError(value.trim() && !normalizeCategoryIcon(value) ? "http/https, data:image, lucide 아이콘, emoji만 사용할 수 있습니다." : "");
   };
 
-  const handleIconPaste = (event: ClipboardEvent<HTMLInputElement>) => {
-    const text = event.clipboardData.getData("text").trim();
-    if (text) {
-      event.preventDefault();
-      updateIcon(text);
-      return;
-    }
-
-    const imageFile = Array.from(event.clipboardData.files).find((file) => file.type.startsWith("image/"));
-    if (!imageFile) return;
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (imageFile.size > CATEGORY_ICON_MAX_BYTES) {
-      setIconError("이미지 아이콘은 180KB 이하만 붙여넣을 수 있습니다.");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => updateIcon(String(reader.result || ""));
-    reader.onerror = () => setIconError("이미지 아이콘을 읽지 못했습니다.");
-    reader.readAsDataURL(imageFile);
-  };
-
-  const handleSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    if (!name.trim()) return;
-    const normalizedIcon = normalizeCategoryIcon(icon);
-    onSubmit({ name: name.trim(), description: description.trim() || undefined, color, icon: normalizedIcon || undefined });
-    if (!category) {
-      setName("");
-      setDescription("");
-      setColor(colorOptions[0]);
-      setIcon("");
+    if (!name.trim() || iconError) return;
+    setSaving(true);
+    try {
+      const normalizedIcon = normalizeCategoryIcon(icon);
+      await onSubmit({ name: name.trim(), description: description.trim() || undefined, color, icon: normalizedIcon || undefined });
+      if (!category) {
+        setName("");
+        setDescription("");
+        setColor(colorOptions[0]);
+        setIcon("");
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="app-card space-y-3 p-4">
-      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid gap-4">
         <label className="space-y-1 text-sm text-ink-400">
           카테고리 이름
           <input className="field" value={name} onChange={(event) => setName(event.target.value)} placeholder="예: JPA 책" />
@@ -78,62 +63,49 @@ export function CategoryForm({ category, onSubmit, onCancel, submitLabel = "저�
           설명
           <input className="field" value={description} onChange={(event) => setDescription(event.target.value)} placeholder="선택 입력" />
         </label>
-        <label className="space-y-1 text-sm text-ink-400">
-          색상
-          <div className="flex min-h-11 items-center gap-2 rounded-lg border border-ink-700 bg-ink-950/70 px-3">
-            {colorOptions.map((option) => (
-              <button
-                key={option}
-                type="button"
-                className={`h-5 w-5 rounded-full border transition ${color === option ? "border-white ring-2 ring-accent-400/60" : "border-ink-600"}`}
-                style={{ backgroundColor: option }}
-                onClick={() => setColor(option)}
-                aria-label={`${option} 색상 선택`}
-              />
-            ))}
-          </div>
-        </label>
       </div>
-      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-        <label className="space-y-1 text-sm text-ink-400">
-          아이콘
-          <div className="flex gap-2">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-ink-700 bg-ink-950/70">
-              <CategoryIcon icon={icon} color={color} name={name || "카테고리"} className="h-8 w-8" />
-            </div>
-            <input
-              className="field min-w-0 flex-1"
-              value={icon}
-              onChange={(event) => updateIcon(event.target.value)}
-              onPaste={handleIconPaste}
-              placeholder="✅ 또는 이미지 URL 붙여넣기"
-              aria-label="카테고리 아이콘"
+
+      <div className="space-y-2 rounded-lg border border-ink-700 bg-ink-950/35 p-3">
+        <p className="text-sm font-semibold text-ink-300">색상</p>
+        <div className="flex flex-wrap gap-2">
+          {colorOptions.map((option) => (
+            <button
+              key={option}
+              type="button"
+              className={`h-8 w-8 rounded-full border border-white/20 transition ${
+                color === option ? "ring-2 ring-accent-300 ring-offset-2 ring-offset-ink-950" : "hover:scale-105"
+              }`}
+              style={{ backgroundColor: option }}
+              onClick={() => setColor(option)}
+              aria-label={`${option} 색상 선택`}
             />
-            {icon ? (
-              <button type="button" className="icon-btn h-11 w-11" onClick={() => updateIcon("")} aria-label="아이콘 제거">
-                <X size={16} />
-              </button>
-            ) : null}
-          </div>
-          <span className="block text-xs text-ink-500">Noticon에서 복사한 이모지, 아이콘, 이미지 주소를 붙여넣을 수 있습니다.</span>
-          {iconError ? <span className="block text-xs text-red-200">{iconError}</span> : null}
-        </label>
-        <a
-          className="btn-secondary min-h-10 justify-center px-3 py-2 text-sm"
-          href="https://noticon.tammolo.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <ExternalLink size={15} />
-          Noticon 열기
-        </a>
+          ))}
+        </div>
       </div>
-      <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+
+      <div className="space-y-2 rounded-lg border border-ink-700 bg-ink-950/35 p-3">
+        <p className="text-sm font-semibold text-ink-300">아이콘</p>
+        <IconPicker value={icon} onChange={updateIcon} color={color} name={name || "카테고리"} />
+        {iconError ? <span className="block text-xs text-red-200">{iconError}</span> : null}
+      </div>
+
+      <div className="rounded-lg border border-ink-700 bg-ink-950/45 p-3">
+        <p className="mb-2 text-xs font-semibold text-ink-500">미리보기</p>
+        <div className="flex min-w-0 items-center gap-3">
+          <IconRenderer icon={icon} color={color} name={name || "카테고리"} className={icon ? "h-9 w-9" : "h-3 w-3"} fallback="box" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-ink-100">{name || "카테고리 이름"}</p>
+            <p className="truncate text-xs text-ink-500">{description || "설명 없음"}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2 border-t border-ink-700 pt-4 sm:flex-row sm:justify-end">
         <button type="button" className="btn-secondary" onClick={onCancel}>
           취소
         </button>
-        <button type="submit" className="btn-primary" disabled={!name.trim() || Boolean(iconError)}>
-          {submitLabel}
+        <button type="submit" className="btn-primary" disabled={!name.trim() || Boolean(iconError) || saving}>
+          {saving ? "저장 중" : submitLabel}
         </button>
       </div>
     </form>

@@ -1,6 +1,8 @@
 import { FormEvent, useMemo, useState } from "react";
 import { ExternalLink, Link2, Pencil, Plus, Save, Search, Trash2 } from "lucide-react";
 import { EmptyState } from "../components/common/EmptyState";
+import { IconPicker } from "../components/common/IconPicker";
+import { IconRenderer } from "../components/common/IconRenderer";
 import { MarkdownEditor } from "../components/editor/MarkdownEditor";
 import { MarkdownPreview } from "../components/editor/MarkdownPreview";
 import type { Topic, TopicInput, TopicLink, TopicLinkInput, TopicStatus } from "../types/topic";
@@ -41,15 +43,17 @@ function TopicForm({
   const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
   const [tags, setTags] = useState("");
+  const [icon, setIcon] = useState("lucide:Lightbulb");
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     const titleValue = title.trim();
     if (!titleValue) return;
-    await onSubmit({ title: titleValue, memo: memo.trim() || undefined, status: "IDEA", tags: parseTagsInput(tags) });
+    await onSubmit({ title: titleValue, memo: memo.trim() || undefined, status: "IDEA", tags: parseTagsInput(tags), icon: icon || undefined });
     setTitle("");
     setMemo("");
     setTags("");
+    setIcon("lucide:Lightbulb");
   };
 
   return (
@@ -71,6 +75,10 @@ function TopicForm({
           <Plus size={17} />
           주제 추가
         </button>
+      </div>
+      <div className="rounded-lg border border-ink-700 bg-ink-950/35 p-3">
+        <p className="mb-2 text-sm font-semibold text-ink-300">주제 아이콘</p>
+        <IconPicker value={icon} onChange={setIcon} name={title || "주제"} />
       </div>
       <MarkdownEditor
         value={memo}
@@ -160,6 +168,7 @@ function TopicCard({
   const [memo, setMemo] = useState(topic.memo || "");
   const [status, setStatus] = useState<TopicStatus>(topic.status);
   const [tags, setTags] = useState(topic.tags.join(", "));
+  const [icon, setIcon] = useState(topic.icon || "");
 
   const saveTopic = async () => {
     const titleValue = title.trim();
@@ -169,6 +178,7 @@ function TopicCard({
       memo: memo.trim(),
       status,
       tags: parseTagsInput(tags),
+      icon: icon || undefined,
     });
     setEditing(false);
   };
@@ -186,6 +196,10 @@ function TopicCard({
             </select>
             <input className="field min-h-10 py-1.5 text-sm" value={tags} onChange={(event) => setTags(event.target.value)} placeholder="태그" />
           </div>
+          <div className="rounded-lg border border-ink-700 bg-ink-950/35 p-3">
+            <p className="mb-2 text-sm font-semibold text-ink-300">아이콘</p>
+            <IconPicker value={icon} onChange={setIcon} name={title || "주제"} />
+          </div>
           <MarkdownEditor value={memo} onChange={setMemo} placeholder="주제 메모" />
           <div className="flex gap-2">
             <button type="button" className="btn-primary min-h-9 px-3 py-1.5 text-sm" onClick={saveTopic}>
@@ -200,11 +214,14 @@ function TopicCard({
       ) : (
         <>
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
+            <div className="flex min-w-0 items-start gap-2.5">
+              <IconRenderer icon={topic.icon || "lucide:Lightbulb"} color="#6366f1" name={topic.title} className="h-9 w-9" fallback="box" />
+              <div className="min-w-0">
               <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusClass[topic.status]}`}>
                 {statusLabel[topic.status]}
               </span>
               <h3 className="mt-2 break-words text-base font-bold leading-6 text-ink-100">{topic.title}</h3>
+              </div>
             </div>
             <div className="flex shrink-0 gap-1">
               <button type="button" className="icon-btn min-h-8 min-w-8 rounded-md" onClick={() => setEditing(true)} aria-label="주제 수정">

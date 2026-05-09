@@ -17,6 +17,7 @@ export type Topic = {
   memo?: string;
   status: TopicStatus;
   tags: string[];
+  icon?: string;
   links: TopicLink[];
   createdAt: string;
   updatedAt: string;
@@ -27,6 +28,7 @@ export type TopicInput = {
   memo?: string;
   status?: TopicStatus;
   tags?: string[];
+  icon?: string;
 };
 
 export type TopicLinkInput = {

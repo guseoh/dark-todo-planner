@@ -70,6 +70,7 @@ export const topicInputSchema = z.object({
   memo: z.string().optional().nullable(),
   status: topicStatusSchema.default("IDEA"),
   tags: tagsSchema,
+  icon: z.string().optional().nullable(),
 });
 
 export const topicLinkInputSchema = z.object({

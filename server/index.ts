@@ -678,6 +678,7 @@ app.post(
         memo: normalizeOptional(input.memo),
         status: input.status,
         tagsJson: JSON.stringify(input.tags),
+        icon: normalizeCategoryIcon(input.icon),
       },
       include: topicInclude,
     });
@@ -709,6 +710,7 @@ app.put(
         memo: normalizeOptional(input.memo),
         status: input.status,
         tagsJson: JSON.stringify(input.tags),
+        icon: normalizeCategoryIcon(input.icon),
       },
       include: topicInclude,
     });

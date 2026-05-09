@@ -147,6 +147,7 @@ model Topic {
   memo      String?
   status    TopicStatus @default(IDEA)
   tagsJson  String      @default("[]")
+  icon      String?
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 

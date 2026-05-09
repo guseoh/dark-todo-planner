@@ -121,6 +121,7 @@ export const serializeTopic = (topic: TopicWithLinks) => ({
   memo: topic.memo || undefined,
   status: topic.status,
   tags: parseTopicTags(topic.tagsJson),
+  icon: topic.icon || undefined,
   links: topic.links?.map(serializeTopicLink) || [],
   createdAt: topic.createdAt.toISOString(),
   updatedAt: topic.updatedAt.toISOString(),

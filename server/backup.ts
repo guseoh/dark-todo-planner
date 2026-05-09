@@ -194,6 +194,7 @@ export const importBackupForUser = async (userId: string, input: unknown) => {
           memo: normalizeOptional(topic.memo),
           status: pickEnum(topic.status, topicStatuses, "IDEA"),
           tagsJson: JSON.stringify(parseTags(topic.tags)),
+          icon: normalizeCategoryIcon(topic.icon),
         },
       });
       imported.topics += 1;
