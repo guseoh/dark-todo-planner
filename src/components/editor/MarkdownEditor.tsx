@@ -6,6 +6,7 @@ type MarkdownEditorProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "va
   value: string;
   onChange: (value: string) => void;
   label?: string;
+  textareaClassName?: string;
 };
 
 type ToolbarAction =
@@ -47,7 +48,7 @@ const wrapSelection = (action: ToolbarAction, selected: string) => {
   return selected;
 };
 
-export function MarkdownEditor({ value, onChange, label, className = "", ...props }: MarkdownEditorProps) {
+export function MarkdownEditor({ value, onChange, label, className = "", textareaClassName = "", ...props }: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const applyAction = (action: ToolbarAction) => {
@@ -94,7 +95,7 @@ export function MarkdownEditor({ value, onChange, label, className = "", ...prop
         </div>
         <SmartTextarea
           ref={textareaRef}
-          className="min-h-20 w-full resize-y rounded-b-lg bg-transparent px-3 py-2 text-sm leading-6 text-ink-100 outline-none placeholder:text-ink-500"
+          className={`min-h-20 w-full resize-y rounded-b-lg bg-transparent px-3 py-2 text-sm leading-6 text-ink-100 outline-none placeholder:text-ink-500 ${textareaClassName}`}
           value={value}
           onChange={onChange}
           {...props}

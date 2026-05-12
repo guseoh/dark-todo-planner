@@ -6,12 +6,15 @@ type ModalProps = {
   description?: string;
   children: ReactNode;
   onClose: () => void;
+  size?: "md" | "lg";
 };
 
-export function Modal({ title, description, children, onClose }: ModalProps) {
+export function Modal({ title, description, children, onClose, size = "md" }: ModalProps) {
+  const sizeClass = size === "lg" ? "max-w-4xl" : "max-w-2xl";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-ink-950/75 px-4 py-6 backdrop-blur-sm">
-      <div className="w-full max-w-2xl rounded-xl border border-ink-700 bg-ink-850 shadow-soft">
+      <div className={`w-full ${sizeClass} rounded-xl border border-ink-700 bg-ink-850 shadow-soft`}>
         <div className="flex items-start justify-between gap-4 border-b border-ink-700 px-5 py-4">
           <div className="min-w-0">
             <h2 className="text-lg font-bold text-ink-100">{title}</h2>

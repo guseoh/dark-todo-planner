@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Pencil, Pin, PinOff, Plus, Save, Trash2, X } from "lucide-react";
 import { EmptyState } from "../components/common/EmptyState";
+import { Modal } from "../components/common/Modal";
 import { MarkdownEditor } from "../components/editor/MarkdownEditor";
 import { MarkdownPreview } from "../components/editor/MarkdownPreview";
 import { formatKoreanDate } from "../lib/date";
@@ -21,9 +22,10 @@ type MemoFormProps = {
   submitLabel: string;
   onSubmit: (input: MemoInput) => unknown | Promise<unknown>;
   onCancel?: () => void;
+  large?: boolean;
 };
 
-function MemoForm({ initial, submitLabel, onSubmit, onCancel }: MemoFormProps) {
+function MemoForm({ initial, submitLabel, onSubmit, onCancel, large = false }: MemoFormProps) {
   const [title, setTitle] = useState(initial?.title || "");
   const [content, setContent] = useState(initial?.content || "");
   const [color, setColor] = useState(initial?.color || memoColors[0].value);
@@ -54,34 +56,54 @@ function MemoForm({ initial, submitLabel, onSubmit, onCancel }: MemoFormProps) {
   };
 
   return (
-    <form onSubmit={submit} className="space-y-3">
-      <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_12rem_auto] md:items-center">
-        <input className="field" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="제목 선택" />
-        <select className="field" value={color} onChange={(event) => setColor(event.target.value)} aria-label="메모 색상">
-          {memoColors.map((item) => (
-            <option key={item.value} value={item.value}>
-              {item.label}
-            </option>
-          ))}
-        </select>
-        <label className="flex min-h-10 items-center gap-2 rounded-lg border border-ink-700 bg-ink-950/60 px-3 text-sm text-ink-300">
+    <form onSubmit={submit} className="space-y-4">
+      <label className="block space-y-1 text-sm font-semibold text-ink-300">
+        제목
+        <input
+          className="field min-h-11 text-base font-semibold"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder="메모 제목을 입력하세요"
+          autoFocus={Boolean(initial)}
+        />
+      </label>
+
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+        <label className="block space-y-1 text-sm font-semibold text-ink-300">
+          색상
+          <select className="field min-h-11" value={color} onChange={(event) => setColor(event.target.value)} aria-label="메모 색상">
+            {memoColors.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex min-h-11 items-center gap-2 rounded-lg border border-ink-700 bg-ink-950/60 px-3 text-sm font-semibold text-ink-300">
           <input type="checkbox" checked={pinned} onChange={(event) => setPinned(event.target.checked)} className="h-4 w-4 accent-accent-500" />
           고정
         </label>
       </div>
-      <MarkdownEditor value={content} onChange={setContent} placeholder="- 떠오른 생각을 적어두세요" />
+
+      <MarkdownEditor
+        value={content}
+        onChange={setContent}
+        label="내용"
+        placeholder="- 떠오른 생각을 적어두세요"
+        textareaClassName={large ? "min-h-[320px] max-h-[60vh]" : "min-h-28"}
+      />
       {error ? <p className="text-xs text-red-200">{error}</p> : null}
-      <div className="flex flex-wrap gap-2">
-        <button type="submit" className="btn-primary">
-          {initial ? <Save size={16} /> : <Plus size={16} />}
-          {submitLabel}
-        </button>
+      <div className="flex flex-wrap justify-end gap-2 border-t border-ink-700 pt-4">
         {onCancel ? (
           <button type="button" className="btn-secondary" onClick={onCancel}>
             <X size={16} />
             취소
           </button>
         ) : null}
+        <button type="submit" className="btn-primary">
+          {initial ? <Save size={16} /> : <Plus size={16} />}
+          {submitLabel}
+        </button>
       </div>
     </form>
   );
@@ -89,57 +111,47 @@ function MemoForm({ initial, submitLabel, onSubmit, onCancel }: MemoFormProps) {
 
 function MemoCard({
   memo,
-  onUpdate,
   onDelete,
   onTogglePin,
+  onEdit,
 }: {
   memo: Memo;
-  onUpdate: (id: string, input: MemoInput) => unknown | Promise<unknown>;
   onDelete: (id: string) => unknown | Promise<unknown>;
   onTogglePin: (id: string) => unknown | Promise<unknown>;
+  onEdit: (memo: Memo) => void;
 }) {
-  const [editing, setEditing] = useState(false);
   const displayTitle = memo.title || memo.content.split("\n").find(Boolean)?.slice(0, 28) || "제목 없음";
 
   return (
     <article className={`rounded-xl border p-4 ${colorClass(memo.color)}`}>
-      {editing ? (
-        <MemoForm
-          initial={memo}
-          submitLabel="메모 저장"
-          onSubmit={(input) => onUpdate(memo.id, input)}
-          onCancel={() => setEditing(false)}
-        />
-      ) : (
-        <div className="flex min-h-full flex-col gap-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex min-w-0 items-center gap-2">
-                {memo.pinned ? <Pin size={14} className="shrink-0 text-accent-300" /> : null}
-                <h3 className="truncate text-base font-bold text-ink-100">{displayTitle}</h3>
-              </div>
-              <p className="mt-1 text-xs text-ink-500">{formatKoreanDate(memo.updatedAt, "yyyy.MM.dd 수정")}</p>
+      <div className="flex min-h-full flex-col gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-2">
+              {memo.pinned ? <Pin size={14} className="shrink-0 text-accent-300" /> : null}
+              <h3 className="line-clamp-2 text-base font-bold leading-6 text-ink-100" title={displayTitle}>{displayTitle}</h3>
             </div>
-            <div className="flex shrink-0 gap-1">
-              <button type="button" className="icon-btn min-h-8 min-w-8 rounded-md" onClick={() => onTogglePin(memo.id)} aria-label={memo.pinned ? "고정 해제" : "메모 고정"}>
-                {memo.pinned ? <PinOff size={14} /> : <Pin size={14} />}
-              </button>
-              <button type="button" className="icon-btn min-h-8 min-w-8 rounded-md" onClick={() => setEditing(true)} aria-label="메모 수정">
-                <Pencil size={14} />
-              </button>
-              <button
-                type="button"
-                className="icon-btn min-h-8 min-w-8 rounded-md hover:border-danger hover:text-red-100"
-                onClick={() => window.confirm("메모를 삭제할까요?") && onDelete(memo.id)}
-                aria-label="메모 삭제"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
+            <p className="mt-1 text-xs text-ink-500">{formatKoreanDate(memo.updatedAt, "yyyy.MM.dd 수정")}</p>
           </div>
-          <MarkdownPreview className="line-clamp-8 text-sm" value={memo.content} />
+          <div className="flex shrink-0 gap-1">
+            <button type="button" className="icon-btn min-h-8 min-w-8 rounded-md" onClick={() => onTogglePin(memo.id)} aria-label={memo.pinned ? "고정 해제" : "메모 고정"}>
+              {memo.pinned ? <PinOff size={14} /> : <Pin size={14} />}
+            </button>
+            <button type="button" className="icon-btn min-h-8 min-w-8 rounded-md" onClick={() => onEdit(memo)} aria-label="메모 수정">
+              <Pencil size={14} />
+            </button>
+            <button
+              type="button"
+              className="icon-btn min-h-8 min-w-8 rounded-md hover:border-danger hover:text-red-100"
+              onClick={() => window.confirm("메모를 삭제할까요?") && onDelete(memo.id)}
+              aria-label="메모 삭제"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
         </div>
-      )}
+        <MarkdownPreview className="line-clamp-5 text-sm" value={memo.content} />
+      </div>
     </article>
   );
 }
@@ -158,6 +170,7 @@ export function MemoPage({
   onTogglePin: (id: string) => unknown | Promise<unknown>;
 }) {
   const [creating, setCreating] = useState(false);
+  const [editingMemo, setEditingMemo] = useState<Memo | null>(null);
   const pinnedMemos = memos.filter((memo) => memo.pinned);
   const normalMemos = memos.filter((memo) => !memo.pinned);
 
@@ -194,7 +207,7 @@ export function MemoPage({
               <h3 className="text-sm font-bold text-ink-300">고정 메모</h3>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {pinnedMemos.map((memo) => (
-                  <MemoCard key={memo.id} memo={memo} onUpdate={onUpdate} onDelete={onDelete} onTogglePin={onTogglePin} />
+                  <MemoCard key={memo.id} memo={memo} onDelete={onDelete} onTogglePin={onTogglePin} onEdit={setEditingMemo} />
                 ))}
               </div>
             </section>
@@ -204,7 +217,7 @@ export function MemoPage({
             <h3 className="text-sm font-bold text-ink-300">전체 메모</h3>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {normalMemos.map((memo) => (
-                <MemoCard key={memo.id} memo={memo} onUpdate={onUpdate} onDelete={onDelete} onTogglePin={onTogglePin} />
+                <MemoCard key={memo.id} memo={memo} onDelete={onDelete} onTogglePin={onTogglePin} onEdit={setEditingMemo} />
               ))}
             </div>
           </section>
@@ -212,6 +225,21 @@ export function MemoPage({
       ) : (
         <EmptyState title="아직 작성한 메모가 없습니다." description="작업 중 떠오른 생각을 가볍게 적어보세요." />
       )}
+
+      {editingMemo ? (
+        <Modal title="메모 수정" description="제목, 색상, 고정 여부와 내용을 넓은 화면에서 편하게 수정합니다." onClose={() => setEditingMemo(null)} size="lg">
+          <MemoForm
+            initial={editingMemo}
+            submitLabel="저장"
+            large
+            onSubmit={async (input) => {
+              await onUpdate(editingMemo.id, input);
+              setEditingMemo(null);
+            }}
+            onCancel={() => setEditingMemo(null)}
+          />
+        </Modal>
+      ) : null}
     </div>
   );
 }
