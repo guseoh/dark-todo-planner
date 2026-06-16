@@ -37,6 +37,7 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: javascript-typescript
+          queries: security-extended,security-and-quality
 
       - name: Build
         run: npm run build

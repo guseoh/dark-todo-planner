@@ -1,6 +1,7 @@
 services:
   todo-planner:
     build: .
+    init: true
     ports:
       - "3000:3000"
     env_file:
@@ -10,6 +11,17 @@ services:
       PORT: 3000
       HOST: 0.0.0.0
       DATABASE_URL: ${DOCKER_DATABASE_URL:-file:../data/prod.db}
+      APP_AUTH_ENABLED: ${APP_AUTH_ENABLED:-true}
+      APP_AUTH_USERNAME: ${APP_AUTH_USERNAME:-todo}
+      APP_AUTH_PASSWORD: ${APP_AUTH_PASSWORD:?Set APP_AUTH_PASSWORD in .env before running Docker Compose}
+      ALLOW_INSECURE_PUBLIC_ACCESS: ${ALLOW_INSECURE_PUBLIC_ACCESS:-false}
+      JSON_BODY_LIMIT: ${JSON_BODY_LIMIT:-2mb}
+      BACKUP_JSON_BODY_LIMIT: ${BACKUP_JSON_BODY_LIMIT:-4mb}
     volumes:
       - ./data:/app/data
+      - ./backups:/app/backups
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     restart: unless-stopped

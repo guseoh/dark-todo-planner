@@ -7,7 +7,9 @@ import { requireAuth, type AuthenticatedRequest } from "./auth";
 import { BackupValidationError, importBackupForUser } from "./backup";
 import { BACKUP_VERSION } from "./backupConstants";
 import { normalizeCategoryIcon } from "./categoryIcon";
+import { loadServerConfig } from "./config";
 import { prisma } from "./db";
+import { createBasicAuthMiddleware, createCorsMiddleware, createOriginGuard } from "./security";
 import {
   serializeCategory,
   serializeGoal,
@@ -29,17 +31,8 @@ import {
   topicLinkInputSchema,
 } from "./validation";
 
+const config = loadServerConfig();
 const app = express();
-const port = Number(process.env.PORT || 3000);
-const host = process.env.HOST || "127.0.0.1";
-const isProduction = process.env.NODE_ENV === "production";
-const configuredClientOrigins = process.env.CLIENT_URL || process.env.CLIENT_ORIGIN;
-const clientOrigins = new Set(
-  (configuredClientOrigins || "http://localhost:5173,http://127.0.0.1:5173")
-    .split(",")
-    .map((origin) => origin.trim().replace(/\/$/, ""))
-    .filter(Boolean),
-);
 
 const cspDirectives = {
   "default-src": ["'self'"],
@@ -52,7 +45,7 @@ const cspDirectives = {
   "object-src": ["'none'"],
   "script-src": ["'self'"],
   "style-src": ["'self'", "'unsafe-inline'"],
-  "upgrade-insecure-requests": isProduction ? [] : null,
+  "upgrade-insecure-requests": config.isProduction ? [] : null,
 };
 
 app.disable("x-powered-by");
@@ -66,24 +59,17 @@ app.use(
   }),
 );
 
-app.use(express.json({ limit: "4mb" }));
+app.get("/api/health", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  return res.json({ status: "ok" });
+});
 
-if (!isProduction) {
-  app.use((req, res, next) => {
-    const origin = req.headers.origin?.replace(/\/$/, "");
-    if (!origin || clientOrigins.has(origin)) {
-      if (origin) {
-        res.setHeader("Access-Control-Allow-Origin", origin);
-        res.setHeader("Vary", "Origin");
-      }
-      res.setHeader("Access-Control-Allow-Credentials", "true");
-      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-      res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
-    }
-    if (req.method === "OPTIONS") return res.sendStatus(204);
-    return next();
-  });
-}
+app.use(createCorsMiddleware(config));
+app.use(createOriginGuard(config));
+app.use(createBasicAuthMiddleware(config));
+app.use("/api/backup/import", express.json({ limit: config.backupJsonBodyLimit }));
+app.use("/api/migrate/local-storage", express.json({ limit: config.backupJsonBodyLimit }));
+app.use(express.json({ limit: config.jsonBodyLimit }));
 
 const asyncHandler =
   <TReq extends Request = Request>(handler: (req: TReq, res: Response) => Promise<unknown>) =>
@@ -129,14 +115,6 @@ const todoInclude = {
 const topicInclude = {
   links: { orderBy: { createdAt: "asc" } },
 } as const;
-
-app.get(
-  "/api/health",
-  asyncHandler(async (_req, res) => {
-    await prisma.$queryRaw`SELECT 1`;
-    return res.json({ status: "ok", database: "connected" });
-  }),
-);
 
 app.get(
   "/api/categories",
@@ -950,10 +928,30 @@ app.get(/^(?!\/api(?:\/|$)).*/, (_req, res) => {
 });
 
 app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  if (
+    error &&
+    typeof error === "object" &&
+    "type" in error &&
+    (error.type === "entity.too.large" || error.type === "request.entity.too.large")
+  ) {
+    return res.status(413).json({ message: "요청 본문이 너무 큽니다." });
+  }
+
+  if (error instanceof SyntaxError) {
+    return res.status(400).json({ message: "JSON 형식이 올바르지 않습니다." });
+  }
+
   console.error(error);
   return res.status(500).json({ message: "서버 오류가 발생했습니다." });
 });
 
-app.listen(port, host, () => {
-  console.log(`Todo Planner listening on http://${host}:${port}`);
-});
+export { app };
+
+export const startServer = () =>
+  app.listen(config.port, config.host, () => {
+    console.log(`Todo Planner listening on http://${config.host}:${config.port}`);
+  });
+
+if (config.nodeEnv !== "test") {
+  startServer();
+}
