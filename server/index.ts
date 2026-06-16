@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express, { type NextFunction, type Request, type Response } from "express";
+import helmet from "helmet";
 import path from "node:path";
 import { z } from "zod";
 import { requireAuth, type AuthenticatedRequest } from "./auth";
@@ -30,15 +31,47 @@ import {
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
+const host = process.env.HOST || "127.0.0.1";
 const isProduction = process.env.NODE_ENV === "production";
-const clientUrl = process.env.CLIENT_URL || process.env.CLIENT_ORIGIN || "http://localhost:5173";
+const configuredClientOrigins = process.env.CLIENT_URL || process.env.CLIENT_ORIGIN;
+const clientOrigins = new Set(
+  (configuredClientOrigins || "http://localhost:5173,http://127.0.0.1:5173")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/$/, ""))
+    .filter(Boolean),
+);
+
+const cspDirectives = {
+  "default-src": ["'self'"],
+  "base-uri": ["'self'"],
+  "connect-src": ["'self'"],
+  "font-src": ["'self'", "data:"],
+  "form-action": ["'self'"],
+  "frame-ancestors": ["'none'"],
+  "img-src": ["'self'", "data:", "http:", "https:"],
+  "object-src": ["'none'"],
+  "script-src": ["'self'"],
+  "style-src": ["'self'", "'unsafe-inline'"],
+  "upgrade-insecure-requests": isProduction ? [] : null,
+};
+
+app.disable("x-powered-by");
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: cspDirectives,
+    },
+    crossOriginEmbedderPolicy: false,
+  }),
+);
 
 app.use(express.json({ limit: "4mb" }));
 
 if (!isProduction) {
   app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (!origin || origin === clientUrl) {
+    const origin = req.headers.origin?.replace(/\/$/, "");
+    if (!origin || clientOrigins.has(origin)) {
       if (origin) {
         res.setHeader("Access-Control-Allow-Origin", origin);
         res.setHeader("Vary", "Origin");
@@ -921,6 +954,6 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   return res.status(500).json({ message: "서버 오류가 발생했습니다." });
 });
 
-app.listen(port, () => {
-  console.log(`Todo Planner listening on http://localhost:${port}`);
+app.listen(port, host, () => {
+  console.log(`Todo Planner listening on http://${host}:${port}`);
 });

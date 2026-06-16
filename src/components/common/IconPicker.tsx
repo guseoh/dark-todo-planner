@@ -79,7 +79,7 @@ export function IconPicker({ value, onChange, color = "#6366f1", name }: IconPic
   const applyValue = (next: string) => {
     const normalized = normalizeCategoryIcon(next);
     if (next.trim() && !normalized) {
-      setError("http/https, data:image, emoji 또는 lucide 아이콘만 사용할 수 있습니다.");
+      setError("http/https, PNG/JPEG/GIF/WebP/AVIF data:image, emoji 또는 lucide 아이콘만 사용할 수 있습니다.");
       return;
     }
     setError("");
@@ -206,7 +206,7 @@ export function IconPicker({ value, onChange, color = "#6366f1", name }: IconPic
                   applyValue(event.target.value);
                 }}
                 onPaste={handlePaste}
-                placeholder="https://... 또는 data:image..."
+                placeholder="https://... 또는 PNG/JPEG data:image..."
               />
               <p className="text-xs text-ink-500">이미지 파일을 클립보드로 복사한 뒤 이 입력칸에 붙여넣을 수도 있습니다.</p>
             </div>

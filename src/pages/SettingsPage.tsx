@@ -11,6 +11,7 @@ import { MarkdownEditor } from "../components/editor/MarkdownEditor";
 import { BACKUP_VERSION } from "../lib/storage";
 import { STORAGE_KEYS } from "../lib/storageKeys";
 import { LEGACY_STORAGE_KEYS } from "../lib/storageKeys";
+import { normalizeHttpUrl } from "../lib/url";
 
 type SettingsPageProps = {
   categories: Category[];
@@ -68,11 +69,12 @@ function MusicLinkForm({
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     try {
-      const parsed = new URL(url.trim());
+      const normalizedUrl = normalizeHttpUrl(url);
+      if (!normalizedUrl) throw new Error("http 또는 https URL만 입력해주세요.");
       await onSubmit({
         title: title.trim(),
-        url: parsed.toString(),
-        provider: provider === "ETC" ? inferProvider(parsed.toString()) : provider,
+        url: normalizedUrl,
+        provider: provider === "ETC" ? inferProvider(normalizedUrl) : provider,
         memo: memo.trim() || undefined,
       });
       if (!initial) {
@@ -279,9 +281,11 @@ export function SettingsPage({
                       {link.memo ? <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-xs leading-5 text-ink-400">{link.memo}</p> : null}
                     </div>
                     <div className="flex shrink-0 gap-1">
-                      <a className="icon-btn min-h-8 min-w-8 rounded-md" href={link.url} target="_blank" rel="noreferrer" aria-label="음악 링크 열기">
-                        <ExternalLink size={14} />
-                      </a>
+                      {normalizeHttpUrl(link.url) ? (
+                        <a className="icon-btn min-h-8 min-w-8 rounded-md" href={normalizeHttpUrl(link.url)} target="_blank" rel="noopener noreferrer" aria-label="음악 링크 열기">
+                          <ExternalLink size={14} />
+                        </a>
+                      ) : null}
                       <button type="button" className="icon-btn min-h-8 min-w-8 rounded-md" onClick={() => setEditingMusicId(link.id)} aria-label="음악 링크 수정">
                         <Pencil size={14} />
                       </button>

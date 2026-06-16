@@ -13,8 +13,10 @@ const escapeHtml = (value: string) =>
     .replace(/'/g, "&#039;");
 
 const safeUrl = (url: string) => {
+  const trimmed = url.trim();
+  if (/[\u0000-\u001F\u007F]/.test(trimmed)) return "#";
   try {
-    const parsed = new URL(url);
+    const parsed = new URL(trimmed);
     return ["http:", "https:", "mailto:"].includes(parsed.protocol) ? parsed.toString() : "#";
   } catch {
     return "#";
@@ -29,7 +31,7 @@ const renderInline = (source: string) => {
   html = html.replace(/_([^_]+)_/g, "<em>$1</em>");
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label: string, url: string) => {
     const href = safeUrl(url);
-    return `<a class="text-accent-300 underline decoration-accent-400/50 underline-offset-2 hover:text-accent-200" href="${href}" target="_blank" rel="noreferrer">${label}</a>`;
+    return `<a class="text-accent-300 underline decoration-accent-400/50 underline-offset-2 hover:text-accent-200" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${label}</a>`;
   });
   return html;
 };

@@ -7,6 +7,37 @@ export const goalTypeSchema = z.enum(["DAILY", "WEEKLY", "MONTHLY"]);
 export const topicStatusSchema = z.enum(["IDEA", "WRITING", "DONE"]);
 export const musicProviderSchema = z.enum(["YOUTUBE", "YOUTUBE_MUSIC", "MELON", "SPOTIFY", "ETC"]);
 
+const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001F\u007F]/;
+
+export const normalizeHttpUrl = (value: unknown) => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed || CONTROL_CHARACTER_PATTERN.test(trimmed)) return null;
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
+};
+
+export const httpUrlSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(2048)
+  .transform((value, context) => {
+    const normalized = normalizeHttpUrl(value);
+    if (!normalized) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "http 또는 https URL만 사용할 수 있습니다.",
+      });
+      return z.NEVER;
+    }
+    return normalized;
+  });
+
 export const tagsSchema = z
   .array(z.string())
   .optional()
@@ -75,7 +106,7 @@ export const topicInputSchema = z.object({
 
 export const topicLinkInputSchema = z.object({
   title: z.string().optional().nullable(),
-  url: z.string().url(),
+  url: httpUrlSchema,
   description: z.string().optional().nullable(),
 });
 
@@ -88,7 +119,7 @@ export const memoInputSchema = z.object({
 
 export const musicLinkInputSchema = z.object({
   title: z.string().trim().min(1),
-  url: z.string().url(),
+  url: httpUrlSchema,
   provider: musicProviderSchema.optional().default("ETC"),
   memo: z.string().optional().nullable(),
 });

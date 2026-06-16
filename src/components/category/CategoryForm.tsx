@@ -31,7 +31,7 @@ export function CategoryForm({ category, onSubmit, onCancel, submitLabel = "저�
 
   const updateIcon = (value: string) => {
     setIcon(value);
-    setIconError(value.trim() && !normalizeCategoryIcon(value) ? "http/https, data:image, lucide 아이콘, emoji만 사용할 수 있습니다." : "");
+    setIconError(value.trim() && !normalizeCategoryIcon(value) ? "http/https, PNG/JPEG/GIF/WebP/AVIF data:image, lucide 아이콘, emoji만 사용할 수 있습니다." : "");
   };
 
   const handleSubmit = async (event: FormEvent) => {

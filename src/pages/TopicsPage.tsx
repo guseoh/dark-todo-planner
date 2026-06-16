@@ -5,6 +5,7 @@ import { IconPicker } from "../components/common/IconPicker";
 import { IconRenderer } from "../components/common/IconRenderer";
 import { MarkdownEditor } from "../components/editor/MarkdownEditor";
 import { MarkdownPreview } from "../components/editor/MarkdownPreview";
+import { normalizeHttpUrl } from "../lib/url";
 import type { Topic, TopicInput, TopicLink, TopicLinkInput, TopicStatus } from "../types/topic";
 
 const statusLabel: Record<TopicStatus | "ALL", string> = {
@@ -106,7 +107,7 @@ function LinkForm({
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    const urlValue = url.trim();
+    const urlValue = normalizeHttpUrl(url);
     if (!urlValue) return;
     await onSubmit({
       title: title.trim() || undefined,
@@ -281,9 +282,11 @@ function TopicCard({
                       {link.description ? <p className="mt-1 line-clamp-2 text-xs leading-5 text-ink-400">{link.description}</p> : null}
                     </div>
                     <div className="flex shrink-0 gap-1">
-                      <a className="icon-btn min-h-8 min-w-8 rounded-md" href={link.url} target="_blank" rel="noreferrer" aria-label="링크 새 탭으로 열기">
-                        <ExternalLink size={14} />
-                      </a>
+                      {normalizeHttpUrl(link.url) ? (
+                        <a className="icon-btn min-h-8 min-w-8 rounded-md" href={normalizeHttpUrl(link.url)} target="_blank" rel="noopener noreferrer" aria-label="링크 새 탭으로 열기">
+                          <ExternalLink size={14} />
+                        </a>
+                      ) : null}
                       <button type="button" className="icon-btn min-h-8 min-w-8 rounded-md" onClick={() => setEditingLinkId(link.id)} aria-label="링크 수정">
                         <Pencil size={14} />
                       </button>
