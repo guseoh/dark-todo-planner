@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express, { type NextFunction, type Request, type Response } from "express";
+import { rateLimit } from "express-rate-limit";
 import helmet from "helmet";
 import path from "node:path";
 import { z } from "zod";
@@ -65,6 +66,16 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use(createCorsMiddleware(config));
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 600,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    skip: (req) => req.path === "/api/health",
+    message: { message: "요청이 너무 많습니다. 잠시 후 다시 시도하세요." },
+  }),
+);
 app.use(createOriginGuard(config));
 app.use(createBasicAuthMiddleware(config));
 app.use("/api/backup/import", express.json({ limit: config.backupJsonBodyLimit }));

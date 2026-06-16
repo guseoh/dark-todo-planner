@@ -38,10 +38,16 @@ export const isAllowedOrigin = (req: Request, config: ServerConfig, originHeader
   return config.clientOrigins.has(origin) || requestHostMatchesOrigin(req, origin);
 };
 
-const hashSecret = (value: string) => crypto.createHash("sha256").update(value, "utf8").digest();
-
-const timingSafeStringEqual = (actual: string, expected: string) =>
-  crypto.timingSafeEqual(hashSecret(actual), hashSecret(expected));
+const timingSafeStringEqual = (actual: string, expected: string) => {
+  const actualBytes = Buffer.from(actual, "utf8");
+  const expectedBytes = Buffer.from(expected, "utf8");
+  if (actualBytes.length !== expectedBytes.length) {
+    const compareLength = Math.max(actualBytes.length, expectedBytes.length, 1);
+    crypto.timingSafeEqual(Buffer.alloc(compareLength), Buffer.alloc(compareLength));
+    return false;
+  }
+  return crypto.timingSafeEqual(actualBytes, expectedBytes);
+};
 
 const parseBasicAuthorization = (value?: string) => {
   if (!value?.startsWith("Basic ")) return null;
@@ -86,7 +92,6 @@ export const createCorsMiddleware =
     if (origin && isAllowedOrigin(req, config, origin)) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Vary", "Origin");
-      res.setHeader("Access-Control-Allow-Credentials", "true");
       res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
       res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
     }

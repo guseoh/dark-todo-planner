@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 import express, { type Express } from "express";
+import { rateLimit } from "express-rate-limit";
 import { loadServerConfig } from "../server/config";
 import {
   createBasicAuthMiddleware,
@@ -26,6 +27,16 @@ const buildApp = (env: NodeJS.ProcessEnv = {}) => {
 
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
   app.use(createCorsMiddleware(config));
+  app.use(
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      limit: 600,
+      standardHeaders: "draft-8",
+      legacyHeaders: false,
+      skip: (req) => req.path === "/api/health",
+      message: { message: "요청이 너무 많습니다. 잠시 후 다시 시도하세요." },
+    }),
+  );
   app.use(createOriginGuard(config));
   app.use(createBasicAuthMiddleware(config));
   app.use(express.json({ limit: config.jsonBodyLimit }));
