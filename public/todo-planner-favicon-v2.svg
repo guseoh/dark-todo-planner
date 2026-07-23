@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Todo Planner">
+  <rect width="64" height="64" rx="14" fill="#0f172a" />
+  <rect x="12" y="12" width="40" height="40" rx="11" fill="#14b8a6" />
+  <path d="m21 32 8 8 15-18" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
