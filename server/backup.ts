@@ -1,6 +1,7 @@
 import { prisma } from "./db";
 import { BACKUP_COLLECTION_KEYS, BACKUP_VERSION, SUPPORTED_BACKUP_VERSIONS, type BackupCollectionKey } from "./backupConstants";
 import { normalizeCategoryIcon } from "./categoryIcon";
+import { normalizeHttpUrl } from "./validation";
 
 export type BackupData = {
   version?: number;
@@ -202,9 +203,10 @@ export const importBackupForUser = async (userId: string, input: unknown) => {
 
     const topicLinkMap = new Map<string, any>();
     const collectTopicLink = (link: any) => {
-      if (!link?.url || !link?.topicId) return;
-      const key = link.id || `${link.topicId}:${link.url}`;
-      if (!topicLinkMap.has(key)) topicLinkMap.set(key, link);
+      const normalizedUrl = normalizeHttpUrl(link?.url);
+      if (!normalizedUrl || !link?.topicId) return;
+      const key = link.id || `${link.topicId}:${normalizedUrl}`;
+      if (!topicLinkMap.has(key)) topicLinkMap.set(key, { ...link, url: normalizedUrl });
     };
     (data.topicLinks || []).forEach(collectTopicLink);
     (data.topics || []).forEach((topic: any) => {
@@ -227,13 +229,14 @@ export const importBackupForUser = async (userId: string, input: unknown) => {
     }
 
     for (const link of data.musicLinks || []) {
-      if (!link?.id || !link?.title || !link?.url) continue;
+      const normalizedUrl = normalizeHttpUrl(link?.url);
+      if (!link?.id || !link?.title || !normalizedUrl) continue;
       await tx.musicLink.create({
         data: {
           id: link.id,
           userId,
           title: link.title,
-          url: String(link.url),
+          url: normalizedUrl,
           provider: link.provider || "ETC",
           memo: normalizeOptional(link.memo),
         },

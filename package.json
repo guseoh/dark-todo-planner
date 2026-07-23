@@ -3,18 +3,28 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=10"
+  },
   "scripts": {
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
-    "client:dev": "vite --host 0.0.0.0",
+    "client:dev": "vite --host 127.0.0.1",
     "server:dev": "tsx watch server/index.ts",
     "build": "tsc -b && vite build && tsc -p tsconfig.server.json && node scripts/write-server-dist-package.cjs",
     "build:pages": "cross-env GITHUB_PAGES=true vite build",
+    "test": "tsx --test tests/*.test.ts",
+    "test:ci": "npm run test",
     "start": "node server/dist/index.js",
-    "preview": "vite preview --host 0.0.0.0",
+    "preview": "vite preview --host 127.0.0.1",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
+    "db:baseline": "prisma migrate resolve --applied 20260616133000_initial_schema",
+    "db:check": "node scripts/check-db.mjs",
+    "db:backup": "node scripts/backup-db.mjs",
+    "db:restore": "node scripts/restore-db.mjs",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate"
   },
@@ -27,7 +37,10 @@
     "date-fns": "^3.6.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
+    "helmet": "^8.2.0",
     "lucide-react": "^0.468.0",
+    "prisma": "^6.19.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zod": "^4.4.3"
@@ -39,13 +52,12 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.4.19",
-    "concurrently": "^9.2.1",
+    "concurrently": "^10.0.3",
     "cross-env": "^10.1.0",
     "postcss": "^8.4.39",
-    "prisma": "^6.19.3",
     "tailwindcss": "^3.4.6",
-    "tsx": "^4.21.0",
+    "tsx": "^4.22.4",
     "typescript": "^5.5.3",
-    "vite": "^8.0.10"
+    "vite": "^8.0.16"
   }
 }
