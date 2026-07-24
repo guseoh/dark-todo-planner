@@ -1,398 +1,81 @@
-# Todo Planner
+# Dark Todo Planner
 
-개인용으로 매일 쓰기 위한 다크모드 Todo / Planner입니다. 현재 버전은 단일 사용자 모드이며, Express 서버 하나가 React 정적 파일과 `/api` 요청을 함께 처리하고 Prisma + SQLite에 데이터를 저장합니다.
+React/Vite 정적 자산과 Hono API를 하나의 Cloudflare Worker에서 제공하고, 데이터는 Drizzle ORM과 Cloudflare D1에 저장합니다.
 
-## 기술 스택
+## 로컬 실행
 
-- React 18, TypeScript, Vite
-- Tailwind CSS, lucide-react
-- Express
-- Prisma
-- SQLite
-- Docker / Docker Compose
-
-## 현재 구조
-
-```text
-사용자 접속
-→ Express 서버
-→ React dist 정적 파일 제공
-→ /api 요청은 Express API에서 처리
-→ 서버 내부 default user 기준으로 Prisma + SQLite에 저장
-```
-
-## 주요 기능
-
-- 오늘 중심 Todo 관리
-- 오전 3시 기준의 오늘 날짜 계산
-- 어제 미완료 Todo를 오늘로 복사 / 이동
-- 카테고리별 Todo 보드
-- 카테고리 드래그 정렬과 설정 모달
-- 카테고리 / 주제 아이콘 선택과 Noticon 붙여넣기
-- 주간 목표 체크리스트와 날짜별 주간 To-do list
-- 월간 달력, 날짜별 Todo, 날짜 칸 색상 기반 수행 체크
-- 전체 Todo 검색 / 필터 / 정렬
-- 주간 목표
-- 회고 섹션 템플릿
-- 스티커 메모형 메모장
-- 주제 보관함, 참고 링크, 내 블로그 바로가기
-- 음악 링크 저장과 새 탭 열기
-- Todo / 회고 / 메모 / 주제 / 음악 Markdown 편집
-- 글머리 기호, 번호 목록, 체크리스트 자동 이어쓰기
-- JSON 백업 / 복원
-- LocalStorage 데이터 서버 마이그레이션
-
-## 실행 방법
-
-### 로컬 개발
+Node.js 22 이상이 필요합니다.
 
 ```bash
 npm install
-npm run db:generate
-npm run db:push
+npm run auth:hash
+```
+
+출력된 해시를 사용해 저장소 루트에 커밋하지 않는 `.dev.vars`를 만듭니다.
+
+```dotenv
+AUTH_USERNAME=your-username
+AUTH_PASSWORD_HASH=pbkdf2-sha256$100000$generated-salt$generated-hash
+SESSION_SECRET=at-least-32-random-characters
+```
+
+```bash
+npm run db:migrate:local
 npm run dev
 ```
 
-접속:
+Wrangler가 표시한 로컬 URL에서 로그인합니다. 앱은 polling을 사용하지 않으며, 목록 API는 최대 100개 단위 pagination으로 읽습니다.
 
-- Frontend: `http://localhost:5173`
-- Backend/API: `http://localhost:3000`
-
-개발 환경에서는 Vite가 `/api` 요청을 Express 서버로 프록시합니다.
-
-### 운영 빌드
+## 로컬 D1 migration
 
 ```bash
-npm install
+npm run db:migrate:local
+```
+
+새 migration이 필요하면 `worker/db/schema.ts`를 변경한 뒤 생성합니다.
+
+```bash
 npm run db:generate
-npm run db:push
-npm run build
-npm run start
 ```
 
-접속:
+## 필요한 Secret
 
-- App: `http://localhost:3000`
-- Health Check: `http://localhost:3000/api/health`
+- `AUTH_USERNAME`: 고정 로그인 사용자명
+- `AUTH_PASSWORD_HASH`: `npm run auth:hash`로 만든 PBKDF2-SHA256 해시
+- `SESSION_SECRET`: 세션 쿠키 서명용 32자 이상의 무작위 문자열
 
-운영 DB에 migration 파일이 준비된 환경에서는 `db:push` 대신 `npm run db:deploy`를 권장합니다.
-
-### Docker
+Preview와 Production에 각각 등록합니다.
 
 ```bash
-cp .env.example .env
-docker compose up --build
+npx wrangler secret put AUTH_USERNAME --env preview
+npx wrangler secret put AUTH_PASSWORD_HASH --env preview
+npx wrangler secret put SESSION_SECRET --env preview
+npx wrangler secret put AUTH_USERNAME --env production
+npx wrangler secret put AUTH_PASSWORD_HASH --env production
+npx wrangler secret put SESSION_SECRET --env production
 ```
 
-접속:
+비밀번호 원문과 `.dev.vars`는 커밋하지 않습니다. 세션은 7일 후 만료되며 `HttpOnly`, `Secure`, `SameSite=Strict` 쿠키를 사용합니다.
 
-- App: `http://localhost:3000`
+## Cloudflare 배포 준비 명령
 
-Docker Compose는 `./data:/app/data` 볼륨을 연결합니다. SQLite DB 파일을 유지하려면 `data` 폴더를 삭제하지 마세요.
-
-PowerShell 기준:
-
-```powershell
-cd C:\Users\guseo\dark-todo-planner
-Copy-Item .env.example .env
-docker compose up --build
+```bash
+npx wrangler login
+npx wrangler d1 create todo-planner-preview
+npx wrangler d1 create todo-planner-production
 ```
 
-백그라운드 실행과 로그 확인:
+생성 결과의 ID를 `wrangler.jsonc`의 Preview/Production `database_id`에 각각 입력한 다음 Secret을 등록하고 migration을 적용합니다.
 
-```powershell
-docker compose up --build -d
-docker compose logs -f todo-planner
+```bash
+npm run typecheck
+npm test
+npm run build
+npm run db:migrate:preview
+npm run db:migrate:production
+npm run deploy:preview
+# Preview 확인 후
+npm run deploy:production
 ```
 
-중지:
-
-```powershell
-docker compose down
-```
-
-`docker compose down`은 컨테이너를 내리지만 `./data` 폴더는 유지합니다. `./data` 폴더나 그 안의 SQLite DB 파일을 삭제하면 저장된 데이터도 사라집니다.
-
-## 환경 변수
-
-로컬 예시:
-
-```env
-DATABASE_URL="file:../data/dev.db"
-CLIENT_URL="http://localhost:5173"
-PORT=3000
-NODE_ENV=development
-```
-
-Docker / 운영 예시:
-
-```env
-DATABASE_URL="file:../data/prod.db"
-PORT=3000
-NODE_ENV=production
-```
-
-Prisma SQLite 경로는 `prisma/schema.prisma` 기준 상대 경로입니다. `file:../data/prod.db`는 프로젝트 루트의 `data/prod.db`를 가리킵니다.
-
-## 단일 사용자 모드
-
-이 프로젝트는 개인용으로 쓰기 쉽도록 로그인/회원가입 화면을 제거했습니다. 서버는 요청이 들어오면 내부 default user를 자동으로 준비하고, 모든 Todo와 카테고리, 목표, 회고, 메모, 주제, 음악 링크를 그 userId로 저장합니다.
-
-공개 인터넷에 배포하면 URL을 아는 사람이 앱에 접근할 수 있습니다. 외부 공개 배포가 필요하다면 reverse proxy 기본 인증, VPN, 방화벽, 사설 네트워크 같은 접근 제한을 추가하는 것을 권장합니다.
-
-## GitHub Pages 배포 한계
-
-GitHub Pages는 정적 프론트만 제공하므로 서버 저장, API, DB 기능은 동작하지 않습니다.
-
-- GitHub Pages: 정적 미리보기용
-- Express 단일 서버: 실제 개인 사용 권장 방식
-- Docker / VPS / Render / Railway / Fly.io: 백엔드 포함 배포 가능
-
-`GITHUB_PAGES=true`일 때 Vite base가 `/dark-todo-planner/`로 설정됩니다.
-
-## 데이터 저장과 백업
-
-- 기본 저장소: SQLite
-- DB 파일 위치: `data/*.db`
-- JSON 백업: 설정 페이지에서 내보내기 / 가져오기
-- 백업 포함 데이터: categories, todos, reflections, goals, memos, topics, topicLinks, musicLinks
-
-SQLite는 개인용 로컬 PC, VPS, 단일 서버에 적합합니다. Render/Railway 같은 PaaS에서는 persistent disk 설정이 없으면 재배포나 재시작 시 DB 파일이 사라질 수 있습니다.
-
-### 백업 / 복원 호환성
-
-백업 파일에는 `version`이 포함될 수 있으며, 앱 버전에 따라 값이 다를 수 있습니다. 최신 버전은 이전 백업 파일도 가능한 범위에서 가져오도록 처리합니다.
-
-- `version`이 없는 백업은 legacy backup으로 처리합니다.
-- `todos`만 있는 예전 백업도 가져올 수 있습니다.
-- 새 버전에만 있는 `memos`, `topics`, `musicLinks` 같은 필드가 없어도 빈 배열로 처리합니다.
-- 알 수 없는 version의 백업도 구조가 호환되는 배열 필드는 가져오고, 지원하지 않는 필드는 건너뜁니다.
-- 문제가 계속되면 양쪽 PC의 프로젝트를 최신 `main`으로 업데이트한 뒤 다시 내보내기 / 가져오기를 시도하세요.
-
-## 날짜 기준과 Todo 이동
-
-Todo Planner의 “오늘”은 자정이 아니라 오전 3시에 바뀝니다.
-
-- 2026-05-08 02:59까지는 2026-05-07을 오늘로 취급
-- 2026-05-08 03:00부터는 2026-05-08을 오늘로 취급
-
-오늘 페이지의 기본 추가 날짜, 오늘 Todo, 완료율 통계, 어제 Todo 가져오기는 모두 이 기준을 사용합니다.
-
-오늘 페이지에서는 `어제 미완료 가져오기`로 전날 남은 Todo를 오늘로 가져올 수 있습니다.
-
-- 복사하기: 어제 Todo를 그대로 두고 오늘 Todo를 새로 생성
-- 이동하기: 기존 Todo의 날짜를 오늘로 변경
-- 이미 오늘 같은 제목과 카테고리의 Todo가 있으면 중복 생성을 건너뜁니다.
-
-## 화면 흐름
-
-- 오늘: 빠른 Todo 추가, 어제 미완료 가져오기, 카테고리별 오늘 Todo
-- 주간: 주간 목표와 날짜별 Todo 체크리스트
-- 월간: 월간 달력, 날짜별 Todo 확인, 날짜별 수행 상태 색상 표시
-- 회고: 일간 / 주간 / 월간 회고 전용 섹션
-- 메모: 템플릿에 묶이지 않는 자유 스티커 메모
-- 주제 보관함: 블로그 글감과 참고 링크, 내 블로그 바로가기
-
-월간 오른쪽 패널의 선택 날짜 빠른 추가 입력은 제거했습니다. Todo 추가는 오늘 페이지의 빠른 추가, 주간 날짜 카드의 `+ 추가`, 각 카테고리 내부의 `+ 하위 Todo 추가` 흐름을 사용합니다.
-
-## 카테고리 보드
-
-오늘 페이지의 카테고리 블록은 마우스 드래그로 순서를 바꿀 수 있습니다. 순서는 `Category.order`에 저장되며 새로고침 후에도 유지됩니다.
-
-- 미분류 카드는 항상 마지막에 고정합니다.
-- 드래그 핸들은 카테고리 헤더 왼쪽에 표시됩니다.
-- 드래그는 화면 경계 안에서 동작하도록 제한해 가로 스크롤이 생기지 않게 했습니다.
-- 카테고리 생성 / 수정은 카드 내부가 아니라 설정 모달에서 진행합니다.
-- 카테고리 생성 / 수정 화면에서 이모지, lucide 아이콘, 이미지 URL 아이콘을 설정할 수 있습니다.
-- 아이콘 입력칸에는 emoji, `lucide:BookOpen`, `http/https` 이미지 URL, `data:image` 값을 붙여넣을 수 있습니다.
-- `javascript:` 같은 위험한 URL 스킴은 저장하지 않습니다.
-- Noticon에서 원하는 이모지나 이미지 주소를 복사한 뒤 카테고리 아이콘 입력칸에 붙여넣을 수 있습니다.
-
-## 주간 To-do list
-
-주간 보기에서는 `이번 주 목표` 영역 아래에 월요일부터 일요일까지의 Todo 카드가 표시됩니다.
-
-- 각 날짜 카드 안에서 Todo 제목과 체크 상태를 바로 확인합니다.
-- Todo 완료 체크와 삭제를 날짜 카드 안에서 처리할 수 있습니다.
-- Todo가 많은 날짜는 기본 6개를 먼저 보여주고 `+N개 더보기`로 확장합니다.
-- 각 날짜 카드의 `+ 추가` 버튼으로 해당 날짜 Todo를 빠르게 등록할 수 있습니다.
-- 오늘 날짜는 은은한 ring으로 강조하고, 주말은 다크모드 톤 안에서 살짝 구분합니다.
-
-## 아이콘 설정
-
-카테고리와 주제 보관함의 주제에는 아이콘을 설정할 수 있습니다.
-
-- 이모지 탭에서 자주 쓰는 이모지를 선택합니다.
-- 아이콘 탭에서 `BookOpen`, `Code`, `Lightbulb`, `Database` 같은 lucide 아이콘을 선택합니다.
-- URL / 붙여넣기 탭에서 이미지 URL이나 `data:image` 값을 붙여넣습니다.
-- Noticon 열기 버튼으로 [Noticon](https://noticon.tammolo.com/)을 새 탭에서 열 수 있습니다.
-- 아이콘이 없으면 기존 색상 dot 또는 기본 아이콘으로 표시합니다.
-
-## 회고와 메모의 역할
-
-- 회고: 하루, 한 주, 한 달을 돌아보는 정리용 기록입니다. 기본 섹션에 맞춰 작성합니다.
-- 메모: 날짜나 템플릿에 묶이지 않는 자유 기록입니다. 작업 중 떠오른 생각, 임시 아이디어, 짧은 공부 기록을 스티커 메모처럼 저장합니다.
-
-## Markdown 편집
-
-Todo 메모, 회고 섹션, 메모장, 주제 메모, 음악 링크 메모에는 compact Markdown 툴바가 제공됩니다.
-
-지원:
-
-- 굵게 / 기울임 / 취소선
-- 글머리 / 번호 목록 / 체크리스트
-- 인용 / 코드 / 링크
-
-저장 형식은 기존 plain text와 호환되는 Markdown 문자열입니다.
-
-Enter 입력 시 현재 줄이 목록이면 다음 줄의 목록 prefix가 자동으로 이어집니다.
-
-- `- 내용` → 다음 줄 `- `
-- `1. 내용` → 다음 줄 `2. `
-- `- [ ] 내용` → 다음 줄 `- [ ] `
-
-빈 목록 줄에서 Enter를 다시 누르면 목록이 종료됩니다.
-
-## API 목록
-
-### Categories
-
-- `GET /api/categories`
-- `POST /api/categories`
-- `GET /api/categories/:id`
-- `PUT /api/categories/:id`
-- `DELETE /api/categories/:id`
-- `PATCH /api/categories/reorder`
-- `GET /api/categories/:id/todos`
-
-### Todos
-
-- `GET /api/todos`
-- `POST /api/todos`
-- `GET /api/todos/:id`
-- `PUT /api/todos/:id`
-- `DELETE /api/todos/:id`
-- `PATCH /api/todos/:id/toggle`
-- `PATCH /api/todos/reorder`
-
-### Reflections
-
-- `GET /api/reflections`
-- `POST /api/reflections`
-- `PUT /api/reflections/:id`
-- `DELETE /api/reflections/:id`
-
-### Goals
-
-- `GET /api/goals`
-- `POST /api/goals`
-- `GET /api/goals/:id`
-- `PUT /api/goals/:id`
-- `PATCH /api/goals/:id/toggle`
-- `DELETE /api/goals/:id`
-
-### Memos
-
-- `GET /api/memos`
-- `POST /api/memos`
-- `GET /api/memos/:id`
-- `PUT /api/memos/:id`
-- `DELETE /api/memos/:id`
-- `PATCH /api/memos/:id/pin`
-
-### Topics
-
-- `GET /api/topics`
-- `POST /api/topics`
-- `GET /api/topics/:id`
-- `PUT /api/topics/:id`
-- `DELETE /api/topics/:id`
-- `POST /api/topics/:id/links`
-- `PUT /api/topics/:id/links/:linkId`
-- `DELETE /api/topics/:id/links/:linkId`
-
-### Music Links
-
-- `GET /api/music-links`
-- `POST /api/music-links`
-- `PUT /api/music-links/:id`
-- `DELETE /api/music-links/:id`
-
-### Backup
-
-- `GET /api/backup/export`
-- `POST /api/backup/import`
-- `POST /api/migrate/local-storage`
-
-## package.json scripts
-
-- `npm run dev`: Vite dev server와 Express dev server 동시 실행
-- `npm run build`: React build + Express TypeScript build
-- `npm run build:pages`: GitHub Pages용 `/dark-todo-planner/` base 정적 build
-- `npm run start`: production Express 서버 실행
-- `npm run db:generate`: Prisma Client 생성
-- `npm run db:push`: Prisma schema를 DB에 반영
-- `npm run db:migrate`: 개발 환경에서 Prisma migration 생성 및 적용
-- `npm run db:deploy`: 운영 환경에서 이미 생성된 migration 적용
-- `npm run db:studio`: Prisma Studio 실행
-
-## 폴더 구조
-
-```text
-data
-prisma
-server
-src
- ┣ components
- ┃ ┣ calendar
- ┃ ┣ common
- ┃ ┣ editor
- ┃ ┣ goal
- ┃ ┣ layout
- ┃ ┣ monthly
- ┃ ┗ todo
- ┣ hooks
- ┃ ┣ usePlannerData.ts
- ┃ ┣ useTodos.ts
- ┃ ┣ useCategories.ts
- ┃ ┣ useReflections.ts
- ┃ ┣ useGoals.ts
- ┃ ┣ useMemos.ts
- ┃ ┣ useTopics.ts
- ┃ ┣ useMusicLinks.ts
- ┃ ┗ useBackup.ts
- ┣ lib
- ┣ pages
- ┣ styles
- ┣ types
- ┣ App.tsx
- ┗ main.tsx
-Dockerfile
-docker-compose.yml
-```
-
-## 문제 해결
-
-- 앱 접속 시 데이터가 비어 있음: `.env`의 `DATABASE_URL`이 기존 DB 파일을 가리키는지 확인하세요.
-- DB 파일이 생성되지 않음: `data` 폴더가 있는지, Prisma schema 기준 경로가 맞는지 확인하세요.
-- Docker 재실행 후 데이터가 사라짐: `./data:/app/data` 볼륨이 유지되는지 확인하세요.
-- GitHub Pages에서 저장이 안 됨: 정상입니다. GitHub Pages에는 `/api` 서버와 SQLite DB가 없습니다.
-- 공개 URL에서 누구나 앱에 들어올 수 있음: 단일 사용자 모드의 특성입니다. 공개 배포 시 접근 제한을 추가하세요.
-
-## 추후 개선 사항
-
-### 1순위
-
-- Prisma migrate 기반 운영 배포 정리
-- 서버 백업 자동화
-- PostgreSQL 전환 검토
-
-### 2순위
-
-- 통계 차트
-- 태그별/카테고리별 통계
-
-### 3순위
-
-- 캘린더 드래그 앤 드롭
-- PWA 지원
+두 환경은 별도 D1 binding을 사용하고 무료 `workers.dev` 주소에 배포됩니다.

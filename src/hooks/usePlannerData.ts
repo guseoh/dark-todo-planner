@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Category } from "../types/category";
-import { useBackup } from "./useBackup";
 import { useCategories } from "./useCategories";
 import { useGoals } from "./useGoals";
 import { useMemos } from "./useMemos";
-import { useMusicLinks } from "./useMusicLinks";
 import { useReflections } from "./useReflections";
 import { useTodos } from "./useTodos";
-import { useTopics } from "./useTopics";
 
 const getMessage = (error: unknown) => (error instanceof Error ? error.message : "요청 처리 중 오류가 발생했습니다.");
 
@@ -17,8 +14,6 @@ export function usePlannerData() {
   const reflectionsState = useReflections();
   const goalsState = useGoals();
   const memosState = useMemos();
-  const topicsState = useTopics();
-  const musicLinksState = useMusicLinks();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -31,8 +26,6 @@ export function usePlannerData() {
         reflectionsState.loadReflections(),
         goalsState.loadGoals(),
         memosState.loadMemos(),
-        topicsState.loadTopics(),
-        musicLinksState.loadMusicLinks(),
       ]);
       setLoadError("");
     } catch (err) {
@@ -44,13 +37,9 @@ export function usePlannerData() {
     categoriesState.loadCategories,
     goalsState.loadGoals,
     memosState.loadMemos,
-    musicLinksState.loadMusicLinks,
     reflectionsState.loadReflections,
-    topicsState.loadTopics,
     todosState.loadTodos,
   ]);
-
-  const backupState = useBackup(loadAll);
 
   useEffect(() => {
     loadAll();
@@ -80,18 +69,12 @@ export function usePlannerData() {
       categoriesState.saving ||
       reflectionsState.saving ||
       goalsState.saving ||
-      memosState.saving ||
-      topicsState.saving ||
-      musicLinksState.saving ||
-      backupState.saving,
+      memosState.saving,
     [
-      backupState.saving,
       categoriesState.saving,
       goalsState.saving,
       memosState.saving,
-      musicLinksState.saving,
       reflectionsState.saving,
-      topicsState.saving,
       todosState.saving,
     ],
   );
@@ -102,10 +85,7 @@ export function usePlannerData() {
     categoriesState.error ||
     reflectionsState.error ||
     goalsState.error ||
-    memosState.error ||
-    topicsState.error ||
-    musicLinksState.error ||
-    backupState.error;
+    memosState.error;
 
   return {
     categories: categoriesState.categories,
@@ -116,10 +96,6 @@ export function usePlannerData() {
     reflections: reflectionsState.reflections,
     goals: goalsState.goals,
     memos: memosState.memos,
-    topics: topicsState.topics,
-    topicTags: topicsState.topicTags,
-    topicCounts: topicsState.topicCounts,
-    musicLinks: musicLinksState.musicLinks,
     loading,
     saving,
     error,
@@ -155,17 +131,5 @@ export function usePlannerData() {
     updateMemo: memosState.updateMemo,
     toggleMemoPin: memosState.toggleMemoPin,
     deleteMemo: memosState.deleteMemo,
-    addTopic: topicsState.addTopic,
-    updateTopic: topicsState.updateTopic,
-    deleteTopic: topicsState.deleteTopic,
-    addTopicLink: topicsState.addTopicLink,
-    updateTopicLink: topicsState.updateTopicLink,
-    deleteTopicLink: topicsState.deleteTopicLink,
-    addMusicLink: musicLinksState.addMusicLink,
-    updateMusicLink: musicLinksState.updateMusicLink,
-    deleteMusicLink: musicLinksState.deleteMusicLink,
-    exportBackup: backupState.exportBackup,
-    importBackup: backupState.importBackup,
-    migrateLocalStorage: backupState.migrateLocalStorage,
   };
 }
