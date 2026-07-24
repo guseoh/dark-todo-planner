@@ -9,7 +9,6 @@ import { MonthPage } from "./pages/MonthPage";
 import { ReflectionPage } from "./pages/ReflectionPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { TodayPage } from "./pages/TodayPage";
-import { TopicsPage } from "./pages/TopicsPage";
 import { WeekPage } from "./pages/WeekPage";
 
 function App({ onLogout }: { onLogout: () => Promise<void> }) {
@@ -104,19 +103,6 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
         onTogglePin={planner.toggleMemoPin}
       />
     ),
-    topics: (
-      <TopicsPage
-        topics={planner.topics}
-        topicTags={planner.topicTags}
-        topicCounts={planner.topicCounts}
-        onAddTopic={planner.addTopic}
-        onUpdateTopic={planner.updateTopic}
-        onDeleteTopic={planner.deleteTopic}
-        onAddTopicLink={planner.addTopicLink}
-        onUpdateTopicLink={planner.updateTopicLink}
-        onDeleteTopicLink={planner.deleteTopicLink}
-      />
-    ),
     settings: (
       <SettingsPage
         stats={planner.stats}
@@ -124,14 +110,6 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
         reflections={planner.reflections}
         goals={planner.goals}
         memos={planner.memos}
-        topics={planner.topics}
-        musicLinks={planner.musicLinks}
-        onExportBackup={planner.exportBackup}
-        onImportBackup={planner.importBackup}
-        onMigrateLocalStorage={planner.migrateLocalStorage}
-        onAddMusicLink={planner.addMusicLink}
-        onUpdateMusicLink={planner.updateMusicLink}
-        onDeleteMusicLink={planner.deleteMusicLink}
         apiStatus={planner.error ? "offline" : "online"}
       />
     ),
