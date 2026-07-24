@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import type { Goal } from "../types/goal";
-import { api, jsonBody } from "../lib/api/client";
+import { api, apiAllPages, jsonBody } from "../lib/api/client";
 
 const getMessage = (error: unknown) => (error instanceof Error ? error.message : "목표 요청 처리 중 오류가 발생했습니다.");
 const clampProgress = (value?: number) => Math.min(100, Math.max(0, Math.round(value || 0)));
@@ -19,10 +19,10 @@ export function useGoals() {
   const loadGoals = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await api<{ goals: Goal[] }>("/api/goals");
-      setGoals(result.goals);
+      const goals = await apiAllPages<Goal>("/api/goals", "goals");
+      setGoals(goals);
       setError("");
-      return result.goals;
+      return goals;
     } catch (err) {
       setError(getMessage(err));
       throw err;

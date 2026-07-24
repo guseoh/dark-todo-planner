@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { api, jsonBody } from "../lib/api/client";
+import { api, apiAllPages, jsonBody } from "../lib/api/client";
 import type { Memo, MemoInput } from "../types/memo";
 
 const getMessage = (error: unknown) => (error instanceof Error ? error.message : "메모 요청 처리 중 오류가 발생했습니다.");
@@ -13,10 +13,10 @@ export function useMemos() {
   const loadMemos = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await api<{ memos: Memo[] }>("/api/memos");
-      setMemos(result.memos);
+      const memos = await apiAllPages<Memo>("/api/memos", "memos");
+      setMemos(memos);
       setError("");
-      return result.memos;
+      return memos;
     } catch (err) {
       setError(getMessage(err));
       throw err;

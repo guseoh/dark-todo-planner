@@ -12,7 +12,7 @@ import { TodayPage } from "./pages/TodayPage";
 import { TopicsPage } from "./pages/TopicsPage";
 import { WeekPage } from "./pages/WeekPage";
 
-function App() {
+function App({ onLogout }: { onLogout: () => Promise<void> }) {
   const [activeView, setActiveView] = useState<AppView>("today");
   const planner = usePlannerData();
 
@@ -139,7 +139,7 @@ function App() {
 
   return (
     <div className="min-h-screen pb-24 lg:pb-0">
-      <Header storageStatus={planner.error ? "offline" : "server"} />
+      <Header storageStatus={planner.error ? "offline" : "server"} onLogout={onLogout} />
       <div className="mx-auto flex w-full max-w-[1680px] gap-5 px-4 py-5 sm:px-5 lg:px-6">
         <Sidebar activeView={activeView} onChangeView={setActiveView} />
         <main className="min-w-0 flex-1 space-y-4">

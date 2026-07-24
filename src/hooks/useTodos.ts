@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { Category } from "../types/category";
 import type { Todo, TodoFilters, TodoInput } from "../types/todo";
-import { api, jsonBody } from "../lib/api/client";
+import { api, apiAllPages, jsonBody } from "../lib/api/client";
 import { getMonthGrid, getPlannerToday, getPlannerYesterday, getWeekDays, todayKey, toDateKey } from "../lib/date";
 import { calculateRate, getAllTags, priorityRank, todoOccursOnDate } from "../lib/todo";
 
@@ -48,10 +48,10 @@ export function useTodos() {
   const loadTodos = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await api<{ todos: Todo[] }>("/api/todos?archived=all");
-      setAllTodos(result.todos);
+      const todos = await apiAllPages<Todo>("/api/todos?archived=all", "todos");
+      setAllTodos(todos);
       setError("");
-      return result.todos;
+      return todos;
     } catch (err) {
       const message = getMessage(err);
       setError(message);

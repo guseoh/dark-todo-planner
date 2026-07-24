@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import type { Reflection } from "../types/reflection";
-import { api, jsonBody } from "../lib/api/client";
+import { api, apiAllPages, jsonBody } from "../lib/api/client";
 
 const getMessage = (error: unknown) => (error instanceof Error ? error.message : "회고 요청 처리 중 오류가 발생했습니다.");
 
@@ -20,10 +20,10 @@ export function useReflections() {
   const loadReflections = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await api<{ reflections: Reflection[] }>("/api/reflections");
-      setReflections(result.reflections);
+      const reflections = await apiAllPages<Reflection>("/api/reflections", "reflections");
+      setReflections(reflections);
       setError("");
-      return result.reflections;
+      return reflections;
     } catch (err) {
       setError(getMessage(err));
       throw err;

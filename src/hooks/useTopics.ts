@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { api, jsonBody } from "../lib/api/client";
+import { api, apiAllPages, jsonBody } from "../lib/api/client";
 import type { Topic, TopicInput, TopicLink, TopicLinkInput, TopicStatus } from "../types/topic";
 
 const getMessage = (error: unknown) => (error instanceof Error ? error.message : "주제 보관함 요청 처리 중 오류가 발생했습니다.");
@@ -18,10 +18,10 @@ export function useTopics() {
   const loadTopics = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await api<{ topics: Topic[] }>("/api/topics");
-      setTopics(result.topics);
+      const topics = await apiAllPages<Topic>("/api/topics", "topics");
+      setTopics(topics);
       setError("");
-      return result.topics;
+      return topics;
     } catch (err) {
       setError(getMessage(err));
       throw err;
