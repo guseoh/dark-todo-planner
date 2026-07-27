@@ -6,6 +6,8 @@ export type Bindings = {
   AUTH_USERNAME: string;
   AUTH_PASSWORD_HASH: string;
   SESSION_SECRET: string;
+  LOGIN_RATE_LIMITER: RateLimit;
+  MUTATION_RATE_LIMITER: RateLimit;
 };
 
 export type Variables = { userId: string };

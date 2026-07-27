@@ -17,6 +17,18 @@
       "database_id": "local"
     }
   ],
+  "ratelimits": [
+    {
+      "name": "LOGIN_RATE_LIMITER",
+      "namespace_id": "92701",
+      "simple": { "limit": 5, "period": 60 }
+    },
+    {
+      "name": "MUTATION_RATE_LIMITER",
+      "namespace_id": "92702",
+      "simple": { "limit": 120, "period": 60 }
+    }
+  ],
   "env": {
     "preview": {
       "name": "dark-todo-planner-preview",
@@ -25,6 +37,18 @@
           "binding": "DB",
           "database_name": "dark-todo-planner-preview",
           "database_id": "7f58d3e8-56b4-49a7-985f-4d9360dae673"
+        }
+      ],
+      "ratelimits": [
+        {
+          "name": "LOGIN_RATE_LIMITER",
+          "namespace_id": "92711",
+          "simple": { "limit": 5, "period": 60 }
+        },
+        {
+          "name": "MUTATION_RATE_LIMITER",
+          "namespace_id": "92712",
+          "simple": { "limit": 120, "period": 60 }
         }
       ]
     },
@@ -35,6 +59,18 @@
           "binding": "DB",
           "database_name": "dark-todo-planner-production",
           "database_id": "f48e3e51-4635-410b-9e76-e9e0a5be9f4b"
+        }
+      ],
+      "ratelimits": [
+        {
+          "name": "LOGIN_RATE_LIMITER",
+          "namespace_id": "92721",
+          "simple": { "limit": 5, "period": 60 }
+        },
+        {
+          "name": "MUTATION_RATE_LIMITER",
+          "namespace_id": "92722",
+          "simple": { "limit": 120, "period": 60 }
         }
       ]
     }
