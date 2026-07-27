@@ -79,3 +79,14 @@ npm run deploy:production
 ```
 
 두 환경은 별도 D1 binding을 사용하고 무료 `workers.dev` 주소에 배포됩니다.
+
+## D1 백업 및 복구
+
+원격 D1 SQL export는 환경별로 실행하며, 생성 파일은 커밋되지 않는 `backups/d1/` 아래에 저장됩니다.
+
+```bash
+npm run db:backup:preview
+npm run db:backup:production
+```
+
+Time Travel 복구 훈련은 Preview에서만 수행합니다. Production은 export만 실행하며 복구는 자동화하지 않습니다. 실행 전 확인과 수동 복구 절차는 [D1 백업 및 복구 Runbook](docs/runbook/d1-backup-restore.md)을 따르세요.
