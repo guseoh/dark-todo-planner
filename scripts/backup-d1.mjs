@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { mkdir, rm, stat } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
@@ -13,7 +14,8 @@ if (!allowedEnvironments.has(environment) || process.argv.length !== 3) {
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const timestamp = new Date().toISOString().replace(/:/g, "-");
-const outputPath = resolve(repositoryRoot, "backups", "d1", environment, `${timestamp}.sql`);
+const uniqueSuffix = randomUUID().slice(0, 8);
+const outputPath = resolve(repositoryRoot, "backups", "d1", environment, `${timestamp}-${uniqueSuffix}.sql`);
 const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
 const exportArguments = ["wrangler", "d1", "export", "DB", "--env", environment, "--remote", "--skip-confirmation"];
 
