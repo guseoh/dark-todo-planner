@@ -7,19 +7,33 @@ import { backupRoutes } from "./routes/backup";
 import { contentRoutes } from "./routes/content";
 import { libraryRoutes } from "./routes/library";
 import { todoRoutes } from "./routes/todos";
+import { clientIdentifier, preventApiCaching, SAFE_METHODS, securityHeaders, tooManyRequests } from "./security";
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 const loginSchema = z.object({ username: z.string().min(1), password: z.string().min(1).max(1024) });
 
+app.use("*", securityHeaders);
+app.use("/api/*", preventApiCaching);
+
 app.use("/api/*", async (c, next) => {
-  if (!["GET", "HEAD", "OPTIONS"].includes(c.req.method) && c.req.header("Sec-Fetch-Site") === "cross-site") return c.json({ message: "교차 사이트 요청은 허용되지 않습니다." }, 403);
+  if (!SAFE_METHODS.has(c.req.method) && c.req.header("Sec-Fetch-Site") === "cross-site") return c.json({ message: "교차 사이트 요청은 허용되지 않습니다." }, 403);
   const publicPaths = ["/api/health", "/api/auth/login", "/api/auth/logout", "/api/auth/session"];
   if (publicPaths.includes(c.req.path)) return next();
   return requireAuth(c, next);
 });
 
+app.use("/api/*", async (c, next) => {
+  const publicPath = c.req.path === "/api/health" || c.req.path.startsWith("/api/auth/");
+  if (SAFE_METHODS.has(c.req.method) || publicPath) return next();
+  const { success } = await c.env.MUTATION_RATE_LIMITER.limit({ key: c.get("userId") });
+  if (!success) return tooManyRequests(c);
+  return next();
+});
+
 app.get("/api/health", async (c) => { await c.env.DB.prepare("SELECT 1").first(); return c.json({ status: "ok", database: "connected" }); });
 app.post("/api/auth/login", async (c) => {
+  const { success } = await c.env.LOGIN_RATE_LIMITER.limit({ key: clientIdentifier(c.req.raw) });
+  if (!success) return tooManyRequests(c);
   if (!c.env.AUTH_USERNAME || !c.env.AUTH_PASSWORD_HASH || !c.env.SESSION_SECRET || c.env.SESSION_SECRET.length < 32) return c.json({ message: "인증 Secret이 올바르게 설정되지 않았습니다." }, 503);
   const input = loginSchema.parse(await c.req.json());
   const validPassword = await verifyPassword(input.password, c.env.AUTH_PASSWORD_HASH);
