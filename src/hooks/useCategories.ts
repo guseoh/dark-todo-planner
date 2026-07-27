@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import type { Category } from "../types/category";
-import { api, jsonBody } from "../lib/api/client";
+import { api, apiAllPages, jsonBody } from "../lib/api/client";
 
 const getMessage = (error: unknown) => (error instanceof Error ? error.message : "카테고리 요청 처리 중 오류가 발생했습니다.");
 
@@ -20,10 +20,10 @@ export function useCategories() {
   const loadCategories = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await api<{ categories: Category[] }>("/api/categories");
-      setCategories(sortCategories(result.categories));
+      const categories = await apiAllPages<Category>("/api/categories", "categories");
+      setCategories(sortCategories(categories));
       setError("");
-      return result.categories;
+      return categories;
     } catch (err) {
       setError(getMessage(err));
       throw err;

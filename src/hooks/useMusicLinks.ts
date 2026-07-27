@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { api, jsonBody } from "../lib/api/client";
+import { api, apiAllPages, jsonBody } from "../lib/api/client";
 import type { MusicLink, MusicLinkInput } from "../types/music";
 
 const getMessage = (error: unknown) => (error instanceof Error ? error.message : "음악 링크 요청 처리 중 오류가 발생했습니다.");
@@ -13,10 +13,10 @@ export function useMusicLinks() {
   const loadMusicLinks = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await api<{ musicLinks: MusicLink[] }>("/api/music-links");
-      setMusicLinks(result.musicLinks);
+      const musicLinks = await apiAllPages<MusicLink>("/api/music-links", "musicLinks");
+      setMusicLinks(musicLinks);
       setError("");
-      return result.musicLinks;
+      return musicLinks;
     } catch (err) {
       setError(getMessage(err));
       throw err;

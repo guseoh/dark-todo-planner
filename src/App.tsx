@@ -9,10 +9,9 @@ import { MonthPage } from "./pages/MonthPage";
 import { ReflectionPage } from "./pages/ReflectionPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { TodayPage } from "./pages/TodayPage";
-import { TopicsPage } from "./pages/TopicsPage";
 import { WeekPage } from "./pages/WeekPage";
 
-function App() {
+function App({ onLogout }: { onLogout: () => Promise<void> }) {
   const [activeView, setActiveView] = useState<AppView>("today");
   const planner = usePlannerData();
 
@@ -104,19 +103,6 @@ function App() {
         onTogglePin={planner.toggleMemoPin}
       />
     ),
-    topics: (
-      <TopicsPage
-        topics={planner.topics}
-        topicTags={planner.topicTags}
-        topicCounts={planner.topicCounts}
-        onAddTopic={planner.addTopic}
-        onUpdateTopic={planner.updateTopic}
-        onDeleteTopic={planner.deleteTopic}
-        onAddTopicLink={planner.addTopicLink}
-        onUpdateTopicLink={planner.updateTopicLink}
-        onDeleteTopicLink={planner.deleteTopicLink}
-      />
-    ),
     settings: (
       <SettingsPage
         stats={planner.stats}
@@ -124,14 +110,6 @@ function App() {
         reflections={planner.reflections}
         goals={planner.goals}
         memos={planner.memos}
-        topics={planner.topics}
-        musicLinks={planner.musicLinks}
-        onExportBackup={planner.exportBackup}
-        onImportBackup={planner.importBackup}
-        onMigrateLocalStorage={planner.migrateLocalStorage}
-        onAddMusicLink={planner.addMusicLink}
-        onUpdateMusicLink={planner.updateMusicLink}
-        onDeleteMusicLink={planner.deleteMusicLink}
         apiStatus={planner.error ? "offline" : "online"}
       />
     ),
@@ -139,7 +117,7 @@ function App() {
 
   return (
     <div className="min-h-screen pb-24 lg:pb-0">
-      <Header storageStatus={planner.error ? "offline" : "server"} />
+      <Header storageStatus={planner.error ? "offline" : "server"} onLogout={onLogout} />
       <div className="mx-auto flex w-full max-w-[1680px] gap-5 px-4 py-5 sm:px-5 lg:px-6">
         <Sidebar activeView={activeView} onChangeView={setActiveView} />
         <main className="min-w-0 flex-1 space-y-4">

@@ -3,7 +3,6 @@ import {
   CalendarCheck,
   CalendarRange,
   ClipboardList,
-  Lightbulb,
   NotebookPen,
   StickyNote,
   Settings,
@@ -19,7 +18,6 @@ export type AppView =
   | "all"
   | "reflection"
   | "memo"
-  | "topics"
   | "settings";
 
 type SidebarProps = {
@@ -34,7 +32,6 @@ const navItems = [
   { id: "all", label: "전체 Todo", icon: ClipboardList },
   { id: "reflection", label: "회고", icon: NotebookPen },
   { id: "memo", label: "메모", icon: StickyNote },
-  { id: "topics", label: "주제 보관함", icon: Lightbulb },
   { id: "settings", label: "설정", icon: Settings },
 ] satisfies Array<{ id: AppView; label: string; icon: typeof CalendarCheck }>;
 
