@@ -1,0 +1,42 @@
+# Discord 미완료 Todo 알림 Runbook
+
+Production Worker는 매일 한국 시간 오후 9시(`0 12 * * *`, UTC)에 미완료 Todo를 Discord로 알립니다. Preview에는 cron trigger가 없습니다.
+
+## 준비
+
+1. D1 migration을 검토하고 Production 배포 절차에 따라 적용합니다.
+2. Discord 채널에서 개인용 webhook을 만든 뒤 값을 로컬 터미널 입력으로만 등록합니다.
+
+```bash
+npx wrangler secret put DISCORD_WEBHOOK_URL --env production
+```
+
+Webhook 값은 저장소 파일, 문서, 로그, CI 변수 예시에 기록하지 않습니다. Codex 작업에서는 Secret을 설정하지 않습니다.
+
+## 알림 대상
+
+- 보관되지 않고 완료되지 않은 Todo
+- 일정이 planner today 이전이거나 같은 비반복 Todo
+- 오늘 실제 발생하는 반복 Todo
+
+미래 Todo와 오늘 발생하지 않는 과거 반복 Todo는 제외합니다. 메시지는 제목을 최대 5개 표시하고 나머지는 `외 N개`로 요약하며, Discord mention은 허용하지 않습니다.
+
+## 중복 전송과 실패
+
+`notification_send_records`는 planner date와 provider(`discord`) 조합을 한 번만 `SENT`로 기록합니다. 동일 날짜 cron이 중복 실행되어도 다시 보내지 않습니다. 전송 실패 시 임시 claim을 제거하므로 같은 날 재실행할 수 있습니다.
+
+Webhook Secret이 없으면 알림을 보내지 않고 안전한 로그만 남깁니다. 실패 로그에는 webhook URL이나 Discord 응답 본문을 기록하지 않습니다.
+
+## 확인
+
+배포 전에 다음을 실행합니다.
+
+```bash
+npm ci
+npm run typecheck
+npm test
+npm run build
+npm audit --omit=dev
+```
+
+로컬 scheduled 호출을 검증할 때만 Wrangler의 `--test-scheduled` 개발 모드를 사용합니다. Production 또는 Preview 배포와 원격 D1 migration은 별도 승인된 운영 절차에서만 수행합니다.
