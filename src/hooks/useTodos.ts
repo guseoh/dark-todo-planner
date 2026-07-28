@@ -235,6 +235,7 @@ export function useTodos() {
       todayCompleted: todayTodos.filter((todo) => todo.completed).length,
       todayActive: todayTodos.filter((todo) => !todo.completed).length,
       todayRate: calculateRate(todayTodos),
+      weekTotal: weekTodos.length,
       weekRate: calculateRate(weekTodos),
       monthTotal: monthTodos.length,
       total: todos.length,

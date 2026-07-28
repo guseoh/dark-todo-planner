@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CheckCheck, History } from "lucide-react";
 import { formatKoreanDate, todayKey } from "../lib/date";
+import { formatCompletionRate } from "../lib/todo";
 import type { OverdueTodoImportMode, OverdueTodoImportResult } from "../lib/todoRecovery";
 import type { Category } from "../types/category";
 import type { Todo, TodoInput } from "../types/todo";
@@ -16,6 +17,7 @@ type TodayPageProps = {
     todayCompleted: number;
     todayActive: number;
     todayRate: number;
+    weekTotal: number;
     weekRate: number;
   };
   onAdd: (todo: TodoInput) => void;
@@ -56,8 +58,8 @@ export function TodayPage({
   return (
     <div className="space-y-4">
       <section>
-        <p className="text-sm text-ink-400">{formatKoreanDate(today, "yyyy년 M월 d일 EEEE")} · 오전 3시 기준</p>
-        <h2 className="mt-1 text-2xl font-bold text-ink-100">오늘</h2>
+        <h2 className="text-2xl font-bold text-ink-100 sm:text-3xl">오늘</h2>
+        <p className="mt-2 text-sm text-ink-400">하루는 오전 3시에 바뀝니다.</p>
       </section>
 
       <section className="app-card p-4" aria-labelledby="today-summary-title">
@@ -73,9 +75,14 @@ export function TodayPage({
                   <p className="text-xs text-ink-500">오늘 Todo 완료율</p>
                 </div>
               </div>
-              <p className="shrink-0 text-2xl font-bold text-ink-100">{stats.todayRate}%</p>
+              <p
+                className="shrink-0 text-2xl font-bold text-ink-100"
+                aria-label={stats.todayTotal ? `오늘 완료율 ${stats.todayRate}%` : "오늘 완료율 계산 대상 없음"}
+              >
+                {formatCompletionRate(stats.todayTotal, stats.todayRate)}
+              </p>
             </div>
-            <ProgressBar value={stats.todayRate} label="오늘 진행률" />
+            <ProgressBar value={stats.todayRate} label="오늘 진행률" empty={stats.todayTotal === 0} />
           </div>
 
           <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:w-[28rem]">
@@ -89,7 +96,12 @@ export function TodayPage({
             </div>
             <div className="col-span-2 rounded-lg border border-ink-700/80 bg-ink-950/45 px-3 py-2.5 sm:col-span-1">
               <dt className="text-[11px] font-semibold text-ink-500">이번 주 완료율</dt>
-              <dd className="mt-1 text-base font-bold text-ink-100">{stats.weekRate}%</dd>
+              <dd
+                className="mt-1 text-base font-bold text-ink-100"
+                aria-label={stats.weekTotal ? `이번 주 완료율 ${stats.weekRate}%` : "이번 주 완료율 계산 대상 없음"}
+              >
+                {formatCompletionRate(stats.weekTotal, stats.weekRate)}
+              </dd>
             </div>
           </dl>
         </div>
@@ -99,7 +111,7 @@ export function TodayPage({
         <section className="app-card flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <h3 className="text-sm font-semibold text-ink-100">미처리 Todo {overdueTodos.length}개</h3>
-            <p className="mt-0.5 text-xs text-ink-500">
+            <p className="mt-0.5 text-xs text-ink-400">
               가장 오래된 일정: {oldestOverdueDate ? formatKoreanDate(oldestOverdueDate, "M월 d일") : "-"}
             </p>
           </div>

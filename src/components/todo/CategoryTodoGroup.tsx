@@ -86,7 +86,7 @@ export function CategoryTodoGroup({
       />
 
       {!collapsed ? (
-        <div className="border-l border-ink-700/80 pl-2.5">
+        <div className="border-l border-ink-700/80 pl-2.5 lg:max-w-4xl">
           <div className="space-y-1.5">
             {group.todos.length ? (
               visibleTodos.map((todo) => (
