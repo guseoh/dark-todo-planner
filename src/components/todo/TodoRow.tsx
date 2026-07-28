@@ -13,6 +13,7 @@ type TodoRowProps = {
   onUnarchive?: (id: string) => void;
   showDate?: boolean;
   showCategoryBadge?: boolean;
+  duplicateCandidate?: boolean;
 };
 
 export function TodoRow({
@@ -24,6 +25,7 @@ export function TodoRow({
   onUnarchive,
   showDate = true,
   showCategoryBadge = true,
+  duplicateCandidate = false,
 }: TodoRowProps) {
   const handleDelete = () => {
     if (window.confirm(`"${todo.title}" Todo를 삭제할까요?`)) {
@@ -70,6 +72,11 @@ export function TodoRow({
             {todo.archived ? (
               <span className="rounded-full border border-ink-600 bg-ink-700/60 px-2 py-0.5 text-[11px] font-semibold leading-4 text-ink-200">
                 보관됨
+              </span>
+            ) : null}
+            {duplicateCandidate ? (
+              <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[11px] font-semibold leading-4 text-amber-100">
+                중복 후보
               </span>
             ) : null}
           </div>

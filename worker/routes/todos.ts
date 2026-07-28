@@ -42,7 +42,7 @@ todoRoutes.patch("/categories/reorder", async (c) => {
 todoRoutes.get("/categories/:id/todos", async (c) => {
   const db = drizzle(c.env.DB); const page = pagination((name) => c.req.query(name)); const id = c.req.param("id");
   const condition = id === "uncategorized" ? sql`${todos.categoryId} IS NULL` : eq(todos.categoryId, id);
-  const rows = await db.select().from(todos).where(and(eq(todos.userId, c.get("userId")), condition)).orderBy(asc(todos.order), desc(todos.createdAt)).limit(page.limit).offset(page.offset);
+  const rows = await db.select().from(todos).where(and(eq(todos.userId, c.get("userId")), condition)).orderBy(asc(todos.order), desc(todos.createdAt), asc(todos.id)).limit(page.limit).offset(page.offset);
   return c.json({ todos: await serializeTodos(db, rows), nextCursor: page.next(rows.length) });
 });
 todoRoutes.get("/categories/:id", async (c) => {
@@ -82,7 +82,7 @@ todoRoutes.get("/todos", async (c) => {
       sql`EXISTS (SELECT 1 FROM todo_tags AS search_todo_tag INNER JOIN tags AS search_tag ON search_tag.id = search_todo_tag.tag_id WHERE search_todo_tag.todo_id = ${todos.id} AND search_tag.name LIKE ${pattern})`,
     )!);
   }
-  const rows = await db.select().from(todos).where(and(...filters)).orderBy(asc(todos.order), desc(todos.createdAt)).limit(page.limit).offset(page.offset);
+  const rows = await db.select().from(todos).where(and(...filters)).orderBy(asc(todos.order), desc(todos.createdAt), asc(todos.id)).limit(page.limit).offset(page.offset);
   return c.json({ todos: await serializeTodos(db, rows), nextCursor: page.next(rows.length) });
 });
 todoRoutes.post("/todos", async (c) => {
