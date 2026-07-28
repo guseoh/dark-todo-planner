@@ -8,8 +8,8 @@ export function ReflectionList({
   onDelete,
 }: {
   reflections: Reflection[];
-  onUpdate: (id: string, updates: Partial<Pick<Reflection, "date" | "type" | "content" | "sections">>) => void;
-  onDelete: (id: string) => void;
+  onUpdate: (id: string, updates: Partial<Pick<Reflection, "date" | "type" | "content" | "sections">>) => unknown | Promise<unknown>;
+  onDelete: (id: string) => unknown | Promise<unknown>;
 }) {
   if (!reflections.length) {
     return <EmptyState title="작성된 회고가 없습니다." description="오늘 회고를 짧게 남겨보세요." />;

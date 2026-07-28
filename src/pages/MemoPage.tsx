@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { Pencil, Pin, PinOff, Plus, Save, Trash2, X } from "lucide-react";
+import { Pencil, Pin, PinOff, Plus, Save, Search, Trash2, X } from "lucide-react";
 import { EmptyState } from "../components/common/EmptyState";
 import { Modal } from "../components/common/Modal";
 import { MarkdownEditor } from "../components/editor/MarkdownEditor";
@@ -126,31 +126,67 @@ function MemoCard({
     <article className={`rounded-xl border p-4 ${colorClass(memo.color)}`}>
       <div className="flex min-h-full flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          <button
+            type="button"
+            className="min-h-11 min-w-0 flex-1 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40"
+            onClick={() => onEdit(memo)}
+            aria-label={`${displayTitle} 메모 수정`}
+          >
             <div className="flex min-w-0 items-center gap-2">
               {memo.pinned ? <Pin size={14} className="shrink-0 text-accent-300" /> : null}
               <h3 className="line-clamp-2 text-base font-bold leading-6 text-ink-100" title={displayTitle}>{displayTitle}</h3>
             </div>
             <p className="mt-1 text-xs text-ink-500">{formatKoreanDate(memo.updatedAt, "yyyy.MM.dd 수정")}</p>
-          </div>
+          </button>
           <div className="flex shrink-0 gap-1">
-            <button type="button" className="icon-btn min-h-8 min-w-8 rounded-md" onClick={() => onTogglePin(memo.id)} aria-label={memo.pinned ? "고정 해제" : "메모 고정"}>
+            <button
+              type="button"
+              className="icon-btn h-10 w-10 rounded-md"
+              onClick={(event) => {
+                event.stopPropagation();
+                void onTogglePin(memo.id);
+              }}
+              aria-label={memo.pinned ? "고정 해제" : "메모 고정"}
+              title={memo.pinned ? "고정 해제" : "메모 고정"}
+            >
               {memo.pinned ? <PinOff size={14} /> : <Pin size={14} />}
             </button>
-            <button type="button" className="icon-btn min-h-8 min-w-8 rounded-md" onClick={() => onEdit(memo)} aria-label="메모 수정">
+            <button
+              type="button"
+              className="icon-btn h-10 w-10 rounded-md"
+              onClick={(event) => {
+                event.stopPropagation();
+                onEdit(memo);
+              }}
+              aria-label="메모 수정"
+              title="메모 수정"
+            >
               <Pencil size={14} />
             </button>
             <button
               type="button"
-              className="icon-btn min-h-8 min-w-8 rounded-md hover:border-danger hover:text-red-100"
-              onClick={() => window.confirm("메모를 삭제할까요?") && onDelete(memo.id)}
+              className="icon-btn h-10 w-10 rounded-md hover:border-danger hover:text-red-100"
+              onClick={(event) => {
+                event.stopPropagation();
+                if (window.confirm("메모를 삭제할까요?")) void onDelete(memo.id);
+              }}
               aria-label="메모 삭제"
+              title="메모 삭제"
             >
               <Trash2 size={14} />
             </button>
           </div>
         </div>
-        <MarkdownPreview className="line-clamp-5 text-sm" value={memo.content} />
+        <div
+          className="-m-1 cursor-pointer rounded-lg p-1"
+          onClick={(event) => {
+            if (event.target instanceof Element && event.target.closest("a")) return;
+            onEdit(memo);
+          }}
+          title="메모 수정"
+        >
+          <MarkdownPreview className="line-clamp-5 text-sm" value={memo.content} />
+        </div>
       </div>
     </article>
   );
@@ -171,20 +207,39 @@ export function MemoPage({
 }) {
   const [creating, setCreating] = useState(false);
   const [editingMemo, setEditingMemo] = useState<Memo | null>(null);
-  const pinnedMemos = memos.filter((memo) => memo.pinned);
-  const normalMemos = memos.filter((memo) => !memo.pinned);
+  const [searchQuery, setSearchQuery] = useState("");
+  const normalizedQuery = searchQuery.trim().toLocaleLowerCase("ko-KR");
+  const filteredMemos = normalizedQuery
+    ? memos.filter((memo) => `${memo.title || ""}\n${memo.content}`.toLocaleLowerCase("ko-KR").includes(normalizedQuery))
+    : memos;
+  const pinnedMemos = filteredMemos.filter((memo) => memo.pinned);
+  const normalMemos = filteredMemos.filter((memo) => !memo.pinned);
 
   return (
     <div className="space-y-5">
-      <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <section className="space-y-4">
         <div>
           <h2 className="text-2xl font-bold text-ink-100 sm:text-3xl">메모</h2>
           <p className="mt-2 text-sm text-ink-400">작업 중 떠오른 생각과 짧은 기록을 스티커 메모처럼 저장합니다.</p>
         </div>
-        <button type="button" className="btn-primary" onClick={() => setCreating((value) => !value)}>
-          {creating ? <X size={17} /> : <Plus size={17} />}
-          {creating ? "닫기" : "메모 추가"}
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+          <label className="relative block min-w-0 sm:w-80">
+            <span className="sr-only">메모 검색</span>
+            <Search size={17} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
+            <input
+              type="search"
+              className="field min-h-11 pl-10"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="제목과 내용 검색"
+              aria-label="메모 검색"
+            />
+          </label>
+          <button type="button" className="btn-primary min-h-11 justify-center" onClick={() => setCreating((value) => !value)}>
+            {creating ? <X size={17} /> : <Plus size={17} />}
+            {creating ? "작성 닫기" : "메모 추가"}
+          </button>
+        </div>
       </section>
 
       {creating ? (
@@ -200,7 +255,7 @@ export function MemoPage({
         </section>
       ) : null}
 
-      {memos.length ? (
+      {filteredMemos.length ? (
         <div className="space-y-5">
           {pinnedMemos.length ? (
             <section className="space-y-3">
@@ -213,15 +268,19 @@ export function MemoPage({
             </section>
           ) : null}
 
-          <section className="space-y-3">
-            <h3 className="text-sm font-bold text-ink-300">전체 메모</h3>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              {normalMemos.map((memo) => (
-                <MemoCard key={memo.id} memo={memo} onDelete={onDelete} onTogglePin={onTogglePin} onEdit={setEditingMemo} />
-              ))}
-            </div>
-          </section>
+          {normalMemos.length ? (
+            <section className="space-y-3">
+              <h3 className="text-sm font-bold text-ink-300">일반 메모</h3>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                {normalMemos.map((memo) => (
+                  <MemoCard key={memo.id} memo={memo} onDelete={onDelete} onTogglePin={onTogglePin} onEdit={setEditingMemo} />
+                ))}
+              </div>
+            </section>
+          ) : null}
         </div>
+      ) : memos.length ? (
+        <EmptyState title="검색 결과가 없습니다." description="다른 제목이나 내용으로 검색해보세요." />
       ) : (
         <EmptyState title="아직 작성한 메모가 없습니다." description="작업 중 떠오른 생각을 가볍게 적어보세요." />
       )}
