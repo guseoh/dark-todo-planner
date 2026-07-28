@@ -131,3 +131,14 @@ export const timerSettings = sqliteTable("timer_settings", {
   soundEnabled: integer("sound_enabled", { mode: "boolean" }).notNull().default(true), notificationEnabled: integer("notification_enabled", { mode: "boolean" }).notNull().default(false),
   ...timestamps,
 });
+
+export const notificationSendRecords = sqliteTable("notification_send_records", {
+  id: text("id").primaryKey(),
+  plannerDate: text("planner_date").notNull(),
+  provider: text("provider", { enum: ["discord"] }).notNull(),
+  status: text("status", { enum: ["PENDING", "SENT"] }).notNull(),
+  sentAt: text("sent_at"),
+  ...timestamps,
+}, (table) => [
+  uniqueIndex("notification_send_records_date_provider_uidx").on(table.plannerDate, table.provider),
+]);
