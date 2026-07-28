@@ -1,3 +1,4 @@
+import { USER_ID } from "../auth";
 import type { Bindings } from "../types";
 
 export type ReminderTodo = {
@@ -16,7 +17,7 @@ export type DiscordReminderPayload = {
 
 type NotificationStore = {
   claim: (plannerDate: string, provider: "discord", now: Date) => Promise<string | null>;
-  markSent: (claimId: string, now: Date) => Promise<void>;
+  markSent: (claimId: string, now: Date) => Promise<boolean>;
   release: (claimId: string) => Promise<void>;
 };
 
@@ -33,7 +34,7 @@ type ReminderDependencies = {
 
 export type ReminderRunResult =
   | { status: "missing-secret" | "no-todos" | "duplicate" | "failed"; count: number }
-  | { status: "sent"; count: number };
+  | { status: "sent" | "sent-unconfirmed"; count: number };
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 const PLANNER_DAY_START_HOUR = 3;
@@ -131,24 +132,35 @@ export async function executeIncompleteTodoReminder({
 
   try {
     await send(buildDiscordReminderPayload(targets, plannerDate));
-    await store.markSent(claimId, now);
-    return { status: "sent", count: targets.length };
   } catch {
-    await store.release(claimId);
-    logError("[reminder] Discord notification failed; it can be retried.");
+    try {
+      await store.release(claimId);
+    } catch {
+      logError("[reminder] Discord notification failed and its delivery claim could not be released.");
+    }
+    logError("[reminder] Discord notification failed; it can be retried when the claim is released.");
     return { status: "failed", count: targets.length };
   }
+
+  try {
+    const recorded = await store.markSent(claimId, now);
+    if (recorded) return { status: "sent", count: targets.length };
+  } catch {
+    // The webhook request already succeeded. Keep the claim to suppress a duplicate send.
+  }
+
+  logError("[reminder] Discord notification was sent, but delivery confirmation was not recorded; retries are suppressed for this planner date.");
+  return { status: "sent-unconfirmed", count: targets.length };
 }
 
-const createD1NotificationStore = (db: D1Database): NotificationStore => ({
+export const createD1NotificationStore = (db: D1Database): NotificationStore => ({
   async claim(plannerDate, provider, now) {
     const nowIso = now.toISOString();
-    const staleBefore = new Date(now.getTime() - 15 * 60 * 1000).toISOString();
     await db
       .prepare(
-        "DELETE FROM notification_send_records WHERE planner_date = ? AND provider = ? AND status = 'PENDING' AND updated_at < ?",
+        "DELETE FROM notification_send_records WHERE planner_date < ? AND provider = ? AND status = 'PENDING'",
       )
-      .bind(plannerDate, provider, staleBefore)
+      .bind(plannerDate, provider)
       .run();
     const id = crypto.randomUUID();
     const result = await db
@@ -161,12 +173,13 @@ const createD1NotificationStore = (db: D1Database): NotificationStore => ({
   },
   async markSent(claimId, now) {
     const sentAt = now.toISOString();
-    await db
+    const result = await db
       .prepare(
         "UPDATE notification_send_records SET status = 'SENT', sent_at = ?, updated_at = ? WHERE id = ? AND status = 'PENDING'",
       )
       .bind(sentAt, sentAt, claimId)
       .run();
+    return result.meta.changes === 1;
   },
   async release(claimId) {
     await db
@@ -176,12 +189,12 @@ const createD1NotificationStore = (db: D1Database): NotificationStore => ({
   },
 });
 
-const loadReminderTodos = async (db: D1Database, plannerDate: string): Promise<ReminderTodo[]> => {
+export const loadReminderTodos = async (db: D1Database, plannerDate: string): Promise<ReminderTodo[]> => {
   const result = await db
     .prepare(
-      "SELECT id, title, date, completed, archived, repeat FROM todos WHERE archived = 0 AND completed = 0 AND date <= ? ORDER BY date ASC, created_at ASC, id ASC",
+      "SELECT id, title, date, completed, archived, repeat FROM todos WHERE user_id = ? AND archived = 0 AND completed = 0 AND date <= ? ORDER BY date ASC, created_at ASC, id ASC",
     )
-    .bind(plannerDate)
+    .bind(USER_ID, plannerDate)
     .all<ReminderTodo>();
   return result.results;
 };
