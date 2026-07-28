@@ -8,6 +8,7 @@ import { contentRoutes } from "./routes/content";
 import { libraryRoutes } from "./routes/library";
 import { todoRoutes } from "./routes/todos";
 import { clientIdentifier, preventApiCaching, SAFE_METHODS, securityHeaders, tooManyRequests } from "./security";
+import { runDiscordIncompleteTodoReminder } from "./reminders/incompleteTodoReminder";
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 const loginSchema = z.object({ username: z.string().min(1), password: z.string().min(1).max(1024) });
@@ -61,4 +62,12 @@ app.onError((error, c) => {
   return c.json({ message: "서버 오류가 발생했습니다." }, 500);
 });
 
-export default app;
+export default {
+  fetch: (request: Request, env: Bindings, executionContext: ExecutionContext) =>
+    app.fetch(request, env, executionContext),
+  scheduled: (controller: ScheduledController, env: Bindings, executionContext: ExecutionContext) => {
+    executionContext.waitUntil(
+      runDiscordIncompleteTodoReminder(env, new Date(controller.scheduledTime)),
+    );
+  },
+} satisfies ExportedHandler<Bindings>;

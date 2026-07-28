@@ -54,6 +54,9 @@
     },
     "production": {
       "name": "dark-todo-planner",
+      "triggers": {
+        "crons": ["0 12 * * *"]
+      },
       "d1_databases": [
         {
           "binding": "DB",
