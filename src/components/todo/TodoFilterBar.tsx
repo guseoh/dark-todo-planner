@@ -70,6 +70,14 @@ export function TodoFilterBar({ filters, onChange, tagOptions = [], categories =
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          className={`${filterButtonClassName} ${buttonTone(filters.duplicatesOnly)}`}
+          onClick={() => onChange({ ...filters, duplicatesOnly: !filters.duplicatesOnly })}
+          aria-pressed={filters.duplicatesOnly}
+        >
+          중복 후보만
+        </button>
         <button type="button" className="btn-secondary min-h-10 px-3 py-1.5" onClick={() => setShowAdvanced((value) => !value)} aria-expanded={showAdvanced}>
           {showAdvanced ? "고급 필터 닫기" : "고급 필터"}
         </button>

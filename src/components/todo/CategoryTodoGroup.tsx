@@ -17,6 +17,7 @@ export type TodoGroup = {
 
 type CategoryTodoGroupProps = {
   group: TodoGroup;
+  duplicateTodoIds?: ReadonlySet<string>;
   collapsed: boolean;
   defaultDate?: string;
   showDate?: boolean;
@@ -36,6 +37,7 @@ type CategoryTodoGroupProps = {
 
 export function CategoryTodoGroup({
   group,
+  duplicateTodoIds = new Set<string>(),
   collapsed,
   defaultDate,
   showDate = true,
@@ -91,6 +93,7 @@ export function CategoryTodoGroup({
                 <TodoRow
                   key={todo.id}
                   todo={todo}
+                  duplicateCandidate={duplicateTodoIds.has(todo.id)}
                   onToggle={onToggle}
                   onDelete={onDelete}
                   onEdit={onEditTodo}
