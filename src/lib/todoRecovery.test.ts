@@ -92,6 +92,59 @@ describe("Todo page recovery", () => {
     expect(copyTodo).toHaveBeenCalledTimes(2);
   });
 
+  it("processes the newest duplicate first and skips older duplicates after success", async () => {
+    const older = todo("older", {
+      title: "같은 일정",
+      date: "2026-07-20",
+      createdAt: "2026-07-20T09:00:00Z",
+    });
+    const newer = todo("newer", {
+      title: " 같은 일정 ",
+      date: "2026-07-22",
+      createdAt: "2026-07-22T09:00:00Z",
+    });
+    const moveTodo = vi.fn(async () => true);
+
+    const result = await importSelectedOverdueTodos({
+      overdueTodos: [older, newer],
+      selectedIds: new Set([older.id, newer.id]),
+      todayTodos: [],
+      mode: "move",
+      copyTodo: vi.fn(),
+      moveTodo,
+    });
+
+    expect(result).toEqual({ total: 2, success: 1, skipped: 1, failed: 0, mode: "move" });
+    expect(moveTodo).toHaveBeenCalledTimes(1);
+    expect(moveTodo.mock.calls[0][0].id).toBe("newer");
+  });
+
+  it("tries an older duplicate when the newest duplicate fails", async () => {
+    const older = todo("older", {
+      title: "같은 일정",
+      date: "2026-07-20",
+      createdAt: "2026-07-20T09:00:00Z",
+    });
+    const newer = todo("newer", {
+      title: "같은 일정",
+      date: "2026-07-22",
+      createdAt: "2026-07-22T09:00:00Z",
+    });
+    const moveTodo = vi.fn(async (item: Todo) => item.id === "older");
+
+    const result = await importSelectedOverdueTodos({
+      overdueTodos: [older, newer],
+      selectedIds: new Set([older.id, newer.id]),
+      todayTodos: [],
+      mode: "move",
+      copyTodo: vi.fn(),
+      moveTodo,
+    });
+
+    expect(result).toEqual({ total: 2, success: 1, skipped: 0, failed: 1, mode: "move" });
+    expect(moveTodo.mock.calls.map(([item]) => item.id)).toEqual(["newer", "older"]);
+  });
+
   it("continues moving selected Todos when one operation throws", async () => {
     const moveTodo = vi.fn(async (item: Todo) => {
       if (item.id === "throws") throw new Error("network");
