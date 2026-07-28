@@ -13,6 +13,8 @@
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:migrate:preview": "wrangler d1 migrations apply DB --env preview --remote",
     "db:migrate:production": "wrangler d1 migrations apply DB --env production --remote",
+    "db:backup:preview": "node scripts/backup-d1.mjs preview",
+    "db:backup:production": "node scripts/backup-d1.mjs production",
     "auth:hash": "node scripts/hash-password.mjs",
     "deploy:preview": "npm run build && wrangler deploy --env preview",
     "deploy:production": "npm run build && wrangler deploy --env production"
