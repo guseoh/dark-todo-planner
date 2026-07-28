@@ -34,6 +34,9 @@ export const calculateRate = (todos: Todo[]) => {
   return Math.round((todos.filter((todo) => todo.completed).length / todos.length) * 100);
 };
 
+export const formatCompletionRate = (totalCount: number, completionRate: number) =>
+  totalCount > 0 ? `${completionRate}%` : "—";
+
 export const sortByTime = (todos: Todo[]) =>
   [...todos].sort((a, b) => {
     const aTime = a.startTime || "24:00";

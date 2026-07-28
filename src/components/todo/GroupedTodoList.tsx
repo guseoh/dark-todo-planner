@@ -114,10 +114,11 @@ const buildGroups = (todos: Todo[], categories: Category[], includeEmptyCategori
 
 type SortableCategoryTodoGroupProps = {
   group: TodoGroup;
+  expanded: boolean;
   children: (options: { dragHandle: JSX.Element; dragging: boolean }) => JSX.Element;
 };
 
-function SortableCategoryTodoGroup({ group, children }: SortableCategoryTodoGroupProps) {
+function SortableCategoryTodoGroup({ group, expanded, children }: SortableCategoryTodoGroupProps) {
   const id = group.category?.id || uncategorizedGroupId;
   const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
@@ -128,14 +129,18 @@ function SortableCategoryTodoGroup({ group, children }: SortableCategoryTodoGrou
   const name = group.category?.name || "미분류";
 
   return (
-    <div ref={setNodeRef} style={style} className={`min-w-0 ${isDragging ? "relative" : ""}`}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`min-w-0 ${expanded ? "col-span-full" : ""} ${isDragging ? "relative" : ""}`}
+    >
       {children({
         dragging: isDragging,
         dragHandle: (
           <button
             type="button"
             ref={setActivatorNodeRef}
-            className="hidden h-7 w-7 shrink-0 cursor-grab items-center justify-center rounded-md border border-ink-700 bg-ink-950/70 text-ink-500 transition hover:border-accent-500/60 hover:text-ink-100 active:cursor-grabbing sm:inline-flex"
+            className="hidden h-9 w-9 shrink-0 cursor-grab items-center justify-center rounded-md border border-ink-700 bg-ink-950/70 text-ink-500 transition hover:border-accent-500/60 hover:text-ink-100 active:cursor-grabbing sm:inline-flex"
             aria-label={`${name} 카테고리 순서 변경`}
             title="드래그해서 카테고리 순서 변경"
             {...attributes}
@@ -285,7 +290,11 @@ export function GroupedTodoList({
                   {categoryGroups.map((group) => {
                     const groupId = group.category!.id;
                     return (
-                      <SortableCategoryTodoGroup key={groupId} group={group}>
+                      <SortableCategoryTodoGroup
+                        key={groupId}
+                        group={group}
+                        expanded={layout === "board" && !collapsedGroups[groupId]}
+                      >
                         {({ dragHandle, dragging }) => (
                           <CategoryTodoGroup
                             group={group}
@@ -316,8 +325,34 @@ export function GroupedTodoList({
               categoryGroups.map((group) => {
                 const groupId = group.category!.id;
                 return (
+                  <div key={groupId} className={layout === "board" && !collapsedGroups[groupId] ? "col-span-full" : "min-w-0"}>
+                    <CategoryTodoGroup
+                      group={group}
+                      duplicateTodoIds={duplicateTodoIds}
+                      collapsed={Boolean(collapsedGroups[groupId])}
+                      defaultDate={defaultDate}
+                      showDate={showDate}
+                      onToggleCollapse={() => toggleCollapse(groupId)}
+                      onStartEditCategory={startEditCategory}
+                      onDeleteCategory={onDeleteCategory || (() => undefined)}
+                      onAddTodo={onAddTodo}
+                      onToggle={onToggle}
+                      onDelete={onDelete}
+                      onArchive={onArchive}
+                      onUnarchive={onUnarchive}
+                      onEditTodo={setEditingTodo}
+                      variant={layout === "board" ? "card" : "plain"}
+                    />
+                  </div>
+                );
+              })
+            )}
+
+            {uncategorizedGroups.map((group) => {
+              const groupId = uncategorizedGroupId;
+              return (
+                <div key={groupId} className={layout === "board" && !collapsedGroups[groupId] ? "col-span-full" : "min-w-0"}>
                   <CategoryTodoGroup
-                    key={groupId}
                     group={group}
                     duplicateTodoIds={duplicateTodoIds}
                     collapsed={Boolean(collapsedGroups[groupId])}
@@ -334,31 +369,7 @@ export function GroupedTodoList({
                     onEditTodo={setEditingTodo}
                     variant={layout === "board" ? "card" : "plain"}
                   />
-                );
-              })
-            )}
-
-            {uncategorizedGroups.map((group) => {
-              const groupId = uncategorizedGroupId;
-              return (
-                <CategoryTodoGroup
-                  key={groupId}
-                  group={group}
-                  duplicateTodoIds={duplicateTodoIds}
-                  collapsed={Boolean(collapsedGroups[groupId])}
-                  defaultDate={defaultDate}
-                  showDate={showDate}
-                  onToggleCollapse={() => toggleCollapse(groupId)}
-                  onStartEditCategory={startEditCategory}
-                  onDeleteCategory={onDeleteCategory || (() => undefined)}
-                  onAddTodo={onAddTodo}
-                  onToggle={onToggle}
-                  onDelete={onDelete}
-                  onArchive={onArchive}
-                  onUnarchive={onUnarchive}
-                  onEditTodo={setEditingTodo}
-                  variant={layout === "board" ? "card" : "plain"}
-                />
+                </div>
               );
             })}
           </div>
