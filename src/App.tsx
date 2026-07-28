@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ErrorState, LoadingState } from "./components/common/LoadingState";
+import { ErrorBanner, ErrorState, LoadingState } from "./components/common/LoadingState";
 import { Header } from "./components/layout/Header";
 import { AppView, Sidebar } from "./components/layout/Sidebar";
 import { usePlannerData } from "./hooks/usePlannerData";
@@ -111,20 +111,27 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
         reflections={planner.reflections}
         goals={planner.goals}
         memos={planner.memos}
-        apiStatus={planner.error ? "offline" : "online"}
+        apiStatus={planner.connectionError ? "offline" : "online"}
       />
     ),
   } satisfies Record<AppView, JSX.Element>;
 
   return (
     <div className="min-h-screen pb-24 lg:pb-0">
-      <Header storageStatus={planner.error ? "offline" : "server"} onLogout={onLogout} />
+      <Header storageStatus={planner.connectionError ? "offline" : "server"} onLogout={onLogout} />
       <div className="mx-auto flex w-full max-w-[1680px] gap-5 px-4 py-5 sm:px-5 lg:px-6">
         <Sidebar activeView={activeView} onChangeView={setActiveView} />
         <main className="min-w-0 flex-1 space-y-4">
-          {planner.loading ? <LoadingState /> : null}
-          {planner.error ? <ErrorState message={planner.error} onRetry={planner.loadAll} /> : null}
-          {!planner.loading ? content[activeView] : null}
+          {planner.loading && !planner.loadedOnce ? <LoadingState /> : null}
+          {!planner.loading && planner.initialLoadError ? <ErrorState message={planner.initialLoadError} onRetry={planner.loadAll} /> : null}
+          {planner.loadedOnce ? (
+            <>
+              {planner.backgroundOrOperationError ? (
+                <ErrorBanner message={planner.backgroundOrOperationError} onRetry={planner.loadAll} />
+              ) : null}
+              {content[activeView]}
+            </>
+          ) : null}
         </main>
       </div>
     </div>
