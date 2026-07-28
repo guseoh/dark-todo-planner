@@ -9,6 +9,7 @@ type AllTodosPageProps = {
   filterTodos: (filters: TodoFilters) => Todo[];
   tagOptions: string[];
   categories?: Category[];
+  duplicateTodoIds: ReadonlySet<string>;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
@@ -23,6 +24,7 @@ export function AllTodosPage({
   filterTodos,
   tagOptions,
   categories = [],
+  duplicateTodoIds,
   onToggle,
   onDelete,
   onUpdate,
@@ -51,6 +53,7 @@ export function AllTodosPage({
       <GroupedTodoList
         todos={filteredTodos}
         categories={categories}
+        duplicateTodoIds={duplicateTodoIds}
         onAddTodo={onAddTodo}
         onToggle={onToggle}
         onDelete={onDelete}

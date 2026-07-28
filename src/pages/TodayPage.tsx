@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { CheckCheck, CopyPlus, MoveRight } from "lucide-react";
+import { CheckCheck, History } from "lucide-react";
 import { formatKoreanDate, todayKey } from "../lib/date";
+import type { OverdueTodoImportMode, OverdueTodoImportResult } from "../lib/todoRecovery";
 import type { Category } from "../types/category";
 import type { Todo, TodoInput } from "../types/todo";
 import { ProgressBar } from "../components/common/ProgressBar";
 import { TodoForm } from "../components/todo/TodoForm";
 import { GroupedTodoList } from "../components/todo/GroupedTodoList";
+import { OverdueTodoImportModal } from "../components/todo/OverdueTodoImportModal";
 
 type TodayPageProps = {
   todayTodos: Todo[];
@@ -25,8 +27,11 @@ type TodayPageProps = {
   onUpdateCategory: (id: string, input: Partial<Category>) => void | Promise<void>;
   onDeleteCategory: (id: string, mode: "moveTodos" | "deleteTodos") => void | Promise<void>;
   onReorderCategories: (ids: string[]) => void | Promise<void>;
-  yesterdayActiveCount: number;
-  onBringYesterdayTodos: (mode: "copy" | "move") => Promise<{ total: number; imported: number; skipped: number; mode: "copy" | "move" }>;
+  overdueTodos: Todo[];
+  onBringOverdueTodos: (
+    selectedIds: ReadonlySet<string>,
+    mode: OverdueTodoImportMode,
+  ) => Promise<OverdueTodoImportResult>;
 };
 
 export function TodayPage({
@@ -41,23 +46,12 @@ export function TodayPage({
   onUpdateCategory,
   onDeleteCategory,
   onReorderCategories,
-  yesterdayActiveCount,
-  onBringYesterdayTodos,
+  overdueTodos,
+  onBringOverdueTodos,
 }: TodayPageProps) {
-  const [importMessage, setImportMessage] = useState("");
+  const [showOverdueImport, setShowOverdueImport] = useState(false);
   const today = todayKey();
-
-  const bringYesterdayTodos = async (mode: "copy" | "move") => {
-    if (!yesterdayActiveCount) return;
-    const actionLabel = mode === "copy" ? "복사" : "이동";
-    const confirmed = window.confirm(
-      `어제 미완료 Todo ${yesterdayActiveCount}개를 오늘로 ${actionLabel}할까요?\n\n이미 오늘 같은 제목과 카테고리로 등록된 Todo는 건너뜁니다.`,
-    );
-    if (!confirmed) return;
-    const result = await onBringYesterdayTodos(mode);
-    const skipped = result.skipped ? `, 중복 ${result.skipped}개 제외` : "";
-    setImportMessage(`${actionLabel} ${result.imported}개 완료${skipped}`);
-  };
+  const oldestOverdueDate = overdueTodos[0]?.date;
 
   return (
     <div className="space-y-4">
@@ -101,31 +95,22 @@ export function TodayPage({
         </div>
       </section>
 
-      {yesterdayActiveCount > 0 ? (
+      {overdueTodos.length > 0 ? (
         <section className="app-card flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-ink-100">어제 미완료 {yesterdayActiveCount}개 가져오기</h3>
-            <p className="mt-0.5 text-xs text-ink-500">중복된 Todo는 자동으로 건너뜁니다.</p>
-            {importMessage ? <p className="mt-1 text-xs font-semibold text-emerald-200">{importMessage}</p> : null}
+            <h3 className="text-sm font-semibold text-ink-100">미처리 Todo {overdueTodos.length}개</h3>
+            <p className="mt-0.5 text-xs text-ink-500">
+              가장 오래된 일정: {oldestOverdueDate ? formatKoreanDate(oldestOverdueDate, "M월 d일") : "-"}
+            </p>
           </div>
-          <div className="flex shrink-0 flex-wrap gap-2">
-            <button
-              type="button"
-              className="btn-secondary min-h-10 px-3 py-2 text-sm"
-              onClick={() => bringYesterdayTodos("copy")}
-            >
-              <CopyPlus size={15} />
-              복사
-            </button>
-            <button
-              type="button"
-              className="btn-secondary min-h-10 px-3 py-2 text-sm"
-              onClick={() => bringYesterdayTodos("move")}
-            >
-              <MoveRight size={15} />
-              이동
-            </button>
-          </div>
+          <button
+            type="button"
+            className="btn-secondary min-h-10 shrink-0 justify-center px-3 py-2 text-sm"
+            onClick={() => setShowOverdueImport(true)}
+          >
+            <History size={15} />
+            가져오기
+          </button>
         </section>
       ) : null}
 
@@ -150,6 +135,14 @@ export function TodayPage({
         showCategoryCreator
         sortableCategories
       />
+
+      {showOverdueImport ? (
+        <OverdueTodoImportModal
+          todos={overdueTodos}
+          onImport={onBringOverdueTodos}
+          onClose={() => setShowOverdueImport(false)}
+        />
+      ) : null}
     </div>
   );
 }

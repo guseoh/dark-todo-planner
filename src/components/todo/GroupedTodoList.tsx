@@ -35,6 +35,7 @@ type CollapsedState = Record<string, boolean>;
 type GroupedTodoListProps = {
   todos: Todo[];
   categories: Category[];
+  duplicateTodoIds?: ReadonlySet<string>;
   onAddTodo: (todo: TodoInput) => void | Promise<void>;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
@@ -151,6 +152,7 @@ function SortableCategoryTodoGroup({ group, children }: SortableCategoryTodoGrou
 export function GroupedTodoList({
   todos,
   categories,
+  duplicateTodoIds = new Set<string>(),
   onAddTodo,
   onToggle,
   onDelete,
@@ -287,6 +289,7 @@ export function GroupedTodoList({
                         {({ dragHandle, dragging }) => (
                           <CategoryTodoGroup
                             group={group}
+                            duplicateTodoIds={duplicateTodoIds}
                             collapsed={Boolean(collapsedGroups[groupId])}
                             defaultDate={defaultDate}
                             showDate={showDate}
@@ -316,6 +319,7 @@ export function GroupedTodoList({
                   <CategoryTodoGroup
                     key={groupId}
                     group={group}
+                    duplicateTodoIds={duplicateTodoIds}
                     collapsed={Boolean(collapsedGroups[groupId])}
                     defaultDate={defaultDate}
                     showDate={showDate}
@@ -340,6 +344,7 @@ export function GroupedTodoList({
                 <CategoryTodoGroup
                   key={groupId}
                   group={group}
+                  duplicateTodoIds={duplicateTodoIds}
                   collapsed={Boolean(collapsedGroups[groupId])}
                   defaultDate={defaultDate}
                   showDate={showDate}
