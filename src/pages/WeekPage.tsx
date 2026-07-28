@@ -33,7 +33,7 @@ export function WeekPage({
   goals = [],
 }: WeekPageProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <section>
         <h2 className="text-2xl font-bold text-ink-100 sm:text-3xl">주간 보기</h2>
         <p className="mt-2 text-sm text-ink-400">월요일부터 일요일까지 한 주의 계획을 확인합니다.</p>

@@ -1,10 +1,8 @@
 import { useState } from "react";
-import { CheckCheck, CopyPlus, ListTodo, MoveRight, TrendingUp } from "lucide-react";
+import { CheckCheck, CopyPlus, MoveRight } from "lucide-react";
 import { formatKoreanDate, todayKey } from "../lib/date";
 import type { Category } from "../types/category";
 import type { Todo, TodoInput } from "../types/todo";
-import { StatCard } from "../components/common/StatCard";
-import { EmptyState } from "../components/common/EmptyState";
 import { ProgressBar } from "../components/common/ProgressBar";
 import { TodoForm } from "../components/todo/TodoForm";
 import { GroupedTodoList } from "../components/todo/GroupedTodoList";
@@ -48,37 +46,6 @@ export function TodayPage({
 }: TodayPageProps) {
   const [importMessage, setImportMessage] = useState("");
   const today = todayKey();
-  const categorySummaries = [
-    ...categories.map((category) => {
-      const categoryTodos = todayTodos.filter((todo) => todo.categoryId === category.id);
-      const completed = categoryTodos.filter((todo) => todo.completed).length;
-      return {
-        id: category.id,
-        name: category.name,
-        color: category.color || "#6366f1",
-        total: categoryTodos.length,
-        completed,
-        active: categoryTodos.length - completed,
-        rate: categoryTodos.length ? Math.round((completed / categoryTodos.length) * 100) : 0,
-      };
-    }),
-    (() => {
-      const uncategorized = todayTodos.filter((todo) => !todo.categoryId);
-      const completed = uncategorized.filter((todo) => todo.completed).length;
-      return {
-        id: "uncategorized",
-        name: "미분류",
-        color: "#64748b",
-        total: uncategorized.length,
-        completed,
-        active: uncategorized.length - completed,
-        rate: uncategorized.length ? Math.round((completed / uncategorized.length) * 100) : 0,
-      };
-    })(),
-  ]
-    .filter((summary) => summary.total > 0)
-    .sort((a, b) => b.active - a.active)
-    .slice(0, 4);
 
   const bringYesterdayTodos = async (mode: "copy" | "move") => {
     if (!yesterdayActiveCount) return;
@@ -99,73 +66,70 @@ export function TodayPage({
         <h2 className="mt-1 text-2xl font-bold text-ink-100">오늘</h2>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <StatCard title="오늘 완료율" value={`${stats.todayRate}%`} description={`${stats.todayCompleted}/${stats.todayTotal} 완료`} icon={<CheckCheck size={19} />} progress={stats.todayRate} />
-        <StatCard title="남은 Todo" value={stats.todayActive} description="오늘 처리할 항목" icon={<ListTodo size={19} />} />
-        <StatCard title="이번 주 완료율" value={`${stats.weekRate}%`} description="이번 주 Todo 기준" icon={<TrendingUp size={19} />} progress={stats.weekRate} />
+      <section className="app-card p-4" aria-labelledby="today-summary-title">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center">
+          <div className="min-w-0 flex-1">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-500/15 text-accent-300">
+                  <CheckCheck size={18} />
+                </span>
+                <div className="min-w-0">
+                  <h3 id="today-summary-title" className="text-sm font-bold text-ink-100">오늘 요약</h3>
+                  <p className="text-xs text-ink-500">오늘 Todo 완료율</p>
+                </div>
+              </div>
+              <p className="shrink-0 text-2xl font-bold text-ink-100">{stats.todayRate}%</p>
+            </div>
+            <ProgressBar value={stats.todayRate} label="오늘 진행률" />
+          </div>
+
+          <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:w-[28rem]">
+            <div className="rounded-lg border border-ink-700/80 bg-ink-950/45 px-3 py-2.5">
+              <dt className="text-[11px] font-semibold text-ink-500">완료 / 전체</dt>
+              <dd className="mt-1 text-base font-bold text-ink-100">{stats.todayCompleted} / {stats.todayTotal}</dd>
+            </div>
+            <div className="rounded-lg border border-ink-700/80 bg-ink-950/45 px-3 py-2.5">
+              <dt className="text-[11px] font-semibold text-ink-500">남은 Todo</dt>
+              <dd className="mt-1 text-base font-bold text-ink-100">{stats.todayActive}개</dd>
+            </div>
+            <div className="col-span-2 rounded-lg border border-ink-700/80 bg-ink-950/45 px-3 py-2.5 sm:col-span-1">
+              <dt className="text-[11px] font-semibold text-ink-500">이번 주 완료율</dt>
+              <dd className="mt-1 text-base font-bold text-ink-100">{stats.weekRate}%</dd>
+            </div>
+          </dl>
+        </div>
       </section>
 
-      <section className="app-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h3 className="text-sm font-semibold text-ink-100">어제 미완료 가져오기</h3>
-          <p className="mt-1 text-xs text-ink-500">
-            오전 3시 기준 어제 남은 Todo {yesterdayActiveCount}개를 오늘로 가져올 수 있습니다.
-          </p>
-          {importMessage ? <p className="mt-2 text-xs font-semibold text-emerald-200">{importMessage}</p> : null}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="btn-secondary min-h-10 px-3 py-2 text-sm"
-            onClick={() => bringYesterdayTodos("copy")}
-            disabled={!yesterdayActiveCount}
-          >
-            <CopyPlus size={15} />
-            복사하기
-          </button>
-          <button
-            type="button"
-            className="btn-secondary min-h-10 px-3 py-2 text-sm"
-            onClick={() => bringYesterdayTodos("move")}
-            disabled={!yesterdayActiveCount}
-          >
-            <MoveRight size={15} />
-            이동하기
-          </button>
-        </div>
-      </section>
+      {yesterdayActiveCount > 0 ? (
+        <section className="app-card flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-ink-100">어제 미완료 {yesterdayActiveCount}개 가져오기</h3>
+            <p className="mt-0.5 text-xs text-ink-500">중복된 Todo는 자동으로 건너뜁니다.</p>
+            {importMessage ? <p className="mt-1 text-xs font-semibold text-emerald-200">{importMessage}</p> : null}
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <button
+              type="button"
+              className="btn-secondary min-h-10 px-3 py-2 text-sm"
+              onClick={() => bringYesterdayTodos("copy")}
+            >
+              <CopyPlus size={15} />
+              복사
+            </button>
+            <button
+              type="button"
+              className="btn-secondary min-h-10 px-3 py-2 text-sm"
+              onClick={() => bringYesterdayTodos("move")}
+            >
+              <MoveRight size={15} />
+              이동
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <TodoForm onAdd={onAdd} defaultDate={today} compact submitLabel="오늘 추가" categories={categories} />
-
-      <section className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-base font-bold text-ink-100">카테고리별 오늘 진행 현황</h3>
-          <span className="text-xs text-ink-500">{todayTodos.length}개 Todo</span>
-        </div>
-        {categorySummaries.length ? (
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {categorySummaries.map((summary) => (
-              <article key={summary.id} className="app-card p-3">
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: summary.color }} aria-hidden="true" />
-                      <h3 className="truncate text-sm font-semibold text-ink-100">{summary.name}</h3>
-                    </div>
-                    <p className="mt-0.5 text-[11px] text-ink-500">미완료 {summary.active}개</p>
-                  </div>
-                  <span className="rounded-full border border-ink-700 bg-ink-950/70 px-2 py-0.5 text-xs text-ink-300">
-                    {summary.completed}/{summary.total}
-                  </span>
-                </div>
-                <ProgressBar value={summary.rate} label={`${summary.rate}%`} />
-              </article>
-            ))}
-          </div>
-        ) : (
-          <EmptyState title="오늘 등록된 카테고리 Todo가 없습니다." description="빠른 추가나 카테고리 안의 하위 Todo 추가를 사용해보세요." />
-        )}
-      </section>
 
       <GroupedTodoList
         todos={todayTodos}
