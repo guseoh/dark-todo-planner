@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { getMonthGrid, todayKey } from "../../lib/date";
+import { getMonthEndLabel, getMonthGrid, parseDateKey, todayKey } from "../../lib/date";
 import type { Todo, TodoInput } from "../../types/todo";
 import type { Category } from "../../types/category";
 import type { Goal } from "../../types/goal";
@@ -45,6 +45,7 @@ export function MonthlyView({
   const selectedPanelRef = useRef<HTMLDivElement | null>(null);
   const monthDays = useMemo(() => getMonthGrid(currentMonth), [currentMonth]);
   const selectedTodos = getTodosByDate(selectedDate);
+  const selectedMonthEndLabel = getMonthEndLabel(parseDateKey(selectedDate), currentMonth);
 
   const cycleDayStatus = (dateKey: string) => {
     const statusGoal = getDayStatusGoal(goals, dateKey);
@@ -76,7 +77,7 @@ export function MonthlyView({
   };
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1.75fr)_minmax(340px,0.82fr)] 2xl:grid-cols-[minmax(0,1.95fr)_minmax(360px,0.75fr)]">
+    <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(420px,460px)]">
       <MonthlyCalendar
         currentMonth={currentMonth}
         monthDays={monthDays}
@@ -88,9 +89,10 @@ export function MonthlyView({
         onCycleDayStatus={cycleDayStatus}
       />
 
-      <div ref={selectedPanelRef}>
+      <div ref={selectedPanelRef} className="min-w-0 xl:sticky xl:top-24 xl:self-start">
         <MonthlySidePanel
           selectedDate={selectedDate}
+          monthEndLabel={selectedMonthEndLabel}
           selectedTodos={selectedTodos}
           categories={categories}
           onAdd={onAdd}

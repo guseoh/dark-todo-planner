@@ -74,6 +74,12 @@ export const getPrevMonth = (date: Date) => subMonths(date, 1);
 
 export const weekdayLabels = ["월", "화", "수", "목", "금", "토", "일"];
 
+export const getMonthEndLabel = (date: Date, currentMonth: Date) => {
+  if (!isSameMonth(date, currentMonth)) return null;
+  const remainingDays = differenceInCalendarDays(endOfMonth(currentMonth), date);
+  return remainingDays === 0 ? "월말" : `월말 D-${remainingDays}`;
+};
+
 export const getDdayLabel = (dateKey: string) => {
   const diff = differenceInCalendarDays(parseDateKey(dateKey), parseDateKey(todayKey()));
   if (diff === 0) return "D-Day";
