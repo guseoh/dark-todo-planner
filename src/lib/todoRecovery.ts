@@ -89,7 +89,14 @@ export async function importSelectedOverdueTodos({
   copyTodo: (todo: Todo) => Promise<boolean>;
   moveTodo: (todo: Todo) => Promise<boolean>;
 }): Promise<OverdueTodoImportResult> {
-  const selectedTodos = overdueTodos.filter((todo) => selectedIds.has(todo.id));
+  const selectedTodos = overdueTodos
+    .filter((todo) => selectedIds.has(todo.id))
+    .sort(
+      (a, b) =>
+        b.date.localeCompare(a.date) ||
+        b.createdAt.localeCompare(a.createdAt) ||
+        a.id.localeCompare(b.id),
+    );
   const todayKeys = new Set(
     todayTodos
       .filter((todo) => !todo.archived)
@@ -100,14 +107,19 @@ export async function importSelectedOverdueTodos({
   let failed = 0;
 
   for (const todo of selectedTodos) {
-    if (todayKeys.has(getTodoDuplicateKey(todo))) {
+    const duplicateKey = getTodoDuplicateKey(todo);
+    if (todayKeys.has(duplicateKey)) {
       skipped += 1;
       continue;
     }
     try {
       const completed = mode === "copy" ? await copyTodo(todo) : await moveTodo(todo);
-      if (completed) success += 1;
-      else failed += 1;
+      if (completed) {
+        success += 1;
+        todayKeys.add(duplicateKey);
+      } else {
+        failed += 1;
+      }
     } catch {
       failed += 1;
     }
