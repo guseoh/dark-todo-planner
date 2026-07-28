@@ -44,6 +44,7 @@ export type TodoFilters = {
   categoryId: string;
   repeat: "ALL" | TodoRepeat;
   archived: "ACTIVE" | "ARCHIVED" | "ALL";
+  duplicatesOnly: boolean;
   date: string;
   sort: TodoSort;
 };

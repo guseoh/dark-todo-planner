@@ -2,8 +2,16 @@ import { useCallback, useMemo, useState } from "react";
 import type { Category } from "../types/category";
 import type { Todo, TodoFilters, TodoInput } from "../types/todo";
 import { api, apiAllPages, jsonBody } from "../lib/api/client";
-import { getMonthGrid, getPlannerToday, getPlannerYesterday, getWeekDays, todayKey, toDateKey } from "../lib/date";
+import { getMonthGrid, getPlannerToday, getWeekDays, todayKey, toDateKey } from "../lib/date";
 import { calculateRate, getAllTags, priorityRank, todoOccursOnDate } from "../lib/todo";
+import {
+  dedupeTodosById,
+  getDuplicateTodoIds,
+  getOverdueIncompleteTodos as selectOverdueIncompleteTodos,
+  importSelectedOverdueTodos,
+  type OverdueTodoImportMode,
+  type OverdueTodoImportResult,
+} from "../lib/todoRecovery";
 
 export const defaultFilters: TodoFilters = {
   query: "",
@@ -13,20 +21,12 @@ export const defaultFilters: TodoFilters = {
   categoryId: "",
   repeat: "ALL",
   archived: "ACTIVE",
+  duplicatesOnly: false,
   date: "",
   sort: "DATE_ASC",
 };
 
 const getMessage = (error: unknown) => (error instanceof Error ? error.message : "Todo 요청 처리 중 오류가 발생했습니다.");
-export type YesterdayTodoImportMode = "copy" | "move";
-
-export type YesterdayTodoImportResult = {
-  total: number;
-  imported: number;
-  skipped: number;
-  mode: YesterdayTodoImportMode;
-};
-
 const toTodoRequestBody = (todo: Todo | (Partial<Todo> & TodoInput)) => {
   const { id, userId, createdAt, updatedAt, category, startTime, endTime, ...body } = todo;
   void id;
@@ -48,7 +48,7 @@ export function useTodos() {
   const loadTodos = useCallback(async () => {
     setLoading(true);
     try {
-      const todos = await apiAllPages<Todo>("/api/todos?archived=all", "todos");
+      const todos = dedupeTodosById(await apiAllPages<Todo>("/api/todos?archived=all", "todos"));
       setAllTodos(todos);
       setError("");
       return todos;
@@ -64,6 +64,7 @@ export function useTodos() {
   const todos = useMemo(() => allTodos.filter((todo) => !todo.archived), [allTodos]);
   const archivedTodos = useMemo(() => allTodos.filter((todo) => todo.archived), [allTodos]);
   const tagOptions = useMemo(() => getAllTags(allTodos), [allTodos]);
+  const duplicateTodoIds = useMemo(() => getDuplicateTodoIds(allTodos), [allTodos]);
 
   const addTodo = useCallback(async (input: TodoInput) => {
     setSaving(true);
@@ -162,29 +163,27 @@ export function useTodos() {
 
   const getTodosByDate = useCallback((date: string) => todos.filter((todo) => todoOccursOnDate(todo, date)), [todos]);
   const getTodayTodos = useCallback(() => getTodosByDate(todayKey()), [getTodosByDate]);
-  const getYesterdayTodos = useCallback(() => getTodosByDate(getPlannerYesterday()), [getTodosByDate]);
+  const getOverdueIncompleteTodos = useCallback(
+    () => selectOverdueIncompleteTodos(todos, getPlannerToday()),
+    [todos],
+  );
   const getWeekTodos = useCallback(() => {
     const days = getWeekDays().map(toDateKey);
     return todos.filter((todo) => days.some((day) => todoOccursOnDate(todo, day)));
   }, [todos]);
 
-  const bringYesterdayTodosToToday = useCallback(async (mode: YesterdayTodoImportMode): Promise<YesterdayTodoImportResult> => {
+  const bringOverdueTodosToToday = useCallback(async (
+    selectedIds: ReadonlySet<string>,
+    mode: OverdueTodoImportMode,
+  ): Promise<OverdueTodoImportResult> => {
     const today = getPlannerToday();
-    const yesterdayIncomplete = getYesterdayTodos().filter((todo) => !todo.completed);
-    const todayTodos = getTodosByDate(today);
-    const makeDuplicateKey = (todo: Todo) => `${todo.title.trim().toLowerCase()}::${todo.categoryId || ""}`;
-    const seenToday = new Set(todayTodos.map(makeDuplicateKey));
-    const targets = yesterdayIncomplete.filter((todo) => {
-      const key = makeDuplicateKey(todo);
-      if (seenToday.has(key)) return false;
-      seenToday.add(key);
-      return true;
-    });
-    let imported = 0;
-
-    if (mode === "copy") {
-      for (const todo of targets) {
-        const created = await addTodo({
+    return importSelectedOverdueTodos({
+      overdueTodos: getOverdueIncompleteTodos(),
+      selectedIds,
+      todayTodos: getTodosByDate(today),
+      mode,
+      copyTodo: async (todo) =>
+        Boolean(await addTodo({
           title: todo.title,
           memo: todo.memo,
           categoryId: todo.categoryId,
@@ -192,23 +191,10 @@ export function useTodos() {
           priority: todo.priority,
           repeat: todo.repeat,
           tags: todo.tags,
-        });
-        if (created) imported += 1;
-      }
-    } else {
-      for (const todo of targets) {
-        const updated = await updateTodo(todo.id, { date: today });
-        if (updated) imported += 1;
-      }
-    }
-
-    return {
-      total: yesterdayIncomplete.length,
-      imported,
-      skipped: yesterdayIncomplete.length - targets.length,
-      mode,
-    };
-  }, [addTodo, getTodosByDate, getYesterdayTodos, updateTodo]);
+        })),
+      moveTodo: async (todo) => Boolean(await updateTodo(todo.id, { date: today })),
+    });
+  }, [addTodo, getOverdueIncompleteTodos, getTodosByDate, updateTodo]);
   const getMonthTodos = useCallback(() => {
     const days = getMonthGrid().map(toDateKey);
     return todos.filter((todo) => days.some((day) => todoOccursOnDate(todo, day)));
@@ -229,6 +215,7 @@ export function useTodos() {
     if (filters.categoryId === "uncategorized") result = result.filter((todo) => !todo.categoryId);
     else if (filters.categoryId) result = result.filter((todo) => todo.categoryId === filters.categoryId);
     if (filters.repeat !== "ALL") result = result.filter((todo) => todo.repeat === filters.repeat);
+    if (filters.duplicatesOnly) result = result.filter((todo) => duplicateTodoIds.has(todo.id));
     if (filters.date) result = result.filter((todo) => todoOccursOnDate(todo, filters.date));
 
     return [...result].sort((a, b) => {
@@ -237,7 +224,7 @@ export function useTodos() {
       if (filters.sort === "DATE_ASC") return a.date.localeCompare(b.date);
       return b.createdAt.localeCompare(a.createdAt);
     });
-  }, [allTodos, archivedTodos, todos]);
+  }, [allTodos, archivedTodos, duplicateTodoIds, todos]);
 
   const stats = useMemo(() => {
     const todayTodos = getTodayTodos();
@@ -261,6 +248,7 @@ export function useTodos() {
     todos,
     archivedTodos,
     tagOptions,
+    duplicateTodoIds,
     stats,
     loading,
     saving,
@@ -276,10 +264,10 @@ export function useTodos() {
     removeCategoryFromTodos,
     getTodosByDate,
     getTodayTodos,
-    getYesterdayTodos,
+    getOverdueIncompleteTodos,
     getWeekTodos,
     getMonthTodos,
     filterTodos,
-    bringYesterdayTodosToToday,
+    bringOverdueTodosToToday,
   };
 }

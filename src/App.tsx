@@ -16,7 +16,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
   const planner = usePlannerData();
 
   const todayTodos = useMemo(() => planner.getTodayTodos(), [planner]);
-  const yesterdayActiveTodos = useMemo(() => planner.getYesterdayTodos().filter((todo) => !todo.completed), [planner]);
+  const overdueIncompleteTodos = useMemo(() => planner.getOverdueIncompleteTodos(), [planner]);
   const weekTodos = useMemo(() => planner.getWeekTodos(), [planner]);
 
   const content = {
@@ -33,8 +33,8 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
         onUpdateCategory={planner.updateCategory}
         onDeleteCategory={planner.deleteCategory}
         onReorderCategories={planner.reorderCategories}
-        yesterdayActiveCount={yesterdayActiveTodos.length}
-        onBringYesterdayTodos={planner.bringYesterdayTodosToToday}
+        overdueTodos={overdueIncompleteTodos}
+        onBringOverdueTodos={planner.bringOverdueTodosToToday}
       />
     ),
     week: (
@@ -76,6 +76,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
         filterTodos={planner.filterTodos}
         tagOptions={planner.tagOptions}
         categories={planner.categories}
+        duplicateTodoIds={planner.duplicateTodoIds}
         onToggle={planner.toggleTodo}
         onDelete={planner.deleteTodo}
         onUpdate={planner.updateTodo}
