@@ -244,7 +244,12 @@ export function WeeklyView({
 
                   <div className="mt-2 border-t border-ink-700/70 pt-2">
                     {addingDate === dateKey ? (
-                      <InlineTodoAdd defaultDate={dateKey} onAdd={onAdd} onCancel={() => setAddingDate(null)} />
+                      <InlineTodoAdd
+                        defaultDate={dateKey}
+                        layout="stacked"
+                        onAdd={onAdd}
+                        onCancel={() => setAddingDate(null)}
+                      />
                     ) : (
                       <button
                         type="button"
