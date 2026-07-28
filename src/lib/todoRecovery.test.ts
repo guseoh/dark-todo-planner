@@ -103,7 +103,7 @@ describe("Todo page recovery", () => {
       date: "2026-07-22",
       createdAt: "2026-07-22T09:00:00Z",
     });
-    const moveTodo = vi.fn(async () => true);
+    const moveTodo = vi.fn(async (_item: Todo) => true);
 
     const result = await importSelectedOverdueTodos({
       overdueTodos: [older, newer],
