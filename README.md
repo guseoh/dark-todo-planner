@@ -80,6 +80,8 @@ npm run deploy:production
 
 두 환경은 별도 D1 binding을 사용하고 무료 `workers.dev` 주소에 배포됩니다.
 
+배포 전 검증, 환경별 health·핵심 CRUD 확인, 수동 Worker 롤백 절차는 [Worker 배포 및 롤백 Runbook](docs/runbook/deploy-rollback.md)을 따르세요.
+
 ## D1 백업 및 복구
 
 원격 D1 SQL export는 환경별로 실행하며, 생성 파일은 커밋되지 않는 `backups/d1/` 아래에 저장됩니다.
