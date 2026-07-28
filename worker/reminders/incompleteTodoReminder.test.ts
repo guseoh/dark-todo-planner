@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
+import { USER_ID } from "../auth";
 import {
   buildDiscordReminderPayload,
+  createD1NotificationStore,
   executeIncompleteTodoReminder,
   getReminderPlannerDate,
+  loadReminderTodos,
   selectIncompleteTodoReminderTargets,
   type ReminderTodo,
 } from "./incompleteTodoReminder";
@@ -27,12 +30,44 @@ const createStore = () => {
       claims.set(key, id);
       return id;
     }),
-    markSent: vi.fn(async () => undefined),
+    markSent: vi.fn(async () => true),
     release: vi.fn(async (claimId: string) => {
       const entry = [...claims.entries()].find(([, id]) => id === claimId);
       if (entry) claims.delete(entry[0]);
     }),
   };
+};
+
+type DbCall = {
+  sql: string;
+  bindings: unknown[];
+  operation: "run" | "all";
+};
+
+const createD1Mock = (runChanges: number[] = []) => {
+  const calls: DbCall[] = [];
+  let runIndex = 0;
+  const db = {
+    prepare(sql: string) {
+      return {
+        bind(...bindings: unknown[]) {
+          return {
+            async run() {
+              calls.push({ sql, bindings, operation: "run" });
+              const changes = runChanges[runIndex] ?? 0;
+              runIndex += 1;
+              return { meta: { changes } };
+            },
+            async all() {
+              calls.push({ sql, bindings, operation: "all" });
+              return { results: [] };
+            },
+          };
+        },
+      };
+    },
+  } as unknown as D1Database;
+  return { db, calls };
 };
 
 describe("reminder planner date", () => {
@@ -103,6 +138,30 @@ describe("Discord reminder payload", () => {
   });
 });
 
+describe("D1 reminder storage", () => {
+  it("cleans only older pending claims and preserves the current planner date claim", async () => {
+    const { db, calls } = createD1Mock([0, 1]);
+    const store = createD1NotificationStore(db);
+
+    const claimId = await store.claim("2026-07-28", "discord", new Date("2026-07-28T12:00:00Z"));
+
+    expect(claimId).not.toBeNull();
+    expect(calls[0].sql).toContain("planner_date < ?");
+    expect(calls[0].sql).not.toContain("updated_at <");
+    expect(calls[0].bindings).toEqual(["2026-07-28", "discord"]);
+  });
+
+  it("loads reminder Todos only for the single user and binds the planner date second", async () => {
+    const { db, calls } = createD1Mock();
+
+    await loadReminderTodos(db, "2026-07-28");
+
+    expect(calls[0].operation).toBe("all");
+    expect(calls[0].sql).toContain("user_id = ?");
+    expect(calls[0].bindings).toEqual([USER_ID, "2026-07-28"]);
+  });
+});
+
 describe("reminder execution", () => {
   it("does not claim or send when there are no incomplete Todos", async () => {
     const store = createStore();
@@ -157,7 +216,7 @@ describe("reminder execution", () => {
     expect(send).toHaveBeenCalledTimes(1);
   });
 
-  it("releases a failed claim so the same day can be retried", async () => {
+  it("releases a failed webhook claim so the same day can be retried", async () => {
     const store = createStore();
     const send = vi
       .fn<() => Promise<void>>()
@@ -177,5 +236,45 @@ describe("reminder execution", () => {
     expect(await executeIncompleteTodoReminder(input)).toEqual({ status: "sent", count: 1 });
     expect(store.release).toHaveBeenCalledTimes(1);
     expect(send).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the claim when Discord sent successfully but markSent throws", async () => {
+    const store = createStore();
+    store.markSent.mockRejectedValueOnce(new Error("D1 unavailable"));
+    const send = vi.fn(async () => undefined);
+    const logError = vi.fn();
+    const input = {
+      webhookUrl: "configured",
+      plannerDate: "2026-07-28",
+      now: new Date("2026-07-28T12:00:00Z"),
+      loadTodos: async () => [todo("one")],
+      store,
+      send,
+      logError,
+    };
+
+    expect(await executeIncompleteTodoReminder(input)).toEqual({ status: "sent-unconfirmed", count: 1 });
+    expect(await executeIncompleteTodoReminder(input)).toEqual({ status: "duplicate", count: 1 });
+    expect(store.release).not.toHaveBeenCalled();
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(logError).toHaveBeenCalledWith(expect.not.stringContaining("https://"));
+  });
+
+  it("keeps the claim when markSent updates no row", async () => {
+    const store = createStore();
+    store.markSent.mockResolvedValueOnce(false);
+
+    const result = await executeIncompleteTodoReminder({
+      webhookUrl: "configured",
+      plannerDate: "2026-07-28",
+      now: new Date("2026-07-28T12:00:00Z"),
+      loadTodos: async () => [todo("one")],
+      store,
+      send: vi.fn(async () => undefined),
+      logError: vi.fn(),
+    });
+
+    expect(result).toEqual({ status: "sent-unconfirmed", count: 1 });
+    expect(store.release).not.toHaveBeenCalled();
   });
 });
