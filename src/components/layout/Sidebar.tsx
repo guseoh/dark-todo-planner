@@ -9,7 +9,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type AppView =
   | "today"
@@ -32,7 +32,7 @@ const navItems = [
   { id: "all", label: "전체 Todo", icon: ClipboardList },
   { id: "reflection", label: "회고", icon: NotebookPen },
   { id: "memo", label: "메모", icon: StickyNote },
-  { id: "settings", label: "설정", icon: Settings },
+  { id: "settings", label: "앱 정보", icon: Settings },
 ] satisfies Array<{ id: AppView; label: string; icon: typeof CalendarCheck }>;
 
 const SIDEBAR_COLLAPSED_KEY = "dark-todo-planner:sidebar-collapsed";
@@ -44,10 +44,20 @@ const readInitialCollapsed = () => {
 
 export function Sidebar({ activeView, onChangeView }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(readInitialCollapsed);
+  const activeMobileItemRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
   }, [collapsed]);
+
+  useEffect(() => {
+    if (!window.matchMedia("(max-width: 1023px)").matches) return;
+    activeMobileItemRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [activeView]);
 
   return (
     <>
@@ -74,6 +84,7 @@ export function Sidebar({ activeView, onChangeView }: SidebarProps) {
                 type="button"
                 onClick={() => onChangeView(item.id)}
                 aria-label={item.label}
+                aria-current={active ? "page" : undefined}
                 className={`group relative flex min-h-11 w-full items-center rounded-lg border text-sm font-semibold transition ${
                   active
                     ? "border-accent-500/50 bg-accent-500/20 text-ink-100"
@@ -94,24 +105,30 @@ export function Sidebar({ activeView, onChangeView }: SidebarProps) {
       </aside>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-700 bg-ink-950/95 px-2 py-2 backdrop-blur-xl lg:hidden">
-        <div className="flex gap-1 overflow-x-auto pb-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = activeView === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => onChangeView(item.id)}
-                className={`flex min-h-14 min-w-16 flex-col items-center justify-center gap-1 rounded-lg px-2 text-[11px] font-semibold transition ${
-                  active ? "bg-accent-500 text-white" : "text-ink-400 hover:bg-ink-800 hover:text-ink-100"
-                }`}
-              >
-                <Icon size={18} />
-                <span className="truncate">{item.label}</span>
-              </button>
-            );
-          })}
+        <div className="relative">
+          <div className="flex gap-1 overflow-x-auto pb-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = activeView === item.id;
+              return (
+                <button
+                  key={item.id}
+                  ref={active ? activeMobileItemRef : null}
+                  type="button"
+                  onClick={() => onChangeView(item.id)}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex min-h-14 min-w-16 flex-col items-center justify-center gap-1 rounded-lg px-2 text-[11px] font-semibold transition ${
+                    active ? "bg-accent-500 text-white" : "text-ink-400 hover:bg-ink-800 hover:text-ink-100"
+                  }`}
+                >
+                  <Icon size={18} />
+                  <span className="truncate">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 w-5 bg-gradient-to-r from-ink-950 to-transparent" />
+          <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-5 bg-gradient-to-l from-ink-950 to-transparent" />
         </div>
       </nav>
     </>
