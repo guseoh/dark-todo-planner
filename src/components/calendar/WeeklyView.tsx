@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { CalendarCheck2, Plus, Trash2 } from "lucide-react";
-import { calculateRate } from "../../lib/todo";
+import { calculateRate, formatCompletionRate } from "../../lib/todo";
 import { formatKoreanDate, getWeekDays, toDateKey, todayKey } from "../../lib/date";
 import type { Todo, TodoInput } from "../../types/todo";
 import type { Category } from "../../types/category";
@@ -84,7 +84,12 @@ export function WeeklyView({
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 lg:min-w-[34rem]">
             <div>
               <dt className="text-[11px] font-semibold text-ink-500">Todo 완료율</dt>
-              <dd className="mt-1 text-lg font-bold text-ink-100">{weekRate}%</dd>
+              <dd
+                className="mt-1 text-lg font-bold text-ink-100"
+                aria-label={todos.length ? `Todo 완료율 ${weekRate}%` : "Todo 완료율 계산 대상 없음"}
+              >
+                {formatCompletionRate(todos.length, weekRate)}
+              </dd>
             </div>
             <div>
               <dt className="text-[11px] font-semibold text-ink-500">주간 목표</dt>
@@ -138,11 +143,14 @@ export function WeeklyView({
               const expanded = expandedDates.has(dateKey);
               const visibleTodos = expanded ? dayTodos : dayTodos.slice(0, 6);
               const hiddenCount = Math.max(dayTodos.length - visibleTodos.length, 0);
+              const hasDayContent = dayTodos.length > 0 || dayGoals.length > 0 || addingDate === dateKey;
 
               return (
                 <article
                   key={dateKey}
-                  className={`flex min-h-64 min-w-0 flex-col rounded-xl border p-3 transition ${weekendClass(index)} ${
+                  className={`flex min-w-0 flex-col rounded-xl border p-3 transition ${
+                    hasDayContent ? "min-h-64" : "min-h-44"
+                  } ${weekendClass(index)} ${
                     isToday ? "ring-2 ring-accent-500/45" : ""
                   }`}
                 >
@@ -163,7 +171,7 @@ export function WeeklyView({
                     완료 {completedCount}개{dayGoals.length ? ` · 목표 ${dayGoals.length}개` : ""}
                   </p>
 
-                  <div className="min-h-0 flex-1 space-y-1.5">
+                  <div className={`${hasDayContent ? "min-h-0 flex-1" : ""} space-y-1.5`}>
                     {visibleTodos.length ? (
                       visibleTodos.map((todo) => (
                         <div key={todo.id} className="min-w-0 rounded-lg border border-ink-800 bg-ink-950/35 p-1 hover:border-ink-600">
@@ -218,7 +226,7 @@ export function WeeklyView({
                         </div>
                       ))
                     ) : (
-                      <div className="rounded-lg border border-dashed border-ink-800 bg-ink-950/25 px-3 py-3 text-center">
+                      <div className="rounded-lg border border-dashed border-ink-800 bg-ink-950/25 px-3 py-2 text-center">
                         <p className="text-xs font-semibold text-ink-500">계획 없음</p>
                       </div>
                     )}
@@ -242,7 +250,7 @@ export function WeeklyView({
                     ) : null}
                   </div>
 
-                  <div className="mt-2 border-t border-ink-700/70 pt-2">
+                  <div className={`${hasDayContent ? "mt-2" : "mt-auto"} border-t border-ink-700/70 pt-2`}>
                     {addingDate === dateKey ? (
                       <InlineTodoAdd
                         defaultDate={dateKey}
@@ -253,7 +261,9 @@ export function WeeklyView({
                     ) : (
                       <button
                         type="button"
-                        className="flex min-h-10 w-full items-center justify-center gap-1 rounded-lg border border-dashed border-ink-700 px-2 text-xs font-semibold text-ink-400 transition hover:border-accent-500/60 hover:bg-ink-900/60 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40"
+                        className={`flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-ink-700 px-2 text-xs font-semibold text-ink-400 transition hover:border-accent-500/60 hover:bg-ink-900/60 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 ${
+                          hasDayContent ? "min-h-10" : "min-h-9"
+                        }`}
                         onClick={() => setAddingDate(dateKey)}
                       >
                         <Plus size={13} /> 추가
