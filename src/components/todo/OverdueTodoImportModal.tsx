@@ -76,7 +76,7 @@ export function OverdueTodoImportModal({ todos, onImport, onClose }: OverdueTodo
     >
       <div className="space-y-4">
         <p className="text-xs text-ink-500">
-          같은 제목·카테고리의 중복 후보는 가장 최근 항목만 기본 선택됩니다. 다른 항목도 직접 선택할 수 있습니다.
+          같은 제목·카테고리의 중복 후보는 가장 최근 항목만 기본 선택됩니다. 여러 항목을 선택하면 최신 항목을 먼저 처리하고, 성공한 동일 그룹의 나머지는 건너뜁니다.
         </p>
 
         <div className="max-h-[55vh] space-y-4 overflow-y-auto pr-1">
