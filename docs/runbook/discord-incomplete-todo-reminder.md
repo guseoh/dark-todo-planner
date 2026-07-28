@@ -15,7 +15,7 @@ Webhook 값은 저장소 파일, 문서, 로그, CI 변수 예시에 기록하�
 
 ## 알림 대상
 
-- 보관되지 않고 완료되지 않은 Todo
+- `single-user` 소유이며 보관되지 않고 완료되지 않은 Todo
 - 일정이 planner today 이전이거나 같은 비반복 Todo
 - 오늘 실제 발생하는 반복 Todo
 
@@ -23,7 +23,13 @@ Webhook 값은 저장소 파일, 문서, 로그, CI 변수 예시에 기록하�
 
 ## 중복 전송과 실패
 
-`notification_send_records`는 planner date와 provider(`discord`) 조합을 한 번만 `SENT`로 기록합니다. 동일 날짜 cron이 중복 실행되어도 다시 보내지 않습니다. 전송 실패 시 임시 claim을 제거하므로 같은 날 재실행할 수 있습니다.
+`notification_send_records`는 planner date와 provider(`discord`) 조합을 한 번만 claim합니다. 동일 날짜 cron이 중복 실행되어도 다시 보내지 않습니다.
+
+- Discord 전송 자체가 실패하면 해당 claim을 제거해 같은 날 재시도할 수 있습니다.
+- Discord 전송은 성공했지만 D1의 `SENT` 갱신이 실패하면 claim을 유지합니다. 이 상태는 `sent-unconfirmed`로 기록하며 같은 날 재전송하지 않습니다.
+- 현재 planner date의 `PENDING` claim은 시간만으로 삭제하지 않습니다. 더 오래된 날짜의 `PENDING` 기록은 다음 날짜 claim 과정에서 정리합니다.
+
+Discord Webhook 전송과 D1 상태 갱신은 하나의 원자적 트랜잭션으로 묶을 수 없습니다. 개인용 하루 한 번 알림에서는 드문 확인 기록 실패 시 재전송보다 중복 알림 방지를 우선합니다.
 
 Webhook Secret이 없으면 알림을 보내지 않고 안전한 로그만 남깁니다. 실패 로그에는 webhook URL이나 Discord 응답 본문을 기록하지 않습니다.
 
