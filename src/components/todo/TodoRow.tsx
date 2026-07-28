@@ -43,14 +43,20 @@ export function TodoRow({
         <button
           type="button"
           onClick={() => onToggle(todo.id)}
-          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${
-            todo.completed
-              ? "border-success bg-success text-ink-950"
-              : "border-ink-600 text-transparent hover:border-accent-400"
-          }`}
-          aria-label={todo.completed ? "미완료로 변경" : "완료로 변경"}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md transition hover:bg-ink-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40"
+          aria-label={todo.completed ? `"${todo.title}" 미완료로 변경` : `"${todo.title}" 완료로 변경`}
+          title={todo.completed ? "미완료로 변경" : "완료로 변경"}
         >
-          <CheckCircle2 size={13} />
+          <span
+            className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${
+              todo.completed
+                ? "border-success bg-success text-ink-950"
+                : "border-ink-600 text-transparent"
+            }`}
+            aria-hidden="true"
+          >
+            <CheckCircle2 size={13} />
+          </span>
         </button>
 
         <button type="button" className="min-w-0 flex-1 text-left" onClick={() => onEdit(todo)}>
@@ -96,21 +102,21 @@ export function TodoRow({
           </div>
         </button>
 
-        <div className="flex shrink-0 flex-wrap justify-end gap-1 opacity-100 sm:opacity-70 sm:transition sm:group-hover:opacity-100">
+        <div className="flex shrink-0 flex-wrap justify-end gap-1.5 opacity-100 sm:opacity-70 sm:transition sm:group-hover:opacity-100">
           {todo.archived && onUnarchive ? (
-            <button type="button" className="icon-btn min-h-7 min-w-7 rounded-md" onClick={() => onUnarchive(todo.id)} aria-label="보관 해제">
+            <button type="button" className="icon-btn min-h-9 min-w-9 rounded-md" onClick={() => onUnarchive(todo.id)} aria-label={`"${todo.title}" 보관 해제`}>
               <RotateCcw size={13} />
             </button>
           ) : null}
           {!todo.archived && todo.completed && onArchive ? (
-            <button type="button" className="icon-btn min-h-7 min-w-7 rounded-md" onClick={() => onArchive(todo.id)} aria-label="Todo 보관">
+            <button type="button" className="icon-btn min-h-9 min-w-9 rounded-md" onClick={() => onArchive(todo.id)} aria-label={`"${todo.title}" Todo 보관`}>
               <Archive size={13} />
             </button>
           ) : null}
-          <button type="button" className="icon-btn min-h-7 min-w-7 rounded-md" onClick={() => onEdit(todo)} aria-label="Todo 수정">
+          <button type="button" className="icon-btn min-h-9 min-w-9 rounded-md" onClick={() => onEdit(todo)} aria-label={`"${todo.title}" Todo 수정`}>
             <Pencil size={13} />
           </button>
-          <button type="button" className="icon-btn min-h-7 min-w-7 rounded-md hover:border-red-400 hover:text-red-200" onClick={handleDelete} aria-label="Todo 삭제">
+          <button type="button" className="icon-btn min-h-9 min-w-9 rounded-md hover:border-red-400 hover:text-red-200" onClick={handleDelete} aria-label={`"${todo.title}" Todo 삭제`}>
             <Trash2 size={13} />
           </button>
         </div>
