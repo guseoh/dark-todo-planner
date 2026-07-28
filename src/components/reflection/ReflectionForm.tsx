@@ -1,22 +1,10 @@
 import { FormEvent, useEffect, useState } from "react";
-import { createId } from "../../lib/id";
 import { todayKey } from "../../lib/date";
 import type { Reflection, ReflectionSection, ReflectionType } from "../../types/reflection";
 import { MarkdownEditor } from "../editor/MarkdownEditor";
+import { buildInitialReflectionSections, changeReflectionType } from "./reflectionFormState";
 
-const templates: Record<ReflectionType, string[]> = {
-  DAILY: ["오늘 잘한 점", "아쉬운 점", "내일 할 일"],
-  WEEKLY: ["이번 주 완료한 것", "이번 주 아쉬웠던 것", "다음 주 목표"],
-  MONTHLY: ["이번 달 잘한 점", "이번 달 아쉬웠던 점", "다음 달 목표"],
-};
-
-const createSections = (type: ReflectionType, current: ReflectionSection[] = []): ReflectionSection[] =>
-  templates[type].map((title, order) => ({
-    id: current[order]?.id || createId(),
-    title,
-    content: current[order]?.content || "",
-    order,
-  }));
+const saveErrorMessage = "회고를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.";
 
 export function ReflectionForm({
   initial,
@@ -24,7 +12,7 @@ export function ReflectionForm({
   onSubmit,
   onCancel,
 }: {
-  initial?: Pick<Reflection, "date" | "type" | "sections">;
+  initial?: Pick<Reflection, "date" | "type" | "sections" | "content">;
   submitLabel?: string;
   onSubmit: (input: { date: string; type: ReflectionType; sections: ReflectionSection[]; content?: string }) => unknown | Promise<unknown>;
   onCancel: () => void;
@@ -32,18 +20,16 @@ export function ReflectionForm({
   const initialType = initial?.type || "DAILY";
   const [type, setType] = useState<ReflectionType>(initialType);
   const [date, setDate] = useState(initial?.date || todayKey());
-  const [sections, setSections] = useState<ReflectionSection[]>(
-    initial?.sections.length ? initial.sections.map((section) => ({ ...section })) : createSections(initialType),
-  );
+  const [sections, setSections] = useState<ReflectionSection[]>(buildInitialReflectionSections(initial));
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
     const nextType = initial?.type || "DAILY";
     setType(nextType);
     setDate(initial?.date || todayKey());
-    setSections(
-      initial?.sections.length ? initial.sections.map((section) => ({ ...section })) : createSections(nextType),
-    );
+    setSections(buildInitialReflectionSections(initial));
+    setSubmitError("");
   }, [initial]);
 
   const canSubmit = Boolean(date && sections.some((section) => section.content.trim()));
@@ -52,6 +38,7 @@ export function ReflectionForm({
     event.preventDefault();
     if (!canSubmit || submitting) return;
     setSubmitting(true);
+    setSubmitError("");
     try {
       await onSubmit({
         date,
@@ -59,6 +46,8 @@ export function ReflectionForm({
         sections,
         content: sections.map((section) => `${section.title}\n${section.content}`).join("\n\n"),
       });
+    } catch {
+      setSubmitError(saveErrorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -75,7 +64,7 @@ export function ReflectionForm({
             onChange={(event) => {
               const nextType = event.target.value as ReflectionType;
               setType(nextType);
-              setSections((current) => createSections(nextType, current));
+              setSections((current) => changeReflectionType(current, nextType));
             }}
           >
             <option value="DAILY">일간 회고</option>
@@ -108,6 +97,11 @@ export function ReflectionForm({
           />
         ))}
       </div>
+      {submitError ? (
+        <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-red-100">
+          {submitError}
+        </p>
+      ) : null}
       <p className="text-xs text-ink-500">한 개 이상의 항목을 작성하면 저장할 수 있습니다. 비워 둔 항목은 그대로 유지됩니다.</p>
       <div className="flex flex-col-reverse gap-2 border-t border-ink-700 pt-4 sm:flex-row sm:justify-end">
         <button type="button" className="btn-secondary justify-center" onClick={onCancel} disabled={submitting}>

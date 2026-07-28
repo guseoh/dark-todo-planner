@@ -3,6 +3,7 @@ import type { Reflection } from "../types/reflection";
 import { api, apiAllPages, jsonBody } from "../lib/api/client";
 
 const getMessage = (error: unknown) => (error instanceof Error ? error.message : "회고 요청 처리 중 오류가 발생했습니다.");
+const saveErrorMessage = "회고를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.";
 
 type ReflectionInput = {
   date: string;
@@ -40,8 +41,8 @@ export function useReflections() {
       setError("");
       return result.reflection;
     } catch (err) {
-      setError(getMessage(err));
-      return undefined;
+      setError(saveErrorMessage);
+      throw err;
     } finally {
       setSaving(false);
     }
@@ -60,8 +61,8 @@ export function useReflections() {
       setError("");
       return result.reflection;
     } catch (err) {
-      setError(getMessage(err));
-      return undefined;
+      setError(saveErrorMessage);
+      throw err;
     } finally {
       setSaving(false);
     }
