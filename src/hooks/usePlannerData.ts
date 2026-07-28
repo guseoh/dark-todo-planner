@@ -5,6 +5,7 @@ import { useGoals } from "./useGoals";
 import { useMemos } from "./useMemos";
 import { useReflections } from "./useReflections";
 import { useTodos } from "./useTodos";
+import { classifyPlannerErrors } from "../lib/plannerLoadState";
 
 const getMessage = (error: unknown) => (error instanceof Error ? error.message : "요청 처리 중 오류가 발생했습니다.");
 
@@ -15,10 +16,12 @@ export function usePlannerData() {
   const goalsState = useGoals();
   const memosState = useMemos();
   const [loading, setLoading] = useState(true);
+  const [loadedOnce, setLoadedOnce] = useState(false);
   const [loadError, setLoadError] = useState("");
 
   const loadAll = useCallback(async () => {
     setLoading(true);
+    setLoadError("");
     try {
       await Promise.all([
         categoriesState.loadCategories(),
@@ -27,6 +30,7 @@ export function usePlannerData() {
         goalsState.loadGoals(),
         memosState.loadMemos(),
       ]);
+      setLoadedOnce(true);
       setLoadError("");
     } catch (err) {
       setLoadError(getMessage(err));
@@ -79,13 +83,17 @@ export function usePlannerData() {
     ],
   );
 
-  const error =
-    loadError ||
+  const operationError =
     todosState.error ||
     categoriesState.error ||
     reflectionsState.error ||
     goalsState.error ||
     memosState.error;
+  const { initialLoadError, backgroundOrOperationError } = classifyPlannerErrors({
+    loadedOnce,
+    loadError,
+    operationError,
+  });
 
   return {
     categories: categoriesState.categories,
@@ -98,8 +106,11 @@ export function usePlannerData() {
     goals: goalsState.goals,
     memos: memosState.memos,
     loading,
+    loadedOnce,
     saving,
-    error,
+    initialLoadError,
+    backgroundOrOperationError,
+    connectionError: loadError,
     stats: todosState.stats,
     nearestGoal: goalsState.nearestGoal,
     recentReflection: reflectionsState.recentReflection,
