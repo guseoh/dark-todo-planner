@@ -56,7 +56,11 @@ export function useTodos() {
       const pendingIds = new Set(deletedSnapshotsRef.current.keys());
       const loaded = dedupeTodosById(await apiAllPages<Todo>("/api/todos?archived=all", "todos"))
         .filter((todo) => !pendingIds.has(todo.id))
-        .map((todo) => ({ planningState: "SCHEDULED" as const, workflowStatus: todo.completed ? "DONE" as const : "TODO" as const, ...todo }));
+        .map((todo) => ({
+          ...todo,
+          planningState: todo.planningState || "SCHEDULED",
+          workflowStatus: todo.workflowStatus || (todo.completed ? "DONE" : "TODO"),
+        }));
       setAllTodos(loaded);
       setError("");
       return loaded;

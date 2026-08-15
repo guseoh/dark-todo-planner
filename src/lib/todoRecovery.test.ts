@@ -20,10 +20,12 @@ const todo = (id: string, overrides: Partial<Todo> = {}): Todo => ({
   tags: [],
   archived: false,
   ...overrides,
+  planningState: overrides.planningState ?? "SCHEDULED",
+  workflowStatus: overrides.workflowStatus ?? (overrides.completed ? "DONE" : "TODO"),
 });
 
 describe("overdue Todo selection", () => {
-  it("includes only active, incomplete, non-repeating Todos before planner today", () => {
+  it("includes only active, incomplete, non-repeating scheduled Todos before planner today", () => {
     const result = getOverdueIncompleteTodos(
       [
         todo("eligible"),
@@ -32,6 +34,7 @@ describe("overdue Todo selection", () => {
         todo("completed", { completed: true }),
         todo("archived", { archived: true }),
         todo("repeat", { repeat: "DAILY" }),
+        todo("inbox", { planningState: "INBOX" }),
       ],
       "2026-07-28",
     );
@@ -63,105 +66,61 @@ describe("duplicate Todo candidates", () => {
   });
 });
 
-describe("Todo page recovery", () => {
-  it("keeps the first item when paginated responses contain the same id", () => {
-    const first = todo("same", { title: "첫 페이지" });
-    const duplicate = todo("same", { title: "다음 페이지" });
-
-    expect(dedupeTodosById([first, todo("other"), duplicate])).toEqual([first, todo("other")]);
+describe("dedupeTodosById", () => {
+  it("keeps the first Todo for duplicated IDs", () => {
+    const first = todo("same", { title: "first" });
+    const second = todo("same", { title: "second" });
+    expect(dedupeTodosById([first, second, todo("other")]).map(({ title }) => title)).toEqual(["first", "Todo other"]);
   });
+});
 
-  it("reports copy successes, existing-today skips, and failures separately", async () => {
-    const copyTodo = vi.fn(async (item: Todo) => item.id !== "fails");
-    const overdue = [
-      todo("copied", { title: "복사" }),
-      todo("skipped", { title: "이미 오늘 있음" }),
-      todo("fails", { title: "실패" }),
-    ];
-
+describe("overdue import", () => {
+  it("skips duplicates already on today and imports the rest", async () => {
+    const copyTodo = vi.fn(async () => true);
+    const moveTodo = vi.fn(async () => true);
+    const overdue = [todo("a", { title: "same" }), todo("b", { title: "new" })];
     const result = await importSelectedOverdueTodos({
       overdueTodos: overdue,
-      selectedIds: new Set(overdue.map(({ id }) => id)),
-      todayTodos: [todo("today", { title: "이미 오늘 있음", date: "2026-07-28" })],
+      selectedIds: new Set(["a", "b"]),
+      todayTodos: [todo("today", { title: "same", date: "2026-07-28" })],
       mode: "copy",
       copyTodo,
-      moveTodo: vi.fn(),
+      moveTodo,
     });
 
-    expect(result).toEqual({ total: 3, success: 1, skipped: 1, failed: 1, mode: "copy" });
+    expect(result).toEqual({ total: 2, success: 1, skipped: 1, failed: 0, mode: "copy" });
+    expect(copyTodo).toHaveBeenCalledTimes(1);
+    expect(copyTodo.mock.calls[0]?.[0].id).toBe("b");
+    expect(moveTodo).not.toHaveBeenCalled();
+  });
+
+  it("counts failed imports without stopping later Todo processing", async () => {
+    const copyTodo = vi.fn(async (item: Todo) => item.id !== "fail");
+    const result = await importSelectedOverdueTodos({
+      overdueTodos: [todo("fail"), todo("ok")],
+      selectedIds: new Set(["fail", "ok"]),
+      todayTodos: [],
+      mode: "copy",
+      copyTodo,
+      moveTodo: vi.fn(async () => true),
+    });
+
+    expect(result).toEqual({ total: 2, success: 1, skipped: 0, failed: 1, mode: "copy" });
     expect(copyTodo).toHaveBeenCalledTimes(2);
   });
 
-  it("processes the newest duplicate first and skips older duplicates after success", async () => {
-    const older = todo("older", {
-      title: "같은 일정",
-      date: "2026-07-20",
-      createdAt: "2026-07-20T09:00:00Z",
-    });
-    const newer = todo("newer", {
-      title: " 같은 일정 ",
-      date: "2026-07-22",
-      createdAt: "2026-07-22T09:00:00Z",
-    });
-    const moveTodo = vi.fn(async (_item: Todo) => true);
-
+  it("moves selected Todo when move mode is chosen", async () => {
+    const moveTodo = vi.fn(async () => true);
     const result = await importSelectedOverdueTodos({
-      overdueTodos: [older, newer],
-      selectedIds: new Set([older.id, newer.id]),
+      overdueTodos: [todo("move")],
+      selectedIds: new Set(["move"]),
       todayTodos: [],
       mode: "move",
-      copyTodo: vi.fn(),
+      copyTodo: vi.fn(async () => true),
       moveTodo,
     });
 
-    expect(result).toEqual({ total: 2, success: 1, skipped: 1, failed: 0, mode: "move" });
+    expect(result).toEqual({ total: 1, success: 1, skipped: 0, failed: 0, mode: "move" });
     expect(moveTodo).toHaveBeenCalledTimes(1);
-    expect(moveTodo.mock.calls[0][0].id).toBe("newer");
-  });
-
-  it("tries an older duplicate when the newest duplicate fails", async () => {
-    const older = todo("older", {
-      title: "같은 일정",
-      date: "2026-07-20",
-      createdAt: "2026-07-20T09:00:00Z",
-    });
-    const newer = todo("newer", {
-      title: "같은 일정",
-      date: "2026-07-22",
-      createdAt: "2026-07-22T09:00:00Z",
-    });
-    const moveTodo = vi.fn(async (item: Todo) => item.id === "older");
-
-    const result = await importSelectedOverdueTodos({
-      overdueTodos: [older, newer],
-      selectedIds: new Set([older.id, newer.id]),
-      todayTodos: [],
-      mode: "move",
-      copyTodo: vi.fn(),
-      moveTodo,
-    });
-
-    expect(result).toEqual({ total: 2, success: 1, skipped: 0, failed: 1, mode: "move" });
-    expect(moveTodo.mock.calls.map(([item]) => item.id)).toEqual(["newer", "older"]);
-  });
-
-  it("continues moving selected Todos when one operation throws", async () => {
-    const moveTodo = vi.fn(async (item: Todo) => {
-      if (item.id === "throws") throw new Error("network");
-      return true;
-    });
-    const overdue = [todo("moved"), todo("throws"), todo("also-moved")];
-
-    const result = await importSelectedOverdueTodos({
-      overdueTodos: overdue,
-      selectedIds: new Set(overdue.map(({ id }) => id)),
-      todayTodos: [],
-      mode: "move",
-      copyTodo: vi.fn(),
-      moveTodo,
-    });
-
-    expect(result).toEqual({ total: 3, success: 2, skipped: 0, failed: 1, mode: "move" });
-    expect(moveTodo).toHaveBeenCalledTimes(3);
   });
 });

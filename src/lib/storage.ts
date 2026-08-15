@@ -1,14 +1,16 @@
 import type { BackupData } from "../types/backup";
 import type { Goal } from "../types/goal";
 import type { Reflection, ReflectionType } from "../types/reflection";
-import type { Todo, TodoPriority, TodoRepeat } from "../types/todo";
+import type { Todo, TodoPlanningState, TodoPriority, TodoRepeat, TodoWorkflowStatus } from "../types/todo";
 import { LEGACY_STORAGE_KEYS, STORAGE_KEYS } from "./storageKeys";
 
 export const TODO_STORAGE_KEY = STORAGE_KEYS.TODOS;
-export const BACKUP_VERSION = 6;
+export const BACKUP_VERSION = 7;
 
 const priorities: TodoPriority[] = ["LOW", "MEDIUM", "HIGH"];
 const repeats: TodoRepeat[] = ["NONE", "DAILY", "WEEKLY", "MONTHLY", "WEEKDAY", "WEEKEND"];
+const planningStates: TodoPlanningState[] = ["INBOX", "SCHEDULED", "SOMEDAY", "WAITING"];
+const workflowStatuses: TodoWorkflowStatus[] = ["TODO", "IN_PROGRESS", "BLOCKED", "DONE"];
 const reflectionTypes: ReflectionType[] = ["DAILY", "WEEKLY", "MONTHLY"];
 
 const isString = (value: unknown): value is string => typeof value === "string";
@@ -51,15 +53,28 @@ export const normalizeTodo = (value: unknown): Todo | null => {
   if (!priorities.includes(todo.priority as TodoPriority)) return null;
   if (!isString(todo.createdAt) || !isString(todo.updatedAt)) return null;
 
+  const completed = isBoolean(todo.completed) ? todo.completed : false;
   return {
     id: todo.id,
     title: todo.title,
+    categoryId: normalizeOptional(todo.categoryId),
+    projectId: normalizeOptional(todo.projectId),
+    milestoneId: normalizeOptional(todo.milestoneId),
+    parentTodoId: normalizeOptional(todo.parentTodoId),
     memo: normalizeOptional(todo.memo),
     date: todo.date,
+    dueDate: normalizeOptional(todo.dueDate),
     startTime: normalizeOptional(todo.startTime),
     endTime: normalizeOptional(todo.endTime),
+    estimateMinutes: isNumber(todo.estimateMinutes) && todo.estimateMinutes > 0 ? Math.round(todo.estimateMinutes) : undefined,
+    planningState: planningStates.includes(todo.planningState as TodoPlanningState) ? (todo.planningState as TodoPlanningState) : "SCHEDULED",
+    workflowStatus: completed
+      ? "DONE"
+      : workflowStatuses.includes(todo.workflowStatus as TodoWorkflowStatus)
+        ? (todo.workflowStatus as TodoWorkflowStatus)
+        : "TODO",
     priority: todo.priority as TodoPriority,
-    completed: isBoolean(todo.completed) ? todo.completed : false,
+    completed,
     createdAt: todo.createdAt,
     updatedAt: todo.updatedAt,
     repeat: repeats.includes(todo.repeat as TodoRepeat) ? (todo.repeat as TodoRepeat) : "NONE",
