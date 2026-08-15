@@ -5,7 +5,7 @@ import { categories, milestones, projects, tags, todoTags, todos } from "../db/s
 import { serializeCategory, serializeTodos } from "../serializers";
 import type { Bindings, Variables } from "../types";
 import { newId, normalizeIcon, nowIso, optional, pagination } from "../utils";
-import { categoryInputSchema, todoInputSchema } from "../validation";
+import { bulkTodoUpdateSchema, categoryInputSchema, todoInputSchema } from "../validation";
 
 export const todoRoutes = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -27,9 +27,33 @@ export const deleteTodosByIds = async (db: D1Database, userId: string, ids: stri
   for (let index = 0; index < ids.length; index += BULK_DELETE_CHUNK_SIZE) {
     const chunk = ids.slice(index, index + BULK_DELETE_CHUNK_SIZE);
     const placeholders = chunk.map(() => "?").join(",");
-    statements.push(
-      db.prepare(`DELETE FROM todos WHERE user_id = ? AND id IN (${placeholders})`).bind(userId, ...chunk),
-    );
+    statements.push(db.prepare(`DELETE FROM todos WHERE user_id = ? AND id IN (${placeholders})`).bind(userId, ...chunk));
+  }
+  if (statements.length) await db.batch(statements);
+};
+
+const bulkUpdateTodos = async (
+  db: D1Database,
+  userId: string,
+  ids: string[],
+  action: ReturnType<typeof bulkTodoUpdateSchema.parse>["action"],
+) => {
+  const statements: D1PreparedStatement[] = [];
+  const now = nowIso();
+  for (let index = 0; index < ids.length; index += BULK_DELETE_CHUNK_SIZE) {
+    const chunk = ids.slice(index, index + BULK_DELETE_CHUNK_SIZE);
+    const placeholders = chunk.map(() => "?").join(",");
+    if (action.type === "PROJECT") {
+      statements.push(action.value
+        ? db.prepare(`UPDATE todos SET project_id = ?, milestone_id = NULL, parent_todo_id = NULL, updated_at = ? WHERE user_id = ? AND id IN (${placeholders})`).bind(action.value, now, userId, ...chunk)
+        : db.prepare(`UPDATE todos SET project_id = NULL, milestone_id = NULL, parent_todo_id = NULL, updated_at = ? WHERE user_id = ? AND id IN (${placeholders})`).bind(now, userId, ...chunk));
+    } else if (action.type === "DATE") {
+      statements.push(db.prepare(`UPDATE todos SET date = ?, planning_state = 'SCHEDULED', updated_at = ? WHERE user_id = ? AND id IN (${placeholders})`).bind(action.value, now, userId, ...chunk));
+    } else if (action.type === "WORKFLOW_STATUS") {
+      statements.push(db.prepare(`UPDATE todos SET workflow_status = ?, completed = ?, updated_at = ? WHERE user_id = ? AND id IN (${placeholders})`).bind(action.value, action.value === "DONE" ? 1 : 0, now, userId, ...chunk));
+    } else {
+      statements.push(db.prepare(`UPDATE todos SET priority = ?, updated_at = ? WHERE user_id = ? AND id IN (${placeholders})`).bind(action.value, now, userId, ...chunk));
+    }
   }
   if (statements.length) await db.batch(statements);
 };
@@ -100,15 +124,13 @@ todoRoutes.get("/categories/:id", async (c) => {
 });
 todoRoutes.put("/categories/:id", async (c) => {
   const input = categoryInputSchema.parse(await c.req.json()); const db = drizzle(c.env.DB); const id = c.req.param("id"); const userId = c.get("userId");
-  const [existing] = await db.select().from(categories).where(and(eq(categories.id, id), eq(categories.userId, userId))).limit(1);
-  if (!existing) return c.json({ message: "카테고리를 찾을 수 없습니다." }, 404);
+  const [existing] = await db.select().from(categories).where(and(eq(categories.id, id), eq(categories.userId, userId))).limit(1); if (!existing) return c.json({ message: "카테고리를 찾을 수 없습니다." }, 404);
   await db.update(categories).set({ name: input.name, description: optional(input.description), color: input.color || "#6366f1", icon: normalizeIcon(input.icon), order: input.order ?? existing.order, updatedAt: nowIso() }).where(eq(categories.id, id));
   const [row] = await db.select().from(categories).where(eq(categories.id, id)); return c.json({ category: serializeCategory(row) });
 });
 todoRoutes.delete("/categories/:id", async (c) => {
   const db = drizzle(c.env.DB); const id = c.req.param("id"); const userId = c.get("userId");
-  const [existing] = await db.select({ id: categories.id }).from(categories).where(and(eq(categories.id, id), eq(categories.userId, userId))).limit(1);
-  if (!existing) return c.json({ message: "카테고리를 찾을 수 없습니다." }, 404);
+  const [existing] = await db.select({ id: categories.id }).from(categories).where(and(eq(categories.id, id), eq(categories.userId, userId))).limit(1); if (!existing) return c.json({ message: "카테고리를 찾을 수 없습니다." }, 404);
   if (c.req.query("mode") === "deleteTodos") await db.delete(todos).where(and(eq(todos.userId, userId), eq(todos.categoryId, id)));
   else await db.update(todos).set({ categoryId: null, updatedAt: nowIso() }).where(and(eq(todos.userId, userId), eq(todos.categoryId, id)));
   await db.delete(categories).where(eq(categories.id, id)); return c.json({ ok: true });
@@ -154,13 +176,23 @@ todoRoutes.post("/todos", async (c) => {
 });
 
 todoRoutes.post("/todos/bulk-delete", async (c) => {
-  const { ids: rawIds } = await c.req.json<{ ids?: unknown }>();
-  const ids = normalizeBulkTodoIds(rawIds);
+  const { ids: rawIds } = await c.req.json<{ ids?: unknown }>(); const ids = normalizeBulkTodoIds(rawIds);
   if (!ids.length) return c.json({ message: "삭제할 Todo를 선택해주세요." }, 400);
   if (ids.length > MAX_BULK_DELETE_IDS) return c.json({ message: `한 번에 최대 ${MAX_BULK_DELETE_IDS}개의 Todo를 삭제할 수 있습니다.` }, 400);
-  await deleteTodosByIds(c.env.DB, c.get("userId"), ids);
-  return c.json({ ok: true });
+  await deleteTodosByIds(c.env.DB, c.get("userId"), ids); return c.json({ ok: true });
 });
+
+todoRoutes.post("/todos/bulk-update", async (c) => {
+  const input = bulkTodoUpdateSchema.parse(await c.req.json()); const ids = normalizeBulkTodoIds(input.ids); const userId = c.get("userId");
+  if (!ids.length) return c.json({ message: "변경할 Todo를 선택해주세요." }, 400);
+  if (ids.length > MAX_BULK_DELETE_IDS) return c.json({ message: `한 번에 최대 ${MAX_BULK_DELETE_IDS}개의 Todo를 변경할 수 있습니다.` }, 400);
+  if (input.action.type === "PROJECT" && input.action.value) {
+    const db = drizzle(c.env.DB); const [project] = await db.select({ id: projects.id }).from(projects).where(and(eq(projects.id, input.action.value), eq(projects.userId, userId))).limit(1);
+    if (!project) return c.json({ message: "프로젝트를 찾을 수 없습니다." }, 400);
+  }
+  await bulkUpdateTodos(c.env.DB, userId, ids, input.action); return c.json({ ok: true, updated: ids.length });
+});
+
 todoRoutes.patch("/todos/reorder", async (c) => {
   const { ids } = await c.req.json<{ ids: string[] }>(); const now = nowIso(); const userId = c.get("userId");
   await c.env.DB.batch(ids.map((id, order) => c.env.DB.prepare("UPDATE todos SET sort_order = ?, updated_at = ? WHERE id = ? AND user_id = ?").bind(order, now, id, userId))); return c.json({ ok: true });

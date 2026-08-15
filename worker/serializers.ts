@@ -1,6 +1,6 @@
 import { eq, inArray } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
-import { categories, tags, todoTags, todos, topicLinks, topics } from "./db/schema";
+import { categories, memos, memoProjectLinks, memoTodoLinks, tags, todoTags, todos, topicLinks, topics } from "./db/schema";
 import { parseJsonArray } from "./utils";
 
 export type Db = DrizzleD1Database;
@@ -20,9 +20,14 @@ export async function serializeTodos(db: Db, rows: Array<typeof todos.$inferSele
   return rows.map((row) => ({
     ...row,
     categoryId: row.categoryId || undefined,
+    projectId: row.projectId || undefined,
+    milestoneId: row.milestoneId || undefined,
+    parentTodoId: row.parentTodoId || undefined,
     memo: row.memo || undefined,
+    dueDate: row.dueDate || undefined,
     startTime: row.startTime || undefined,
     endTime: row.endTime || undefined,
+    estimateMinutes: row.estimateMinutes || undefined,
     archivedAt: row.archivedAt || undefined,
     tags: tagMap.get(row.id) || [],
     category: row.categoryId ? categoryMap.get(row.categoryId) : undefined,
@@ -38,6 +43,25 @@ export const serializeReflection = (row: { sectionsJson: string; content: string
 
 export const serializeGoal = (row: Record<string, unknown>) => Object.fromEntries(Object.entries(row).map(([key, value]) => [key, value === null ? undefined : value]));
 export const serializeMemo = serializeGoal;
+
+export async function serializeMemos(db: Db, rows: Array<typeof memos.$inferSelect>) {
+  if (!rows.length) return [];
+  const ids = rows.map((row) => row.id);
+  const [todoLinks, projectLinks] = await Promise.all([
+    db.select().from(memoTodoLinks).where(inArray(memoTodoLinks.memoId, ids)),
+    db.select().from(memoProjectLinks).where(inArray(memoProjectLinks.memoId, ids)),
+  ]);
+  const todoMap = new Map<string, string[]>();
+  const projectMap = new Map<string, string[]>();
+  todoLinks.forEach((link) => todoMap.set(link.memoId, [...(todoMap.get(link.memoId) || []), link.todoId]));
+  projectLinks.forEach((link) => projectMap.set(link.memoId, [...(projectMap.get(link.memoId) || []), link.projectId]));
+  return rows.map((row) => ({
+    ...serializeMemo(row),
+    todoIds: todoMap.get(row.id) || [],
+    projectIds: projectMap.get(row.id) || [],
+  }));
+}
+
 export const serializeMusicLink = (row: Record<string, unknown>) => ({ ...serializeGoal(row), provider: row.provider || "ETC" });
 export const serializeTopicLink = serializeGoal;
 

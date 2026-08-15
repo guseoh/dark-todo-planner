@@ -51,3 +51,23 @@ export type MilestoneInput = {
   status?: MilestoneStatus;
   order?: number;
 };
+
+export type ProjectDecision = {
+  id: string;
+  userId?: string;
+  projectId: string;
+  title: string;
+  decision: string;
+  rationale?: string;
+  decidedAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProjectDecisionInput = {
+  projectId: string;
+  title: string;
+  decision: string;
+  rationale?: string;
+  decidedAt?: string;
+};

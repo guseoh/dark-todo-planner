@@ -50,6 +50,12 @@ export type TodoInput = {
   tags?: string[];
 };
 
+export type TodoBulkAction =
+  | { type: "PROJECT"; value: string | null }
+  | { type: "DATE"; value: string }
+  | { type: "WORKFLOW_STATUS"; value: TodoWorkflowStatus }
+  | { type: "PRIORITY"; value: TodoPriority };
+
 export type TodoStatusFilter = "ALL" | "ACTIVE" | "COMPLETED";
 export type TodoPriorityFilter = "ALL" | TodoPriority;
 export type TodoSort = "NEWEST" | "OLDEST" | "PRIORITY" | "DATE_ASC";

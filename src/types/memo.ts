@@ -5,6 +5,8 @@ export type Memo = {
   content: string;
   color?: string;
   pinned: boolean;
+  todoIds: string[];
+  projectIds: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -14,4 +16,9 @@ export type MemoInput = {
   content: string;
   color?: string;
   pinned?: boolean;
+};
+
+export type MemoLinksInput = {
+  todoIds: string[];
+  projectIds: string[];
 };

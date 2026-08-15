@@ -42,6 +42,17 @@ export const projects = sqliteTable("projects", {
   index("projects_user_status_target_idx").on(table.userId, table.status, table.targetDate),
 ]);
 
+export const projectDecisions = sqliteTable("project_decisions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  projectId: text("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  decision: text("decision").notNull(),
+  rationale: text("rationale"),
+  decidedAt: text("decided_at").notNull(),
+  ...timestamps,
+}, (table) => [index("project_decisions_project_decided_idx").on(table.projectId, table.decidedAt)]);
+
 export const milestones = sqliteTable("milestones", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -137,6 +148,18 @@ export const memos = sqliteTable("memos", {
   pinned: integer("pinned", { mode: "boolean" }).notNull().default(false),
   ...timestamps,
 }, (table) => [index("memos_user_pinned_updated_idx").on(table.userId, table.pinned, table.updatedAt)]);
+
+export const memoTodoLinks = sqliteTable("memo_todo_links", {
+  memoId: text("memo_id").notNull().references(() => memos.id, { onDelete: "cascade" }),
+  todoId: text("todo_id").notNull().references(() => todos.id, { onDelete: "cascade" }),
+  createdAt: text("created_at").notNull(),
+}, (table) => [primaryKey({ columns: [table.memoId, table.todoId] }), index("memo_todo_links_todo_idx").on(table.todoId)]);
+
+export const memoProjectLinks = sqliteTable("memo_project_links", {
+  memoId: text("memo_id").notNull().references(() => memos.id, { onDelete: "cascade" }),
+  projectId: text("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  createdAt: text("created_at").notNull(),
+}, (table) => [primaryKey({ columns: [table.memoId, table.projectId] }), index("memo_project_links_project_idx").on(table.projectId)]);
 
 export const topics = sqliteTable("topics", {
   id: text("id").primaryKey(),

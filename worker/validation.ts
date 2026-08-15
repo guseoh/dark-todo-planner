@@ -9,6 +9,15 @@ export const todoInputSchema = z.object({
   priority: z.enum(["LOW", "MEDIUM", "HIGH"]).default("MEDIUM"), completed: z.boolean().optional(),
   repeat: z.enum(["NONE", "DAILY", "WEEKLY", "MONTHLY", "WEEKDAY", "WEEKEND"]).default("NONE"), archived: z.boolean().optional(), order: z.number().int().optional(), tags: tagsSchema,
 });
+export const bulkTodoUpdateSchema = z.object({
+  ids: z.array(z.string()).max(4000),
+  action: z.discriminatedUnion("type", [
+    z.object({ type: z.literal("PROJECT"), value: z.string().nullable() }),
+    z.object({ type: z.literal("DATE"), value: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }),
+    z.object({ type: z.literal("WORKFLOW_STATUS"), value: z.enum(["TODO", "IN_PROGRESS", "BLOCKED", "DONE"]) }),
+    z.object({ type: z.literal("PRIORITY"), value: z.enum(["LOW", "MEDIUM", "HIGH"]) }),
+  ]),
+});
 export const categoryInputSchema = z.object({ name: z.string().trim().min(1), description: z.string().optional().nullable(), color: z.string().optional().nullable(), icon: z.string().optional().nullable(), order: z.number().int().optional() });
 export const projectInputSchema = z.object({
   name: z.string().trim().min(1), description: z.string().optional().nullable(), status: z.enum(["PLANNING", "ACTIVE", "ON_HOLD", "DONE"]).default("ACTIVE"),
@@ -18,9 +27,14 @@ export const milestoneInputSchema = z.object({
   projectId: z.string().min(1), title: z.string().trim().min(1), description: z.string().optional().nullable(), targetDate: z.string().optional().nullable(),
   status: z.enum(["TODO", "IN_PROGRESS", "DONE"]).default("TODO"), order: z.number().int().optional(),
 });
+export const projectDecisionInputSchema = z.object({
+  projectId: z.string().min(1), title: z.string().trim().min(1).max(120), decision: z.string().trim().min(1).max(5000),
+  rationale: z.string().trim().max(5000).optional().nullable(), decidedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
 export const reflectionInputSchema = z.object({ date: z.string().min(1), type: z.enum(["DAILY", "WEEKLY", "MONTHLY"]), content: z.string().optional().nullable(), sections: z.array(z.object({ id: z.string(), title: z.string(), content: z.string().default(""), order: z.number().int() })).default([]) });
 export const goalInputSchema = z.object({ title: z.string().trim().min(1), description: z.string().optional().nullable(), type: z.enum(["DAILY", "WEEKLY", "MONTHLY"]).default("DAILY"), targetDate: z.string().optional().nullable(), weekStartDate: z.string().optional().nullable(), weekEndDate: z.string().optional().nullable(), month: z.string().optional().nullable(), dueDate: z.string().optional().nullable(), progress: z.coerce.number().int().min(0).max(100).default(0), completed: z.boolean().optional() });
 export const memoInputSchema = z.object({ title: z.string().optional().nullable(), content: z.string().trim().min(1), color: z.string().optional().nullable(), pinned: z.boolean().optional() });
+export const memoLinksInputSchema = z.object({ todoIds: z.array(z.string()).max(40).default([]), projectIds: z.array(z.string()).max(40).default([]) });
 export const topicInputSchema = z.object({ title: z.string().trim().min(1), memo: z.string().optional().nullable(), status: z.enum(["IDEA", "WRITING", "DONE"]).default("IDEA"), tags: tagsSchema, icon: z.string().optional().nullable() });
 export const topicLinkInputSchema = z.object({ title: z.string().optional().nullable(), url: z.string().url(), description: z.string().optional().nullable() });
 export const musicLinkInputSchema = z.object({ title: z.string().trim().min(1), url: z.string().url(), provider: z.enum(["YOUTUBE", "YOUTUBE_MUSIC", "MELON", "SPOTIFY", "ETC"]).optional().default("ETC"), memo: z.string().optional().nullable() });

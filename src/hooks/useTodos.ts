@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { Category } from "../types/category";
-import type { Todo, TodoFilters, TodoInput } from "../types/todo";
+import type { Todo, TodoBulkAction, TodoFilters, TodoInput } from "../types/todo";
 import { api, apiAllPages, jsonBody } from "../lib/api/client";
 import { getMonthGrid, getPlannerToday, getWeekDays, todayKey, toDateKey } from "../lib/date";
 import { calculateRate, getAllTags, priorityRank, todoOccursOnDate } from "../lib/todo";
@@ -184,6 +184,32 @@ export function useTodos() {
     }
   }, [allTodos]);
 
+  const bulkUpdateTodos = useCallback(async (ids: string[], action: TodoBulkAction) => {
+    const uniqueIds = Array.from(new Set(ids.map((id) => id.trim()).filter(Boolean)));
+    if (!uniqueIds.length) return true;
+    const previous = allTodos;
+    const targetIds = new Set(uniqueIds);
+    setAllTodos((current) => current.map((todo) => {
+      if (!targetIds.has(todo.id)) return todo;
+      if (action.type === "PROJECT") return { ...todo, projectId: action.value || undefined, milestoneId: undefined, parentTodoId: undefined };
+      if (action.type === "DATE") return { ...todo, date: action.value, planningState: "SCHEDULED" };
+      if (action.type === "WORKFLOW_STATUS") return { ...todo, workflowStatus: action.value, completed: action.value === "DONE" };
+      return { ...todo, priority: action.value };
+    }));
+    setSaving(true);
+    try {
+      await api("/api/todos/bulk-update", { method: "POST", ...jsonBody({ ids: uniqueIds, action }) });
+      setError("");
+      return true;
+    } catch (err) {
+      setAllTodos(previous);
+      setError(getMessage(err));
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }, [allTodos]);
+
   const toggleTodo = useCallback(async (id: string) => {
     const previous = allTodos;
     setAllTodos((current) => current.map((todo) => todo.id === id ? { ...todo, completed: !todo.completed, workflowStatus: !todo.completed ? "DONE" : todo.workflowStatus === "DONE" ? "TODO" : todo.workflowStatus } : todo));
@@ -280,7 +306,7 @@ export function useTodos() {
 
   return {
     allTodos, todos, archivedTodos, inboxTodos, tagOptions, duplicateTodoIds, stats, loading, saving, error, pendingDelete,
-    loadTodos, addTodo, updateTodo, deleteTodo, undoDeleteTodo, deleteTodos, toggleTodo, archiveTodo, unarchiveTodo,
+    loadTodos, addTodo, updateTodo, deleteTodo, undoDeleteTodo, deleteTodos, bulkUpdateTodos, toggleTodo, archiveTodo, unarchiveTodo,
     syncCategory, removeCategoryFromTodos, getTodosByDate, getTodayTodos, getOverdueIncompleteTodos, getWeekTodos, getMonthTodos, filterTodos, bringOverdueTodosToToday,
   };
 }

@@ -47,9 +47,9 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     inbox: <InboxPage todos={planner.todos} categories={planner.categories} projects={planner.activeProjects} onAdd={planner.addTodo} onUpdate={planner.updateTodo} onDelete={planner.deleteTodo} />,
     week: <WeekPage weekTodos={weekTodos} getTodosByDate={planner.getTodosByDate} onAdd={planner.addTodo} onToggle={planner.toggleTodo} onDelete={planner.deleteTodo} onUpdate={planner.updateTodo} onAddGoal={planner.addGoal} onUpdateGoal={planner.updateGoal} onToggleGoal={planner.toggleGoal} onDeleteGoal={planner.deleteGoal} categories={planner.categories} goals={planner.goals} />,
     month: <MonthPage todos={planner.todos} getTodosByDate={planner.getTodosByDate} onAdd={planner.addTodo} onToggle={planner.toggleTodo} onDelete={planner.deleteTodo} onUpdate={planner.updateTodo} categories={planner.categories} goals={planner.goals} onAddGoal={planner.addGoal} onToggleGoal={planner.toggleGoal} onDeleteGoal={planner.deleteGoal} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} />,
-    projects: <ProjectPage projects={planner.projects} milestones={planner.milestones} todos={planner.todos} categories={planner.categories} onAddProject={planner.addProject} onUpdateProject={planner.updateProject} onArchiveProject={planner.archiveProject} onUnarchiveProject={planner.unarchiveProject} onAddMilestone={planner.addMilestone} onUpdateMilestone={planner.updateMilestone} onDeleteMilestone={planner.deleteMilestone} onAddTodo={planner.addTodo} onUpdateTodo={planner.updateTodo} onToggleTodo={planner.toggleTodo} />,
-    all: <AllTodosPage allTodos={planner.allTodos} filterTodos={planner.filterTodos} tagOptions={planner.tagOptions} categories={planner.categories} duplicateTodoIds={planner.duplicateTodoIds} onToggle={planner.toggleTodo} onDelete={planner.deleteTodo} onDeleteMany={planner.deleteTodos} onUpdate={planner.updateTodo} onUnarchive={planner.unarchiveTodo} onAddTodo={planner.addTodo} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} />,
-    memo: <MemoPage memos={planner.memos} onAdd={planner.addMemo} onUpdate={planner.updateMemo} onDelete={planner.deleteMemo} onTogglePin={planner.toggleMemoPin} onAddTodo={planner.addTodo} />,
+    projects: <ProjectPage projects={planner.projects} milestones={planner.milestones} decisions={planner.projectDecisions} memos={planner.memos} todos={planner.todos} categories={planner.categories} onAddProject={planner.addProject} onUpdateProject={planner.updateProject} onArchiveProject={planner.archiveProject} onUnarchiveProject={planner.unarchiveProject} onAddMilestone={planner.addMilestone} onUpdateMilestone={planner.updateMilestone} onDeleteMilestone={planner.deleteMilestone} onAddDecision={planner.addProjectDecision} onDeleteDecision={planner.deleteProjectDecision} onAddTodo={planner.addTodo} onUpdateTodo={planner.updateTodo} onToggleTodo={planner.toggleTodo} />,
+    all: <AllTodosPage allTodos={planner.allTodos} filterTodos={planner.filterTodos} tagOptions={planner.tagOptions} categories={planner.categories} projects={planner.projects} duplicateTodoIds={planner.duplicateTodoIds} onToggle={planner.toggleTodo} onDelete={planner.deleteTodo} onDeleteMany={planner.deleteTodos} onBulkUpdate={planner.bulkUpdateTodos} onUpdate={planner.updateTodo} onUnarchive={planner.unarchiveTodo} onAddTodo={planner.addTodo} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} />,
+    memo: <MemoPage memos={planner.memos} todos={planner.allTodos} projects={planner.projects} onAdd={planner.addMemo} onUpdate={planner.updateMemo} onUpdateLinks={planner.updateMemoLinks} onDelete={planner.deleteMemo} onTogglePin={planner.toggleMemoPin} onAddTodo={planner.addTodo} />,
     settings: <SettingsPage stats={planner.stats} categories={planner.categories} goals={planner.goals} memos={planner.memos} apiStatus={planner.connectionError ? "offline" : "online"} />,
   } satisfies Record<AppView, JSX.Element>;
 
@@ -71,14 +71,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
       </div>
 
       {showCommandPalette ? (
-        <CommandPalette
-          onClose={() => setShowCommandPalette(false)}
-          onNavigate={setActiveView}
-          onQuickAdd={openQuickAdd}
-          todos={planner.allTodos}
-          memos={planner.memos}
-          projects={planner.projects}
-        />
+        <CommandPalette onClose={() => setShowCommandPalette(false)} onNavigate={setActiveView} onQuickAdd={openQuickAdd} todos={planner.allTodos} memos={planner.memos} projects={planner.projects} />
       ) : null}
 
       {showQuickAdd ? (

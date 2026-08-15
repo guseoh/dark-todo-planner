@@ -1,11 +1,11 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { Hono } from "hono";
-import { goals, memos } from "../db/schema";
-import { serializeGoal, serializeMemo } from "../serializers";
+import { goals, memos, memoProjectLinks, memoTodoLinks, projects, todos } from "../db/schema";
+import { serializeGoal, serializeMemos } from "../serializers";
 import type { Bindings, Variables } from "../types";
 import { newId, nowIso, optional, pagination } from "../utils";
-import { goalInputSchema, memoInputSchema } from "../validation";
+import { goalInputSchema, memoInputSchema, memoLinksInputSchema } from "../validation";
 
 export const contentRoutes = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -29,9 +29,52 @@ contentRoutes.put("/goals/:id", async (c) => {
 contentRoutes.patch("/goals/:id/toggle", async (c) => { const db = drizzle(c.env.DB); const id = c.req.param("id"), userId = c.get("userId"); const [existing] = await db.select().from(goals).where(and(eq(goals.id, id), eq(goals.userId, userId))).limit(1); if (!existing) return c.json({ message: "목표를 찾을 수 없습니다." }, 404); await db.update(goals).set({ completed: !existing.completed, progress: existing.completed ? 0 : 100, updatedAt: nowIso() }).where(eq(goals.id, id)); const [row] = await db.select().from(goals).where(eq(goals.id, id)); return c.json({ goal: serializeGoal(row) }); });
 contentRoutes.delete("/goals/:id", async (c) => { const db = drizzle(c.env.DB); await db.delete(goals).where(and(eq(goals.id, c.req.param("id")), eq(goals.userId, c.get("userId")))); return c.json({ ok: true }); });
 
-contentRoutes.get("/memos", async (c) => { const db = drizzle(c.env.DB); const page = pagination((name) => c.req.query(name)); const rows = await db.select().from(memos).where(eq(memos.userId, c.get("userId"))).orderBy(desc(memos.pinned), desc(memos.updatedAt)).limit(page.limit).offset(page.offset); return c.json({ memos: rows.map(serializeMemo), nextCursor: page.next(rows.length) }); });
-contentRoutes.get("/memos/:id", async (c) => { const db = drizzle(c.env.DB); const [row] = await db.select().from(memos).where(and(eq(memos.id, c.req.param("id")), eq(memos.userId, c.get("userId")))).limit(1); return row ? c.json({ memo: serializeMemo(row) }) : c.json({ message: "메모를 찾을 수 없습니다." }, 404); });
-contentRoutes.post("/memos", async (c) => { const input = memoInputSchema.parse(await c.req.json()); const db = drizzle(c.env.DB); const now = nowIso(); const row = { id: newId(), userId: c.get("userId"), title: optional(input.title), content: input.content, color: optional(input.color), pinned: input.pinned || false, createdAt: now, updatedAt: now }; await db.insert(memos).values(row); return c.json({ memo: serializeMemo(row) }, 201); });
-contentRoutes.put("/memos/:id", async (c) => { const input = memoInputSchema.parse(await c.req.json()); const db = drizzle(c.env.DB); const id = c.req.param("id"), userId = c.get("userId"); const [existing] = await db.select().from(memos).where(and(eq(memos.id, id), eq(memos.userId, userId))).limit(1); if (!existing) return c.json({ message: "메모를 찾을 수 없습니다." }, 404); await db.update(memos).set({ title: optional(input.title), content: input.content, color: optional(input.color), pinned: input.pinned ?? existing.pinned, updatedAt: nowIso() }).where(eq(memos.id, id)); const [row] = await db.select().from(memos).where(eq(memos.id, id)); return c.json({ memo: serializeMemo(row) }); });
-contentRoutes.patch("/memos/:id/pin", async (c) => { const db = drizzle(c.env.DB); const id = c.req.param("id"), userId = c.get("userId"); const [existing] = await db.select().from(memos).where(and(eq(memos.id, id), eq(memos.userId, userId))).limit(1); if (!existing) return c.json({ message: "메모를 찾을 수 없습니다." }, 404); await db.update(memos).set({ pinned: !existing.pinned, updatedAt: nowIso() }).where(eq(memos.id, id)); const [row] = await db.select().from(memos).where(eq(memos.id, id)); return c.json({ memo: serializeMemo(row) }); });
+contentRoutes.get("/memos", async (c) => {
+  const db = drizzle(c.env.DB); const page = pagination((name) => c.req.query(name));
+  const rows = await db.select().from(memos).where(eq(memos.userId, c.get("userId"))).orderBy(desc(memos.pinned), desc(memos.updatedAt)).limit(page.limit).offset(page.offset);
+  return c.json({ memos: await serializeMemos(db, rows), nextCursor: page.next(rows.length) });
+});
+contentRoutes.get("/memos/:id", async (c) => {
+  const db = drizzle(c.env.DB); const [row] = await db.select().from(memos).where(and(eq(memos.id, c.req.param("id")), eq(memos.userId, c.get("userId")))).limit(1);
+  return row ? c.json({ memo: (await serializeMemos(db, [row]))[0] }) : c.json({ message: "메모를 찾을 수 없습니다." }, 404);
+});
+contentRoutes.post("/memos", async (c) => {
+  const input = memoInputSchema.parse(await c.req.json()); const db = drizzle(c.env.DB); const now = nowIso();
+  const row = { id: newId(), userId: c.get("userId"), title: optional(input.title), content: input.content, color: optional(input.color), pinned: input.pinned || false, createdAt: now, updatedAt: now };
+  await db.insert(memos).values(row); return c.json({ memo: (await serializeMemos(db, [row]))[0] }, 201);
+});
+contentRoutes.put("/memos/:id", async (c) => {
+  const input = memoInputSchema.parse(await c.req.json()); const db = drizzle(c.env.DB); const id = c.req.param("id"), userId = c.get("userId");
+  const [existing] = await db.select().from(memos).where(and(eq(memos.id, id), eq(memos.userId, userId))).limit(1); if (!existing) return c.json({ message: "메모를 찾을 수 없습니다." }, 404);
+  await db.update(memos).set({ title: optional(input.title), content: input.content, color: optional(input.color), pinned: input.pinned ?? existing.pinned, updatedAt: nowIso() }).where(eq(memos.id, id));
+  const [row] = await db.select().from(memos).where(eq(memos.id, id)); return c.json({ memo: (await serializeMemos(db, [row]))[0] });
+});
+contentRoutes.put("/memos/:id/links", async (c) => {
+  const input = memoLinksInputSchema.parse(await c.req.json()); const db = drizzle(c.env.DB); const id = c.req.param("id"), userId = c.get("userId");
+  const [memo] = await db.select().from(memos).where(and(eq(memos.id, id), eq(memos.userId, userId))).limit(1);
+  if (!memo) return c.json({ message: "메모를 찾을 수 없습니다." }, 404);
+  const todoIds = Array.from(new Set(input.todoIds)); const projectIds = Array.from(new Set(input.projectIds));
+  if (todoIds.length) {
+    const validTodos = await db.select({ id: todos.id }).from(todos).where(and(eq(todos.userId, userId), inArray(todos.id, todoIds)));
+    if (validTodos.length !== todoIds.length) return c.json({ message: "연결할 Todo 중 찾을 수 없는 항목이 있습니다." }, 400);
+  }
+  if (projectIds.length) {
+    const validProjects = await db.select({ id: projects.id }).from(projects).where(and(eq(projects.userId, userId), inArray(projects.id, projectIds)));
+    if (validProjects.length !== projectIds.length) return c.json({ message: "연결할 프로젝트 중 찾을 수 없는 항목이 있습니다." }, 400);
+  }
+  const now = nowIso();
+  const statements: D1PreparedStatement[] = [
+    c.env.DB.prepare("DELETE FROM memo_todo_links WHERE memo_id = ?").bind(id),
+    c.env.DB.prepare("DELETE FROM memo_project_links WHERE memo_id = ?").bind(id),
+    ...todoIds.map((todoId) => c.env.DB.prepare("INSERT INTO memo_todo_links (memo_id, todo_id, created_at) VALUES (?, ?, ?)").bind(id, todoId, now)),
+    ...projectIds.map((projectId) => c.env.DB.prepare("INSERT INTO memo_project_links (memo_id, project_id, created_at) VALUES (?, ?, ?)").bind(id, projectId, now)),
+  ];
+  await c.env.DB.batch(statements);
+  const [row] = await db.select().from(memos).where(eq(memos.id, id));
+  return c.json({ memo: (await serializeMemos(db, [row]))[0] });
+});
+contentRoutes.patch("/memos/:id/pin", async (c) => {
+  const db = drizzle(c.env.DB); const id = c.req.param("id"), userId = c.get("userId"); const [existing] = await db.select().from(memos).where(and(eq(memos.id, id), eq(memos.userId, userId))).limit(1); if (!existing) return c.json({ message: "메모를 찾을 수 없습니다." }, 404);
+  await db.update(memos).set({ pinned: !existing.pinned, updatedAt: nowIso() }).where(eq(memos.id, id)); const [row] = await db.select().from(memos).where(eq(memos.id, id)); return c.json({ memo: (await serializeMemos(db, [row]))[0] });
+});
 contentRoutes.delete("/memos/:id", async (c) => { const db = drizzle(c.env.DB); await db.delete(memos).where(and(eq(memos.id, c.req.param("id")), eq(memos.userId, c.get("userId")))); return c.json({ ok: true }); });

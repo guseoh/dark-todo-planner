@@ -1,12 +1,13 @@
 import { useCallback, useMemo, useState } from "react";
 import { api, apiAllPages, jsonBody } from "../lib/api/client";
-import type { Milestone, MilestoneInput, Project, ProjectInput } from "../types/project";
+import type { Milestone, MilestoneInput, Project, ProjectDecision, ProjectDecisionInput, ProjectInput } from "../types/project";
 
 const getMessage = (error: unknown) => error instanceof Error ? error.message : "프로젝트 요청 처리 중 오류가 발생했습니다.";
 
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [decisions, setDecisions] = useState<ProjectDecision[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -14,12 +15,14 @@ export function useProjects() {
   const loadProjects = useCallback(async () => {
     setLoading(true);
     try {
-      const [projectRows, milestoneRows] = await Promise.all([
+      const [projectRows, milestoneRows, decisionRows] = await Promise.all([
         apiAllPages<Project>("/api/projects?archived=all", "projects"),
         apiAllPages<Milestone>("/api/milestones", "milestones"),
+        apiAllPages<ProjectDecision>("/api/project-decisions", "decisions"),
       ]);
       setProjects(projectRows);
       setMilestones(milestoneRows);
+      setDecisions(decisionRows);
       setError("");
       return projectRows;
     } catch (err) {
@@ -135,14 +138,66 @@ export function useProjects() {
     }
   }, [milestones]);
 
+  const addDecision = useCallback(async (input: ProjectDecisionInput) => {
+    setSaving(true);
+    try {
+      const result = await api<{ decision: ProjectDecision }>("/api/project-decisions", { method: "POST", ...jsonBody(input) });
+      setDecisions((current) => [result.decision, ...current].sort((a, b) => b.decidedAt.localeCompare(a.decidedAt) || b.createdAt.localeCompare(a.createdAt)));
+      setError("");
+      return result.decision;
+    } catch (err) {
+      setError(getMessage(err));
+      return undefined;
+    } finally { setSaving(false); }
+  }, []);
+
+  const updateDecision = useCallback(async (id: string, updates: Partial<ProjectDecisionInput>) => {
+    const existing = decisions.find((decision) => decision.id === id);
+    if (!existing) return undefined;
+    setSaving(true);
+    try {
+      const result = await api<{ decision: ProjectDecision }>(`/api/project-decisions/${id}`, {
+        method: "PUT",
+        ...jsonBody({
+          projectId: updates.projectId ?? existing.projectId,
+          title: updates.title ?? existing.title,
+          decision: updates.decision ?? existing.decision,
+          rationale: Object.prototype.hasOwnProperty.call(updates, "rationale") ? updates.rationale : existing.rationale,
+          decidedAt: updates.decidedAt ?? existing.decidedAt,
+        }),
+      });
+      setDecisions((current) => current.map((decision) => decision.id === id ? result.decision : decision).sort((a, b) => b.decidedAt.localeCompare(a.decidedAt) || b.createdAt.localeCompare(a.createdAt)));
+      setError("");
+      return result.decision;
+    } catch (err) {
+      setError(getMessage(err));
+      return undefined;
+    } finally { setSaving(false); }
+  }, [decisions]);
+
+  const deleteDecision = useCallback(async (id: string) => {
+    const previous = decisions;
+    setDecisions((current) => current.filter((decision) => decision.id !== id));
+    try {
+      await api(`/api/project-decisions/${id}`, { method: "DELETE" });
+      setError("");
+      return true;
+    } catch (err) {
+      setDecisions(previous);
+      setError(getMessage(err));
+      return false;
+    }
+  }, [decisions]);
+
   const activeProjects = useMemo(() => projects.filter((project) => !project.archived), [projects]);
   const archivedProjects = useMemo(() => projects.filter((project) => project.archived), [projects]);
 
   return {
-    projects, activeProjects, archivedProjects, milestones, loading, saving, error,
+    projects, activeProjects, archivedProjects, milestones, decisions, loading, saving, error,
     loadProjects, addProject, updateProject,
     archiveProject: (id: string) => setArchived(id, true),
     unarchiveProject: (id: string) => setArchived(id, false),
     addMilestone, updateMilestone, deleteMilestone,
+    addDecision, updateDecision, deleteDecision,
   };
 }
