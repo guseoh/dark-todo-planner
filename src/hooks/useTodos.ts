@@ -116,6 +116,30 @@ export function useTodos() {
     }
   }, [allTodos]);
 
+  const deleteTodos = useCallback(async (ids: string[]) => {
+    const uniqueIds = Array.from(new Set(ids.map((id) => id.trim()).filter(Boolean)));
+    if (!uniqueIds.length) return true;
+
+    const previous = allTodos;
+    const targetIds = new Set(uniqueIds);
+    setAllTodos((current) => current.filter((todo) => !targetIds.has(todo.id)));
+    setSaving(true);
+    try {
+      await api("/api/todos/bulk-delete", {
+        method: "POST",
+        ...jsonBody({ ids: uniqueIds }),
+      });
+      setError("");
+      return true;
+    } catch (err) {
+      setAllTodos(previous);
+      setError(getMessage(err));
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }, [allTodos]);
+
   const toggleTodo = useCallback(async (id: string) => {
     const previous = allTodos;
     setAllTodos((current) => current.map((todo) => (todo.id === id ? { ...todo, completed: !todo.completed } : todo)));
@@ -258,6 +282,7 @@ export function useTodos() {
     addTodo,
     updateTodo,
     deleteTodo,
+    deleteTodos,
     toggleTodo,
     archiveTodo,
     unarchiveTodo,

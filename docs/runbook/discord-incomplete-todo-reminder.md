@@ -1,6 +1,6 @@
-# Discord 미완료 Todo 알림 Runbook
+# Discord 오늘 미완료 Todo 알림 Runbook
 
-Production Worker는 매일 한국 시간 오후 9시(`0 12 * * *`, UTC)에 미완료 Todo를 Discord로 알립니다. Preview에는 cron trigger가 없습니다.
+Production Worker는 매일 한국 시간 오후 9시(`0 12 * * *`, UTC)에 **오늘 일정에 해당하는 미완료 Todo**를 Discord로 알립니다. Preview에는 cron trigger가 없습니다.
 
 ## 준비
 
@@ -16,10 +16,12 @@ Webhook 값은 저장소 파일, 문서, 로그, CI 변수 예시에 기록하�
 ## 알림 대상
 
 - `single-user` 소유이며 보관되지 않고 완료되지 않은 Todo
-- 일정이 planner today 이전이거나 같은 비반복 Todo
-- 오늘 실제 발생하는 반복 Todo
+- 비반복 Todo는 `planner today`와 일정 날짜가 정확히 같은 경우만 포함
+- 반복 Todo는 시작 날짜가 미래가 아니면서 오늘 실제 발생하는 경우만 포함
 
-미래 Todo와 오늘 발생하지 않는 과거 반복 Todo는 제외합니다. 메시지는 제목을 최대 5개 표시하고 나머지는 `외 N개`로 요약하며, Discord mention은 허용하지 않습니다.
+지난 날짜에 끝내지 못한 비반복 Todo와 미래 Todo, 오늘 발생하지 않는 반복 Todo는 제외합니다. 지난 Todo는 앱의 오늘 화면에서 별도 ‘가져오기’ 기능으로 관리하고 Discord 알림에는 섞지 않습니다.
+
+메시지는 제목을 최대 5개 표시하고 나머지는 `외 N개`로 요약하며, Discord mention은 허용하지 않습니다.
 
 ## 중복 전송과 실패
 

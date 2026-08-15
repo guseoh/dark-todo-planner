@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, like, max, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, like, max, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { drizzle } from "drizzle-orm/d1";
 import { categories, tags, todoTags, todos } from "../db/schema";
@@ -8,6 +8,31 @@ import { newId, normalizeIcon, nowIso, optional, pagination } from "../utils";
 import { categoryInputSchema, todoInputSchema } from "../validation";
 
 export const todoRoutes = new Hono<{ Bindings: Bindings; Variables: Variables }>();
+
+const BULK_DELETE_CHUNK_SIZE = 80;
+const MAX_BULK_DELETE_IDS = BULK_DELETE_CHUNK_SIZE * 50;
+
+export const normalizeBulkTodoIds = (rawIds: unknown): string[] => {
+  if (!Array.isArray(rawIds)) return [];
+  return Array.from(new Set(
+    rawIds
+      .filter((value): value is string => typeof value === "string")
+      .map((value) => value.trim())
+      .filter(Boolean),
+  ));
+};
+
+export const deleteTodosByIds = async (db: D1Database, userId: string, ids: string[]) => {
+  const statements: D1PreparedStatement[] = [];
+  for (let index = 0; index < ids.length; index += BULK_DELETE_CHUNK_SIZE) {
+    const chunk = ids.slice(index, index + BULK_DELETE_CHUNK_SIZE);
+    const placeholders = chunk.map(() => "?").join(",");
+    statements.push(
+      db.prepare(`DELETE FROM todos WHERE user_id = ? AND id IN (${placeholders})`).bind(userId, ...chunk),
+    );
+  }
+  if (statements.length) await db.batch(statements);
+};
 
 const syncTags = async (db: ReturnType<typeof drizzle>, userId: string, todoId: string, names: string[]) => {
   await db.delete(todoTags).where(eq(todoTags.todoId, todoId));
@@ -91,6 +116,14 @@ todoRoutes.post("/todos", async (c) => {
   const [maximum] = await db.select({ value: max(todos.order) }).from(todos).where(and(eq(todos.userId, userId), input.categoryId ? eq(todos.categoryId, input.categoryId) : sql`${todos.categoryId} IS NULL`)); const now = nowIso();
   const row = { id: newId(), userId, categoryId: input.categoryId || null, title: input.title, memo: optional(input.memo), date: input.date, startTime: optional(input.startTime), endTime: optional(input.endTime), priority: input.priority, completed: input.completed || false, repeat: input.repeat, archived: input.archived || false, archivedAt: input.archived ? now : null, order: input.order ?? (maximum.value ?? -1) + 1, createdAt: now, updatedAt: now };
   await db.insert(todos).values(row); await syncTags(db, userId, row.id, input.tags); return c.json({ todo: (await serializeTodos(db, [row]))[0] }, 201);
+});
+todoRoutes.post("/todos/bulk-delete", async (c) => {
+  const { ids: rawIds } = await c.req.json<{ ids?: unknown }>();
+  const ids = normalizeBulkTodoIds(rawIds);
+  if (!ids.length) return c.json({ message: "삭제할 Todo를 선택해주세요." }, 400);
+  if (ids.length > MAX_BULK_DELETE_IDS) return c.json({ message: `한 번에 최대 ${MAX_BULK_DELETE_IDS}개의 Todo를 삭제할 수 있습니다.` }, 400);
+  await deleteTodosByIds(c.env.DB, c.get("userId"), ids);
+  return c.json({ ok: true });
 });
 todoRoutes.patch("/todos/reorder", async (c) => {
   const { ids } = await c.req.json<{ ids: string[] }>(); const now = nowIso(); const userId = c.get("userId");

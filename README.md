@@ -43,7 +43,7 @@ npm run db:generate
 - `AUTH_USERNAME`: 고정 로그인 사용자명
 - `AUTH_PASSWORD_HASH`: `npm run auth:hash`로 만든 PBKDF2-SHA256 해시
 - `SESSION_SECRET`: 세션 쿠키 서명용 32자 이상의 무작위 문자열
-- `DISCORD_WEBHOOK_URL`: Production 미완료 Todo 알림용 Discord webhook
+- `DISCORD_WEBHOOK_URL`: Production 오늘 미완료 Todo 알림용 Discord webhook
 
 인증 Secret 세 개는 Preview와 Production에 각각 등록합니다.
 
@@ -64,7 +64,7 @@ Discord 알림 Secret은 Production에만 등록합니다.
 npx wrangler secret put DISCORD_WEBHOOK_URL --env production
 ```
 
-매일 오후 9시 미완료 Todo 알림의 대상, 중복 전송 방지와 안전한 실패 처리 방법은 [Discord 미완료 Todo 알림 Runbook](docs/runbook/discord-incomplete-todo-reminder.md)을 따르세요.
+매일 오후 9시 오늘 미완료 Todo 알림의 대상, 중복 전송 방지와 안전한 실패 처리 방법은 [Discord 오늘 미완료 Todo 알림 Runbook](docs/runbook/discord-incomplete-todo-reminder.md)을 따르세요.
 
 ## Cloudflare 배포 준비 명령
 

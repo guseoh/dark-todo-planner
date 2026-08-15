@@ -3,7 +3,6 @@ import type { Category } from "../types/category";
 import { useCategories } from "./useCategories";
 import { useGoals } from "./useGoals";
 import { useMemos } from "./useMemos";
-import { useReflections } from "./useReflections";
 import { useTodos } from "./useTodos";
 import { classifyPlannerErrors } from "../lib/plannerLoadState";
 
@@ -12,7 +11,6 @@ const getMessage = (error: unknown) => (error instanceof Error ? error.message :
 export function usePlannerData() {
   const categoriesState = useCategories();
   const todosState = useTodos();
-  const reflectionsState = useReflections();
   const goalsState = useGoals();
   const memosState = useMemos();
   const [loading, setLoading] = useState(true);
@@ -26,7 +24,6 @@ export function usePlannerData() {
       await Promise.all([
         categoriesState.loadCategories(),
         todosState.loadTodos(),
-        reflectionsState.loadReflections(),
         goalsState.loadGoals(),
         memosState.loadMemos(),
       ]);
@@ -41,7 +38,6 @@ export function usePlannerData() {
     categoriesState.loadCategories,
     goalsState.loadGoals,
     memosState.loadMemos,
-    reflectionsState.loadReflections,
     todosState.loadTodos,
   ]);
 
@@ -71,14 +67,12 @@ export function usePlannerData() {
     () =>
       todosState.saving ||
       categoriesState.saving ||
-      reflectionsState.saving ||
       goalsState.saving ||
       memosState.saving,
     [
       categoriesState.saving,
       goalsState.saving,
       memosState.saving,
-      reflectionsState.saving,
       todosState.saving,
     ],
   );
@@ -86,7 +80,6 @@ export function usePlannerData() {
   const operationError =
     todosState.error ||
     categoriesState.error ||
-    reflectionsState.error ||
     goalsState.error ||
     memosState.error;
   const { initialLoadError, backgroundOrOperationError } = classifyPlannerErrors({
@@ -102,7 +95,6 @@ export function usePlannerData() {
     archivedTodos: todosState.archivedTodos,
     tagOptions: todosState.tagOptions,
     duplicateTodoIds: todosState.duplicateTodoIds,
-    reflections: reflectionsState.reflections,
     goals: goalsState.goals,
     memos: memosState.memos,
     loading,
@@ -113,11 +105,11 @@ export function usePlannerData() {
     connectionError: loadError,
     stats: todosState.stats,
     nearestGoal: goalsState.nearestGoal,
-    recentReflection: reflectionsState.recentReflection,
     loadAll,
     addTodo: todosState.addTodo,
     updateTodo: todosState.updateTodo,
     deleteTodo: todosState.deleteTodo,
+    deleteTodos: todosState.deleteTodos,
     toggleTodo: todosState.toggleTodo,
     archiveTodo: todosState.archiveTodo,
     unarchiveTodo: todosState.unarchiveTodo,
@@ -132,9 +124,6 @@ export function usePlannerData() {
     updateCategory,
     deleteCategory,
     reorderCategories,
-    addReflection: reflectionsState.addReflection,
-    updateReflection: reflectionsState.updateReflection,
-    deleteReflection: reflectionsState.deleteReflection,
     addGoal: goalsState.addGoal,
     updateGoal: goalsState.updateGoal,
     toggleGoal: goalsState.toggleGoal,

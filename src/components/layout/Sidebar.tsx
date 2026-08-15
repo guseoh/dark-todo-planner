@@ -3,7 +3,6 @@ import {
   CalendarCheck,
   CalendarRange,
   ClipboardList,
-  NotebookPen,
   StickyNote,
   Settings,
   PanelLeftClose,
@@ -16,7 +15,6 @@ export type AppView =
   | "week"
   | "month"
   | "all"
-  | "reflection"
   | "memo"
   | "settings";
 
@@ -30,7 +28,6 @@ const navItems = [
   { id: "week", label: "주간", icon: CalendarRange },
   { id: "month", label: "월간", icon: Calendar },
   { id: "all", label: "전체 Todo", icon: ClipboardList },
-  { id: "reflection", label: "회고", icon: NotebookPen },
   { id: "memo", label: "메모", icon: StickyNote },
   { id: "settings", label: "앱 정보", icon: Settings },
 ] satisfies Array<{ id: AppView; label: string; icon: typeof CalendarCheck }>;
@@ -61,8 +58,8 @@ export function Sidebar({ activeView, onChangeView }: SidebarProps) {
 
   return (
     <>
-      <aside className={`hidden shrink-0 transition-all duration-200 lg:block ${collapsed ? "w-16" : "w-60"}`}>
-        <nav className="sticky top-24 space-y-2">
+      <aside className={`relative z-50 hidden shrink-0 overflow-visible transition-all duration-200 lg:block ${collapsed ? "w-16" : "w-60"}`}>
+        <nav className="sticky top-24 space-y-2 overflow-visible">
           <button
             type="button"
             onClick={() => setCollapsed((value) => !value)}
@@ -85,6 +82,7 @@ export function Sidebar({ activeView, onChangeView }: SidebarProps) {
                 onClick={() => onChangeView(item.id)}
                 aria-label={item.label}
                 aria-current={active ? "page" : undefined}
+                title={collapsed ? item.label : undefined}
                 className={`group relative flex min-h-11 w-full items-center rounded-lg border text-sm font-semibold transition ${
                   active
                     ? "border-accent-500/50 bg-accent-500/20 text-ink-100"
@@ -94,7 +92,7 @@ export function Sidebar({ activeView, onChangeView }: SidebarProps) {
                 <Icon size={18} />
                 {!collapsed ? <span className="truncate">{item.label}</span> : null}
                 {collapsed ? (
-                  <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md border border-ink-700 bg-ink-950 px-2 py-1 text-xs font-semibold text-ink-100 shadow-xl group-hover:block group-focus-visible:block">
+                  <span className="pointer-events-none absolute left-full top-1/2 z-[70] ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md border border-ink-700 bg-ink-950 px-2.5 py-1.5 text-xs font-semibold text-ink-100 shadow-xl group-hover:block group-focus-visible:block">
                     {item.label}
                   </span>
                 ) : null}

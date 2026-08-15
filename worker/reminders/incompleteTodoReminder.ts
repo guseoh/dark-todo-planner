@@ -56,8 +56,8 @@ export function getReminderPlannerDate(now: Date): string {
 }
 
 export function reminderTodoOccursOnDate(todo: ReminderTodo, plannerDate: string): boolean {
+  if (todo.repeat === "NONE") return todo.date === plannerDate;
   if (todo.date > plannerDate) return false;
-  if (todo.repeat === "NONE") return true;
 
   const base = parseDateKey(todo.date);
   const target = parseDateKey(plannerDate);
@@ -97,7 +97,7 @@ export function buildDiscordReminderPayload(
   const visible = todos.slice(0, MAX_TITLES);
   const remaining = Math.max(todos.length - visible.length, 0);
   const lines = [
-    "📌 미완료 Todo 알림",
+    "📌 오늘 미완료 Todo 알림",
     `${plannerDate} 기준 ${todos.length}개`,
     ...visible.map((todo) => `• ${sanitizeTitle(todo.title) || "제목 없음"}`),
   ];

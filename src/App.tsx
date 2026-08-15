@@ -6,7 +6,6 @@ import { usePlannerData } from "./hooks/usePlannerData";
 import { AllTodosPage } from "./pages/AllTodosPage";
 import { MemoPage } from "./pages/MemoPage";
 import { MonthPage } from "./pages/MonthPage";
-import { ReflectionPage } from "./pages/ReflectionPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { TodayPage } from "./pages/TodayPage";
 import { WeekPage } from "./pages/WeekPage";
@@ -73,26 +72,20 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     ),
     all: (
       <AllTodosPage
+        allTodos={planner.allTodos}
         filterTodos={planner.filterTodos}
         tagOptions={planner.tagOptions}
         categories={planner.categories}
         duplicateTodoIds={planner.duplicateTodoIds}
         onToggle={planner.toggleTodo}
         onDelete={planner.deleteTodo}
+        onDeleteMany={planner.deleteTodos}
         onUpdate={planner.updateTodo}
         onUnarchive={planner.unarchiveTodo}
         onAddTodo={planner.addTodo}
         onAddCategory={planner.addCategory}
         onUpdateCategory={planner.updateCategory}
         onDeleteCategory={planner.deleteCategory}
-      />
-    ),
-    reflection: (
-      <ReflectionPage
-        reflections={planner.reflections}
-        onAdd={planner.addReflection}
-        onUpdate={planner.updateReflection}
-        onDelete={planner.deleteReflection}
       />
     ),
     memo: (
@@ -108,7 +101,6 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
       <SettingsPage
         stats={planner.stats}
         categories={planner.categories}
-        reflections={planner.reflections}
         goals={planner.goals}
         memos={planner.memos}
         apiStatus={planner.connectionError ? "offline" : "online"}

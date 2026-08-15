@@ -2,12 +2,10 @@ import { StatCard } from "../components/common/StatCard";
 import type { Category } from "../types/category";
 import type { Goal } from "../types/goal";
 import type { Memo } from "../types/memo";
-import type { Reflection } from "../types/reflection";
 
 type SettingsPageProps = {
   categories: Category[];
   stats: { total: number; completedTotal: number; archivedTotal: number };
-  reflections: Reflection[];
   goals: Goal[];
   memos: Memo[];
   apiStatus?: "online" | "offline";
@@ -16,7 +14,6 @@ type SettingsPageProps = {
 export function SettingsPage({
   categories,
   stats,
-  reflections,
   goals,
   memos,
   apiStatus = "online",
@@ -65,9 +62,9 @@ export function SettingsPage({
             <dd className="mt-1 text-sm font-bold text-ink-100">오전 3시</dd>
           </div>
           <div className="rounded-lg border border-ink-700/80 bg-ink-950/40 p-3">
-            <dt className="text-xs font-semibold text-ink-500">Discord 미완료 Todo 알림 예약</dt>
+            <dt className="text-xs font-semibold text-ink-500">Discord 오늘 미완료 Todo 알림 예약</dt>
             <dd className="mt-1 text-sm font-bold text-ink-100">매일 오후 9시</dd>
-            <p className="mt-1 text-xs text-ink-400">운영 설정의 예약 시각이며 발송 성공 상태를 의미하지 않습니다.</p>
+            <p className="mt-1 text-xs text-ink-400">오늘 일정으로 표시되는 미완료 Todo만 알림 대상입니다.</p>
           </div>
         </dl>
       </section>
@@ -77,7 +74,7 @@ export function SettingsPage({
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard title="Todo" value={stats.total} description={`완료 ${stats.completedTotal} · 보관 ${stats.archivedTotal}`} />
           <StatCard title="카테고리" value={categories.length} />
-          <StatCard title="회고 / 메모" value={`${reflections.length}/${memos.length}`} />
+          <StatCard title="메모" value={memos.length} />
           <StatCard title="목표" value={goals.length} />
         </div>
       </section>

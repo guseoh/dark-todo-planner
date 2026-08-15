@@ -13,7 +13,7 @@ import {
 const todo = (id: string, overrides: Partial<ReminderTodo> = {}): ReminderTodo => ({
   id,
   title: `Todo ${id}`,
-  date: "2026-07-27",
+  date: "2026-07-28",
   completed: false,
   archived: false,
   repeat: "NONE",
@@ -78,13 +78,16 @@ describe("reminder planner date", () => {
 });
 
 describe("incomplete Todo reminder targets", () => {
-  it("includes overdue and today non-repeating Todos", () => {
+  it("includes only today non-repeating Todos", () => {
     const targets = selectIncompleteTodoReminderTargets(
-      [todo("overdue"), todo("today", { date: "2026-07-28" })],
+      [
+        todo("overdue", { date: "2026-07-27" }),
+        todo("today"),
+      ],
       "2026-07-28",
     );
 
-    expect(targets.map(({ id }) => id)).toEqual(["overdue", "today"]);
+    expect(targets.map(({ id }) => id)).toEqual(["today"]);
   });
 
   it("excludes completed, archived, and future Todos", () => {
@@ -122,6 +125,7 @@ describe("Discord reminder payload", () => {
       "2026-07-28",
     );
 
+    expect(payload.content).toContain("오늘 미완료 Todo 알림");
     expect(payload.content.match(/^• Todo/gm)).toHaveLength(5);
     expect(payload.content).toContain("• 외 2개");
   });
