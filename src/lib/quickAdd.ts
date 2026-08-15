@@ -13,15 +13,15 @@ export type QuickTodoTokens = {
 };
 
 const priorityTokens: Array<[RegExp, TodoPriority]> = [
-  [/!high\b|!높음\b/gi, "HIGH"],
-  [/!medium\b|!보통\b/gi, "MEDIUM"],
-  [/!low\b|!낮음\b/gi, "LOW"],
+  [/!(?:high|높음)(?=\s|$)/gi, "HIGH"],
+  [/!(?:medium|보통)(?=\s|$)/gi, "MEDIUM"],
+  [/!(?:low|낮음)(?=\s|$)/gi, "LOW"],
 ];
 
 const planningTokens: Array<[RegExp, TodoPlanningState]> = [
-  [/\b(?:inbox|수신함)\b/gi, "INBOX"],
-  [/\b(?:someday|언젠가)\b/gi, "SOMEDAY"],
-  [/\b(?:waiting|대기)\b/gi, "WAITING"],
+  [/(?:^|\s)(?:inbox|수신함)(?=\s|$)/gi, "INBOX"],
+  [/(?:^|\s)(?:someday|언젠가)(?=\s|$)/gi, "SOMEDAY"],
+  [/(?:^|\s)(?:waiting|대기)(?=\s|$)/gi, "WAITING"],
 ];
 
 const normalizeWhitespace = (value: string) => value.replace(/\s+/g, " ").trim();
@@ -47,7 +47,7 @@ export function parseQuickTodoTitle(raw: string, plannerToday: string): QuickTod
 
   let date: string | undefined;
   const today = parseDateKey(plannerToday);
-  const dateToken = source.match(/\b(오늘|내일|모레)\b/);
+  const dateToken = source.match(/(?:^|\s)(오늘|내일|모레)(?=\s|$)/);
   if (dateToken) {
     const offset = dateToken[1] === "내일" ? 1 : dateToken[1] === "모레" ? 2 : 0;
     date = toDateKey(addDays(today, offset));
@@ -63,7 +63,7 @@ export function parseQuickTodoTitle(raw: string, plannerToday: string): QuickTod
   }
 
   let estimateMinutes: number | undefined;
-  const durationToken = source.match(/\b(\d+(?:\.\d+)?)(m|h|분|시간)\b/i);
+  const durationToken = source.match(/(\d+(?:\.\d+)?)(m|h|분|시간)(?=\s|$)/i);
   if (durationToken) {
     const amount = Number(durationToken[1]);
     const unit = durationToken[2].toLowerCase();
@@ -72,13 +72,14 @@ export function parseQuickTodoTitle(raw: string, plannerToday: string): QuickTod
     source = source.replace(durationToken[0], " ");
   }
 
-  return {
+  const result: QuickTodoTokens = {
     title: normalizeWhitespace(source),
     tags: Array.from(new Set(tags)),
-    date,
-    dueDate,
-    estimateMinutes,
-    priority,
-    planningState,
   };
+  if (date) result.date = date;
+  if (dueDate) result.dueDate = dueDate;
+  if (estimateMinutes) result.estimateMinutes = estimateMinutes;
+  if (priority) result.priority = priority;
+  if (planningState) result.planningState = planningState;
+  return result;
 }
