@@ -1,6 +1,6 @@
 import { Archive, CalendarDays, CheckCircle2, Pencil, RotateCcw, Trash2 } from "lucide-react";
-import { formatKoreanDate } from "../../lib/date";
-import { repeatLabel } from "../../lib/todo";
+import { formatKoreanDate, getDdayLabel, todayKey } from "../../lib/date";
+import { isDueSoon, isOverdueByDeadline, repeatLabel } from "../../lib/todo";
 import type { Todo } from "../../types/todo";
 import { PriorityBadge } from "./PriorityBadge";
 
@@ -16,6 +16,8 @@ type TodoRowProps = {
   duplicateCandidate?: boolean;
 };
 
+const planningLabel = { INBOX: "Inbox", SCHEDULED: "일정", SOMEDAY: "Someday", WAITING: "Waiting" } as const;
+
 export function TodoRow({
   todo,
   onToggle,
@@ -28,97 +30,43 @@ export function TodoRow({
   duplicateCandidate = false,
 }: TodoRowProps) {
   const handleDelete = () => {
-    if (window.confirm(`"${todo.title}" Todo를 삭제할까요?`)) {
-      onDelete(todo.id);
-    }
+    if (window.confirm(`"${todo.title}" Todo를 삭제할까요?`)) onDelete(todo.id);
   };
+  const today = todayKey();
+  const overdue = isOverdueByDeadline(todo, today);
+  const dueSoon = isDueSoon(todo, today);
 
   return (
-    <article
-      className={`group rounded-lg border border-ink-800 bg-ink-950/35 px-2.5 py-1.5 transition hover:border-ink-600 hover:bg-ink-900/70 sm:px-3 ${
-        todo.completed ? "opacity-60" : ""
-      }`}
-    >
+    <article className={`group rounded-lg border border-ink-800 bg-ink-950/35 px-2.5 py-1.5 transition hover:border-ink-600 hover:bg-ink-900/70 sm:px-3 ${todo.completed ? "opacity-60" : ""}`}>
       <div className="flex min-w-0 items-center gap-2">
-        <button
-          type="button"
-          onClick={() => onToggle(todo.id)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md transition hover:bg-ink-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40"
-          aria-label={todo.completed ? `"${todo.title}" 미완료로 변경` : `"${todo.title}" 완료로 변경`}
-          title={todo.completed ? "미완료로 변경" : "완료로 변경"}
-        >
-          <span
-            className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${
-              todo.completed
-                ? "border-success bg-success text-ink-950"
-                : "border-ink-600 text-transparent"
-            }`}
-            aria-hidden="true"
-          >
-            <CheckCircle2 size={13} />
-          </span>
+        <button type="button" onClick={() => onToggle(todo.id)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md transition hover:bg-ink-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40" aria-label={todo.completed ? `"${todo.title}" 미완료로 변경` : `"${todo.title}" 완료로 변경`} title={todo.completed ? "미완료로 변경" : "완료로 변경"}>
+          <span className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${todo.completed ? "border-success bg-success text-ink-950" : "border-ink-600 text-transparent"}`} aria-hidden="true"><CheckCircle2 size={13} /></span>
         </button>
 
         <button type="button" className="min-w-0 flex-1 text-left" onClick={() => onEdit(todo)}>
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h4 className={`min-w-0 break-words text-sm font-semibold leading-5 text-ink-100 ${todo.completed ? "text-ink-500 line-through" : ""}`}>
-              {todo.title}
-            </h4>
+            <h4 className={`min-w-0 break-words text-sm font-semibold leading-5 text-ink-100 ${todo.completed ? "text-ink-500 line-through" : ""}`}>{todo.title}</h4>
             <PriorityBadge priority={todo.priority} compact />
-            {showCategoryBadge ? (
-              <span className="rounded-full border border-ink-700 bg-ink-900 px-2 py-0.5 text-[11px] font-semibold leading-4 text-ink-300">
-                {todo.category?.name || "미분류"}
-              </span>
-            ) : null}
-            {todo.repeat !== "NONE" ? (
-              <span className="rounded-full border border-accent-500/35 bg-accent-500/15 px-2 py-0.5 text-[11px] font-semibold leading-4 text-indigo-100">
-                {repeatLabel[todo.repeat]}
-              </span>
-            ) : null}
-            {todo.archived ? (
-              <span className="rounded-full border border-ink-600 bg-ink-700/60 px-2 py-0.5 text-[11px] font-semibold leading-4 text-ink-200">
-                보관됨
-              </span>
-            ) : null}
-            {duplicateCandidate ? (
-              <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[11px] font-semibold leading-4 text-amber-100">
-                중복 후보
-              </span>
-            ) : null}
+            {showCategoryBadge ? <span className="rounded-full border border-ink-700 bg-ink-900 px-2 py-0.5 text-[11px] font-semibold leading-4 text-ink-300">{todo.category?.name || "미분류"}</span> : null}
+            {todo.planningState !== "SCHEDULED" ? <span className="rounded-full border border-sky-400/30 bg-sky-400/10 px-2 py-0.5 text-[11px] font-semibold leading-4 text-sky-100">{planningLabel[todo.planningState]}</span> : null}
+            {todo.repeat !== "NONE" ? <span className="rounded-full border border-accent-500/35 bg-accent-500/15 px-2 py-0.5 text-[11px] font-semibold leading-4 text-indigo-100">{repeatLabel[todo.repeat]}</span> : null}
+            {todo.archived ? <span className="rounded-full border border-ink-600 bg-ink-700/60 px-2 py-0.5 text-[11px] font-semibold leading-4 text-ink-200">보관됨</span> : null}
+            {duplicateCandidate ? <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[11px] font-semibold leading-4 text-amber-100">중복 후보</span> : null}
           </div>
           {todo.memo ? <p className="mt-0.5 line-clamp-1 whitespace-pre-wrap text-[11px] text-ink-500">{todo.memo}</p> : null}
           <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-ink-500">
-            {showDate ? (
-              <span className="inline-flex items-center gap-1">
-                <CalendarDays size={13} />
-                {formatKoreanDate(todo.date, "M월 d일 E")}
-              </span>
-            ) : null}
-            {todo.tags.map((tag) => (
-              <span key={tag} className="rounded-full border border-ink-700 px-2 py-0.5 text-ink-400">
-                #{tag}
-              </span>
-            ))}
+            {showDate && todo.planningState === "SCHEDULED" ? <span className="inline-flex items-center gap-1"><CalendarDays size={13} />{formatKoreanDate(todo.date, "M월 d일 E")}</span> : null}
+            {todo.estimateMinutes ? <span className="rounded-full border border-ink-700 px-2 py-0.5 text-ink-400">예상 {todo.estimateMinutes}분</span> : null}
+            {todo.dueDate ? <span className={`rounded-full border px-2 py-0.5 font-semibold ${overdue ? "border-danger/45 bg-danger/10 text-red-100" : dueSoon ? "border-warning/45 bg-warning/10 text-amber-100" : "border-ink-700 text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {getDdayLabel(todo.dueDate)}</span> : null}
+            {todo.tags.map((tag) => <span key={tag} className="rounded-full border border-ink-700 px-2 py-0.5 text-ink-400">#{tag}</span>)}
           </div>
         </button>
 
         <div className="flex shrink-0 flex-wrap justify-end gap-1.5 opacity-100 sm:opacity-70 sm:transition sm:group-hover:opacity-100">
-          {todo.archived && onUnarchive ? (
-            <button type="button" className="icon-btn min-h-9 min-w-9 rounded-md" onClick={() => onUnarchive(todo.id)} aria-label={`"${todo.title}" 보관 해제`}>
-              <RotateCcw size={13} />
-            </button>
-          ) : null}
-          {!todo.archived && todo.completed && onArchive ? (
-            <button type="button" className="icon-btn min-h-9 min-w-9 rounded-md" onClick={() => onArchive(todo.id)} aria-label={`"${todo.title}" Todo 보관`}>
-              <Archive size={13} />
-            </button>
-          ) : null}
-          <button type="button" className="icon-btn min-h-9 min-w-9 rounded-md" onClick={() => onEdit(todo)} aria-label={`"${todo.title}" Todo 수정`}>
-            <Pencil size={13} />
-          </button>
-          <button type="button" className="icon-btn min-h-9 min-w-9 rounded-md hover:border-red-400 hover:text-red-200" onClick={handleDelete} aria-label={`"${todo.title}" Todo 삭제`}>
-            <Trash2 size={13} />
-          </button>
+          {todo.archived && onUnarchive ? <button type="button" className="icon-btn min-h-9 min-w-9 rounded-md" onClick={() => onUnarchive(todo.id)} aria-label={`"${todo.title}" 보관 해제`}><RotateCcw size={13} /></button> : null}
+          {!todo.archived && todo.completed && onArchive ? <button type="button" className="icon-btn min-h-9 min-w-9 rounded-md" onClick={() => onArchive(todo.id)} aria-label={`"${todo.title}" Todo 보관`}><Archive size={13} /></button> : null}
+          <button type="button" className="icon-btn min-h-9 min-w-9 rounded-md" onClick={() => onEdit(todo)} aria-label={`"${todo.title}" Todo 수정`}><Pencil size={13} /></button>
+          <button type="button" className="icon-btn min-h-9 min-w-9 rounded-md hover:border-red-400 hover:text-red-200" onClick={handleDelete} aria-label={`"${todo.title}" Todo 삭제`}><Trash2 size={13} /></button>
         </div>
       </div>
     </article>
