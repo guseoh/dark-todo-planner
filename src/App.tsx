@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Undo2 } from "lucide-react";
+import { CommandPalette } from "./components/common/CommandPalette";
 import { ErrorBanner, ErrorState, LoadingState } from "./components/common/LoadingState";
 import { Modal } from "./components/common/Modal";
 import { Header } from "./components/layout/Header";
@@ -18,6 +19,7 @@ import { WeekPage } from "./pages/WeekPage";
 function App({ onLogout }: { onLogout: () => Promise<void> }) {
   const [activeView, setActiveView] = useState<AppView>("today");
   const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const planner = usePlannerData();
 
   const todayTodos = useMemo(() => planner.getTodayTodos(), [planner]);
@@ -26,8 +28,15 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey) || !event.shiftKey || event.key.toLowerCase() !== "k") return;
-      event.preventDefault(); setShowQuickAdd(true);
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "k") return;
+      event.preventDefault();
+      if (event.shiftKey) {
+        setShowCommandPalette(false);
+        setShowQuickAdd(true);
+      } else {
+        setShowQuickAdd(false);
+        setShowCommandPalette(true);
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -44,9 +53,14 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     settings: <SettingsPage stats={planner.stats} categories={planner.categories} goals={planner.goals} memos={planner.memos} apiStatus={planner.connectionError ? "offline" : "online"} />,
   } satisfies Record<AppView, JSX.Element>;
 
+  const openQuickAdd = () => {
+    setShowCommandPalette(false);
+    setShowQuickAdd(true);
+  };
+
   return (
     <div className="min-h-screen pb-24 lg:pb-0">
-      <Header storageStatus={planner.connectionError ? "offline" : "server"} onLogout={onLogout} onQuickAdd={() => setShowQuickAdd(true)} />
+      <Header storageStatus={planner.connectionError ? "offline" : "server"} onLogout={onLogout} onQuickAdd={openQuickAdd} onSearch={() => { setShowQuickAdd(false); setShowCommandPalette(true); }} />
       <div className="mx-auto flex w-full max-w-[1680px] gap-5 px-4 py-5 sm:px-5 lg:px-6">
         <Sidebar activeView={activeView} onChangeView={setActiveView} />
         <main className="min-w-0 flex-1 space-y-4">
@@ -56,8 +70,19 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
         </main>
       </div>
 
+      {showCommandPalette ? (
+        <CommandPalette
+          onClose={() => setShowCommandPalette(false)}
+          onNavigate={setActiveView}
+          onQuickAdd={openQuickAdd}
+          todos={planner.allTodos}
+          memos={planner.memos}
+          projects={planner.projects}
+        />
+      ) : null}
+
       {showQuickAdd ? (
-        <Modal title="빠른 Todo 추가" description="어느 화면에서든 Ctrl+Shift+K로 열 수 있습니다. Inbox·프로젝트·실행일·마감일과 예상 시간도 상세 옵션에서 지정할 수 있습니다." onClose={() => setShowQuickAdd(false)}>
+        <Modal title="빠른 Todo 추가" description="Ctrl+Shift+K로 열 수 있습니다. 제목에 ‘내일’, !high, #태그, 45m, due:2026-08-20 같은 빠른 문법도 사용할 수 있습니다." onClose={() => setShowQuickAdd(false)}>
           <TodoForm compact submitLabel="Todo 추가" categories={planner.categories} projects={planner.activeProjects} onAdd={(input) => { void planner.addTodo(input).then((created) => { if (created) setShowQuickAdd(false); }); }} />
         </Modal>
       ) : null}
