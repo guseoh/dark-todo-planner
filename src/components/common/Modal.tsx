@@ -106,7 +106,7 @@ export function Modal({ title, description, children, onClose, size = "md" }: Mo
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-ink-950/75 px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-ink-950/80 px-4 py-6 backdrop-blur-sm">
       <div
         ref={dialogRef}
         role="dialog"
@@ -114,12 +114,12 @@ export function Modal({ title, description, children, onClose, size = "md" }: Mo
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
-        className={`w-full ${sizeClass} rounded-xl border border-ink-700 bg-ink-850 shadow-soft outline-none`}
+        className={`w-full ${sizeClass} rounded-xl border border-ink-700/70 bg-ink-850 shadow-soft outline-none`}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-ink-700 px-5 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-ink-700/60 px-5 py-4">
           <div className="min-w-0">
             <h2 id={titleId} className="text-lg font-bold text-ink-100">{title}</h2>
-            {description ? <p id={descriptionId} className="mt-1 text-sm text-ink-400">{description}</p> : null}
+            {description ? <p id={descriptionId} className="mt-1 text-sm text-ink-300">{description}</p> : null}
           </div>
           <button ref={closeButtonRef} type="button" className="icon-btn h-9 w-9 shrink-0" onClick={onClose} aria-label={`${title} 닫기`}>
             <X size={16} />

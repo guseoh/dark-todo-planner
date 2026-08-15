@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
-import { X } from "lucide-react";
 import type { Category } from "../../types/category";
 import type { Todo, TodoPriority, TodoRepeat } from "../../types/todo";
+import { Modal } from "../common/Modal";
 import { MarkdownEditor } from "../editor/MarkdownEditor";
 
 type TodoEditModalProps = {
@@ -33,22 +33,13 @@ export function TodoEditModal({ todo, categories = [], onClose, onSave }: TodoEd
     setCategoryId(todo.categoryId || "");
   }, [todo]);
 
-  useEffect(() => {
-    if (!todo) return undefined;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, todo]);
-
   if (!todo) return null;
 
   const saveTodo = () => {
     if (!title.trim()) return;
 
     onSave(todo.id, {
-      title,
+      title: title.trim(),
       categoryId: categoryId || undefined,
       memo,
       date,
@@ -67,19 +58,14 @@ export function TodoEditModal({ todo, categories = [], onClose, onSave }: TodoEd
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-3 sm:items-center">
-      <form
-        onSubmit={handleSubmit}
-        className="app-card w-full max-w-2xl p-5"
-      >
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-bold text-ink-100">Todo 수정</h2>
-          <button type="button" className="icon-btn" onClick={onClose} aria-label="닫기">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="mt-5 grid gap-3 md:grid-cols-2">
+    <Modal
+      title="Todo 수정"
+      description="날짜, 카테고리, 우선순위, 반복과 메모를 한 곳에서 수정합니다."
+      onClose={onClose}
+      size="lg"
+    >
+      <form onSubmit={handleSubmit}>
+        <div className="grid gap-3 md:grid-cols-2">
           <label className="space-y-1 text-sm text-ink-400 md:col-span-2">
             제목
             <input
@@ -87,6 +73,7 @@ export function TodoEditModal({ todo, categories = [], onClose, onSave }: TodoEd
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder="Todo 제목"
+              data-modal-initial-focus
             />
           </label>
           <label className="space-y-1 text-sm text-ink-400">
@@ -145,7 +132,7 @@ export function TodoEditModal({ todo, categories = [], onClose, onSave }: TodoEd
               placeholder="공부, 개발, 운동"
             />
           </label>
-          <label className="flex min-h-11 items-center gap-3 rounded-lg border border-ink-700 bg-ink-950/60 px-3 text-sm text-ink-300 md:col-span-2">
+          <label className="flex min-h-11 items-center gap-3 rounded-lg bg-ink-950/45 px-3 text-sm text-ink-300 md:col-span-2">
             <input
               type="checkbox"
               checked={completed}
@@ -157,15 +144,15 @@ export function TodoEditModal({ todo, categories = [], onClose, onSave }: TodoEd
           <MarkdownEditor className="md:col-span-2" label="메모" value={memo} onChange={setMemo} placeholder="메모" />
         </div>
 
-        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <div className="mt-5 flex flex-col-reverse gap-2 border-t border-ink-700/60 pt-4 sm:flex-row sm:justify-end">
           <button type="button" className="btn-secondary" onClick={onClose}>
             취소
           </button>
-          <button type="submit" className="btn-primary">
+          <button type="submit" className="btn-primary" disabled={!title.trim()}>
             저장
           </button>
         </div>
       </form>
-    </div>
+    </Modal>
   );
 }

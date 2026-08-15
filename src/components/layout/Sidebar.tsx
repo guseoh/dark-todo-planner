@@ -58,12 +58,12 @@ export function Sidebar({ activeView, onChangeView }: SidebarProps) {
 
   return (
     <>
-      <aside className={`relative z-50 hidden shrink-0 overflow-visible transition-all duration-200 lg:block ${collapsed ? "w-16" : "w-60"}`}>
+      <aside className={`relative z-20 hidden shrink-0 overflow-visible transition-all duration-200 lg:block ${collapsed ? "w-16" : "w-60"}`}>
         <nav className="sticky top-24 space-y-2 overflow-visible">
           <button
             type="button"
             onClick={() => setCollapsed((value) => !value)}
-            className={`flex min-h-10 w-full items-center rounded-lg border border-ink-700 bg-ink-900/70 text-sm font-semibold text-ink-300 transition hover:border-accent-500/60 hover:bg-ink-800 hover:text-ink-100 ${
+            className={`flex min-h-10 w-full items-center rounded-lg border border-ink-700/70 bg-ink-900/70 text-sm font-semibold text-ink-300 transition hover:border-accent-500/60 hover:bg-ink-800 hover:text-ink-100 ${
               collapsed ? "justify-center px-2" : "justify-between px-4"
             }`}
             aria-label={collapsed ? "사이드바 펼치기" : "사이드바 접기"}
@@ -92,7 +92,7 @@ export function Sidebar({ activeView, onChangeView }: SidebarProps) {
                 <Icon size={18} />
                 {!collapsed ? <span className="truncate">{item.label}</span> : null}
                 {collapsed ? (
-                  <span className="pointer-events-none absolute left-full top-1/2 z-[70] ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md border border-ink-700 bg-ink-950 px-2.5 py-1.5 text-xs font-semibold text-ink-100 shadow-xl group-hover:block group-focus-visible:block">
+                  <span className="pointer-events-none absolute left-full top-1/2 z-30 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md border border-ink-700/70 bg-ink-950 px-2.5 py-1.5 text-xs font-semibold text-ink-100 shadow-xl group-hover:block group-focus-visible:block">
                     {item.label}
                   </span>
                 ) : null}
@@ -102,7 +102,7 @@ export function Sidebar({ activeView, onChangeView }: SidebarProps) {
         </nav>
       </aside>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-700 bg-ink-950/95 px-2 py-2 backdrop-blur-xl lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-700/70 bg-ink-950/95 px-2 py-2 backdrop-blur-xl lg:hidden">
         <div className="relative">
           <div className="flex gap-1 overflow-x-auto pb-1">
             {navItems.map((item) => {

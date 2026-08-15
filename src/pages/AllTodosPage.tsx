@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { ListChecks, Trash2 } from "lucide-react";
 import { defaultFilters } from "../hooks/useTodos";
 import type { Category } from "../types/category";
 import type { Todo, TodoFilters, TodoInput } from "../types/todo";
@@ -103,22 +103,25 @@ export function AllTodosPage({
           <p className="mt-2 text-sm text-ink-400">검색, 필터, 정렬로 모든 Todo를 빠르게 찾습니다.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-ink-700 bg-ink-800 px-3 py-1 text-sm text-ink-300">
+          <span className="rounded-full bg-ink-850 px-3 py-1 text-sm text-ink-300">
             {filteredTodos.length}개 표시
           </span>
           <button
             type="button"
-            className="btn-danger min-h-9 px-3 py-1 text-sm"
+            className="btn-secondary min-h-9 px-3 py-1 text-sm"
             onClick={openDeleteManager}
             disabled={allTodos.length === 0}
           >
-            <Trash2 size={15} />
-            일괄 삭제
+            <ListChecks size={15} />
+            선택 삭제
           </button>
         </div>
       </section>
 
-      <TodoFilter filters={filters} onChange={setFilters} tagOptions={tagOptions} categories={categories} />
+      <div className="sticky top-[76px] z-20 -mx-1 rounded-xl bg-ink-950/90 px-1 py-2 backdrop-blur-xl">
+        <TodoFilter filters={filters} onChange={setFilters} tagOptions={tagOptions} categories={categories} />
+      </div>
+
       <GroupedTodoList
         todos={filteredTodos}
         categories={categories}
@@ -138,13 +141,13 @@ export function AllTodosPage({
 
       {showDeleteManager ? (
         <Modal
-          title="Todo 일괄 삭제"
-          description="현재 검색 결과만 선택하거나 저장된 모든 Todo를 선택한 뒤 필요한 항목을 다시 해제할 수 있습니다."
+          title="Todo 선택 삭제"
+          description="삭제 모드에서 현재 검색 결과나 전체 Todo를 선택한 뒤 필요한 항목만 삭제합니다."
           onClose={closeDeleteManager}
           size="lg"
         >
           <div className="space-y-4">
-            <div className="flex flex-col gap-3 rounded-lg border border-ink-700 bg-ink-950/45 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 rounded-lg bg-ink-950/45 p-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-bold text-ink-100">{selectedIds.size}개 선택됨</p>
                 <p className="mt-1 text-xs text-ink-400">보관된 Todo도 ‘모든 Todo 선택’에 포함됩니다.</p>
@@ -183,10 +186,10 @@ export function AllTodosPage({
                 return (
                   <label
                     key={todo.id}
-                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition ${
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg px-3 py-2.5 transition ${
                       checked
-                        ? "border-danger/55 bg-danger/10"
-                        : "border-ink-700 bg-ink-900/60 hover:border-ink-500 hover:bg-ink-800"
+                        ? "bg-danger/10 ring-1 ring-danger/45"
+                        : "bg-ink-950/35 hover:bg-ink-800/80"
                     }`}
                   >
                     <input
@@ -200,7 +203,7 @@ export function AllTodosPage({
                       <span className={`block break-words text-sm font-semibold ${todo.completed ? "text-ink-400 line-through" : "text-ink-100"}`}>
                         {todo.title}
                       </span>
-                      <span className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-ink-500">
+                      <span className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-ink-400">
                         <span>{todo.date}</span>
                         <span>{todo.category?.name || "미분류"}</span>
                         {todo.completed ? <span>완료</span> : <span>미완료</span>}
@@ -218,7 +221,7 @@ export function AllTodosPage({
               </p>
             ) : null}
 
-            <div className="flex flex-col-reverse gap-2 border-t border-ink-700 pt-4 sm:flex-row sm:justify-end">
+            <div className="flex flex-col-reverse gap-2 border-t border-ink-700/60 pt-4 sm:flex-row sm:justify-end">
               <button type="button" className="btn-secondary" onClick={closeDeleteManager} disabled={deleting}>
                 취소
               </button>
