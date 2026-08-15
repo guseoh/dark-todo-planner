@@ -1,4 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
+import { addDays } from "date-fns";
+import { parseDateKey, todayKey, toDateKey } from "../../lib/date";
 import type { Category } from "../../types/category";
 import type { Project } from "../../types/project";
 import type { Todo, TodoPlanningState, TodoPriority, TodoRepeat, TodoWorkflowStatus } from "../../types/todo";
@@ -30,11 +32,16 @@ export function TodoEditModal({ todo, categories = [], projects = [], onClose, o
 
   if (!todo) return null;
 
+  const moveToDayOffset = (days: number) => {
+    setPlanningState("SCHEDULED");
+    setDate(toDateKey(addDays(parseDateKey(todayKey()), days)));
+  };
+
   const saveTodo = () => {
     if (!title.trim()) return;
     onSave(todo.id, {
       title: title.trim(), categoryId: categoryId || undefined, projectId: projectId || undefined, memo,
-      date: planningState === "SCHEDULED" ? (date || todo.date || new Date().toISOString().slice(0, 10)) : UNSCHEDULED_DATE,
+      date: planningState === "SCHEDULED" ? (date || todo.date || todayKey()) : UNSCHEDULED_DATE,
       dueDate: dueDate || undefined, priority, repeat, tags: tags.split(","), completed, planningState,
       workflowStatus: completed ? "DONE" : workflowStatus, estimateMinutes: estimateMinutes ? Number(estimateMinutes) : undefined, updatedAt: new Date().toISOString(),
     });
@@ -50,6 +57,15 @@ export function TodoEditModal({ todo, categories = [], projects = [], onClose, o
           <label className="space-y-1 text-sm text-ink-400">작업 상태<select className="field" value={workflowStatus} onChange={(event) => setWorkflowStatus(event.target.value as TodoWorkflowStatus)} disabled={completed}><option value="TODO">Todo</option><option value="IN_PROGRESS">진행 중</option><option value="BLOCKED">Blocked</option><option value="DONE">완료</option></select></label>
           {planningState === "SCHEDULED" ? <label className="space-y-1 text-sm text-ink-400">실행일<input className="field" type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label> : <div className="rounded-lg border border-ink-700/60 bg-ink-950/35 px-3 py-2 text-sm text-ink-500">일정으로 옮길 때 실행일을 지정합니다.</div>}
           <label className="space-y-1 text-sm text-ink-400">마감일<input className="field" type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></label>
+          <div className="md:col-span-2">
+            <p className="mb-1.5 text-xs font-semibold text-ink-500">빠른 일정 이동</p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="btn-secondary min-h-9 px-3 py-1 text-xs" onClick={() => moveToDayOffset(0)}>오늘</button>
+              <button type="button" className="btn-secondary min-h-9 px-3 py-1 text-xs" onClick={() => moveToDayOffset(1)}>내일</button>
+              <button type="button" className="btn-secondary min-h-9 px-3 py-1 text-xs" onClick={() => moveToDayOffset(7)}>+1주</button>
+              <button type="button" className="btn-secondary min-h-9 px-3 py-1 text-xs" onClick={() => { setPlanningState("SOMEDAY"); setDate(""); }}>Someday</button>
+            </div>
+          </div>
           <label className="space-y-1 text-sm text-ink-400">카테고리<select className="field" value={categoryId} onChange={(event) => setCategoryId(event.target.value)}><option value="">미분류</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
           {projects.length || projectId ? <label className="space-y-1 text-sm text-ink-400">프로젝트<select className="field" value={projectId} onChange={(event) => setProjectId(event.target.value)}><option value="">프로젝트 없음</option>{projects.filter((project) => !project.archived || project.id === projectId).map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label> : null}
           <label className="space-y-1 text-sm text-ink-400">예상 시간(분)<input className="field" type="number" min="1" max="1440" value={estimateMinutes} onChange={(event) => setEstimateMinutes(event.target.value)} placeholder="30" /></label>
