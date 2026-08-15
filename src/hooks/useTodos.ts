@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { Category } from "../types/category";
 import type { Todo, TodoFilters, TodoInput } from "../types/todo";
 import { api, apiAllPages, jsonBody } from "../lib/api/client";
@@ -13,6 +13,8 @@ import {
   type OverdueTodoImportResult,
 } from "../lib/todoRecovery";
 
+const DELETE_UNDO_MS = 6000;
+
 export const defaultFilters: TodoFilters = {
   query: "",
   status: "ALL",
@@ -24,6 +26,12 @@ export const defaultFilters: TodoFilters = {
   duplicatesOnly: false,
   date: "",
   sort: "DATE_ASC",
+};
+
+export type PendingTodoDelete = {
+  id: string;
+  label: string;
+  createdAt: number;
 };
 
 const getMessage = (error: unknown) => (error instanceof Error ? error.message : "Todo 요청 처리 중 오류가 발생했습니다.");
@@ -44,11 +52,16 @@ export function useTodos() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<PendingTodoDelete | null>(null);
+  const deleteTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const deletedSnapshotsRef = useRef(new Map<string, Todo>());
 
   const loadTodos = useCallback(async () => {
     setLoading(true);
     try {
-      const todos = dedupeTodosById(await apiAllPages<Todo>("/api/todos?archived=all", "todos"));
+      const pendingIds = new Set(deletedSnapshotsRef.current.keys());
+      const todos = dedupeTodosById(await apiAllPages<Todo>("/api/todos?archived=all", "todos"))
+        .filter((todo) => !pendingIds.has(todo.id));
       setAllTodos(todos);
       setError("");
       return todos;
@@ -104,21 +117,62 @@ export function useTodos() {
     }
   }, [allTodos]);
 
-  const deleteTodo = useCallback(async (id: string) => {
-    const previous = allTodos;
-    setAllTodos((current) => current.filter((todo) => todo.id !== id));
+  const finalizeDelete = useCallback(async (id: string) => {
+    const snapshot = deletedSnapshotsRef.current.get(id);
     try {
       await api(`/api/todos/${id}`, { method: "DELETE" });
+      deletedSnapshotsRef.current.delete(id);
       setError("");
     } catch (err) {
-      setAllTodos(previous);
+      if (snapshot) {
+        setAllTodos((current) => current.some((todo) => todo.id === id) ? current : [snapshot, ...current]);
+      }
       setError(getMessage(err));
+    } finally {
+      deleteTimersRef.current.delete(id);
+      setPendingDelete((current) => (current?.id === id ? null : current));
     }
-  }, [allTodos]);
+  }, []);
+
+  const deleteTodo = useCallback((id: string) => {
+    const todo = allTodos.find((item) => item.id === id);
+    if (!todo) return;
+
+    const existingTimer = deleteTimersRef.current.get(id);
+    if (existingTimer) clearTimeout(existingTimer);
+    deletedSnapshotsRef.current.set(id, todo);
+    setAllTodos((current) => current.filter((item) => item.id !== id));
+    setPendingDelete({ id, label: todo.title, createdAt: Date.now() });
+
+    const timer = setTimeout(() => void finalizeDelete(id), DELETE_UNDO_MS);
+    deleteTimersRef.current.set(id, timer);
+  }, [allTodos, finalizeDelete]);
+
+  const undoDeleteTodo = useCallback(() => {
+    const pending = pendingDelete;
+    if (!pending) return;
+    const timer = deleteTimersRef.current.get(pending.id);
+    if (timer) clearTimeout(timer);
+    deleteTimersRef.current.delete(pending.id);
+    const snapshot = deletedSnapshotsRef.current.get(pending.id);
+    deletedSnapshotsRef.current.delete(pending.id);
+    if (snapshot) {
+      setAllTodos((current) => current.some((todo) => todo.id === snapshot.id) ? current : [snapshot, ...current]);
+    }
+    setPendingDelete(null);
+  }, [pendingDelete]);
 
   const deleteTodos = useCallback(async (ids: string[]) => {
     const uniqueIds = Array.from(new Set(ids.map((id) => id.trim()).filter(Boolean)));
     if (!uniqueIds.length) return true;
+
+    for (const id of uniqueIds) {
+      const timer = deleteTimersRef.current.get(id);
+      if (timer) clearTimeout(timer);
+      deleteTimersRef.current.delete(id);
+      deletedSnapshotsRef.current.delete(id);
+    }
+    setPendingDelete((current) => current && uniqueIds.includes(current.id) ? null : current);
 
     const previous = allTodos;
     const targetIds = new Set(uniqueIds);
@@ -278,10 +332,12 @@ export function useTodos() {
     loading,
     saving,
     error,
+    pendingDelete,
     loadTodos,
     addTodo,
     updateTodo,
     deleteTodo,
+    undoDeleteTodo,
     deleteTodos,
     toggleTodo,
     archiveTodo,

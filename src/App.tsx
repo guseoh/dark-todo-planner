@@ -1,7 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Undo2 } from "lucide-react";
 import { ErrorBanner, ErrorState, LoadingState } from "./components/common/LoadingState";
+import { Modal } from "./components/common/Modal";
 import { Header } from "./components/layout/Header";
 import { AppView, Sidebar } from "./components/layout/Sidebar";
+import { TodoForm } from "./components/todo/TodoForm";
 import { usePlannerData } from "./hooks/usePlannerData";
 import { AllTodosPage } from "./pages/AllTodosPage";
 import { MemoPage } from "./pages/MemoPage";
@@ -12,11 +15,22 @@ import { WeekPage } from "./pages/WeekPage";
 
 function App({ onLogout }: { onLogout: () => Promise<void> }) {
   const [activeView, setActiveView] = useState<AppView>("today");
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
   const planner = usePlannerData();
 
   const todayTodos = useMemo(() => planner.getTodayTodos(), [planner]);
   const overdueIncompleteTodos = useMemo(() => planner.getOverdueIncompleteTodos(), [planner]);
   const weekTodos = useMemo(() => planner.getWeekTodos(), [planner]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || !event.shiftKey || event.key.toLowerCase() !== "k") return;
+      event.preventDefault();
+      setShowQuickAdd(true);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const content = {
     today: (
@@ -95,6 +109,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
         onUpdate={planner.updateMemo}
         onDelete={planner.deleteMemo}
         onTogglePin={planner.toggleMemoPin}
+        onAddTodo={planner.addTodo}
       />
     ),
     settings: (
@@ -110,7 +125,11 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
 
   return (
     <div className="min-h-screen pb-24 lg:pb-0">
-      <Header storageStatus={planner.connectionError ? "offline" : "server"} onLogout={onLogout} />
+      <Header
+        storageStatus={planner.connectionError ? "offline" : "server"}
+        onLogout={onLogout}
+        onQuickAdd={() => setShowQuickAdd(true)}
+      />
       <div className="mx-auto flex w-full max-w-[1680px] gap-5 px-4 py-5 sm:px-5 lg:px-6">
         <Sidebar activeView={activeView} onChangeView={setActiveView} />
         <main className="min-w-0 flex-1 space-y-4">
@@ -126,6 +145,48 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
           ) : null}
         </main>
       </div>
+
+      {showQuickAdd ? (
+        <Modal
+          title="빠른 Todo 추가"
+          description="어느 화면에서든 Ctrl+Shift+K로 열 수 있습니다. 필요한 경우 상세 옵션에서 날짜·우선순위·반복·메모를 지정하세요."
+          onClose={() => setShowQuickAdd(false)}
+        >
+          <TodoForm
+            compact
+            submitLabel="Todo 추가"
+            categories={planner.categories}
+            onAdd={(input) => {
+              void planner.addTodo(input).then((created) => {
+                if (created) setShowQuickAdd(false);
+              });
+            }}
+          />
+        </Modal>
+      ) : null}
+
+      {planner.pendingTodoDelete || planner.pendingMemoDelete ? (
+        <div className="fixed bottom-20 right-4 z-[90] flex w-[min(26rem,calc(100vw-2rem))] flex-col gap-2 lg:bottom-4" aria-live="polite">
+          {planner.pendingTodoDelete ? (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-ink-600 bg-ink-900/95 px-4 py-3 shadow-2xl backdrop-blur-xl">
+              <p className="min-w-0 truncate text-sm font-semibold text-ink-200">“{planner.pendingTodoDelete.label}” Todo 삭제 대기</p>
+              <button type="button" className="btn-secondary min-h-9 shrink-0 px-2.5 py-1 text-xs" onClick={planner.undoDeleteTodo}>
+                <Undo2 size={14} />
+                실행 취소
+              </button>
+            </div>
+          ) : null}
+          {planner.pendingMemoDelete ? (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-ink-600 bg-ink-900/95 px-4 py-3 shadow-2xl backdrop-blur-xl">
+              <p className="min-w-0 truncate text-sm font-semibold text-ink-200">“{planner.pendingMemoDelete.label}” 메모 삭제 대기</p>
+              <button type="button" className="btn-secondary min-h-9 shrink-0 px-2.5 py-1 text-xs" onClick={planner.undoDeleteMemo}>
+                <Undo2 size={14} />
+                실행 취소
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

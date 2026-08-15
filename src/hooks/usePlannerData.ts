@@ -105,10 +105,13 @@ export function usePlannerData() {
     connectionError: loadError,
     stats: todosState.stats,
     nearestGoal: goalsState.nearestGoal,
+    pendingTodoDelete: todosState.pendingDelete,
+    pendingMemoDelete: memosState.pendingDelete,
     loadAll,
     addTodo: todosState.addTodo,
     updateTodo: todosState.updateTodo,
     deleteTodo: todosState.deleteTodo,
+    undoDeleteTodo: todosState.undoDeleteTodo,
     deleteTodos: todosState.deleteTodos,
     toggleTodo: todosState.toggleTodo,
     archiveTodo: todosState.archiveTodo,
@@ -132,5 +135,6 @@ export function usePlannerData() {
     updateMemo: memosState.updateMemo,
     toggleMemoPin: memosState.toggleMemoPin,
     deleteMemo: memosState.deleteMemo,
+    undoDeleteMemo: memosState.undoDeleteMemo,
   };
 }
