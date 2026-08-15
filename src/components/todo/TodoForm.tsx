@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
 import { todayKey } from "../../lib/date";
+import { parseQuickTodoTitle } from "../../lib/quickAdd";
 import type { Category } from "../../types/category";
 import type { Project } from "../../types/project";
 import type { TodoInput, TodoPlanningState, TodoPriority, TodoRepeat } from "../../types/todo";
@@ -50,12 +51,28 @@ export function TodoForm({
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    if (!title.trim()) { titleInputRef.current?.focus(); return; }
+    const parsed = parseQuickTodoTitle(title, todayKey());
+    if (!parsed.title) { titleInputRef.current?.focus(); return; }
+
+    const nextPlanningState = parsed.planningState ?? planningState;
+    const nextDate = parsed.date || date || defaultDate || todayKey();
+    const mergedTags = Array.from(new Set([
+      ...tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+      ...parsed.tags,
+    ]));
+
     onAdd({
-      title: title.trim(), categoryId: categoryId || undefined, projectId: projectId || undefined, memo,
-      date: planningState === "SCHEDULED" ? (date || todayKey()) : UNSCHEDULED_DATE,
-      dueDate: dueDate || undefined, estimateMinutes: estimateMinutes ? Number(estimateMinutes) : undefined,
-      planningState, priority, repeat, tags: tags.split(","),
+      title: parsed.title,
+      categoryId: categoryId || undefined,
+      projectId: projectId || undefined,
+      memo,
+      date: nextPlanningState === "SCHEDULED" ? nextDate : UNSCHEDULED_DATE,
+      dueDate: parsed.dueDate || dueDate || undefined,
+      estimateMinutes: parsed.estimateMinutes ?? (estimateMinutes ? Number(estimateMinutes) : undefined),
+      planningState: nextPlanningState,
+      priority: parsed.priority || priority,
+      repeat,
+      tags: mergedTags,
     });
     reset();
     window.requestAnimationFrame(() => titleInputRef.current?.focus());
@@ -70,6 +87,7 @@ export function TodoForm({
         </select>
         <div className="flex"><button type="submit" className="btn-primary"><Plus size={18} />{submitLabel}</button></div>
       </div>
+      <p className="mt-1.5 px-1 text-[11px] text-ink-500">빠른 문법: 내일 · !high · #태그 · 45m/1h · due:2026-08-20 · inbox/someday/waiting</p>
       <button type="button" className="mt-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-ink-400 transition hover:bg-ink-900/70 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40" onClick={() => setShowDetails((value) => !value)} aria-expanded={showDetails}>
         <ChevronDown className={`transition ${showDetails ? "rotate-180" : ""}`} size={15} />상세 옵션
       </button>
