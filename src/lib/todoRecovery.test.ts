@@ -76,8 +76,8 @@ describe("dedupeTodosById", () => {
 
 describe("overdue import", () => {
   it("skips duplicates already on today and imports the rest", async () => {
-    const copyTodo = vi.fn(async () => true);
-    const moveTodo = vi.fn(async () => true);
+    const copyTodo = vi.fn(async (_item: Todo) => true);
+    const moveTodo = vi.fn(async (_item: Todo) => true);
     const overdue = [todo("a", { title: "same" }), todo("b", { title: "new" })];
     const result = await importSelectedOverdueTodos({
       overdueTodos: overdue,
@@ -90,7 +90,7 @@ describe("overdue import", () => {
 
     expect(result).toEqual({ total: 2, success: 1, skipped: 1, failed: 0, mode: "copy" });
     expect(copyTodo).toHaveBeenCalledTimes(1);
-    expect(copyTodo.mock.calls[0]?.[0].id).toBe("b");
+    expect(copyTodo.mock.calls[0]?.[0]?.id).toBe("b");
     expect(moveTodo).not.toHaveBeenCalled();
   });
 
@@ -102,7 +102,7 @@ describe("overdue import", () => {
       todayTodos: [],
       mode: "copy",
       copyTodo,
-      moveTodo: vi.fn(async () => true),
+      moveTodo: vi.fn(async (_item: Todo) => true),
     });
 
     expect(result).toEqual({ total: 2, success: 1, skipped: 0, failed: 1, mode: "copy" });
@@ -110,13 +110,13 @@ describe("overdue import", () => {
   });
 
   it("moves selected Todo when move mode is chosen", async () => {
-    const moveTodo = vi.fn(async () => true);
+    const moveTodo = vi.fn(async (_item: Todo) => true);
     const result = await importSelectedOverdueTodos({
       overdueTodos: [todo("move")],
       selectedIds: new Set(["move"]),
       todayTodos: [],
       mode: "move",
-      copyTodo: vi.fn(async () => true),
+      copyTodo: vi.fn(async (_item: Todo) => true),
       moveTodo,
     });
 
