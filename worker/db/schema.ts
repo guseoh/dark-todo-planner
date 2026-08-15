@@ -23,15 +23,53 @@ export const categories = sqliteTable("categories", {
   ...timestamps,
 }, (table) => [index("categories_user_order_idx").on(table.userId, table.order, table.createdAt)]);
 
+export const projects = sqliteTable("projects", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  status: text("status", { enum: ["PLANNING", "ACTIVE", "ON_HOLD", "DONE"] }).notNull().default("ACTIVE"),
+  color: text("color"),
+  icon: text("icon"),
+  startDate: text("start_date"),
+  targetDate: text("target_date"),
+  archived: integer("archived", { mode: "boolean" }).notNull().default(false),
+  archivedAt: text("archived_at"),
+  order: integer("sort_order").notNull().default(0),
+  ...timestamps,
+}, (table) => [
+  index("projects_user_archived_order_idx").on(table.userId, table.archived, table.order),
+  index("projects_user_status_target_idx").on(table.userId, table.status, table.targetDate),
+]);
+
+export const milestones = sqliteTable("milestones", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  projectId: text("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  targetDate: text("target_date"),
+  status: text("status", { enum: ["TODO", "IN_PROGRESS", "DONE"] }).notNull().default("TODO"),
+  order: integer("sort_order").notNull().default(0),
+  ...timestamps,
+}, (table) => [index("milestones_project_order_idx").on(table.projectId, table.order, table.targetDate)]);
+
 export const todos = sqliteTable("todos", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   categoryId: text("category_id").references(() => categories.id, { onDelete: "set null" }),
+  projectId: text("project_id").references(() => projects.id, { onDelete: "set null" }),
+  milestoneId: text("milestone_id").references(() => milestones.id, { onDelete: "set null" }),
+  parentTodoId: text("parent_todo_id"),
   title: text("title").notNull(),
   memo: text("memo"),
   date: text("date").notNull(),
+  dueDate: text("due_date"),
   startTime: text("start_time"),
   endTime: text("end_time"),
+  estimateMinutes: integer("estimate_minutes"),
+  planningState: text("planning_state", { enum: ["INBOX", "SCHEDULED", "SOMEDAY", "WAITING"] }).notNull().default("SCHEDULED"),
+  workflowStatus: text("workflow_status", { enum: ["TODO", "IN_PROGRESS", "BLOCKED", "DONE"] }).notNull().default("TODO"),
   priority: text("priority", { enum: ["LOW", "MEDIUM", "HIGH"] }).notNull().default("MEDIUM"),
   completed: integer("completed", { mode: "boolean" }).notNull().default(false),
   repeat: text("repeat", { enum: ["NONE", "DAILY", "WEEKLY", "MONTHLY", "WEEKDAY", "WEEKEND"] }).notNull().default("NONE"),
@@ -43,6 +81,11 @@ export const todos = sqliteTable("todos", {
   index("todos_user_archived_date_idx").on(table.userId, table.archived, table.date),
   index("todos_user_category_order_idx").on(table.userId, table.categoryId, table.order),
   index("todos_user_created_idx").on(table.userId, table.createdAt),
+  index("todos_user_planning_date_idx").on(table.userId, table.planningState, table.date),
+  index("todos_user_project_status_idx").on(table.userId, table.projectId, table.workflowStatus),
+  index("todos_project_milestone_idx").on(table.projectId, table.milestoneId),
+  index("todos_parent_idx").on(table.parentTodoId),
+  index("todos_due_date_idx").on(table.dueDate),
 ]);
 
 export const tags = sqliteTable("tags", {

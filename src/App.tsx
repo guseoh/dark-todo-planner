@@ -7,8 +7,10 @@ import { AppView, Sidebar } from "./components/layout/Sidebar";
 import { TodoForm } from "./components/todo/TodoForm";
 import { usePlannerData } from "./hooks/usePlannerData";
 import { AllTodosPage } from "./pages/AllTodosPage";
+import { InboxPage } from "./pages/InboxPage";
 import { MemoPage } from "./pages/MemoPage";
 import { MonthPage } from "./pages/MonthPage";
+import { ProjectPage } from "./pages/ProjectPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { TodayPage } from "./pages/TodayPage";
 import { WeekPage } from "./pages/WeekPage";
@@ -25,166 +27,45 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey) || !event.shiftKey || event.key.toLowerCase() !== "k") return;
-      event.preventDefault();
-      setShowQuickAdd(true);
+      event.preventDefault(); setShowQuickAdd(true);
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const content = {
-    today: (
-      <TodayPage
-        todayTodos={todayTodos}
-        stats={planner.stats}
-        onAdd={planner.addTodo}
-        onToggle={planner.toggleTodo}
-        onDelete={planner.deleteTodo}
-        onUpdate={planner.updateTodo}
-        categories={planner.categories}
-        onAddCategory={planner.addCategory}
-        onUpdateCategory={planner.updateCategory}
-        onDeleteCategory={planner.deleteCategory}
-        onReorderCategories={planner.reorderCategories}
-        overdueTodos={overdueIncompleteTodos}
-        onBringOverdueTodos={planner.bringOverdueTodosToToday}
-      />
-    ),
-    week: (
-      <WeekPage
-        weekTodos={weekTodos}
-        getTodosByDate={planner.getTodosByDate}
-        onAdd={planner.addTodo}
-        onToggle={planner.toggleTodo}
-        onDelete={planner.deleteTodo}
-        onUpdate={planner.updateTodo}
-        onAddGoal={planner.addGoal}
-        onUpdateGoal={planner.updateGoal}
-        onToggleGoal={planner.toggleGoal}
-        onDeleteGoal={planner.deleteGoal}
-        categories={planner.categories}
-        goals={planner.goals}
-      />
-    ),
-    month: (
-      <MonthPage
-        todos={planner.todos}
-        getTodosByDate={planner.getTodosByDate}
-        onAdd={planner.addTodo}
-        onToggle={planner.toggleTodo}
-        onDelete={planner.deleteTodo}
-        onUpdate={planner.updateTodo}
-        categories={planner.categories}
-        goals={planner.goals}
-        onAddGoal={planner.addGoal}
-        onToggleGoal={planner.toggleGoal}
-        onDeleteGoal={planner.deleteGoal}
-        onAddCategory={planner.addCategory}
-        onUpdateCategory={planner.updateCategory}
-        onDeleteCategory={planner.deleteCategory}
-      />
-    ),
-    all: (
-      <AllTodosPage
-        allTodos={planner.allTodos}
-        filterTodos={planner.filterTodos}
-        tagOptions={planner.tagOptions}
-        categories={planner.categories}
-        duplicateTodoIds={planner.duplicateTodoIds}
-        onToggle={planner.toggleTodo}
-        onDelete={planner.deleteTodo}
-        onDeleteMany={planner.deleteTodos}
-        onUpdate={planner.updateTodo}
-        onUnarchive={planner.unarchiveTodo}
-        onAddTodo={planner.addTodo}
-        onAddCategory={planner.addCategory}
-        onUpdateCategory={planner.updateCategory}
-        onDeleteCategory={planner.deleteCategory}
-      />
-    ),
-    memo: (
-      <MemoPage
-        memos={planner.memos}
-        onAdd={planner.addMemo}
-        onUpdate={planner.updateMemo}
-        onDelete={planner.deleteMemo}
-        onTogglePin={planner.toggleMemoPin}
-        onAddTodo={planner.addTodo}
-      />
-    ),
-    settings: (
-      <SettingsPage
-        stats={planner.stats}
-        categories={planner.categories}
-        goals={planner.goals}
-        memos={planner.memos}
-        apiStatus={planner.connectionError ? "offline" : "online"}
-      />
-    ),
+    today: <TodayPage todayTodos={todayTodos} stats={planner.stats} onAdd={planner.addTodo} onToggle={planner.toggleTodo} onDelete={planner.deleteTodo} onUpdate={planner.updateTodo} categories={planner.categories} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} onReorderCategories={planner.reorderCategories} overdueTodos={overdueIncompleteTodos} onBringOverdueTodos={planner.bringOverdueTodosToToday} />,
+    inbox: <InboxPage todos={planner.todos} categories={planner.categories} projects={planner.activeProjects} onAdd={planner.addTodo} onUpdate={planner.updateTodo} onDelete={planner.deleteTodo} />,
+    week: <WeekPage weekTodos={weekTodos} getTodosByDate={planner.getTodosByDate} onAdd={planner.addTodo} onToggle={planner.toggleTodo} onDelete={planner.deleteTodo} onUpdate={planner.updateTodo} onAddGoal={planner.addGoal} onUpdateGoal={planner.updateGoal} onToggleGoal={planner.toggleGoal} onDeleteGoal={planner.deleteGoal} categories={planner.categories} goals={planner.goals} />,
+    month: <MonthPage todos={planner.todos} getTodosByDate={planner.getTodosByDate} onAdd={planner.addTodo} onToggle={planner.toggleTodo} onDelete={planner.deleteTodo} onUpdate={planner.updateTodo} categories={planner.categories} goals={planner.goals} onAddGoal={planner.addGoal} onToggleGoal={planner.toggleGoal} onDeleteGoal={planner.deleteGoal} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} />,
+    projects: <ProjectPage projects={planner.projects} milestones={planner.milestones} todos={planner.todos} categories={planner.categories} onAddProject={planner.addProject} onUpdateProject={planner.updateProject} onArchiveProject={planner.archiveProject} onUnarchiveProject={planner.unarchiveProject} onAddMilestone={planner.addMilestone} onUpdateMilestone={planner.updateMilestone} onDeleteMilestone={planner.deleteMilestone} onAddTodo={planner.addTodo} onUpdateTodo={planner.updateTodo} onToggleTodo={planner.toggleTodo} />,
+    all: <AllTodosPage allTodos={planner.allTodos} filterTodos={planner.filterTodos} tagOptions={planner.tagOptions} categories={planner.categories} duplicateTodoIds={planner.duplicateTodoIds} onToggle={planner.toggleTodo} onDelete={planner.deleteTodo} onDeleteMany={planner.deleteTodos} onUpdate={planner.updateTodo} onUnarchive={planner.unarchiveTodo} onAddTodo={planner.addTodo} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} />,
+    memo: <MemoPage memos={planner.memos} onAdd={planner.addMemo} onUpdate={planner.updateMemo} onDelete={planner.deleteMemo} onTogglePin={planner.toggleMemoPin} onAddTodo={planner.addTodo} />,
+    settings: <SettingsPage stats={planner.stats} categories={planner.categories} goals={planner.goals} memos={planner.memos} apiStatus={planner.connectionError ? "offline" : "online"} />,
   } satisfies Record<AppView, JSX.Element>;
 
   return (
     <div className="min-h-screen pb-24 lg:pb-0">
-      <Header
-        storageStatus={planner.connectionError ? "offline" : "server"}
-        onLogout={onLogout}
-        onQuickAdd={() => setShowQuickAdd(true)}
-      />
+      <Header storageStatus={planner.connectionError ? "offline" : "server"} onLogout={onLogout} onQuickAdd={() => setShowQuickAdd(true)} />
       <div className="mx-auto flex w-full max-w-[1680px] gap-5 px-4 py-5 sm:px-5 lg:px-6">
         <Sidebar activeView={activeView} onChangeView={setActiveView} />
         <main className="min-w-0 flex-1 space-y-4">
           {planner.loading && !planner.loadedOnce ? <LoadingState /> : null}
           {!planner.loading && planner.initialLoadError ? <ErrorState message={planner.initialLoadError} onRetry={planner.loadAll} /> : null}
-          {planner.loadedOnce ? (
-            <>
-              {planner.backgroundOrOperationError ? (
-                <ErrorBanner message={planner.backgroundOrOperationError} onRetry={planner.loadAll} />
-              ) : null}
-              {content[activeView]}
-            </>
-          ) : null}
+          {planner.loadedOnce ? <>{planner.backgroundOrOperationError ? <ErrorBanner message={planner.backgroundOrOperationError} onRetry={planner.loadAll} /> : null}{content[activeView]}</> : null}
         </main>
       </div>
 
       {showQuickAdd ? (
-        <Modal
-          title="빠른 Todo 추가"
-          description="어느 화면에서든 Ctrl+Shift+K로 열 수 있습니다. 필요한 경우 상세 옵션에서 날짜·우선순위·반복·메모를 지정하세요."
-          onClose={() => setShowQuickAdd(false)}
-        >
-          <TodoForm
-            compact
-            submitLabel="Todo 추가"
-            categories={planner.categories}
-            onAdd={(input) => {
-              void planner.addTodo(input).then((created) => {
-                if (created) setShowQuickAdd(false);
-              });
-            }}
-          />
+        <Modal title="빠른 Todo 추가" description="어느 화면에서든 Ctrl+Shift+K로 열 수 있습니다. Inbox·프로젝트·실행일·마감일과 예상 시간도 상세 옵션에서 지정할 수 있습니다." onClose={() => setShowQuickAdd(false)}>
+          <TodoForm compact submitLabel="Todo 추가" categories={planner.categories} projects={planner.activeProjects} onAdd={(input) => { void planner.addTodo(input).then((created) => { if (created) setShowQuickAdd(false); }); }} />
         </Modal>
       ) : null}
 
       {planner.pendingTodoDelete || planner.pendingMemoDelete ? (
         <div className="fixed bottom-20 right-4 z-[90] flex w-[min(26rem,calc(100vw-2rem))] flex-col gap-2 lg:bottom-4" aria-live="polite">
-          {planner.pendingTodoDelete ? (
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-ink-600 bg-ink-900/95 px-4 py-3 shadow-2xl backdrop-blur-xl">
-              <p className="min-w-0 truncate text-sm font-semibold text-ink-200">“{planner.pendingTodoDelete.label}” Todo 삭제 대기</p>
-              <button type="button" className="btn-secondary min-h-9 shrink-0 px-2.5 py-1 text-xs" onClick={planner.undoDeleteTodo}>
-                <Undo2 size={14} />
-                실행 취소
-              </button>
-            </div>
-          ) : null}
-          {planner.pendingMemoDelete ? (
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-ink-600 bg-ink-900/95 px-4 py-3 shadow-2xl backdrop-blur-xl">
-              <p className="min-w-0 truncate text-sm font-semibold text-ink-200">“{planner.pendingMemoDelete.label}” 메모 삭제 대기</p>
-              <button type="button" className="btn-secondary min-h-9 shrink-0 px-2.5 py-1 text-xs" onClick={planner.undoDeleteMemo}>
-                <Undo2 size={14} />
-                실행 취소
-              </button>
-            </div>
-          ) : null}
+          {planner.pendingTodoDelete ? <div className="flex items-center justify-between gap-3 rounded-xl border border-ink-600 bg-ink-900/95 px-4 py-3 shadow-2xl backdrop-blur-xl"><p className="min-w-0 truncate text-sm font-semibold text-ink-200">“{planner.pendingTodoDelete.label}” Todo 삭제 대기</p><button type="button" className="btn-secondary min-h-9 shrink-0 px-2.5 py-1 text-xs" onClick={planner.undoDeleteTodo}><Undo2 size={14} />실행 취소</button></div> : null}
+          {planner.pendingMemoDelete ? <div className="flex items-center justify-between gap-3 rounded-xl border border-ink-600 bg-ink-900/95 px-4 py-3 shadow-2xl backdrop-blur-xl"><p className="min-w-0 truncate text-sm font-semibold text-ink-200">“{planner.pendingMemoDelete.label}” 메모 삭제 대기</p><button type="button" className="btn-secondary min-h-9 shrink-0 px-2.5 py-1 text-xs" onClick={planner.undoDeleteMemo}><Undo2 size={14} />실행 취소</button></div> : null}
         </div>
       ) : null}
     </div>

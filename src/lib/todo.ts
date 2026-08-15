@@ -1,5 +1,4 @@
-import type { Todo, TodoPriority } from "../types/todo";
-import type { TodoRepeat } from "../types/todo";
+import type { Todo, TodoPriority, TodoRepeat } from "../types/todo";
 import { getDayIndex, parseDateKey } from "./date";
 
 export const priorityRank: Record<TodoPriority, number> = {
@@ -46,7 +45,7 @@ export const sortByTime = (todos: Todo[]) =>
   });
 
 export const todoOccursOnDate = (todo: Todo, dateKey: string) => {
-  if (todo.archived) return false;
+  if (todo.archived || (todo.planningState && todo.planningState !== "SCHEDULED")) return false;
   if (todo.repeat === "NONE") return todo.date === dateKey;
   if (dateKey < todo.date) return false;
 
@@ -65,3 +64,14 @@ export const todoOccursOnDate = (todo: Todo, dateKey: string) => {
 
 export const getAllTags = (todos: Todo[]) =>
   Array.from(new Set(todos.flatMap((todo) => todo.tags || []))).sort((a, b) => a.localeCompare(b));
+
+export const isDueSoon = (todo: Todo, today: string, days = 3) => {
+  if (!todo.dueDate || todo.completed) return false;
+  const due = parseDateKey(todo.dueDate).getTime();
+  const start = parseDateKey(today).getTime();
+  const diff = Math.ceil((due - start) / 86_400_000);
+  return diff >= 0 && diff <= days;
+};
+
+export const isOverdueByDeadline = (todo: Todo, today: string) =>
+  Boolean(todo.dueDate && !todo.completed && todo.dueDate < today);

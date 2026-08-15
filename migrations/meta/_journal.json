@@ -15,6 +15,13 @@
       "when": 1785212518937,
       "tag": "0001_damp_daredevil",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786838400000,
+      "tag": "0002_project_planning_foundation",
+      "breakpoints": true
     }
   ]
 }

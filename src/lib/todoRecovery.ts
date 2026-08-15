@@ -35,6 +35,7 @@ export function getOverdueIncompleteTodos(todos: Todo[], plannerToday: string): 
       (todo) =>
         !todo.archived &&
         !todo.completed &&
+        (todo.planningState || "SCHEDULED") === "SCHEDULED" &&
         todo.repeat === "NONE" &&
         todo.date < plannerToday,
     )
