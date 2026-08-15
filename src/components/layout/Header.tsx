@@ -1,13 +1,14 @@
-import { AlertCircle, CalendarCheck2, LogOut, Plus } from "lucide-react";
+import { AlertCircle, CalendarCheck2, LogOut, Plus, Search } from "lucide-react";
 import { formatKoreanDate } from "../../lib/date";
 
 type HeaderProps = {
   storageStatus?: "server" | "offline";
   onLogout: () => Promise<void>;
   onQuickAdd?: () => void;
+  onSearch?: () => void;
 };
 
-export function Header({ storageStatus = "server", onLogout, onQuickAdd }: HeaderProps) {
+export function Header({ storageStatus = "server", onLogout, onQuickAdd, onSearch }: HeaderProps) {
   return (
     <header className="sticky top-0 z-30 border-b border-ink-700/70 bg-ink-950/90 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-[1680px] items-center justify-between gap-4 px-4 py-4 sm:px-5 lg:px-6">
@@ -27,23 +28,19 @@ export function Header({ storageStatus = "server", onLogout, onQuickAdd }: Heade
               <span>서버 연결 오류</span>
             </div>
           ) : null}
+          {onSearch ? (
+            <button type="button" onClick={onSearch} className="btn-secondary min-h-10 px-3" title="검색 및 명령 (Ctrl+K)">
+              <Search size={16} />
+              <span className="hidden md:inline">검색</span>
+            </button>
+          ) : null}
           {onQuickAdd ? (
-            <button
-              type="button"
-              onClick={onQuickAdd}
-              className="btn-primary min-h-10 px-3"
-              title="빠른 Todo 추가 (Ctrl+Shift+K)"
-            >
+            <button type="button" onClick={onQuickAdd} className="btn-primary min-h-10 px-3" title="빠른 Todo 추가 (Ctrl+Shift+K)">
               <Plus size={16} />
               <span className="hidden sm:inline">빠른 추가</span>
             </button>
           ) : null}
-          <button
-            type="button"
-            onClick={() => void onLogout()}
-            className="flex items-center gap-2 rounded-lg border border-ink-700 px-3 py-2 text-sm font-semibold text-ink-300 hover:bg-ink-800 hover:text-ink-100"
-            title="로그아웃"
-          >
+          <button type="button" onClick={() => void onLogout()} className="flex items-center gap-2 rounded-lg border border-ink-700 px-3 py-2 text-sm font-semibold text-ink-300 hover:bg-ink-800 hover:text-ink-100" title="로그아웃">
             <LogOut size={16} />
             <span className="hidden sm:inline">로그아웃</span>
           </button>
