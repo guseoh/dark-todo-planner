@@ -13,6 +13,7 @@ const ProjectPage = lazy(() => import("../../pages/ProjectPage").then((module) =
 const InsightsPage = lazy(() => import("../../pages/InsightsPage").then((module) => ({ default: module.InsightsPage })));
 const AllTodosPage = lazy(() => import("../../pages/AllTodosPage").then((module) => ({ default: module.AllTodosPage })));
 const MemoPage = lazy(() => import("../../pages/MemoPage").then((module) => ({ default: module.MemoPage })));
+const ScratchpadPage = lazy(() => import("../../pages/ScratchpadPage").then((module) => ({ default: module.ScratchpadPage })));
 const TrashPage = lazy(() => import("../../pages/TrashPage").then((module) => ({ default: module.TrashPage })));
 const SettingsPage = lazy(() => import("../../pages/SettingsPage").then((module) => ({ default: module.SettingsPage })));
 const ExportPanel = lazy(() => import("../settings/ExportPanel").then((module) => ({ default: module.ExportPanel })));
@@ -73,6 +74,9 @@ export function AppContent({ activeView, planner }: { activeView: AppView; plann
       break;
     case "memo":
       content = <MemoPage memos={planner.memos} todos={planner.allTodos} projects={planner.projects} onAdd={planner.addMemo} onUpdate={planner.updateMemo} onUpdateLinks={planner.updateMemoLinks} onDelete={planner.deleteMemo} onTogglePin={planner.toggleMemoPin} onAddTodo={planner.addTodo} />;
+      break;
+    case "scratchpad":
+      content = <ScratchpadPage />;
       break;
     case "trash":
       content = <TrashPage onRestored={planner.loadAll} />;

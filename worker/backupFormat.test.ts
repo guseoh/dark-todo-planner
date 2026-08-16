@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { BACKUP_VERSION, SUPPORTED_BACKUP_VERSIONS, normalizeBackupPayload, normalizeBackupV8Relations } from "./backupFormat";
 
-describe("backup format v9", () => {
-  it("keeps v7/v8 backups compatible while exposing newer collections", () => {
+describe("backup format v10", () => {
+  it("keeps older backups compatible while exposing newer collections", () => {
     const { data, warnings } = normalizeBackupPayload({ version: 7, projects: [{ id: "project-1", name: "기존 프로젝트" }], todos: [{ id: "todo-1", title: "기존 Todo", date: "2026-08-16" }], memos: [{ id: "memo-1", content: "기존 메모" }] });
-    expect(BACKUP_VERSION).toBe(9);
-    expect(SUPPORTED_BACKUP_VERSIONS).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(BACKUP_VERSION).toBe(10);
+    expect(SUPPORTED_BACKUP_VERSIONS).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     expect(warnings).toEqual([]);
     expect(data.projectDecisions).toEqual([]);
     expect(data.memoTodoLinks).toEqual([]);

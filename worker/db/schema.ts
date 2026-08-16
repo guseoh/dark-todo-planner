@@ -151,6 +151,12 @@ export const memos = sqliteTable("memos", {
   ...timestamps,
 }, (table) => [index("memos_user_pinned_updated_idx").on(table.userId, table.pinned, table.updatedAt)]);
 
+export const scratchpads = sqliteTable("scratchpads", {
+  userId: text("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull().default(""),
+  ...timestamps,
+});
+
 export const memoTodoLinks = sqliteTable("memo_todo_links", {
   memoId: text("memo_id").notNull().references(() => memos.id, { onDelete: "cascade" }),
   todoId: text("todo_id").notNull().references(() => todos.id, { onDelete: "cascade" }),

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CalendarCheck, FolderKanban, Inbox, ListTodo, Plus, Search, StickyNote } from "lucide-react";
+import { CalendarCheck, FileText, FolderKanban, Inbox, ListTodo, Plus, Search, StickyNote } from "lucide-react";
 import type { Memo } from "../../types/memo";
 import type { Project } from "../../types/project";
 import type { Todo } from "../../types/todo";
@@ -31,6 +31,7 @@ const navigation: Result[] = [
   { id: "nav-projects", label: "프로젝트", detail: "프로젝트와 Kanban", view: "projects", kind: "이동" },
   { id: "nav-all", label: "전체 Todo", detail: "모든 Todo 검색과 관리", view: "all", kind: "이동" },
   { id: "nav-memo", label: "메모", detail: "메모 검색과 작성", view: "memo", kind: "이동" },
+  { id: "nav-scratchpad", label: "낙서장", detail: "계속 이어 쓰는 개인 메모장", view: "scratchpad", kind: "이동" },
   { id: "quick-add", label: "빠른 Todo 추가", detail: "Ctrl+Shift+K", action: "quick-add", kind: "명령" },
 ];
 
@@ -76,7 +77,19 @@ export function CommandPalette({ onClose, onNavigate, onQuickAdd, todos, memos, 
         </label>
         <div className="max-h-[min(60vh,32rem)] space-y-1 overflow-y-auto pr-1">
           {results.length ? results.map((result) => {
-            const Icon = result.action === "quick-add" ? Plus : result.kind === "Todo" ? ListTodo : result.kind === "메모" ? StickyNote : result.kind === "프로젝트" ? FolderKanban : result.view === "inbox" ? Inbox : CalendarCheck;
+            const Icon = result.action === "quick-add"
+              ? Plus
+              : result.kind === "Todo"
+                ? ListTodo
+                : result.kind === "메모"
+                  ? StickyNote
+                  : result.kind === "프로젝트"
+                    ? FolderKanban
+                    : result.view === "scratchpad"
+                      ? FileText
+                      : result.view === "inbox"
+                        ? Inbox
+                        : CalendarCheck;
             return (
               <button key={result.id} type="button" onClick={() => run(result)} className="flex w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left transition hover:border-ink-700 hover:bg-ink-900">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-ink-950 text-ink-400"><Icon size={16} /></span>

@@ -4,6 +4,7 @@ import {
   CalendarCheck,
   CalendarRange,
   ClipboardList,
+  FileText,
   FolderKanban,
   Inbox,
   ListTodo,
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-export type AppView = "today" | "inbox" | "planning" | "week" | "month" | "projects" | "insights" | "all" | "memo" | "trash" | "settings";
+export type AppView = "today" | "inbox" | "planning" | "week" | "month" | "projects" | "insights" | "all" | "memo" | "scratchpad" | "trash" | "settings";
 
 type SidebarProps = {
   activeView: AppView;
@@ -49,6 +50,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
     label: "관리",
     items: [
       { id: "memo", label: "메모", icon: StickyNote },
+      { id: "scratchpad", label: "낙서장", icon: FileText },
       { id: "trash", label: "휴지통", icon: Trash2 },
     ],
   },

@@ -1,5 +1,5 @@
-export const BACKUP_VERSION = 9;
-export const SUPPORTED_BACKUP_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
+export const BACKUP_VERSION = 10;
+export const SUPPORTED_BACKUP_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 export const BACKUP_KEYS = [
   "categories", "projects", "projectDecisions", "milestones", "todos", "reflections", "goals", "memos",
   "memoTodoLinks", "memoProjectLinks", "topics", "topicLinks", "musicLinks",
