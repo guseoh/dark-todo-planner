@@ -6,7 +6,7 @@ export const USER_ID = "single-user";
 export const SESSION_COOKIE = "__Host-dtp_session";
 export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 
-const MIN_PBKDF2_ROUNDS = 100_000;
+const MIN_PBKDF2_ROUNDS = 600_000;
 const MAX_PBKDF2_ROUNDS = 5_000_000;
 const encoder = new TextEncoder();
 const toBase64Url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
