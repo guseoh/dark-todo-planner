@@ -113,6 +113,8 @@ export function TodayPage({
     : activeCategoryId === "uncategorized"
       ? "미분류"
       : categories.find((category) => category.id === activeCategoryId)?.name || "카테고리";
+  const inlineCategoryId = activeCategoryId === "all" || activeCategoryId === "uncategorized" ? "" : activeCategoryId;
+  const lockInlineCategory = activeCategoryId !== "all";
 
   useEffect(() => {
     if (activeCategoryId === "all" || activeCategoryId === "uncategorized") return;
@@ -189,8 +191,6 @@ export function TodayPage({
         </section>
       ) : null}
 
-      <TodoForm onAdd={onAdd} defaultDate={today} compact submitLabel="추가" categories={categories} projects={activeProjects} showSyntaxHint={false} />
-
       <section className="space-y-3" aria-labelledby="today-todo-list-title">
         <div className="sticky top-[60px] z-20 -mx-1 rounded-lg border border-ink-800/60 bg-ink-950/90 px-1 py-1.5 backdrop-blur-xl">
           <div className="flex items-center gap-2">
@@ -219,6 +219,18 @@ export function TodayPage({
           </div>
         </div>
 
+        <TodoForm
+          onAdd={onAdd}
+          defaultDate={today}
+          defaultCategoryId={inlineCategoryId}
+          lockCategory={lockInlineCategory}
+          compact
+          submitLabel={lockInlineCategory ? `${activeCategoryName}에 추가` : "추가"}
+          categories={categories}
+          projects={activeProjects}
+          showSyntaxHint={false}
+        />
+
         <div className="flex items-end justify-between gap-3">
           <div>
             <h3 id="today-todo-list-title" className="text-sm font-bold text-ink-100">{activeCategoryName} 할 일</h3>
@@ -232,7 +244,7 @@ export function TodayPage({
         ) : (
           <div className="rounded-md border border-dashed border-ink-700/55 px-4 py-7 text-center">
             <p className="text-sm font-semibold text-ink-400">미완료 Todo가 없습니다.</p>
-            <p className="mt-1 text-[11px] text-ink-600">새 Todo를 추가하거나 다른 카테고리를 선택해보세요.</p>
+            <p className="mt-1 text-[11px] text-ink-600">바로 위 입력창에서 Todo를 추가하거나 다른 카테고리를 선택해보세요.</p>
           </div>
         )}
 

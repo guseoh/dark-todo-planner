@@ -20,10 +20,21 @@ type TodoFormProps = {
   defaultProjectId?: string;
   defaultPlanningState?: TodoPlanningState;
   showSyntaxHint?: boolean;
+  lockCategory?: boolean;
 };
 
 export function TodoForm({
-  onAdd, defaultDate, compact = false, submitLabel = "추가", categories = [], projects = [], defaultCategoryId = "", defaultProjectId = "", defaultPlanningState = "SCHEDULED", showSyntaxHint = true,
+  onAdd,
+  defaultDate,
+  compact = false,
+  submitLabel = "추가",
+  categories = [],
+  projects = [],
+  defaultCategoryId = "",
+  defaultProjectId = "",
+  defaultPlanningState = "SCHEDULED",
+  showSyntaxHint = true,
+  lockCategory = false,
 }: TodoFormProps) {
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const [title, setTitle] = useState("");
@@ -45,15 +56,30 @@ export function TodoForm({
   useEffect(() => { setPlanningState(defaultPlanningState); }, [defaultPlanningState]);
 
   const reset = () => {
-    setTitle(""); setMemo(""); setDate(defaultDate || todayKey()); setDueDate(""); setPriority("MEDIUM"); setRepeat("NONE"); setTags("");
-    setCategoryId(defaultCategoryId); setProjectId(defaultProjectId); setPlanningState(defaultPlanningState); setEstimateMinutes("");
+    setTitle("");
+    setMemo("");
+    setDate(defaultDate || todayKey());
+    setDueDate("");
+    setPriority("MEDIUM");
+    setRepeat("NONE");
+    setTags("");
+    setCategoryId(defaultCategoryId);
+    setProjectId(defaultProjectId);
+    setPlanningState(defaultPlanningState);
+    setEstimateMinutes("");
     if (compact) setShowDetails(false);
   };
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    const parsed = parseQuickTodoTitle(title, todayKey(), { categories, projects });
-    if (!parsed.title) { titleInputRef.current?.focus(); return; }
+    const parsed = parseQuickTodoTitle(title, todayKey(), {
+      categories: lockCategory ? [] : categories,
+      projects,
+    });
+    if (!parsed.title) {
+      titleInputRef.current?.focus();
+      return;
+    }
 
     const nextPlanningState = parsed.planningState ?? planningState;
     const nextDate = parsed.date || date || defaultDate || todayKey();
@@ -64,7 +90,7 @@ export function TodoForm({
 
     onAdd({
       title: parsed.title,
-      categoryId: (parsed.categoryId ?? categoryId) || undefined,
+      categoryId: lockCategory ? (categoryId || undefined) : ((parsed.categoryId ?? categoryId) || undefined),
       projectId: (parsed.projectId ?? projectId) || undefined,
       memo,
       date: nextPlanningState === "SCHEDULED" ? nextDate : UNSCHEDULED_DATE,
@@ -81,11 +107,14 @@ export function TodoForm({
 
   return (
     <form onSubmit={handleSubmit} className="app-card p-4">
-      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(9rem,12rem)_auto] sm:items-center">
+      <div className={`grid gap-2 sm:items-center ${lockCategory ? "sm:grid-cols-[minmax(0,1fr)_auto]" : "sm:grid-cols-[minmax(0,1fr)_minmax(9rem,12rem)_auto]"}`}>
         <input ref={titleInputRef} data-quick-todo-input="true" className="field flex-1" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="할 일을 빠르게 입력하세요" aria-label="Todo 제목" />
-        <select className="field" value={categoryId} onChange={(event) => setCategoryId(event.target.value)} aria-label="카테고리 선택">
-          <option value="">미분류</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-        </select>
+        {!lockCategory ? (
+          <select className="field" value={categoryId} onChange={(event) => setCategoryId(event.target.value)} aria-label="카테고리 선택">
+            <option value="">미분류</option>
+            {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+          </select>
+        ) : null}
         <div className="flex"><button type="submit" className="btn-primary"><Plus size={18} />{submitLabel}</button></div>
       </div>
       {showSyntaxHint ? <p className="mt-1.5 px-1 text-[11px] text-ink-500">빠른 문법: 내일 · !high · @프로젝트 · +카테고리 · #태그 · 45m/1h · due:내일 · date:2026-08-20 · repeat:weekly · inbox/someday/waiting · 공백 이름은 @{"{"}프로젝트 이름{"}"} / +{"{"}카테고리 이름{"}"}</p> : null}
