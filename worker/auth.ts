@@ -1,3 +1,4 @@
+import { scrypt } from "node:crypto";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { MiddlewareHandler } from "hono";
 import type { Bindings, Variables } from "./types";
@@ -6,8 +7,11 @@ export const USER_ID = "single-user";
 export const SESSION_COOKIE = "__Host-dtp_session";
 export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 
-const MIN_PBKDF2_ROUNDS = 600_000;
-const MAX_PBKDF2_ROUNDS = 5_000_000;
+const SCRYPT_N = 16_384;
+const SCRYPT_R = 8;
+const SCRYPT_P = 5;
+const SCRYPT_KEY_LENGTH = 32;
+const SCRYPT_MAXMEM = 32 * 1024 * 1024;
 const encoder = new TextEncoder();
 const toBase64Url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 const fromBase64 = (value: string) => Uint8Array.from(atob(value.replace(/-/g, "+").replace(/_/g, "/")), (char) => char.charCodeAt(0));
@@ -21,22 +25,42 @@ export const constantTimeEqual = (left: Uint8Array, right: Uint8Array) => {
 
 export const constantTimeTextEqual = (left: string, right: string) => constantTimeEqual(encoder.encode(left), encoder.encode(right));
 
+const derivePassword = (password: string, salt: Uint8Array) => new Promise<Uint8Array>((resolve, reject) => {
+  scrypt(password, salt, SCRYPT_KEY_LENGTH, {
+    N: SCRYPT_N,
+    r: SCRYPT_R,
+    p: SCRYPT_P,
+    maxmem: SCRYPT_MAXMEM,
+  }, (error, derivedKey) => {
+    if (error) {
+      reject(error);
+      return;
+    }
+    resolve(new Uint8Array(derivedKey));
+  });
+});
+
 export async function verifyPassword(password: string, encodedHash: string) {
-  const [algorithm, roundsRaw, saltRaw, expectedRaw] = encodedHash.split("$");
-  const rounds = Number(roundsRaw);
+  const parts = encodedHash.split("$");
+  if (parts.length !== 6) return false;
+
+  const [algorithm, nRaw, rRaw, pRaw, saltRaw, expectedRaw] = parts;
+  const n = Number(nRaw);
+  const r = Number(rRaw);
+  const p = Number(pRaw);
   if (
-    algorithm !== "pbkdf2-sha256"
-    || !Number.isInteger(rounds)
-    || rounds < MIN_PBKDF2_ROUNDS
-    || rounds > MAX_PBKDF2_ROUNDS
+    algorithm !== "scrypt"
+    || n !== SCRYPT_N
+    || r !== SCRYPT_R
+    || p !== SCRYPT_P
     || !saltRaw
     || !expectedRaw
   ) return false;
 
   try {
-    const key = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
     const expected = fromBase64(expectedRaw);
-    const actual = new Uint8Array(await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: fromBase64(saltRaw), iterations: rounds }, key, expected.length * 8));
+    if (expected.length !== SCRYPT_KEY_LENGTH) return false;
+    const actual = await derivePassword(password, fromBase64(saltRaw));
     return constantTimeEqual(actual, expected);
   } catch {
     return false;
