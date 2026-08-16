@@ -45,21 +45,21 @@
 html {
   min-width: 320px;
   background: var(--app-bg);
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  overflow-x: hidden;
+  overflow-x: clip;
   background: var(--app-bg);
   color: var(--text-primary);
 }
 
 #root {
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 button,
