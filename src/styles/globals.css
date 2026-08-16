@@ -4,8 +4,35 @@
 
 :root {
   color-scheme: dark;
-  background: #080d18;
-  color: #f4f7fb;
+
+  --app-bg: #1a1c1e;
+  --sidebar-bg: #181a1b;
+  --surface-1: #181a1b;
+  --surface-2: #1f2224;
+  --surface-3: #24282b;
+  --surface-hover: #262b2f;
+
+  --border-subtle: #2d3135;
+  --border-default: #393e43;
+  --border-strong: #4a5056;
+
+  --text-primary: #ece8e1;
+  --text-secondary: #b8b5ae;
+  --text-muted: #80868b;
+  --text-disabled: #5b6166;
+
+  --accent: #0b72d7;
+  --accent-hover: #2384e7;
+  --accent-soft: rgba(11, 114, 215, 0.14);
+
+  --success: #46a758;
+  --warning: #c99b36;
+  --danger: #d45b5b;
+
+  --shadow-elevated: 0 12px 32px rgba(0, 0, 0, 0.3);
+
+  background: var(--app-bg);
+  color: var(--text-primary);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
@@ -17,7 +44,7 @@
 
 html {
   min-width: 320px;
-  background: #080d18;
+  background: var(--app-bg);
   overflow-x: hidden;
 }
 
@@ -26,13 +53,12 @@ body {
   min-height: 100vh;
   margin: 0;
   overflow-x: hidden;
-  background:
-    radial-gradient(circle at 72% -16%, rgba(109, 93, 252, 0.09), transparent 30rem),
-    #080d18;
-  color: #f4f7fb;
+  background: var(--app-bg);
+  color: var(--text-primary);
 }
 
 #root {
+  min-height: 100vh;
   overflow-x: hidden;
 }
 
@@ -53,7 +79,8 @@ button:disabled {
 }
 
 ::selection {
-  background: rgba(109, 93, 252, 0.42);
+  background: rgba(11, 114, 215, 0.42);
+  color: var(--text-primary);
 }
 
 ::-webkit-scrollbar {
@@ -62,41 +89,45 @@ button:disabled {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #3b4a60;
-  border: 0.18rem solid #080d18;
+  background: var(--border-default);
+  border: 0.18rem solid var(--app-bg);
   border-radius: 999px;
 }
 
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
 ::-webkit-scrollbar-track {
-  background: #080d18;
+  background: transparent;
 }
 
 @layer components {
   .app-card {
-    @apply rounded-lg border border-ink-700/60 bg-ink-900/80 shadow-soft backdrop-blur;
+    @apply rounded-lg border border-ink-700/70 bg-ink-900 shadow-none;
   }
 
   .field {
-    @apply min-h-9 w-full rounded-md border border-ink-700/70 bg-ink-950/70 px-3 py-1.5 text-sm text-ink-100 outline-none transition placeholder:text-ink-500 hover:border-ink-600 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30;
+    @apply min-h-9 w-full rounded-md border border-ink-700/80 bg-ink-950/85 px-3 py-1.5 text-sm text-ink-100 outline-none transition placeholder:text-ink-500 hover:border-ink-600 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25;
   }
 
   .btn {
-    @apply inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-transparent px-3 py-1.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950;
+    @apply inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-transparent px-3 py-1.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950;
   }
 
   .btn-primary {
-    @apply btn bg-accent-500 text-white hover:bg-accent-600;
+    @apply btn bg-accent-500 text-white hover:bg-accent-400;
   }
 
   .btn-secondary {
-    @apply btn border-ink-700/70 bg-ink-900 text-ink-200 hover:border-accent-500/60 hover:bg-ink-800 hover:text-ink-100;
+    @apply btn border-ink-700/80 bg-ink-900 text-ink-200 hover:border-ink-600 hover:bg-ink-800 hover:text-ink-100;
   }
 
   .btn-danger {
-    @apply btn border-danger/40 bg-danger/10 text-red-100 hover:border-danger/70 hover:bg-danger/20;
+    @apply btn border-danger/35 bg-transparent text-red-200 hover:border-danger/65 hover:bg-danger/10 hover:text-red-100;
   }
 
   .icon-btn {
-    @apply inline-flex min-h-8 min-w-8 items-center justify-center rounded-md border border-ink-700/70 bg-ink-950/40 text-ink-400 transition hover:border-accent-500/60 hover:bg-ink-900 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950;
+    @apply inline-flex min-h-8 min-w-8 items-center justify-center rounded-md border border-ink-700/80 bg-ink-950/65 text-ink-400 transition hover:border-ink-600 hover:bg-ink-800 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950;
   }
 }
