@@ -2,54 +2,13 @@
   "version": "7",
   "dialect": "sqlite",
   "entries": [
-    {
-      "idx": 0,
-      "version": "6",
-      "when": 1784738767050,
-      "tag": "0000_lying_scrambler",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1785212518937,
-      "tag": "0001_damp_daredevil",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1786838400000,
-      "tag": "0002_project_planning_foundation",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1786845000000,
-      "tag": "0003_memo_links_project_decisions",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1786849800000,
-      "tag": "0004_planning_workspace",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1786851000000,
-      "tag": "0005_time_management",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1786852200000,
-      "tag": "0006_todo_trash",
-      "breakpoints": true
-    }
+    { "idx": 0, "version": "6", "when": 1784738767050, "tag": "0000_lying_scrambler", "breakpoints": true },
+    { "idx": 1, "version": "6", "when": 1785212518937, "tag": "0001_damp_daredevil", "breakpoints": true },
+    { "idx": 2, "version": "6", "when": 1786838400000, "tag": "0002_project_planning_foundation", "breakpoints": true },
+    { "idx": 3, "version": "6", "when": 1786845000000, "tag": "0003_memo_links_project_decisions", "breakpoints": true },
+    { "idx": 4, "version": "6", "when": 1786849800000, "tag": "0004_planning_workspace", "breakpoints": true },
+    { "idx": 5, "version": "6", "when": 1786851000000, "tag": "0005_time_management", "breakpoints": true },
+    { "idx": 6, "version": "6", "when": 1786852200000, "tag": "0006_todo_trash", "breakpoints": true },
+    { "idx": 7, "version": "6", "when": 1786853400000, "tag": "0007_planner_automation_settings", "breakpoints": true }
   ]
 }

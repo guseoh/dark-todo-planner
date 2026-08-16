@@ -4,6 +4,7 @@ import { useCategories } from "./useCategories";
 import { useGoals } from "./useGoals";
 import { useMemos } from "./useMemos";
 import { usePlanning } from "./usePlanning";
+import { usePlannerSettings } from "./usePlannerSettings";
 import { useProjects } from "./useProjects";
 import { useTimePlanning } from "./useTimePlanning";
 import { useTodos } from "./useTodos";
@@ -19,6 +20,7 @@ export function usePlannerData() {
   const projectsState = useProjects();
   const planningState = usePlanning();
   const timeState = useTimePlanning();
+  const settingsState = usePlannerSettings();
   const [loading, setLoading] = useState(true);
   const [loadedOnce, setLoadedOnce] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -35,7 +37,10 @@ export function usePlannerData() {
         projectsState.loadProjects(),
         planningState.loadPlanning(),
         timeState.loadTimePlanning(),
+        settingsState.loadSettings(),
       ]);
+      const automation = await settingsState.runAutomations();
+      if (automation && (automation.carriedOver > 0 || automation.autoArchived > 0)) await todosState.loadTodos();
       setLoadedOnce(true);
       setLoadError("");
     } catch (err) {
@@ -43,7 +48,7 @@ export function usePlannerData() {
     } finally {
       setLoading(false);
     }
-  }, [categoriesState.loadCategories, goalsState.loadGoals, memosState.loadMemos, planningState.loadPlanning, projectsState.loadProjects, timeState.loadTimePlanning, todosState.loadTodos]);
+  }, [categoriesState.loadCategories, goalsState.loadGoals, memosState.loadMemos, planningState.loadPlanning, projectsState.loadProjects, settingsState.loadSettings, settingsState.runAutomations, timeState.loadTimePlanning, todosState.loadTodos]);
 
   useEffect(() => { void loadAll(); }, [loadAll]);
 
@@ -64,10 +69,10 @@ export function usePlannerData() {
   const reorderCategories = useCallback(async (ids: string[]) => { await categoriesState.reorderCategories(ids); }, [categoriesState.reorderCategories]);
 
   const saving = useMemo(() =>
-    todosState.saving || categoriesState.saving || goalsState.saving || memosState.saving || projectsState.saving || planningState.saving || timeState.saving,
-  [categoriesState.saving, goalsState.saving, memosState.saving, planningState.saving, projectsState.saving, timeState.saving, todosState.saving]);
+    todosState.saving || categoriesState.saving || goalsState.saving || memosState.saving || projectsState.saving || planningState.saving || timeState.saving || settingsState.saving,
+  [categoriesState.saving, goalsState.saving, memosState.saving, planningState.saving, projectsState.saving, settingsState.saving, timeState.saving, todosState.saving]);
 
-  const operationError = todosState.error || categoriesState.error || goalsState.error || memosState.error || projectsState.error || planningState.error || timeState.error;
+  const operationError = todosState.error || categoriesState.error || goalsState.error || memosState.error || projectsState.error || planningState.error || timeState.error || settingsState.error;
   const { initialLoadError, backgroundOrOperationError } = classifyPlannerErrors({ loadedOnce, loadError, operationError });
 
   return {
@@ -92,6 +97,7 @@ export function usePlannerData() {
     focusSessions: timeState.focusSessions,
     timeBlocks: timeState.timeBlocks,
     timerSettings: timeState.timerSettings,
+    plannerSettings: settingsState.settings,
     loading, loadedOnce, saving, initialLoadError, backgroundOrOperationError, connectionError: loadError,
     stats: todosState.stats, nearestGoal: goalsState.nearestGoal,
     pendingTodoDelete: todosState.pendingDelete, pendingMemoDelete: memosState.pendingDelete,
@@ -111,5 +117,6 @@ export function usePlannerData() {
     addTaskTemplate: planningState.addTaskTemplate, deleteTaskTemplate: planningState.deleteTaskTemplate,
     addFocusSession: timeState.addFocusSession, saveTimerSettings: timeState.saveTimerSettings,
     addTimeBlock: timeState.addTimeBlock, updateTimeBlock: timeState.updateTimeBlock, deleteTimeBlock: timeState.deleteTimeBlock,
+    savePlannerSettings: settingsState.saveSettings,
   };
 }

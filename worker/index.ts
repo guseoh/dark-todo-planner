@@ -8,6 +8,7 @@ import { contentRoutes } from "./routes/content";
 import { libraryRoutes } from "./routes/library";
 import { planningRoutes } from "./routes/planning";
 import { projectRoutes } from "./routes/projects";
+import { settingsRoutes } from "./routes/settings";
 import { timeRoutes } from "./routes/time";
 import { todoRoutes } from "./routes/todos";
 import { trashRoutes } from "./routes/trash";
@@ -19,14 +20,12 @@ const loginSchema = z.object({ username: z.string().min(1), password: z.string()
 
 app.use("*", securityHeaders);
 app.use("/api/*", preventApiCaching);
-
 app.use("/api/*", async (c, next) => {
   if (!SAFE_METHODS.has(c.req.method) && c.req.header("Sec-Fetch-Site") === "cross-site") return c.json({ message: "교차 사이트 요청은 허용되지 않습니다." }, 403);
   const publicPaths = ["/api/health", "/api/auth/login", "/api/auth/logout", "/api/auth/session"];
   if (publicPaths.includes(c.req.path)) return next();
   return requireAuth(c, next);
 });
-
 app.use("/api/*", async (c, next) => {
   const publicPath = c.req.path === "/api/health" || c.req.path.startsWith("/api/auth/");
   if (SAFE_METHODS.has(c.req.method) || publicPath) return next();
@@ -58,6 +57,7 @@ app.route("/api", projectRoutes);
 app.route("/api", contentRoutes);
 app.route("/api", planningRoutes);
 app.route("/api", timeRoutes);
+app.route("/api", settingsRoutes);
 app.route("/api", trashRoutes);
 app.route("/api", libraryRoutes);
 app.route("/api", backupRoutes);
@@ -71,11 +71,8 @@ app.onError((error, c) => {
 });
 
 export default {
-  fetch: (request: Request, env: Bindings, executionContext: ExecutionContext) =>
-    app.fetch(request, env, executionContext),
+  fetch: (request: Request, env: Bindings, executionContext: ExecutionContext) => app.fetch(request, env, executionContext),
   scheduled: (controller: ScheduledController, env: Bindings, executionContext: ExecutionContext) => {
-    executionContext.waitUntil(
-      runDiscordIncompleteTodoReminder(env, new Date(controller.scheduledTime)),
-    );
+    executionContext.waitUntil(runDiscordIncompleteTodoReminder(env, new Date(controller.scheduledTime)));
   },
 } satisfies ExportedHandler<Bindings>;
