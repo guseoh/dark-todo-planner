@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Archive, ArchiveRestore, CheckCircle2, CircleDot, ExternalLink, FileText, FolderKanban, GitBranch, Link2, PauseCircle, Pencil, Plus, Save, Target, Trash2, X } from "lucide-react";
+import { ProjectOverviewTools } from "../components/project/ProjectOverviewTools";
 import { TodoForm } from "../components/todo/TodoForm";
+import type { ProjectDuplicateMode } from "../hooks/useProjects";
 import { todayKey } from "../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../lib/todo";
 import type { Category } from "../types/category";
@@ -25,7 +27,7 @@ const isHttpUrl = (value: string) => {
 };
 
 export function ProjectPage({
-  projects, milestones, decisions, memos, todos, categories, onAddProject, onUpdateProject, onArchiveProject, onUnarchiveProject,
+  projects, milestones, decisions, memos, todos, categories, onAddProject, onUpdateProject, onDuplicateProject, onArchiveProject, onUnarchiveProject,
   onAddMilestone, onUpdateMilestone, onDeleteMilestone, onAddDecision, onDeleteDecision, onAddTodo, onUpdateTodo, onToggleTodo,
 }: {
   projects: Project[];
@@ -36,6 +38,7 @@ export function ProjectPage({
   categories: Category[];
   onAddProject: (input: ProjectInput) => Promise<Project | undefined> | Project | undefined;
   onUpdateProject: (id: string, input: Partial<ProjectInput>) => Promise<Project | undefined> | Project | undefined;
+  onDuplicateProject: (id: string, input: { name: string; mode: ProjectDuplicateMode }) => Promise<Project | undefined> | Project | undefined;
   onArchiveProject: (id: string) => Promise<Project | undefined> | Project | undefined;
   onUnarchiveProject: (id: string) => Promise<Project | undefined> | Project | undefined;
   onAddMilestone: (input: MilestoneInput) => Promise<Milestone | undefined> | Milestone | undefined;
@@ -270,6 +273,8 @@ export function ProjectPage({
                 ) : null}
               </div>
             </section>
+
+            <ProjectOverviewTools project={selected} todos={projectTodos} milestones={projectMilestones} onUpdateTodo={onUpdateTodo} onDuplicateProject={onDuplicateProject} onDuplicated={(project) => { setShowArchived(false); setSelectedId(project.id); }} />
 
             {!selected.archived ? (
               <div className="space-y-2">

@@ -5,7 +5,7 @@ import { useGoals } from "./useGoals";
 import { useMemos } from "./useMemos";
 import { usePlanning } from "./usePlanning";
 import { usePlannerSettings } from "./usePlannerSettings";
-import { useProjects } from "./useProjects";
+import { useProjects, type ProjectDuplicateMode } from "./useProjects";
 import { useTimePlanning } from "./useTimePlanning";
 import { useTodos } from "./useTodos";
 import { classifyPlannerErrors } from "../lib/plannerLoadState";
@@ -79,6 +79,12 @@ export function usePlannerData() {
 
   const reorderCategories = useCallback(async (ids: string[]) => { await categoriesState.reorderCategories(ids); }, [categoriesState.reorderCategories]);
 
+  const duplicateProject = useCallback(async (id: string, input: { name: string; mode: ProjectDuplicateMode }) => {
+    const project = await projectsState.duplicateProject(id, input);
+    if (project) await todosState.loadTodos();
+    return project;
+  }, [projectsState.duplicateProject, todosState.loadTodos]);
+
   const saving = useMemo(() =>
     todosState.saving || categoriesState.saving || goalsState.saving || memosState.saving || projectsState.saving || planningState.saving || timeState.saving || settingsState.saving,
   [categoriesState.saving, goalsState.saving, memosState.saving, planningState.saving, projectsState.saving, settingsState.saving, timeState.saving, todosState.saving]);
@@ -120,7 +126,7 @@ export function usePlannerData() {
     addCategory, updateCategory, deleteCategory, reorderCategories,
     addGoal: goalsState.addGoal, updateGoal: goalsState.updateGoal, toggleGoal: goalsState.toggleGoal, deleteGoal: goalsState.deleteGoal,
     addMemo: memosState.addMemo, updateMemo: memosState.updateMemo, updateMemoLinks: memosState.updateMemoLinks, toggleMemoPin: memosState.toggleMemoPin, deleteMemo: memosState.deleteMemo, undoDeleteMemo: memosState.undoDeleteMemo,
-    addProject: projectsState.addProject, updateProject: projectsState.updateProject, archiveProject: projectsState.archiveProject, unarchiveProject: projectsState.unarchiveProject,
+    addProject: projectsState.addProject, updateProject: projectsState.updateProject, duplicateProject, archiveProject: projectsState.archiveProject, unarchiveProject: projectsState.unarchiveProject,
     addMilestone: projectsState.addMilestone, updateMilestone: projectsState.updateMilestone, deleteMilestone: projectsState.deleteMilestone,
     addProjectDecision: projectsState.addDecision, updateProjectDecision: projectsState.updateDecision, deleteProjectDecision: projectsState.deleteDecision,
     saveDailyPlan: planningState.saveDailyPlan, saveWeeklyReview: planningState.saveWeeklyReview,

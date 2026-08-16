@@ -3,6 +3,7 @@ import { api, apiAllPages, jsonBody } from "../lib/api/client";
 import type { Milestone, MilestoneInput, Project, ProjectDecision, ProjectDecisionInput, ProjectInput } from "../types/project";
 
 const getMessage = (error: unknown) => error instanceof Error ? error.message : "프로젝트 요청 처리 중 오류가 발생했습니다.";
+export type ProjectDuplicateMode = "STRUCTURE" | "WITH_TODOS";
 
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -76,6 +77,19 @@ export function useProjects() {
       return undefined;
     } finally { setSaving(false); }
   }, [projects]);
+
+  const duplicateProject = useCallback(async (id: string, input: { name: string; mode: ProjectDuplicateMode }) => {
+    setSaving(true);
+    try {
+      const result = await api<{ project: Project }>(`/api/projects/${id}/duplicate`, { method: "POST", ...jsonBody(input) });
+      await loadProjects();
+      setError("");
+      return { ...result.project, resources: result.project.resources || [] };
+    } catch (err) {
+      setError(getMessage(err));
+      return undefined;
+    } finally { setSaving(false); }
+  }, [loadProjects]);
 
   const setArchived = useCallback(async (id: string, archived: boolean) => {
     try {
@@ -198,7 +212,7 @@ export function useProjects() {
 
   return {
     projects, activeProjects, archivedProjects, milestones, decisions, loading, saving, error,
-    loadProjects, addProject, updateProject,
+    loadProjects, addProject, updateProject, duplicateProject,
     archiveProject: (id: string) => setArchived(id, true),
     unarchiveProject: (id: string) => setArchived(id, false),
     addMilestone, updateMilestone, deleteMilestone,

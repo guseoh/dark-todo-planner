@@ -9,6 +9,7 @@ import { backupRoutes } from "./routes/backup";
 import { contentRoutes } from "./routes/content";
 import { libraryRoutes } from "./routes/library";
 import { planningRoutes } from "./routes/planning";
+import { projectDuplicateRoutes } from "./routes/projectDuplicate";
 import { projectRoutes } from "./routes/projects";
 import { referenceLinkRoutes } from "./routes/referenceLinks";
 import { settingsRoutes } from "./routes/settings";
@@ -62,6 +63,7 @@ app.use("/api/migrate/local-storage", backupV9ImportMiddleware);
 
 app.route("/api", todoRoutes);
 app.route("/api", projectRoutes);
+app.route("/api", projectDuplicateRoutes);
 app.route("/api", referenceLinkRoutes);
 app.route("/api", contentRoutes);
 app.route("/api", planningRoutes);
