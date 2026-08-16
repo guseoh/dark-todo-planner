@@ -74,6 +74,8 @@ export const todos = sqliteTable("todos", {
   parentTodoId: text("parent_todo_id"),
   title: text("title").notNull(),
   memo: text("memo"),
+  referenceUrl: text("reference_url"),
+  referenceLabel: text("reference_label"),
   date: text("date").notNull(),
   dueDate: text("due_date"),
   startTime: text("start_time"),

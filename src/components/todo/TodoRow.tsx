@@ -1,4 +1,4 @@
-import { Archive, CalendarDays, CheckCircle2, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { Archive, CalendarDays, CheckCircle2, ExternalLink, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { formatKoreanDate, getDdayLabel, todayKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline, repeatLabel } from "../../lib/todo";
 import type { Todo } from "../../types/todo";
@@ -79,12 +79,14 @@ export function TodoRow({
             {showDate && todo.planningState === "SCHEDULED" ? <span className="inline-flex items-center gap-1"><CalendarDays size={12} />{formatKoreanDate(todo.date, "M월 d일 E")}</span> : null}
             {todo.estimateMinutes ? <span>예상 {todo.estimateMinutes}분</span> : null}
             {todo.dueDate ? <span className={`rounded-full border px-1.5 py-0.5 font-semibold ${overdue ? "border-danger/35 bg-danger/[0.07] text-red-100" : dueSoon ? "border-warning/35 bg-warning/[0.07] text-amber-100" : "border-ink-700/65 text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {getDdayLabel(todo.dueDate)}</span> : null}
+            {todo.referenceUrl ? <span className="inline-flex items-center gap-1 font-semibold text-accent-200"><ExternalLink size={11} />{todo.referenceLabel || "관련 링크"}</span> : null}
             {todo.tags.map((tag) => <span key={tag}>#{tag}</span>)}
           </div>
         </button>
 
         {!selectionMode ? (
           <div className="flex shrink-0 flex-wrap justify-end gap-1 opacity-100 sm:opacity-55 sm:transition sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+            {todo.referenceUrl ? <a href={todo.referenceUrl} target="_blank" rel="noreferrer" className="icon-btn h-8 w-8" aria-label={`"${todo.title}" 관련 링크 열기`} title={todo.referenceLabel || "관련 링크 열기"}><ExternalLink size={13} /></a> : null}
             {todo.archived && onUnarchive ? <button type="button" className="icon-btn h-8 w-8" onClick={() => onUnarchive(todo.id)} aria-label={`"${todo.title}" 보관 해제`}><RotateCcw size={13} /></button> : null}
             {!todo.archived && todo.completed && onArchive ? <button type="button" className="icon-btn h-8 w-8" onClick={() => onArchive(todo.id)} aria-label={`"${todo.title}" Todo 보관`}><Archive size={13} /></button> : null}
             <button type="button" className="icon-btn h-8 w-8" onClick={() => onEdit(todo)} aria-label={`"${todo.title}" Todo 수정`}><Pencil size={13} /></button>

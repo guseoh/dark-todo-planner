@@ -14,6 +14,8 @@ export type Todo = {
   parentTodoId?: string;
   title: string;
   memo?: string;
+  referenceUrl?: string;
+  referenceLabel?: string;
   date: string;
   dueDate?: string;
   startTime?: string;

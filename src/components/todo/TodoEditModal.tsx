@@ -1,5 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { addDays } from "date-fns";
+import { ExternalLink } from "lucide-react";
+import { api, jsonBody } from "../../lib/api/client";
 import { parseDateKey, todayKey, toDateKey } from "../../lib/date";
 import type { Category } from "../../types/category";
 import type { Project } from "../../types/project";
@@ -8,13 +10,21 @@ import { Modal } from "../common/Modal";
 import { MarkdownEditor } from "../editor/MarkdownEditor";
 
 const UNSCHEDULED_DATE = "9999-12-31";
+const safeHttpHref = (value: string) => {
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
+};
 
 type TodoEditModalProps = {
   todo: Todo | null;
   categories?: Category[];
   projects?: Project[];
   onClose: () => void;
-  onSave: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
+  onSave: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => unknown | Promise<unknown>;
 };
 
 export function TodoEditModal({ todo, categories = [], projects = [], onClose, onSave }: TodoEditModalProps) {
@@ -22,35 +32,53 @@ export function TodoEditModal({ todo, categories = [], projects = [], onClose, o
   const [priority, setPriority] = useState<TodoPriority>("MEDIUM"); const [repeat, setRepeat] = useState<TodoRepeat>("NONE"); const [tags, setTags] = useState("");
   const [completed, setCompleted] = useState(false); const [categoryId, setCategoryId] = useState(""); const [projectId, setProjectId] = useState("");
   const [planningState, setPlanningState] = useState<TodoPlanningState>("SCHEDULED"); const [workflowStatus, setWorkflowStatus] = useState<TodoWorkflowStatus>("TODO"); const [estimateMinutes, setEstimateMinutes] = useState("");
+  const [referenceUrl, setReferenceUrl] = useState(""); const [referenceLabel, setReferenceLabel] = useState(""); const [referenceError, setReferenceError] = useState(""); const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!todo) return;
     setTitle(todo.title); setMemo(todo.memo || ""); setDate(todo.date === UNSCHEDULED_DATE ? "" : todo.date); setDueDate(todo.dueDate || ""); setPriority(todo.priority); setRepeat(todo.repeat || "NONE");
     setTags((todo.tags || []).join(", ")); setCompleted(todo.completed); setCategoryId(todo.categoryId || ""); setProjectId(todo.projectId || "");
     setPlanningState(todo.planningState || "SCHEDULED"); setWorkflowStatus(todo.workflowStatus || (todo.completed ? "DONE" : "TODO")); setEstimateMinutes(todo.estimateMinutes ? String(todo.estimateMinutes) : "");
+    setReferenceUrl(todo.referenceUrl || ""); setReferenceLabel(todo.referenceLabel || ""); setReferenceError(""); setSaving(false);
   }, [todo]);
 
   if (!todo) return null;
+  const referenceHref = safeHttpHref(referenceUrl);
 
   const moveToDayOffset = (days: number) => {
     setPlanningState("SCHEDULED");
     setDate(toDateKey(addDays(parseDateKey(todayKey()), days)));
   };
 
-  const saveTodo = () => {
-    if (!title.trim()) return;
-    onSave(todo.id, {
-      title: title.trim(), categoryId: categoryId || undefined, projectId: projectId || undefined, memo,
-      date: planningState === "SCHEDULED" ? (date || todo.date || todayKey()) : UNSCHEDULED_DATE,
-      dueDate: dueDate || undefined, priority, repeat, tags: tags.split(","), completed, planningState,
-      workflowStatus: completed ? "DONE" : workflowStatus, estimateMinutes: estimateMinutes ? Number(estimateMinutes) : undefined, updatedAt: new Date().toISOString(),
-    });
-    onClose();
+  const saveTodo = async () => {
+    if (!title.trim() || saving) return;
+    setSaving(true);
+    setReferenceError("");
+    try {
+      await api(`/api/todos/${todo.id}/reference-link`, {
+        method: "PUT",
+        ...jsonBody({
+          url: referenceUrl.trim() || null,
+          label: referenceLabel.trim() || null,
+        }),
+      });
+      await Promise.resolve(onSave(todo.id, {
+        title: title.trim(), categoryId: categoryId || undefined, projectId: projectId || undefined, memo,
+        date: planningState === "SCHEDULED" ? (date || todo.date || todayKey()) : UNSCHEDULED_DATE,
+        dueDate: dueDate || undefined, priority, repeat, tags: tags.split(","), completed, planningState,
+        workflowStatus: completed ? "DONE" : workflowStatus, estimateMinutes: estimateMinutes ? Number(estimateMinutes) : undefined, updatedAt: new Date().toISOString(),
+      }));
+      onClose();
+    } catch (error) {
+      setReferenceError(error instanceof Error ? error.message : "관련 링크를 저장하지 못했습니다.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <Modal title="Todo 수정" description="실행일과 마감일, 프로젝트, 상태와 예상 시간을 함께 관리합니다." onClose={onClose} size="lg">
-      <form onSubmit={(event: FormEvent) => { event.preventDefault(); saveTodo(); }}>
+      <form onSubmit={(event: FormEvent) => { event.preventDefault(); void saveTodo(); }}>
         <div className="grid gap-3 md:grid-cols-2">
           <label className="space-y-1 text-sm text-ink-400 md:col-span-2">제목<input className="field" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Todo 제목" data-modal-initial-focus /></label>
           <label className="space-y-1 text-sm text-ink-400">보관 위치<select className="field" value={planningState} onChange={(event) => setPlanningState(event.target.value as TodoPlanningState)}><option value="SCHEDULED">일정</option><option value="INBOX">Inbox</option><option value="SOMEDAY">Someday</option><option value="WAITING">Waiting</option></select></label>
@@ -72,10 +100,21 @@ export function TodoEditModal({ todo, categories = [], projects = [], onClose, o
           <label className="space-y-1 text-sm text-ink-400">우선순위<select className="field" value={priority} onChange={(event) => setPriority(event.target.value as TodoPriority)}><option value="LOW">낮음</option><option value="MEDIUM">보통</option><option value="HIGH">높음</option></select></label>
           <label className="space-y-1 text-sm text-ink-400">반복<select className="field" value={repeat} onChange={(event) => setRepeat(event.target.value as TodoRepeat)}><option value="NONE">반복 없음</option><option value="DAILY">매일</option><option value="WEEKLY">매주</option><option value="MONTHLY">매월</option><option value="WEEKDAY">평일만</option><option value="WEEKEND">주말만</option></select></label>
           <label className="space-y-1 text-sm text-ink-400">태그<input className="field" value={tags} onChange={(event) => setTags(event.target.value)} placeholder="공부, 개발, 운동" /></label>
+          <div className="space-y-2 rounded-lg border border-ink-700/60 bg-ink-950/30 p-3 md:col-span-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div><p className="text-sm font-semibold text-ink-200">관련 링크</p><p className="mt-0.5 text-xs text-ink-500">Notion·GitHub·문서 등 이 Todo와 연결된 외부 자료를 바로 엽니다.</p></div>
+              {referenceHref ? <a href={referenceHref} target="_blank" rel="noreferrer" className="btn-secondary min-h-8 px-2.5 py-1 text-xs"><ExternalLink size={13} />열기</a> : null}
+            </div>
+            <div className="grid gap-2 sm:grid-cols-[10rem_minmax(0,1fr)]">
+              <input className="field" value={referenceLabel} onChange={(event) => setReferenceLabel(event.target.value)} placeholder="Notion" aria-label="관련 링크 이름" />
+              <input className="field" type="url" value={referenceUrl} onChange={(event) => { setReferenceUrl(event.target.value); setReferenceError(""); }} placeholder="https://..." aria-label="관련 링크 URL" />
+            </div>
+            {referenceError ? <p className="text-xs font-semibold text-red-200" role="alert">{referenceError}</p> : null}
+          </div>
           <label className="flex min-h-11 items-center gap-3 rounded-lg bg-ink-950/45 px-3 text-sm text-ink-300 md:col-span-2"><input type="checkbox" checked={completed} onChange={(event) => setCompleted(event.target.checked)} className="h-4 w-4 accent-accent-500" />완료된 Todo로 표시</label>
           <MarkdownEditor className="md:col-span-2" label="메모" value={memo} onChange={setMemo} placeholder="메모" />
         </div>
-        <div className="mt-5 flex flex-col-reverse gap-2 border-t border-ink-700/60 pt-4 sm:flex-row sm:justify-end"><button type="button" className="btn-secondary" onClick={onClose}>취소</button><button type="submit" className="btn-primary" disabled={!title.trim()}>저장</button></div>
+        <div className="mt-5 flex flex-col-reverse gap-2 border-t border-ink-700/60 pt-4 sm:flex-row sm:justify-end"><button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>취소</button><button type="submit" className="btn-primary" disabled={!title.trim() || saving}>{saving ? "저장 중..." : "저장"}</button></div>
       </form>
     </Modal>
   );

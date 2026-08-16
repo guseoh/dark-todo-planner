@@ -4,11 +4,13 @@ import { clearSessionCookie, createSessionToken, requireAuth, setSessionCookie, 
 import { getCookie } from "hono/cookie";
 import type { Bindings, Variables } from "./types";
 import { backupV9ExportMiddleware, backupV9ImportMiddleware } from "./backupMiddleware";
+import { todoReferenceTrashRestoreMiddleware } from "./referenceLinkMiddleware";
 import { backupRoutes } from "./routes/backup";
 import { contentRoutes } from "./routes/content";
 import { libraryRoutes } from "./routes/library";
 import { planningRoutes } from "./routes/planning";
 import { projectRoutes } from "./routes/projects";
+import { referenceLinkRoutes } from "./routes/referenceLinks";
 import { settingsRoutes } from "./routes/settings";
 import { timeRoutes } from "./routes/time";
 import { todoRoutes } from "./routes/todos";
@@ -34,6 +36,7 @@ app.use("/api/*", async (c, next) => {
   if (!success) return tooManyRequests(c);
   return next();
 });
+app.use("/api/trash/todos/*", todoReferenceTrashRestoreMiddleware);
 
 app.get("/api/health", async (c) => { await c.env.DB.prepare("SELECT 1").first(); return c.json({ status: "ok", database: "connected" }); });
 app.post("/api/auth/login", async (c) => {
@@ -59,6 +62,7 @@ app.use("/api/migrate/local-storage", backupV9ImportMiddleware);
 
 app.route("/api", todoRoutes);
 app.route("/api", projectRoutes);
+app.route("/api", referenceLinkRoutes);
 app.route("/api", contentRoutes);
 app.route("/api", planningRoutes);
 app.route("/api", timeRoutes);

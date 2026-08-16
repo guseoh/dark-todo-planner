@@ -24,6 +24,8 @@ export async function serializeTodos(db: Db, rows: Array<typeof todos.$inferSele
     milestoneId: row.milestoneId || undefined,
     parentTodoId: row.parentTodoId || undefined,
     memo: row.memo || undefined,
+    referenceUrl: row.referenceUrl || undefined,
+    referenceLabel: row.referenceLabel || undefined,
     dueDate: row.dueDate || undefined,
     startTime: row.startTime || undefined,
     endTime: row.endTime || undefined,
