@@ -25,11 +25,7 @@ type MonthlyCalendarProps = {
   onCycleDayStatus: (date: string) => void;
 };
 
-const getBaseCellTone = (isHolidayLike: boolean, isSaturday: boolean) => {
-  if (isHolidayLike) return "border-red-400/18 bg-rose-500/[0.025]";
-  if (isSaturday) return "border-sky-400/18 bg-sky-500/[0.025]";
-  return "border-ink-700/65 bg-ink-950/35";
-};
+const baseCellTone = "border-ink-700/65 bg-ink-950/35";
 
 export function MonthlyCalendar({
   currentMonth,
@@ -72,7 +68,10 @@ export function MonthlyCalendar({
 
       <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-ink-500 sm:gap-1.5">
         {weekdayLabels.map((label, index) => (
-          <div key={label} className={`py-1 ${index === 5 ? "text-sky-300/80" : index === 6 ? "text-red-300/80" : ""}`}>
+          <div
+            key={label}
+            className={`py-1 ${index === 5 ? "text-sky-400/55" : index === 6 ? "text-red-400/55" : ""}`}
+          >
             {label}
           </div>
         ))}
@@ -93,9 +92,14 @@ export function MonthlyCalendar({
           const holidayName = getKoreanHolidayName(dateKey);
           const dayIndex = getDayIndex(day);
           const isSaturday = dayIndex === 6;
-          const isHolidayLike = dayIndex === 0 || !!holidayName;
-          const dateTone = isHolidayLike ? "text-red-200" : isSaturday ? "text-sky-200" : "text-ink-100";
-          const baseTone = getBaseCellTone(isHolidayLike, isSaturday);
+          const isSunday = dayIndex === 0;
+          const dateTone = holidayName
+            ? "text-red-300/75"
+            : isSunday
+              ? "text-red-400/60"
+              : isSaturday
+                ? "text-sky-400/60"
+                : "text-ink-100";
           const formattedDate = formatKoreanDate(day, "M월 d일");
           const statusActionLabel =
             dayStatus === "O"
@@ -108,8 +112,10 @@ export function MonthlyCalendar({
             <article
               key={dateKey}
               className={`group relative h-[6.25rem] overflow-hidden rounded-md border text-left transition sm:h-[7rem] ${
-                selected ? "border-accent-500/80 bg-accent-500/[0.08] ring-1 ring-accent-500/20" : `${baseTone} hover:border-ink-500/80 hover:bg-ink-900/60`
-              } ${inMonth ? "" : "opacity-40"} ${today ? "ring-2 ring-accent-400/30" : ""}`}
+                selected
+                  ? "border-accent-500/90 bg-accent-500/[0.09] ring-1 ring-accent-500/25"
+                  : `${baseCellTone} hover:border-ink-500/80 hover:bg-ink-900/60`
+              } ${inMonth ? "" : "opacity-40"} ${today && !selected ? "ring-1 ring-accent-400/40" : ""}`}
             >
               <button
                 type="button"
@@ -122,10 +128,14 @@ export function MonthlyCalendar({
                 <div className="min-w-0 pr-7">
                   <div className="flex min-w-0 items-center gap-1">
                     <span className={`shrink-0 text-xs font-bold sm:text-sm ${dateTone}`}>{formatKoreanDate(day, "d")}</span>
-                    {today ? <span className="hidden rounded-full bg-accent-500 px-1.5 py-0.5 text-[9px] font-bold text-white sm:inline-flex">오늘</span> : null}
+                    {today ? (
+                      <span className="hidden rounded-full border border-accent-500/35 bg-accent-500/12 px-1.5 py-0.5 text-[9px] font-bold text-accent-300 sm:inline-flex">
+                        오늘
+                      </span>
+                    ) : null}
                   </div>
                   <div className="mt-0.5 min-h-3 truncate text-[9px] font-semibold sm:text-[10px]">
-                    {holidayName ? <span className="text-red-200/75">{holidayName}</span> : null}
+                    {holidayName ? <span className="text-red-300/65">{holidayName}</span> : null}
                   </div>
                 </div>
 
@@ -139,7 +149,7 @@ export function MonthlyCalendar({
                       <p className="hidden truncate text-[9px] text-ink-600 sm:block">완료 {completedCount}{dayGoals.length ? ` · 목표 ${dayGoals.length}` : ""}</p>
                     </>
                   ) : dayGoals.length ? (
-                    <p className="truncate text-[9px] font-semibold text-amber-200/80 sm:text-[10px]">목표 {dayGoals.length}</p>
+                    <p className="truncate text-[9px] font-semibold text-amber-200/70 sm:text-[10px]">목표 {dayGoals.length}</p>
                   ) : (
                     <p className="text-[9px] text-ink-700 sm:text-[10px]">Todo 없음</p>
                   )}
@@ -147,7 +157,7 @@ export function MonthlyCalendar({
                   {categoryColors.length ? (
                     <div className="flex items-center gap-1 pt-0.5">
                       {categoryColors.slice(0, 3).map((color) => (
-                        <span key={color} className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
+                        <span key={color} className="h-1.5 w-1.5 rounded-full opacity-80" style={{ background: color }} />
                       ))}
                       {categoryColors.length > 3 ? <span className="text-[9px] text-ink-600">+{categoryColors.length - 3}</span> : null}
                     </div>
@@ -159,10 +169,10 @@ export function MonthlyCalendar({
                 type="button"
                 className={`absolute right-1 top-1 z-20 inline-flex h-7 w-7 items-center justify-center rounded-md border text-[10px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 sm:right-1.5 sm:top-1.5 ${
                   dayStatus === "O"
-                    ? "border-success/45 bg-success/10 text-emerald-100 hover:border-success/75"
+                    ? "border-success/30 bg-success/[0.06] text-emerald-200/85 hover:border-success/55 hover:bg-success/10"
                     : dayStatus === "X"
-                      ? "border-danger/45 bg-danger/10 text-red-100 hover:border-danger/75"
-                      : "border-ink-700 bg-ink-950/75 text-ink-500 hover:border-ink-500 hover:text-ink-200"
+                      ? "border-danger/30 bg-danger/[0.06] text-red-200/85 hover:border-danger/55 hover:bg-danger/10"
+                      : "border-ink-700/80 bg-ink-950/65 text-ink-500 hover:border-ink-500 hover:text-ink-200"
                 }`}
                 onClick={() => onCycleDayStatus(dateKey)}
                 aria-label={statusActionLabel}
