@@ -11,16 +11,12 @@ import { useTimePlanning } from "./useTimePlanning";
 import { useTodos } from "./useTodos";
 
 const getMessage = (error: unknown) => error instanceof Error ? error.message : "요청 처리 중 오류가 발생했습니다.";
-const IDLE_LOAD_TIMEOUT_MS = 1_200;
+const DEFERRED_LOAD_DELAY_MS = 80;
 
-const scheduleIdleTask = (task: () => void) => {
-  if (typeof window === "undefined") return () => undefined;
-  if ("requestIdleCallback" in window) {
-    const id = window.requestIdleCallback(task, { timeout: IDLE_LOAD_TIMEOUT_MS });
-    return () => window.cancelIdleCallback(id);
-  }
-  const id = window.setTimeout(task, 50);
-  return () => window.clearTimeout(id);
+const scheduleDeferredTask = (task: () => void): (() => void) => {
+  if (typeof window === "undefined") return () => {};
+  const id = globalThis.setTimeout(task, DEFERRED_LOAD_DELAY_MS);
+  return () => globalThis.clearTimeout(id);
 };
 
 export function usePlannerData() {
@@ -35,7 +31,6 @@ export function usePlannerData() {
 
   const [loading, setLoading] = useState(true);
   const [loadedOnce, setLoadedOnce] = useState(false);
-  const [deferredLoaded, setDeferredLoaded] = useState(false);
   const [loadError, setLoadError] = useState("");
   const deferredLoadedRef = useRef(false);
   const deferredLoadRef = useRef<Promise<void> | null>(null);
@@ -67,7 +62,6 @@ export function usePlannerData() {
       timeState.loadTimePlanning(),
     ]).then(() => {
       deferredLoadedRef.current = true;
-      setDeferredLoaded(true);
     }).finally(() => {
       deferredLoadRef.current = null;
     });
@@ -92,7 +86,6 @@ export function usePlannerData() {
       ]);
       await runPlannerAutomations();
       deferredLoadedRef.current = true;
-      setDeferredLoaded(true);
       setLoadedOnce(true);
       setLoadError("");
     } catch (err) {
@@ -119,12 +112,12 @@ export function usePlannerData() {
   }, [loadCoreData]);
 
   useEffect(() => {
-    let cancelDeferred = () => undefined;
+    let cancelDeferred: () => void = () => {};
     let active = true;
 
     void loadInitial().then((success) => {
       if (!active || !success) return;
-      cancelDeferred = scheduleIdleTask(() => {
+      cancelDeferred = scheduleDeferredTask(() => {
         void loadDeferredData().catch(() => undefined);
       });
     });
@@ -216,7 +209,6 @@ export function usePlannerData() {
     plannerSettings: settingsState.settings,
     loading,
     loadedOnce,
-    deferredLoaded,
     saving,
     initialLoadError,
     backgroundOrOperationError,
