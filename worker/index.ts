@@ -3,6 +3,7 @@ import { z, ZodError } from "zod";
 import { clearSessionCookie, createSessionToken, requireAuth, setSessionCookie, verifyPassword, verifySessionToken, SESSION_COOKIE } from "./auth";
 import { getCookie } from "hono/cookie";
 import type { Bindings, Variables } from "./types";
+import { backupV9ExportMiddleware, backupV9ImportMiddleware } from "./backupMiddleware";
 import { backupRoutes } from "./routes/backup";
 import { contentRoutes } from "./routes/content";
 import { libraryRoutes } from "./routes/library";
@@ -52,6 +53,10 @@ app.get("/api/auth/session", async (c) => {
   return c.json(authenticated ? { authenticated: true, username: c.env.AUTH_USERNAME } : { authenticated: false }, authenticated ? 200 : 401);
 });
 
+app.use("/api/backup/export", backupV9ExportMiddleware);
+app.use("/api/backup/import", backupV9ImportMiddleware);
+app.use("/api/migrate/local-storage", backupV9ImportMiddleware);
+
 app.route("/api", todoRoutes);
 app.route("/api", projectRoutes);
 app.route("/api", contentRoutes);
@@ -72,7 +77,5 @@ app.onError((error, c) => {
 
 export default {
   fetch: (request: Request, env: Bindings, executionContext: ExecutionContext) => app.fetch(request, env, executionContext),
-  scheduled: (controller: ScheduledController, env: Bindings, executionContext: ExecutionContext) => {
-    executionContext.waitUntil(runDiscordIncompleteTodoReminder(env, new Date(controller.scheduledTime)));
-  },
+  scheduled: (controller: ScheduledController, env: Bindings, executionContext: ExecutionContext) => executionContext.waitUntil(runDiscordIncompleteTodoReminder(env, new Date(controller.scheduledTime))),
 } satisfies ExportedHandler<Bindings>;
