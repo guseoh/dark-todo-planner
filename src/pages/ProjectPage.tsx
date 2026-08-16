@@ -56,6 +56,7 @@ export function ProjectPage({
   const [newTargetDate, setNewTargetDate] = useState("");
   const [milestoneTitle, setMilestoneTitle] = useState("");
   const [milestoneDate, setMilestoneDate] = useState("");
+  const [newTodoMilestoneId, setNewTodoMilestoneId] = useState("");
   const [decisionTitle, setDecisionTitle] = useState("");
   const [decisionText, setDecisionText] = useState("");
   const [decisionRationale, setDecisionRationale] = useState("");
@@ -82,6 +83,7 @@ export function ProjectPage({
     setResourceLabel("");
     setResourceUrl("");
     setResourceError("");
+    setNewTodoMilestoneId("");
   }, [selectedId]);
 
   const selected = projects.find((project) => project.id === selectedId);
@@ -91,6 +93,7 @@ export function ProjectPage({
   const linkedMemos = useMemo(() => memos.filter((memo) => memo.projectIds.includes(selectedId)), [memos, selectedId]);
   const completed = projectTodos.filter((todo) => todo.completed).length;
   const progress = projectTodos.length ? Math.round((completed / projectTodos.length) * 100) : 0;
+  const unassignedMilestoneTodos = projectTodos.filter((todo) => !todo.milestoneId).length;
   const today = todayKey();
 
   const createProject = async (event: FormEvent) => {
@@ -150,6 +153,16 @@ export function ProjectPage({
     if (created) { setMilestoneTitle(""); setMilestoneDate(""); }
   };
 
+  const addProjectTodo = async (input: TodoInput) => {
+    if (!selected) return undefined;
+    const projectId = input.projectId || selected.id;
+    return onAddTodo({
+      ...input,
+      projectId,
+      milestoneId: projectId === selected.id ? (newTodoMilestoneId || undefined) : undefined,
+    });
+  };
+
   const createDecision = async (event: FormEvent) => {
     event.preventDefault();
     if (!selected || !decisionTitle.trim() || !decisionText.trim()) return;
@@ -164,6 +177,7 @@ export function ProjectPage({
     const created = await onAddTodo({
       title,
       projectId: selected.id,
+      milestoneId: parent.milestoneId,
       parentTodoId: parent.id,
       date: scheduled ? parent.date : today,
       planningState: scheduled ? "SCHEDULED" : "INBOX",
@@ -257,20 +271,55 @@ export function ProjectPage({
               </div>
             </section>
 
-            {!selected.archived ? <TodoForm compact submitLabel="프로젝트 Todo 추가" categories={categories} projects={activeProjects} defaultProjectId={selected.id} onAdd={onAddTodo} /> : null}
+            {!selected.archived ? (
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+                  <div><p className="text-xs font-semibold text-ink-300">새 Todo 마일스톤</p><p className="mt-0.5 text-[11px] text-ink-500">같은 마일스톤에 작업을 연속 추가할 때 선택을 유지합니다.</p></div>
+                  <select className="field min-h-9 w-full py-1.5 text-xs sm:w-64" value={newTodoMilestoneId} onChange={(event) => setNewTodoMilestoneId(event.target.value)} aria-label="새 Todo 마일스톤">
+                    <option value="">마일스톤 없음</option>{projectMilestones.map((milestone) => <option key={milestone.id} value={milestone.id}>{milestone.title}</option>)}
+                  </select>
+                </div>
+                <TodoForm compact submitLabel="프로젝트 Todo 추가" categories={categories} projects={activeProjects} defaultProjectId={selected.id} onAdd={(input) => { void addProjectTodo(input); }} />
+              </div>
+            ) : null}
 
             <div className="grid gap-4 2xl:grid-cols-2">
               <section className="app-card p-4">
-                <div className="mb-3 flex items-center gap-2"><Target size={17} className="text-accent-300" /><h3 className="font-bold text-ink-100">마일스톤</h3></div>
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2"><Target size={17} className="text-accent-300" /><h3 className="font-bold text-ink-100">마일스톤</h3></div>
+                  {projectTodos.length ? <span className="text-[11px] text-ink-500">미지정 Todo {unassignedMilestoneTodos}개</span> : null}
+                </div>
                 {!selected.archived ? <form className="mb-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_10rem_auto]" onSubmit={createMilestone}><input className="field" value={milestoneTitle} onChange={(event) => setMilestoneTitle(event.target.value)} placeholder="마일스톤" /><input className="field" type="date" value={milestoneDate} onChange={(event) => setMilestoneDate(event.target.value)} /><button className="btn-secondary" type="submit" disabled={!milestoneTitle.trim()}><Plus size={15} />추가</button></form> : null}
-                <div className="space-y-2">
-                  {projectMilestones.length ? projectMilestones.map((milestone) => (
-                    <div key={milestone.id} className="flex items-center gap-2 rounded-lg border border-ink-800/70 bg-ink-950/25 p-2">
-                      <button type="button" className="icon-btn h-9 w-9 rounded-md" onClick={() => void onUpdateMilestone(milestone.id, { status: milestone.status === "DONE" ? "TODO" : "DONE" })} aria-label="마일스톤 완료 토글">{milestone.status === "DONE" ? <CheckCircle2 size={16} className="text-emerald-300" /> : <CircleDot size={16} />}</button>
-                      <div className="min-w-0 flex-1"><p className={`truncate text-sm font-semibold ${milestone.status === "DONE" ? "text-ink-500 line-through" : "text-ink-100"}`}>{milestone.title}</p>{milestone.targetDate ? <p className="text-[11px] text-ink-500">{milestone.targetDate}</p> : null}</div>
-                      <button type="button" className="icon-btn h-9 w-9 rounded-md hover:text-red-200" onClick={() => window.confirm("마일스톤을 삭제할까요? 연결된 Todo의 마일스톤 지정은 해제됩니다.") && void onDeleteMilestone(milestone.id)} aria-label="마일스톤 삭제"><Trash2 size={14} /></button>
-                    </div>
-                  )) : <p className="py-4 text-center text-sm text-ink-500">아직 마일스톤이 없습니다.</p>}
+                <div className="space-y-3">
+                  {projectMilestones.length ? projectMilestones.map((milestone) => {
+                    const milestoneTodos = projectTodos.filter((todo) => todo.milestoneId === milestone.id);
+                    const milestoneCompleted = milestoneTodos.filter((todo) => todo.completed).length;
+                    const milestoneProgress = milestoneTodos.length ? Math.round((milestoneCompleted / milestoneTodos.length) * 100) : 0;
+                    return (
+                      <div key={milestone.id} className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3">
+                        <div className="flex items-start gap-2">
+                          <button type="button" className="icon-btn h-9 w-9 shrink-0 rounded-md" onClick={() => void onUpdateMilestone(milestone.id, { status: milestone.status === "DONE" ? "TODO" : "DONE" })} aria-label="마일스톤 완료 토글">{milestone.status === "DONE" ? <CheckCircle2 size={16} className="text-emerald-300" /> : <CircleDot size={16} />}</button>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center justify-between gap-2"><p className={`min-w-0 truncate text-sm font-semibold ${milestone.status === "DONE" ? "text-ink-500 line-through" : "text-ink-100"}`}>{milestone.title}</p><span className="text-[11px] font-semibold text-ink-400">{milestoneCompleted}/{milestoneTodos.length} · {milestoneProgress}%</span></div>
+                            <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-ink-500">{milestone.targetDate ? <span>목표일 {milestone.targetDate}</span> : null}<span>Todo {milestoneTodos.length}개</span></div>
+                          </div>
+                          <button type="button" className="icon-btn h-9 w-9 shrink-0 rounded-md hover:text-red-200" onClick={() => window.confirm("마일스톤을 삭제할까요? 연결된 Todo의 마일스톤 지정은 해제됩니다.") && void onDeleteMilestone(milestone.id)} aria-label="마일스톤 삭제"><Trash2 size={14} /></button>
+                        </div>
+                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink-800"><div className="h-full rounded-full bg-accent-500 transition-all" style={{ width: `${milestoneProgress}%` }} /></div>
+                        {milestoneTodos.length ? (
+                          <div className="mt-3 space-y-1.5 border-t border-ink-800/70 pt-2.5">
+                            {milestoneTodos.map((todo) => (
+                              <div key={todo.id} className="flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1 text-xs hover:bg-ink-900/45">
+                                <button type="button" onClick={() => onToggleTodo(todo.id)} className={`h-3.5 w-3.5 shrink-0 rounded-full border ${todo.completed ? "border-success bg-success" : "border-ink-600"}`} aria-label={`${todo.title} 완료 토글`} />
+                                <span className={`min-w-0 flex-1 truncate ${todo.completed ? "text-ink-500 line-through" : "text-ink-300"}`}>{todo.title}</span>
+                                <span className="shrink-0 text-[10px] text-ink-600">{todo.workflowStatus}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : <p className="mt-3 border-t border-ink-800/70 pt-2.5 text-xs text-ink-600">연결된 Todo가 없습니다.</p>}
+                      </div>
+                    );
+                  }) : <p className="py-4 text-center text-sm text-ink-500">아직 마일스톤이 없습니다.</p>}
                 </div>
               </section>
 
@@ -301,7 +350,7 @@ export function ProjectPage({
             </section>
 
             <section className="space-y-3">
-              <div><h3 className="text-base font-bold text-ink-100">Kanban</h3><p className="mt-1 text-xs text-ink-500">Todo 상태와 하위 작업을 함께 관리합니다.</p></div>
+              <div><h3 className="text-base font-bold text-ink-100">Kanban</h3><p className="mt-1 text-xs text-ink-500">상태와 마일스톤, 하위 작업을 한곳에서 조정합니다.</p></div>
               <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
                 {workflowColumns.map((column) => {
                   const items = projectTodos.filter((todo) => (todo.workflowStatus || (todo.completed ? "DONE" : "TODO")) === column.status);
@@ -310,11 +359,20 @@ export function ProjectPage({
                       <div className="mb-3 flex items-center justify-between gap-2"><h4 className="text-sm font-bold text-ink-100">{column.label}</h4><span className="rounded-full border border-ink-800/70 bg-ink-950/45 px-2 py-0.5 text-xs text-ink-400">{items.length}</span></div>
                       <div className="space-y-2">
                         {items.map((todo) => {
-                          const overdue = isOverdueByDeadline(todo, today); const dueSoon = isDueSoon(todo, today); const parent = projectTodos.find((item) => item.id === todo.parentTodoId); const childCount = projectTodos.filter((item) => item.parentTodoId === todo.id).length;
+                          const overdue = isOverdueByDeadline(todo, today);
+                          const dueSoon = isDueSoon(todo, today);
+                          const parent = projectTodos.find((item) => item.id === todo.parentTodoId);
+                          const childCount = projectTodos.filter((item) => item.parentTodoId === todo.id).length;
+                          const milestone = projectMilestones.find((item) => item.id === todo.milestoneId);
                           return (
                             <article key={todo.id} className="rounded-lg border border-ink-800/80 bg-ink-950/25 p-3">
-                              <div className="flex items-start gap-2"><button type="button" onClick={() => onToggleTodo(todo.id)} className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border ${todo.completed ? "border-success bg-success" : "border-ink-600"}`} aria-label="완료 토글" /><div className="min-w-0 flex-1">{parent ? <p className="mb-1 truncate text-[10px] font-semibold text-accent-300">↳ {parent.title}</p> : null}<p className={`break-words text-sm font-semibold ${todo.completed ? "text-ink-500 line-through" : "text-ink-100"}`}>{todo.title}</p><div className="mt-2 flex flex-wrap gap-1.5 text-[10px] text-ink-400">{childCount ? <span className="rounded border border-accent-500/25 bg-accent-500/[0.06] px-1.5 py-0.5 text-accent-200">하위 {childCount}</span> : null}{todo.estimateMinutes ? <span className="rounded border border-ink-800/70 bg-ink-900/60 px-1.5 py-0.5">{todo.estimateMinutes}분</span> : null}{todo.dueDate ? <span className={`rounded border px-1.5 py-0.5 ${overdue ? "border-danger/30 bg-danger/[0.07] text-red-100" : dueSoon ? "border-warning/30 bg-warning/[0.07] text-amber-100" : "border-ink-800/70 bg-ink-900/60"}`}>마감 {todo.dueDate}</span> : null}</div></div></div>
-                              <select className="field mt-2 min-h-9 py-1 text-xs" value={todo.workflowStatus || (todo.completed ? "DONE" : "TODO")} onChange={(event) => void onUpdateTodo(todo.id, { workflowStatus: event.target.value as TodoWorkflowStatus, completed: event.target.value === "DONE" })}>{workflowColumns.map((target) => <option key={target.status} value={target.status}>{target.label}</option>)}</select>
+                              <div className="flex items-start gap-2"><button type="button" onClick={() => onToggleTodo(todo.id)} className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border ${todo.completed ? "border-success bg-success" : "border-ink-600"}`} aria-label="완료 토글" /><div className="min-w-0 flex-1">{parent ? <p className="mb-1 truncate text-[10px] font-semibold text-accent-300">↳ {parent.title}</p> : null}<p className={`break-words text-sm font-semibold ${todo.completed ? "text-ink-500 line-through" : "text-ink-100"}`}>{todo.title}</p><div className="mt-2 flex flex-wrap gap-1.5 text-[10px] text-ink-400">{milestone ? <span className="rounded border border-accent-500/25 bg-accent-500/[0.06] px-1.5 py-0.5 text-accent-200">{milestone.title}</span> : null}{childCount ? <span className="rounded border border-accent-500/25 bg-accent-500/[0.06] px-1.5 py-0.5 text-accent-200">하위 {childCount}</span> : null}{todo.estimateMinutes ? <span className="rounded border border-ink-800/70 bg-ink-900/60 px-1.5 py-0.5">{todo.estimateMinutes}분</span> : null}{todo.dueDate ? <span className={`rounded border px-1.5 py-0.5 ${overdue ? "border-danger/30 bg-danger/[0.07] text-red-100" : dueSoon ? "border-warning/30 bg-warning/[0.07] text-amber-100" : "border-ink-800/70 bg-ink-900/60"}`}>마감 {todo.dueDate}</span> : null}</div></div></div>
+                              <div className="mt-2 grid gap-2">
+                                <select className="field min-h-9 py-1 text-xs" value={todo.workflowStatus || (todo.completed ? "DONE" : "TODO")} onChange={(event) => void onUpdateTodo(todo.id, { workflowStatus: event.target.value as TodoWorkflowStatus, completed: event.target.value === "DONE" })}>{workflowColumns.map((target) => <option key={target.status} value={target.status}>{target.label}</option>)}</select>
+                                <select className="field min-h-9 py-1 text-xs" value={todo.milestoneId || ""} onChange={(event) => void onUpdateTodo(todo.id, { projectId: selected.id, milestoneId: event.target.value || undefined })} disabled={selected.archived} aria-label={`${todo.title} 마일스톤`}>
+                                  <option value="">마일스톤 없음</option>{projectMilestones.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+                                </select>
+                              </div>
                               {!selected.archived ? <button type="button" className="mt-2 text-[11px] font-semibold text-ink-500 hover:text-accent-200" onClick={() => { setSubtaskParentId(subtaskParentId === todo.id ? "" : todo.id); setSubtaskTitle(""); }}><Plus size={12} className="mr-1 inline" />하위 Todo</button> : null}
                               {subtaskParentId === todo.id ? <div className="mt-2 flex gap-1.5"><input className="field min-h-9 py-1 text-xs" value={subtaskTitle} onChange={(event) => setSubtaskTitle(event.target.value)} placeholder="하위 작업" onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void createSubtask(todo); } }} /><button type="button" className="btn-secondary min-h-9 px-2 py-1 text-xs" onClick={() => void createSubtask(todo)} disabled={!subtaskTitle.trim()}>추가</button></div> : null}
                             </article>
