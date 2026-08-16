@@ -50,7 +50,7 @@ export function TodoRow({
   const openOrSelect = () => selectionMode ? onSelect?.(todo.id) : onEdit(todo);
 
   return (
-    <article className={`group rounded-md border px-2 py-1.5 transition sm:px-2.5 ${selected && selectionMode ? "border-accent-500/55 bg-accent-500/10" : "border-ink-800/90 bg-ink-950/32 hover:border-ink-600 hover:bg-ink-900/65"} ${todo.completed ? "opacity-65" : ""}`}>
+    <article className={`group rounded-md border px-2 py-1.5 transition sm:px-2.5 ${selected && selectionMode ? "border-accent-500/45 bg-accent-500/[0.07]" : "border-ink-800/75 bg-ink-950/20 hover:border-ink-700/90 hover:bg-ink-900/55"} ${todo.completed ? "opacity-65" : ""}`}>
       <div className="flex min-w-0 items-center gap-1.5">
         {selectionMode ? (
           <label className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md transition hover:bg-ink-800" title={selected ? "선택 해제" : "선택"}>
@@ -66,11 +66,11 @@ export function TodoRow({
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
             <h4 className={`min-w-0 break-words text-sm font-semibold leading-5 text-ink-100 ${todo.completed ? "text-ink-500 line-through" : ""}`}>{todo.title}</h4>
             {!(hideMediumPriority && todo.priority === "MEDIUM") ? <PriorityBadge priority={todo.priority} compact /> : null}
-            {showCategoryBadge ? <span className="rounded-full border border-ink-700/70 bg-ink-900 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-ink-400">{todo.category?.name || "미분류"}</span> : null}
-            {todo.planningState !== "SCHEDULED" ? <span className="rounded-full border border-sky-400/25 bg-sky-400/10 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-sky-100">{planningLabel[todo.planningState]}</span> : null}
-            {todo.repeat !== "NONE" ? <span className="rounded-full border border-accent-500/30 bg-accent-500/12 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-indigo-100">{repeatLabel[todo.repeat]}</span> : null}
-            {todo.archived ? <span className="rounded-full border border-ink-600 bg-ink-700/45 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-ink-300">보관됨</span> : null}
-            {duplicateCandidate ? <span className="rounded-full border border-amber-400/35 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-amber-100">중복 후보</span> : null}
+            {showCategoryBadge ? <span className="rounded-full border border-ink-700/65 bg-ink-900/65 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-ink-400">{todo.category?.name || "미분류"}</span> : null}
+            {todo.planningState !== "SCHEDULED" ? <span className="rounded-full border border-ink-700/65 bg-ink-900/65 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-ink-300">{planningLabel[todo.planningState]}</span> : null}
+            {todo.repeat !== "NONE" ? <span className="rounded-full border border-accent-500/25 bg-accent-500/[0.07] px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-accent-200">{repeatLabel[todo.repeat]}</span> : null}
+            {todo.archived ? <span className="rounded-full border border-ink-600 bg-ink-700/35 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-ink-300">보관됨</span> : null}
+            {duplicateCandidate ? <span className="rounded-full border border-amber-400/30 bg-amber-400/[0.07] px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-amber-100">중복 후보</span> : null}
           </div>
           {todo.memo ? <p className="mt-0.5 line-clamp-1 whitespace-pre-wrap text-[11px] text-ink-500">{todo.memo}</p> : null}
           <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] text-ink-500">
@@ -78,13 +78,13 @@ export function TodoRow({
             {showCategoryMeta ? <span>{todo.category?.name || "미분류"}</span> : null}
             {showDate && todo.planningState === "SCHEDULED" ? <span className="inline-flex items-center gap-1"><CalendarDays size={12} />{formatKoreanDate(todo.date, "M월 d일 E")}</span> : null}
             {todo.estimateMinutes ? <span>예상 {todo.estimateMinutes}분</span> : null}
-            {todo.dueDate ? <span className={`rounded-full border px-1.5 py-0.5 font-semibold ${overdue ? "border-danger/40 bg-danger/10 text-red-100" : dueSoon ? "border-warning/40 bg-warning/10 text-amber-100" : "border-ink-700/70 text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {getDdayLabel(todo.dueDate)}</span> : null}
+            {todo.dueDate ? <span className={`rounded-full border px-1.5 py-0.5 font-semibold ${overdue ? "border-danger/35 bg-danger/[0.07] text-red-100" : dueSoon ? "border-warning/35 bg-warning/[0.07] text-amber-100" : "border-ink-700/65 text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {getDdayLabel(todo.dueDate)}</span> : null}
             {todo.tags.map((tag) => <span key={tag}>#{tag}</span>)}
           </div>
         </button>
 
         {!selectionMode ? (
-          <div className="flex shrink-0 flex-wrap justify-end gap-1 opacity-100 sm:opacity-60 sm:transition sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+          <div className="flex shrink-0 flex-wrap justify-end gap-1 opacity-100 sm:opacity-55 sm:transition sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
             {todo.archived && onUnarchive ? <button type="button" className="icon-btn h-8 w-8" onClick={() => onUnarchive(todo.id)} aria-label={`"${todo.title}" 보관 해제`}><RotateCcw size={13} /></button> : null}
             {!todo.archived && todo.completed && onArchive ? <button type="button" className="icon-btn h-8 w-8" onClick={() => onArchive(todo.id)} aria-label={`"${todo.title}" Todo 보관`}><Archive size={13} /></button> : null}
             <button type="button" className="icon-btn h-8 w-8" onClick={() => onEdit(todo)} aria-label={`"${todo.title}" Todo 수정`}><Pencil size={13} /></button>

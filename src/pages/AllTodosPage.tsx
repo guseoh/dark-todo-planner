@@ -111,22 +111,28 @@ export function AllTodosPage({
           <p className="mt-1 text-sm text-ink-500">찾고, 고르고, 여러 Todo를 한 번에 정리하는 관리 화면입니다.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-ink-700/60 bg-ink-900 px-2.5 py-1 text-xs font-semibold text-ink-400">{filteredTodos.length}개 표시</span>
-          <button type="button" className={selectionMode ? "btn-primary" : "btn-secondary"} onClick={toggleSelectionMode} disabled={allTodos.length === 0 || deleting || updating}>
+          <span className="rounded-full border border-ink-700/60 bg-ink-900/70 px-2.5 py-1 text-xs font-semibold text-ink-400">{filteredTodos.length}개 표시</span>
+          <button
+            type="button"
+            className={`btn-secondary ${selectionMode ? "border-accent-500/45 bg-accent-500/10 text-accent-200" : ""}`}
+            onClick={toggleSelectionMode}
+            disabled={allTodos.length === 0 || deleting || updating}
+          >
             {selectionMode ? <X size={15} /> : <ListChecks size={15} />}
             {selectionMode ? "선택 종료" : "선택 작업"}
           </button>
         </div>
       </section>
 
-      <div className="sticky top-[60px] z-20 -mx-1 rounded-lg bg-ink-950/94 px-1 py-1.5 backdrop-blur-xl">
+      <div className="sticky top-[60px] z-20 -mx-1 rounded-lg border border-ink-800/60 bg-ink-950/90 px-1 py-1.5 backdrop-blur-xl">
         <TodoFilter filters={filters} onChange={setFilters} tagOptions={tagOptions} categories={categories} />
       </div>
 
       {selectionMode ? (
-        <section className="app-card border-accent-500/30 p-3" aria-label="Todo 선택 작업 도구">
+        <section className="app-card p-3" aria-label="Todo 선택 작업 도구">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div>
+            <div className="relative pl-3">
+              <span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 rounded-full bg-accent-500" />
               <p className="text-sm font-bold text-ink-100">{selectedIds.size}개 선택됨</p>
               <p className="mt-0.5 text-[11px] text-ink-500">체크박스로 직접 고르거나 현재 검색 결과·전체 Todo를 한 번에 선택할 수 있습니다.</p>
             </div>
@@ -149,8 +155,8 @@ export function AllTodosPage({
             </button>
           </div>
 
-          <details className="mt-3 rounded-md border border-ink-700/55 bg-ink-950/30">
-            <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm font-semibold text-ink-300 hover:text-ink-100">
+          <details className="mt-3 rounded-md border border-ink-700/55 bg-ink-950/25">
+            <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm font-semibold text-ink-300 hover:bg-ink-800/45 hover:text-ink-100">
               <Settings2 size={15} className="text-accent-300" />선택 항목 일괄 변경
             </summary>
             <div className="grid gap-2 border-t border-ink-700/50 p-3 md:grid-cols-2 2xl:grid-cols-4">
@@ -173,8 +179,8 @@ export function AllTodosPage({
             </div>
           </details>
 
-          {actionMessage ? <p className="mt-3 rounded-md border border-success/30 bg-success/10 px-3 py-2 text-xs font-semibold text-emerald-100" role="status">{actionMessage}</p> : null}
-          {actionError ? <p className="mt-3 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-xs font-semibold text-red-100" role="alert">{actionError}</p> : null}
+          {actionMessage ? <p className="mt-3 rounded-md border border-success/30 bg-success/[0.08] px-3 py-2 text-xs font-semibold text-emerald-100" role="status">{actionMessage}</p> : null}
+          {actionError ? <p className="mt-3 rounded-md border border-danger/40 bg-danger/[0.08] px-3 py-2 text-xs font-semibold text-red-100" role="alert">{actionError}</p> : null}
         </section>
       ) : null}
 

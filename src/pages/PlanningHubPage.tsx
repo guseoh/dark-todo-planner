@@ -28,23 +28,34 @@ export function PlanningHubPage({
 }: PlanningHubPageProps) {
   const [mode, setMode] = useState<"planning" | "time">("planning");
 
+  const modeButtonClass = (active: boolean) =>
+    `relative flex min-h-9 items-center gap-2 rounded-md px-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 ${
+      active
+        ? "bg-ink-800 text-ink-100 ring-1 ring-inset ring-ink-700/80"
+        : "text-ink-400 hover:bg-ink-800/70 hover:text-ink-100"
+    }`;
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <div className="inline-flex rounded-lg border border-ink-700 bg-ink-950/60 p-1">
+        <div className="inline-flex rounded-lg border border-ink-700/70 bg-ink-950/45 p-1">
           <button
             type="button"
-            className={`flex min-h-9 items-center gap-2 rounded-md px-3 text-sm font-semibold transition ${mode === "planning" ? "bg-accent-500 text-white" : "text-ink-400 hover:bg-ink-800 hover:text-ink-100"}`}
+            className={modeButtonClass(mode === "planning")}
             onClick={() => setMode("planning")}
+            aria-pressed={mode === "planning"}
           >
+            {mode === "planning" ? <span aria-hidden="true" className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-accent-500" /> : null}
             <ListChecks size={15} />
             계획·리뷰
           </button>
           <button
             type="button"
-            className={`flex min-h-9 items-center gap-2 rounded-md px-3 text-sm font-semibold transition ${mode === "time" ? "bg-accent-500 text-white" : "text-ink-400 hover:bg-ink-800 hover:text-ink-100"}`}
+            className={modeButtonClass(mode === "time")}
             onClick={() => setMode("time")}
+            aria-pressed={mode === "time"}
           >
+            {mode === "time" ? <span aria-hidden="true" className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-accent-500" /> : null}
             <Clock3 size={15} />
             시간 계획
           </button>

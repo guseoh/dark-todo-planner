@@ -124,8 +124,9 @@ export function ProjectPage({
           ) : null}
           <div className="app-card space-y-1 p-2">
             {visibleProjects.length ? visibleProjects.map((project) => (
-              <button key={project.id} type="button" onClick={() => setSelectedId(project.id)} className={`flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-left text-sm font-semibold transition ${selectedId === project.id ? "bg-accent-500/20 text-ink-100" : "text-ink-400 hover:bg-ink-800 hover:text-ink-100"}`}>
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: project.color || "#6366f1" }} /><span className="min-w-0 flex-1 truncate">{project.name}</span><span className="text-[10px] text-ink-500">{projectStatusLabel[project.status]}</span>
+              <button key={project.id} type="button" onClick={() => setSelectedId(project.id)} className={`relative flex min-h-11 w-full items-center gap-2 rounded-lg border px-3 text-left text-sm font-semibold transition ${selectedId === project.id ? "border-ink-700/80 bg-ink-800 text-ink-100" : "border-transparent text-ink-400 hover:border-ink-800 hover:bg-ink-800/65 hover:text-ink-100"}`}>
+                {selectedId === project.id ? <span aria-hidden="true" className="absolute bottom-2 left-0 top-2 w-0.5 rounded-full bg-accent-500" /> : null}
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: project.color || "#0b72d7" }} /><span className="min-w-0 flex-1 truncate">{project.name}</span><span className="text-[10px] text-ink-500">{projectStatusLabel[project.status]}</span>
               </button>
             )) : <p className="px-3 py-6 text-center text-sm text-ink-500">{showArchived ? "보관된 프로젝트가 없습니다." : "프로젝트를 하나 만들어보세요."}</p>}
           </div>
@@ -156,7 +157,7 @@ export function ProjectPage({
                 {!selected.archived ? <form className="mb-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_10rem_auto]" onSubmit={createMilestone}><input className="field" value={milestoneTitle} onChange={(event) => setMilestoneTitle(event.target.value)} placeholder="마일스톤" /><input className="field" type="date" value={milestoneDate} onChange={(event) => setMilestoneDate(event.target.value)} /><button className="btn-secondary" type="submit" disabled={!milestoneTitle.trim()}><Plus size={15} />추가</button></form> : null}
                 <div className="space-y-2">
                   {projectMilestones.length ? projectMilestones.map((milestone) => (
-                    <div key={milestone.id} className="flex items-center gap-2 rounded-lg bg-ink-950/45 p-2">
+                    <div key={milestone.id} className="flex items-center gap-2 rounded-lg border border-ink-800/70 bg-ink-950/25 p-2">
                       <button type="button" className="icon-btn h-9 w-9 rounded-md" onClick={() => void onUpdateMilestone(milestone.id, { status: milestone.status === "DONE" ? "TODO" : "DONE" })} aria-label="마일스톤 완료 토글">{milestone.status === "DONE" ? <CheckCircle2 size={16} className="text-emerald-300" /> : <CircleDot size={16} />}</button>
                       <div className="min-w-0 flex-1"><p className={`truncate text-sm font-semibold ${milestone.status === "DONE" ? "text-ink-500 line-through" : "text-ink-100"}`}>{milestone.title}</p>{milestone.targetDate ? <p className="text-[11px] text-ink-500">{milestone.targetDate}</p> : null}</div>
                       <button type="button" className="icon-btn h-9 w-9 rounded-md hover:text-red-200" onClick={() => window.confirm("마일스톤을 삭제할까요? 연결된 Todo의 마일스톤 지정은 해제됩니다.") && void onDeleteMilestone(milestone.id)} aria-label="마일스톤 삭제"><Trash2 size={14} /></button>
@@ -167,7 +168,7 @@ export function ProjectPage({
 
               <section className="app-card p-4">
                 <div className="mb-3 flex items-center gap-2"><FileText size={17} className="text-accent-300" /><h3 className="font-bold text-ink-100">연결된 메모</h3></div>
-                {linkedMemos.length ? <div className="space-y-2">{linkedMemos.map((memo) => <div key={memo.id} className="rounded-lg bg-ink-950/45 px-3 py-2"><p className="text-sm font-semibold text-ink-100">{memoTitle(memo)}</p><p className="mt-1 line-clamp-2 text-xs text-ink-500">{memo.content}</p></div>)}</div> : <p className="py-4 text-center text-sm text-ink-500">메모 화면에서 이 프로젝트를 연결하면 여기에 표시됩니다.</p>}
+                {linkedMemos.length ? <div className="space-y-2">{linkedMemos.map((memo) => <div key={memo.id} className="rounded-lg border border-ink-800/70 bg-ink-950/25 px-3 py-2"><p className="text-sm font-semibold text-ink-100">{memoTitle(memo)}</p><p className="mt-1 line-clamp-2 text-xs text-ink-500">{memo.content}</p></div>)}</div> : <p className="py-4 text-center text-sm text-ink-500">메모 화면에서 이 프로젝트를 연결하면 여기에 표시됩니다.</p>}
               </section>
             </div>
 
@@ -184,7 +185,7 @@ export function ProjectPage({
               ) : null}
               <div className="space-y-2">
                 {projectDecisions.length ? projectDecisions.map((decision) => (
-                  <article key={decision.id} className="rounded-lg border border-ink-800 bg-ink-950/40 p-3">
+                  <article key={decision.id} className="rounded-lg border border-ink-800/80 bg-ink-950/25 p-3">
                     <div className="flex items-start gap-3"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h4 className="font-bold text-ink-100">{decision.title}</h4><span className="text-[11px] text-ink-500">{decision.decidedAt}</span></div><p className="mt-2 text-sm text-ink-200">{decision.decision}</p>{decision.rationale ? <p className="mt-2 text-xs text-ink-500">근거: {decision.rationale}</p> : null}</div><button type="button" className="icon-btn h-9 w-9 rounded-md hover:text-red-200" onClick={() => window.confirm("이 의사결정 기록을 삭제할까요?") && void onDeleteDecision(decision.id)} aria-label="의사결정 기록 삭제"><Trash2 size={14} /></button></div>
                   </article>
                 )) : <p className="py-4 text-center text-sm text-ink-500">아직 남긴 의사결정 기록이 없습니다.</p>}
@@ -198,13 +199,13 @@ export function ProjectPage({
                   const items = projectTodos.filter((todo) => (todo.workflowStatus || (todo.completed ? "DONE" : "TODO")) === column.status);
                   return (
                     <div key={column.status} className="app-card min-h-44 p-3">
-                      <div className="mb-3 flex items-center justify-between gap-2"><h4 className="text-sm font-bold text-ink-100">{column.label}</h4><span className="rounded-full bg-ink-950/70 px-2 py-0.5 text-xs text-ink-400">{items.length}</span></div>
+                      <div className="mb-3 flex items-center justify-between gap-2"><h4 className="text-sm font-bold text-ink-100">{column.label}</h4><span className="rounded-full border border-ink-800/70 bg-ink-950/45 px-2 py-0.5 text-xs text-ink-400">{items.length}</span></div>
                       <div className="space-y-2">
                         {items.map((todo) => {
                           const overdue = isOverdueByDeadline(todo, today); const dueSoon = isDueSoon(todo, today); const parent = projectTodos.find((item) => item.id === todo.parentTodoId); const childCount = projectTodos.filter((item) => item.parentTodoId === todo.id).length;
                           return (
-                            <article key={todo.id} className="rounded-lg border border-ink-700/70 bg-ink-950/45 p-3">
-                              <div className="flex items-start gap-2"><button type="button" onClick={() => onToggleTodo(todo.id)} className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border ${todo.completed ? "border-success bg-success" : "border-ink-600"}`} aria-label="완료 토글" /><div className="min-w-0 flex-1">{parent ? <p className="mb-1 truncate text-[10px] font-semibold text-accent-300">↳ {parent.title}</p> : null}<p className={`break-words text-sm font-semibold ${todo.completed ? "text-ink-500 line-through" : "text-ink-100"}`}>{todo.title}</p><div className="mt-2 flex flex-wrap gap-1.5 text-[10px] text-ink-400">{childCount ? <span className="rounded bg-accent-500/10 px-1.5 py-0.5 text-accent-200">하위 {childCount}</span> : null}{todo.estimateMinutes ? <span className="rounded bg-ink-800 px-1.5 py-0.5">{todo.estimateMinutes}분</span> : null}{todo.dueDate ? <span className={`rounded px-1.5 py-0.5 ${overdue ? "bg-danger/20 text-red-100" : dueSoon ? "bg-warning/20 text-amber-100" : "bg-ink-800"}`}>마감 {todo.dueDate}</span> : null}</div></div></div>
+                            <article key={todo.id} className="rounded-lg border border-ink-800/80 bg-ink-950/25 p-3">
+                              <div className="flex items-start gap-2"><button type="button" onClick={() => onToggleTodo(todo.id)} className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border ${todo.completed ? "border-success bg-success" : "border-ink-600"}`} aria-label="완료 토글" /><div className="min-w-0 flex-1">{parent ? <p className="mb-1 truncate text-[10px] font-semibold text-accent-300">↳ {parent.title}</p> : null}<p className={`break-words text-sm font-semibold ${todo.completed ? "text-ink-500 line-through" : "text-ink-100"}`}>{todo.title}</p><div className="mt-2 flex flex-wrap gap-1.5 text-[10px] text-ink-400">{childCount ? <span className="rounded border border-accent-500/25 bg-accent-500/[0.06] px-1.5 py-0.5 text-accent-200">하위 {childCount}</span> : null}{todo.estimateMinutes ? <span className="rounded border border-ink-800/70 bg-ink-900/60 px-1.5 py-0.5">{todo.estimateMinutes}분</span> : null}{todo.dueDate ? <span className={`rounded border px-1.5 py-0.5 ${overdue ? "border-danger/30 bg-danger/[0.07] text-red-100" : dueSoon ? "border-warning/30 bg-warning/[0.07] text-amber-100" : "border-ink-800/70 bg-ink-900/60"}`}>마감 {todo.dueDate}</span> : null}</div></div></div>
                               <select className="field mt-2 min-h-9 py-1 text-xs" value={todo.workflowStatus || (todo.completed ? "DONE" : "TODO")} onChange={(event) => void onUpdateTodo(todo.id, { workflowStatus: event.target.value as TodoWorkflowStatus, completed: event.target.value === "DONE" })}>{workflowColumns.map((target) => <option key={target.status} value={target.status}>{target.label}</option>)}</select>
                               {!selected.archived ? <button type="button" className="mt-2 text-[11px] font-semibold text-ink-500 hover:text-accent-200" onClick={() => { setSubtaskParentId(subtaskParentId === todo.id ? "" : todo.id); setSubtaskTitle(""); }}><Plus size={12} className="mr-1 inline" />하위 Todo</button> : null}
                               {subtaskParentId === todo.id ? <div className="mt-2 flex gap-1.5"><input className="field min-h-9 py-1 text-xs" value={subtaskTitle} onChange={(event) => setSubtaskTitle(event.target.value)} placeholder="하위 작업" onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void createSubtask(todo); } }} /><button type="button" className="btn-secondary min-h-9 px-2 py-1 text-xs" onClick={() => void createSubtask(todo)} disabled={!subtaskTitle.trim()}>추가</button></div> : null}

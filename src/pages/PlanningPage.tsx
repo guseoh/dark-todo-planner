@@ -28,7 +28,7 @@ const priorityLabels: Record<TodoPriority, string> = { LOW: "낮음", MEDIUM: "�
 const TodoMiniList = ({ todos }: { todos: Todo[] }) => todos.length ? (
   <div className="space-y-2">
     {todos.slice(0, 20).map((todo) => (
-      <div key={todo.id} className="flex items-start justify-between gap-3 rounded-lg border border-ink-800 bg-ink-950/35 px-3 py-2.5">
+      <div key={todo.id} className="flex items-start justify-between gap-3 rounded-lg border border-ink-800/80 bg-ink-950/25 px-3 py-2.5">
         <div className="min-w-0">
           <p className={`truncate text-sm font-semibold ${todo.completed ? "text-ink-500 line-through" : "text-ink-100"}`}>{todo.title}</p>
           <p className="mt-1 text-xs text-ink-500">
@@ -198,10 +198,24 @@ export function PlanningPage({
         <p className="mt-2 text-sm text-ink-400">오늘 실행할 일, 주간 회고, 반복해서 보는 조건과 Todo 템플릿을 한곳에서 관리합니다.</p>
       </section>
 
-      {message ? <div className="rounded-lg border border-accent-500/35 bg-accent-500/10 px-3 py-2 text-sm font-semibold text-accent-200" aria-live="polite">{message}</div> : null}
+      {message ? <div className="rounded-lg border border-ink-700/70 bg-ink-900/75 px-3 py-2 text-sm font-semibold text-ink-200" aria-live="polite">{message}</div> : null}
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {tabItems.map((item) => <button key={item.id} type="button" className={tab === item.id ? "btn-primary min-h-10 shrink-0" : "btn-secondary min-h-10 shrink-0"} onClick={() => setTab(item.id)}>{item.label}</button>)}
+      <div className="flex gap-1 overflow-x-auto rounded-lg border border-ink-700/65 bg-ink-950/35 p-1 pb-1">
+        {tabItems.map((item) => {
+          const active = tab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={`relative min-h-9 shrink-0 rounded-md px-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 ${active ? "bg-ink-800 text-ink-100 ring-1 ring-inset ring-ink-700/80" : "text-ink-400 hover:bg-ink-800/65 hover:text-ink-100"}`}
+              onClick={() => setTab(item.id)}
+              aria-pressed={active}
+            >
+              {item.label}
+              {active ? <span aria-hidden="true" className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-accent-500" /> : null}
+            </button>
+          );
+        })}
       </div>
 
       {tab === "daily" ? (
@@ -220,7 +234,7 @@ export function PlanningPage({
             <div className="mt-3 max-h-[32rem] space-y-2 overflow-y-auto pr-1">
               {planningCandidates.map((todo) => {
                 const checked = topTodoIds.includes(todo.id);
-                return <label key={todo.id} className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5 ${checked ? "border-accent-500/55 bg-accent-500/10" : "border-ink-800 bg-ink-950/30"}`}>
+                return <label key={todo.id} className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5 transition ${checked ? "border-accent-500/40 bg-accent-500/[0.07]" : "border-ink-800/80 bg-ink-950/25 hover:border-ink-700 hover:bg-ink-900/55"}`}>
                   <input type="checkbox" className="mt-1 h-4 w-4 accent-accent-500" checked={checked} onChange={() => toggleTopTodo(todo.id)} disabled={!checked && topTodoIds.length >= 5} />
                   <span className="min-w-0"><span className="block truncate text-sm font-semibold text-ink-100">{todo.title}</span><span className="mt-1 block text-xs text-ink-500">{todo.dueDate ? `마감 ${todo.dueDate}` : `실행 ${todo.date}`} · {priorityLabels[todo.priority]}</span></span>
                 </label>;
@@ -236,8 +250,8 @@ export function PlanningPage({
             <h3 className="font-bold text-ink-100">이번 주</h3>
             <p className="mt-1 text-xs text-ink-500">{weekRange.start} ~ {weekRange.end}</p>
             <dl className="mt-4 grid grid-cols-2 gap-2">
-              <div className="rounded-lg bg-ink-950/45 p-3"><dt className="text-xs text-ink-500">계획 Todo</dt><dd className="mt-1 text-xl font-bold text-ink-100">{weekTodos.length}</dd></div>
-              <div className="rounded-lg bg-ink-950/45 p-3"><dt className="text-xs text-ink-500">완료 Todo</dt><dd className="mt-1 text-xl font-bold text-ink-100">{completedWeekTodos.length}</dd></div>
+              <div className="rounded-lg border border-ink-800/70 bg-ink-950/30 p-3"><dt className="text-xs text-ink-500">계획 Todo</dt><dd className="mt-1 text-xl font-bold text-ink-100">{weekTodos.length}</dd></div>
+              <div className="rounded-lg border border-ink-800/70 bg-ink-950/30 p-3"><dt className="text-xs text-ink-500">완료 Todo</dt><dd className="mt-1 text-xl font-bold text-ink-100">{completedWeekTodos.length}</dd></div>
             </dl>
           </section>
           <section className="app-card space-y-4 p-4">
@@ -258,13 +272,19 @@ export function PlanningPage({
             <section className="app-card p-4">
               <div className="flex items-center gap-2"><Sparkles size={17} className="text-accent-300" /><h3 className="font-bold text-ink-100">Smart List</h3></div>
               <div className="mt-3 space-y-1">
-                {builtInSmartViews.map((view) => <button key={view.id} type="button" className="w-full rounded-lg px-3 py-2 text-left hover:bg-ink-800" onClick={() => setActiveView(view)}><span className="block text-sm font-semibold text-ink-100">{view.name}</span><span className="mt-0.5 block text-xs text-ink-500">{view.description}</span></button>)}
+                {builtInSmartViews.map((view) => {
+                  const active = activeView.name === view.name;
+                  return <button key={view.id} type="button" className={`w-full rounded-lg border px-3 py-2 text-left transition ${active ? "border-accent-500/35 bg-accent-500/[0.07]" : "border-transparent hover:border-ink-700/70 hover:bg-ink-800/55"}`} onClick={() => setActiveView(view)}><span className="block text-sm font-semibold text-ink-100">{view.name}</span><span className="mt-0.5 block text-xs text-ink-500">{view.description}</span></button>;
+                })}
               </div>
             </section>
             <section className="app-card p-4">
               <h3 className="font-bold text-ink-100">저장된 보기</h3>
               <div className="mt-3 space-y-1">
-                {savedViews.map((view) => <div key={view.id} className="flex items-center gap-1"><button type="button" className="min-w-0 flex-1 truncate rounded-lg px-3 py-2 text-left text-sm font-semibold text-ink-200 hover:bg-ink-800" onClick={() => setActiveView({ name: view.name, query: view.query })}>{view.name}</button><button type="button" className="icon-btn h-9 w-9 rounded-md" aria-label={`${view.name} 삭제`} onClick={() => void onDeleteSavedView(view.id)}><Trash2 size={14} /></button></div>)}
+                {savedViews.map((view) => {
+                  const active = activeView.name === view.name;
+                  return <div key={view.id} className="flex items-center gap-1"><button type="button" className={`min-w-0 flex-1 truncate rounded-lg border px-3 py-2 text-left text-sm font-semibold transition ${active ? "border-accent-500/35 bg-accent-500/[0.07] text-ink-100" : "border-transparent text-ink-200 hover:border-ink-700/70 hover:bg-ink-800/55"}`} onClick={() => setActiveView({ name: view.name, query: view.query })}>{view.name}</button><button type="button" className="icon-btn h-9 w-9 rounded-md" aria-label={`${view.name} 삭제`} onClick={() => void onDeleteSavedView(view.id)}><Trash2 size={14} /></button></div>;
+                })}
                 {!savedViews.length ? <p className="text-xs text-ink-500">아직 저장한 보기가 없습니다.</p> : null}
               </div>
             </section>
@@ -308,7 +328,7 @@ export function PlanningPage({
           <section className="app-card p-4">
             <h3 className="font-bold text-ink-100">저장된 템플릿</h3>
             <div className="mt-3 space-y-2">
-              {taskTemplates.map((template) => <div key={template.id} className="rounded-lg border border-ink-800 bg-ink-950/35 p-3"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="font-semibold text-ink-100">{template.name}</p><p className="mt-1 truncate text-sm text-ink-300">{template.todo.title}</p><p className="mt-1 text-xs text-ink-500">{priorityLabels[template.todo.priority || "MEDIUM"]} · {planningLabels[template.todo.planningState || "SCHEDULED"]}{template.todo.estimateMinutes ? ` · ${template.todo.estimateMinutes}분` : ""}</p></div><button type="button" className="icon-btn h-9 w-9 rounded-md" aria-label={`${template.name} 삭제`} onClick={() => void onDeleteTaskTemplate(template.id)}><Trash2 size={14} /></button></div><button type="button" className="btn-secondary mt-3 min-h-9 px-3 py-1 text-xs" onClick={() => void useTemplate(template)}>오늘 Todo 만들기</button></div>)}
+              {taskTemplates.map((template) => <div key={template.id} className="rounded-lg border border-ink-800/80 bg-ink-950/25 p-3"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="font-semibold text-ink-100">{template.name}</p><p className="mt-1 truncate text-sm text-ink-300">{template.todo.title}</p><p className="mt-1 text-xs text-ink-500">{priorityLabels[template.todo.priority || "MEDIUM"]} · {planningLabels[template.todo.planningState || "SCHEDULED"]}{template.todo.estimateMinutes ? ` · ${template.todo.estimateMinutes}분` : ""}</p></div><button type="button" className="icon-btn h-9 w-9 rounded-md" aria-label={`${template.name} 삭제`} onClick={() => void onDeleteTaskTemplate(template.id)}><Trash2 size={14} /></button></div><button type="button" className="btn-secondary mt-3 min-h-9 px-3 py-1 text-xs" onClick={() => void useTemplate(template)}>오늘 Todo 만들기</button></div>)}
               {!taskTemplates.length ? <EmptyState title="저장된 템플릿이 없습니다." description="반복해서 만드는 Todo의 기본값을 템플릿으로 저장해보세요." /> : null}
             </div>
           </section>

@@ -20,7 +20,7 @@ export function StatCard({ title, value, description, icon, progress }: StatCard
           </strong>
         </div>
         {icon ? (
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-accent-500/30 bg-accent-500/20 text-accent-400">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-ink-700/70 bg-ink-950/45 text-accent-300">
             {icon}
           </div>
         ) : null}

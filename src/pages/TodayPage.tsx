@@ -53,7 +53,9 @@ type TodayPageProps = {
 type CategoryFilter = "all" | "uncategorized" | string;
 
 const categoryButtonClass =
-  "inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/35";
+  "inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-md border px-2.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/35";
+const activeCategoryButtonClass = "border-accent-500/40 bg-accent-500/[0.08] text-accent-200";
+const idleCategoryButtonClass = "border-ink-700/60 bg-ink-900/60 text-ink-400 hover:border-ink-600 hover:bg-ink-800/70 hover:text-ink-100";
 
 export function TodayPage({
   todayTodos,
@@ -199,7 +201,7 @@ export function TodayPage({
           <h2 className="text-2xl font-bold text-ink-100">오늘</h2>
           <p className="mt-1 text-sm text-ink-500">{formatKoreanDate(today, "M월 d일 EEEE")}</p>
         </div>
-        <span className="rounded-full border border-ink-700/55 bg-ink-900 px-2.5 py-1 text-[11px] font-semibold text-ink-500" title="Todo Planner의 하루는 오전 3시에 바뀝니다.">
+        <span className="rounded-full border border-ink-700/55 bg-ink-900/60 px-2.5 py-1 text-[11px] font-semibold text-ink-500" title="Todo Planner의 하루는 오전 3시에 바뀝니다.">
           03:00 기준
         </span>
       </section>
@@ -229,7 +231,7 @@ export function TodayPage({
       </section>
 
       {overdueTodos.length > 0 ? (
-        <section className="flex flex-col gap-2 rounded-md border border-warning/25 bg-warning/[0.04] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+        <section className="flex flex-col gap-2 rounded-md border border-warning/20 bg-warning/[0.035] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <p className="text-sm font-semibold text-ink-200">지난 일정 {overdueTodos.length}개가 남아 있습니다.</p>
             <p className="mt-0.5 text-[11px] text-ink-500">가장 오래된 일정 {oldestOverdueDate ? formatKoreanDate(oldestOverdueDate, "M월 d일") : "-"}</p>
@@ -243,17 +245,17 @@ export function TodayPage({
       <TodoForm onAdd={onAdd} defaultDate={today} compact submitLabel="추가" categories={categories} projects={projects.filter((project) => !project.archived)} showSyntaxHint={false} />
 
       <section className="space-y-3" aria-labelledby="today-todo-list-title">
-        <div className="sticky top-[60px] z-20 -mx-1 rounded-lg bg-ink-950/94 px-1 py-1.5 backdrop-blur-xl">
+        <div className="sticky top-[60px] z-20 -mx-1 rounded-lg border border-ink-800/60 bg-ink-950/90 px-1 py-1.5 backdrop-blur-xl">
           <div className="flex items-center gap-2">
             <div className="min-w-0 flex-1 overflow-x-auto pb-0.5">
               <div className="flex w-max gap-1.5 pr-2" aria-label="오늘 Todo 카테고리 필터">
-                <button type="button" className={`${categoryButtonClass} ${activeCategoryId === "all" ? "bg-accent-500 text-white" : "bg-ink-900 text-ink-400 hover:bg-ink-800 hover:text-ink-100"}`} onClick={() => setActiveCategoryId("all")}>전체 <span className="opacity-75">{todayTodos.length}</span></button>
+                <button type="button" className={`${categoryButtonClass} ${activeCategoryId === "all" ? activeCategoryButtonClass : idleCategoryButtonClass}`} onClick={() => setActiveCategoryId("all")}>전체 <span className="opacity-75">{todayTodos.length}</span></button>
                 {visibleCategories.map((category) => (
-                  <button key={category.id} type="button" className={`${categoryButtonClass} ${activeCategoryId === category.id ? "bg-accent-500 text-white" : "bg-ink-900 text-ink-400 hover:bg-ink-800 hover:text-ink-100"}`} onClick={() => setActiveCategoryId(category.id)} title={category.description || category.name}>
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: category.color || "#6366f1" }} />{category.name}<span className="opacity-75">{categoryCounts.get(category.id) || 0}</span>
+                  <button key={category.id} type="button" className={`${categoryButtonClass} ${activeCategoryId === category.id ? activeCategoryButtonClass : idleCategoryButtonClass}`} onClick={() => setActiveCategoryId(category.id)} title={category.description || category.name}>
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: category.color || "#0b72d7" }} />{category.name}<span className="opacity-75">{categoryCounts.get(category.id) || 0}</span>
                   </button>
                 ))}
-                {uncategorizedCount > 0 ? <button type="button" className={`${categoryButtonClass} ${activeCategoryId === "uncategorized" ? "bg-accent-500 text-white" : "bg-ink-900 text-ink-400 hover:bg-ink-800 hover:text-ink-100"}`} onClick={() => setActiveCategoryId("uncategorized")}>미분류 <span className="opacity-75">{uncategorizedCount}</span></button> : null}
+                {uncategorizedCount > 0 ? <button type="button" className={`${categoryButtonClass} ${activeCategoryId === "uncategorized" ? activeCategoryButtonClass : idleCategoryButtonClass}`} onClick={() => setActiveCategoryId("uncategorized")}>미분류 <span className="opacity-75">{uncategorizedCount}</span></button> : null}
               </div>
             </div>
             <button type="button" className="icon-btn h-9 w-9 shrink-0" onClick={() => { setCategoryError(""); setShowCategoryManager(true); }} title="카테고리 관리" aria-label="카테고리 관리">
@@ -299,12 +301,12 @@ export function TodayPage({
               <p className="text-sm text-ink-400">전체 {sortedCategories.length}개 카테고리</p>
               <button type="button" className="btn-primary" onClick={() => setCreatingCategory(true)}><Plus size={16} />카테고리 추가</button>
             </div>
-            {categoryError ? <p className="rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-red-100" role="alert">{categoryError}</p> : null}
+            {categoryError ? <p className="rounded-lg border border-danger/40 bg-danger/[0.08] px-3 py-2 text-sm text-red-100" role="alert">{categoryError}</p> : null}
             {sortedCategories.length ? (
               <div className="space-y-2">
                 {sortedCategories.map((category, index) => (
-                  <div key={category.id} className="flex items-center gap-3 rounded-lg bg-ink-950/45 px-3 py-2.5">
-                    <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: category.color || "#6366f1" }} />
+                  <div key={category.id} className="flex items-center gap-3 rounded-lg border border-ink-800/70 bg-ink-950/30 px-3 py-2.5">
+                    <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: category.color || "#0b72d7" }} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold text-ink-100">{category.name}</p>
                       <p className="mt-0.5 truncate text-xs text-ink-400">오늘 {categoryCounts.get(category.id) || 0}개{category.description ? ` · ${category.description}` : ""}</p>

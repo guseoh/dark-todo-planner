@@ -25,10 +25,10 @@ type WeeklyViewProps = {
   goals?: Goal[];
 };
 
-const dayButtonClass = (index: number) => {
-  if (index === 5) return "border-sky-500/20 bg-sky-500/[0.035]";
-  if (index === 6) return "border-rose-500/20 bg-rose-500/[0.035]";
-  return "border-ink-700/65 bg-ink-900/55";
+const dayLabelTone = (index: number) => {
+  if (index === 5) return "text-sky-400/65";
+  if (index === 6) return "text-red-400/65";
+  return "text-ink-300";
 };
 
 export function WeeklyView({
@@ -145,15 +145,15 @@ export function WeeklyView({
                 type="button"
                 className={`min-w-0 rounded-md border px-2.5 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 ${
                   selected
-                    ? "border-accent-500/65 bg-accent-500/12 ring-1 ring-accent-500/25"
-                    : `${dayButtonClass(index)} hover:border-ink-500 hover:bg-ink-800/70`
+                    ? "border-accent-500/50 bg-accent-500/[0.08] ring-1 ring-accent-500/15"
+                    : "border-ink-700/65 bg-ink-900/45 hover:border-ink-500 hover:bg-ink-800/65"
                 }`}
                 onClick={() => setSelectedDate(date)}
                 aria-pressed={selected}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className={`text-xs font-bold ${selected ? "text-ink-100" : "text-ink-300"}`}>{formatKoreanDate(day, "E요일")}</span>
-                  {isToday ? <span className="rounded-full bg-accent-500 px-1.5 py-0.5 text-[9px] font-bold text-white">오늘</span> : null}
+                  <span className={`text-xs font-bold ${selected ? "text-ink-100" : dayLabelTone(index)}`}>{formatKoreanDate(day, "E요일")}</span>
+                  {isToday ? <span className="rounded-full border border-accent-500/35 bg-accent-500/10 px-1.5 py-0.5 text-[9px] font-bold text-accent-200">오늘</span> : null}
                 </div>
                 <p className="mt-0.5 text-[11px] text-ink-500">{formatKoreanDate(day, "M월 d일")}</p>
                 <div className="mt-2 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px]">
