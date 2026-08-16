@@ -1,27 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  ChevronDown,
-  ChevronUp,
-  History,
-  Pencil,
-  Plus,
-  Settings2,
-  Trash2,
-} from "lucide-react";
+import { ChevronDown, History, Settings2 } from "lucide-react";
+import { ProgressBar } from "../components/common/ProgressBar";
+import { TodayCategoryManager } from "../components/today/TodayCategoryManager";
+import { OverdueTodoImportModal } from "../components/todo/OverdueTodoImportModal";
+import { TodoEditModal } from "../components/todo/TodoEditModal";
+import { TodoForm } from "../components/todo/TodoForm";
+import { TodoRow } from "../components/todo/TodoRow";
 import { formatKoreanDate, todayKey } from "../lib/date";
 import { formatCompletionRate, isDueSoon, isOverdueByDeadline } from "../lib/todo";
 import type { OverdueTodoImportMode, OverdueTodoImportResult } from "../lib/todoRecovery";
 import type { Category } from "../types/category";
 import type { Project } from "../types/project";
 import type { Todo, TodoInput } from "../types/todo";
-import { CategoryForm } from "../components/category/CategoryForm";
-import { EmptyState } from "../components/common/EmptyState";
-import { Modal } from "../components/common/Modal";
-import { ProgressBar } from "../components/common/ProgressBar";
-import { OverdueTodoImportModal } from "../components/todo/OverdueTodoImportModal";
-import { TodoEditModal } from "../components/todo/TodoEditModal";
-import { TodoForm } from "../components/todo/TodoForm";
-import { TodoRow } from "../components/todo/TodoRow";
 
 type TodayPageProps = {
   todayTodos: Todo[];
@@ -52,8 +42,7 @@ type TodayPageProps = {
 
 type CategoryFilter = "all" | "uncategorized" | string;
 
-const categoryButtonClass =
-  "inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-md border px-2.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/35";
+const categoryButtonClass = "inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-md border px-2.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/35";
 const activeCategoryButtonClass = "border-accent-500/40 bg-accent-500/[0.08] text-accent-200";
 const idleCategoryButtonClass = "border-ink-700/60 bg-ink-900/60 text-ink-400 hover:border-ink-600 hover:bg-ink-800/70 hover:text-ink-100";
 
@@ -78,16 +67,14 @@ export function TodayPage({
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [showCompleted, setShowCompleted] = useState(true);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
-  const [creatingCategory, setCreatingCategory] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [categoryError, setCategoryError] = useState("");
+
   const today = todayKey();
   const oldestOverdueDate = overdueTodos[0]?.date;
-
   const sortedCategories = useMemo(
     () => [...categories].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, "ko")),
     [categories],
   );
+  const activeProjects = useMemo(() => projects.filter((project) => !project.archived), [projects]);
   const projectById = useMemo(() => new Map(projects.map((project) => [project.id, project])), [projects]);
 
   const categoryCounts = useMemo(() => {
@@ -102,7 +89,7 @@ export function TodayPage({
     () => sortedCategories.filter((category) => (categoryCounts.get(category.id) || 0) > 0),
     [categoryCounts, sortedCategories],
   );
-  const uncategorizedCount = todayTodos.filter((todo) => !todo.categoryId).length;
+  const uncategorizedCount = useMemo(() => todayTodos.filter((todo) => !todo.categoryId).length, [todayTodos]);
 
   const visibleTodos = useMemo(() => {
     if (activeCategoryId === "all") return todayTodos;
@@ -121,6 +108,12 @@ export function TodayPage({
     [today, todayTodos],
   );
 
+  const activeCategoryName = activeCategoryId === "all"
+    ? "오늘"
+    : activeCategoryId === "uncategorized"
+      ? "미분류"
+      : categories.find((category) => category.id === activeCategoryId)?.name || "카테고리";
+
   useEffect(() => {
     if (activeCategoryId === "all" || activeCategoryId === "uncategorized") return;
     if (!categories.some((category) => category.id === activeCategoryId)) setActiveCategoryId("all");
@@ -129,55 +122,6 @@ export function TodayPage({
   useEffect(() => {
     setShowCompleted(true);
   }, [activeCategoryId]);
-
-  const moveCategory = async (categoryId: string, direction: -1 | 1) => {
-    const ids = sortedCategories.map((category) => category.id);
-    const currentIndex = ids.indexOf(categoryId);
-    const targetIndex = currentIndex + direction;
-    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= ids.length) return;
-    [ids[currentIndex], ids[targetIndex]] = [ids[targetIndex], ids[currentIndex]];
-    try {
-      setCategoryError("");
-      await onReorderCategories(ids);
-    } catch (error) {
-      setCategoryError(error instanceof Error ? error.message : "카테고리 순서를 저장하지 못했습니다.");
-    }
-  };
-
-  const createCategory = async (input: { name: string; description?: string; color?: string; icon?: string }) => {
-    try {
-      setCategoryError("");
-      await onAddCategory(input);
-      setCreatingCategory(false);
-    } catch (error) {
-      setCategoryError(error instanceof Error ? error.message : "카테고리를 저장하지 못했습니다.");
-    }
-  };
-
-  const updateCategory = async (input: { name: string; description?: string; color?: string; icon?: string }) => {
-    if (!editingCategory) return;
-    try {
-      setCategoryError("");
-      await onUpdateCategory(editingCategory.id, input);
-      setEditingCategory(null);
-    } catch (error) {
-      setCategoryError(error instanceof Error ? error.message : "카테고리를 저장하지 못했습니다.");
-    }
-  };
-
-  const deleteCategory = async (category: Category) => {
-    if (!window.confirm(`"${category.name}" 카테고리를 삭제할까요?`)) return;
-    const deleteTodos = window.confirm(
-      "하위 Todo도 함께 삭제할까요?\n\n확인: 카테고리와 Todo 함께 삭제\n취소: Todo는 미분류로 이동",
-    );
-    try {
-      setCategoryError("");
-      await onDeleteCategory(category.id, deleteTodos ? "deleteTodos" : "moveTodos");
-      if (activeCategoryId === category.id) setActiveCategoryId("all");
-    } catch (error) {
-      setCategoryError(error instanceof Error ? error.message : "카테고리를 삭제하지 못했습니다.");
-    }
-  };
 
   const renderTodo = (todo: Todo) => (
     <TodoRow
@@ -245,23 +189,31 @@ export function TodayPage({
         </section>
       ) : null}
 
-      <TodoForm onAdd={onAdd} defaultDate={today} compact submitLabel="추가" categories={categories} projects={projects.filter((project) => !project.archived)} showSyntaxHint={false} />
+      <TodoForm onAdd={onAdd} defaultDate={today} compact submitLabel="추가" categories={categories} projects={activeProjects} showSyntaxHint={false} />
 
       <section className="space-y-3" aria-labelledby="today-todo-list-title">
         <div className="sticky top-[60px] z-20 -mx-1 rounded-lg border border-ink-800/60 bg-ink-950/90 px-1 py-1.5 backdrop-blur-xl">
           <div className="flex items-center gap-2">
             <div className="min-w-0 flex-1 overflow-x-auto pb-0.5">
               <div className="flex w-max gap-1.5 pr-2" aria-label="오늘 Todo 카테고리 필터">
-                <button type="button" className={`${categoryButtonClass} ${activeCategoryId === "all" ? activeCategoryButtonClass : idleCategoryButtonClass}`} onClick={() => setActiveCategoryId("all")}>전체 <span className="opacity-75">{todayTodos.length}</span></button>
+                <button type="button" className={`${categoryButtonClass} ${activeCategoryId === "all" ? activeCategoryButtonClass : idleCategoryButtonClass}`} onClick={() => setActiveCategoryId("all")}>
+                  전체 <span className="opacity-75">{todayTodos.length}</span>
+                </button>
                 {visibleCategories.map((category) => (
                   <button key={category.id} type="button" className={`${categoryButtonClass} ${activeCategoryId === category.id ? activeCategoryButtonClass : idleCategoryButtonClass}`} onClick={() => setActiveCategoryId(category.id)} title={category.description || category.name}>
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: category.color || "#0b72d7" }} />{category.name}<span className="opacity-75">{categoryCounts.get(category.id) || 0}</span>
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: category.color || "#0b72d7" }} />
+                    {category.name}
+                    <span className="opacity-75">{categoryCounts.get(category.id) || 0}</span>
                   </button>
                 ))}
-                {uncategorizedCount > 0 ? <button type="button" className={`${categoryButtonClass} ${activeCategoryId === "uncategorized" ? activeCategoryButtonClass : idleCategoryButtonClass}`} onClick={() => setActiveCategoryId("uncategorized")}>미분류 <span className="opacity-75">{uncategorizedCount}</span></button> : null}
+                {uncategorizedCount > 0 ? (
+                  <button type="button" className={`${categoryButtonClass} ${activeCategoryId === "uncategorized" ? activeCategoryButtonClass : idleCategoryButtonClass}`} onClick={() => setActiveCategoryId("uncategorized")}>
+                    미분류 <span className="opacity-75">{uncategorizedCount}</span>
+                  </button>
+                ) : null}
               </div>
             </div>
-            <button type="button" className="icon-btn h-9 w-9 shrink-0" onClick={() => { setCategoryError(""); setShowCategoryManager(true); }} title="카테고리 관리" aria-label="카테고리 관리">
+            <button type="button" className="icon-btn h-9 w-9 shrink-0" onClick={() => setShowCategoryManager(true)} title="카테고리 관리" aria-label="카테고리 관리">
               <Settings2 size={15} />
             </button>
           </div>
@@ -269,15 +221,15 @@ export function TodayPage({
 
         <div className="flex items-end justify-between gap-3">
           <div>
-            <h3 id="today-todo-list-title" className="text-sm font-bold text-ink-100">
-              {activeCategoryId === "all" ? "오늘 할 일" : activeCategoryId === "uncategorized" ? "미분류 할 일" : `${categories.find((category) => category.id === activeCategoryId)?.name || "카테고리"} 할 일`}
-            </h3>
+            <h3 id="today-todo-list-title" className="text-sm font-bold text-ink-100">{activeCategoryName} 할 일</h3>
             <p className="mt-0.5 text-[11px] text-ink-500">미완료 Todo를 먼저 보여주고 완료한 항목은 아래에서 취소선으로 바로 확인합니다.</p>
           </div>
           <span className="shrink-0 text-xs font-semibold text-ink-400">미완료 {activeTodos.length}</span>
         </div>
 
-        {activeTodos.length ? <div className="space-y-1.5">{activeTodos.map(renderTodo)}</div> : (
+        {activeTodos.length ? (
+          <div className="space-y-1.5">{activeTodos.map(renderTodo)}</div>
+        ) : (
           <div className="rounded-md border border-dashed border-ink-700/55 px-4 py-7 text-center">
             <p className="text-sm font-semibold text-ink-400">미완료 Todo가 없습니다.</p>
             <p className="mt-1 text-[11px] text-ink-600">새 Todo를 추가하거나 다른 카테고리를 선택해보세요.</p>
@@ -295,41 +247,22 @@ export function TodayPage({
         ) : null}
       </section>
 
-      <TodoEditModal todo={editingTodo} categories={categories} projects={projects.filter((project) => !project.archived)} onClose={() => setEditingTodo(null)} onSave={onUpdate} />
+      <TodoEditModal todo={editingTodo} categories={categories} projects={activeProjects} onClose={() => setEditingTodo(null)} onSave={onUpdate} />
 
-      {showCategoryManager ? (
-        <Modal title="카테고리 관리" description="오늘 화면에서는 비어 있는 카테고리를 숨기고, 추가·수정·삭제·순서 변경은 이곳에서 관리합니다." onClose={() => setShowCategoryManager(false)} size="lg">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm text-ink-400">전체 {sortedCategories.length}개 카테고리</p>
-              <button type="button" className="btn-primary" onClick={() => setCreatingCategory(true)}><Plus size={16} />카테고리 추가</button>
-            </div>
-            {categoryError ? <p className="rounded-lg border border-danger/40 bg-danger/[0.08] px-3 py-2 text-sm text-red-100" role="alert">{categoryError}</p> : null}
-            {sortedCategories.length ? (
-              <div className="space-y-2">
-                {sortedCategories.map((category, index) => (
-                  <div key={category.id} className="flex items-center gap-3 rounded-lg border border-ink-800/70 bg-ink-950/30 px-3 py-2.5">
-                    <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: category.color || "#0b72d7" }} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-ink-100">{category.name}</p>
-                      <p className="mt-0.5 truncate text-xs text-ink-400">오늘 {categoryCounts.get(category.id) || 0}개{category.description ? ` · ${category.description}` : ""}</p>
-                    </div>
-                    <div className="flex shrink-0 gap-1">
-                      <button type="button" className="icon-btn h-9 w-9 rounded-md" onClick={() => void moveCategory(category.id, -1)} disabled={index === 0} aria-label={`${category.name} 위로 이동`} title="위로 이동"><ChevronUp size={14} /></button>
-                      <button type="button" className="icon-btn h-9 w-9 rounded-md" onClick={() => void moveCategory(category.id, 1)} disabled={index === sortedCategories.length - 1} aria-label={`${category.name} 아래로 이동`} title="아래로 이동"><ChevronDown size={14} /></button>
-                      <button type="button" className="icon-btn h-9 w-9 rounded-md" onClick={() => setEditingCategory(category)} aria-label={`${category.name} 수정`} title="수정"><Pencil size={14} /></button>
-                      <button type="button" className="icon-btn h-9 w-9 rounded-md hover:border-danger hover:text-red-100" onClick={() => void deleteCategory(category)} aria-label={`${category.name} 삭제`} title="삭제"><Trash2 size={14} /></button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : <EmptyState title="카테고리가 없습니다." description="필요할 때만 카테고리를 추가해 Todo를 묶어보세요." />}
-          </div>
-        </Modal>
-      ) : null}
+      <TodayCategoryManager
+        open={showCategoryManager}
+        categories={sortedCategories}
+        categoryCounts={categoryCounts}
+        onClose={() => setShowCategoryManager(false)}
+        onAddCategory={onAddCategory}
+        onUpdateCategory={onUpdateCategory}
+        onDeleteCategory={onDeleteCategory}
+        onReorderCategories={onReorderCategories}
+        onCategoryDeleted={(categoryId) => {
+          if (activeCategoryId === categoryId) setActiveCategoryId("all");
+        }}
+      />
 
-      {creatingCategory ? <Modal title="새 카테고리 추가" description="Todo를 묶을 카테고리 이름, 색상, 아이콘을 설정합니다." onClose={() => setCreatingCategory(false)}><CategoryForm onSubmit={createCategory} onCancel={() => setCreatingCategory(false)} submitLabel="카테고리 추가" /></Modal> : null}
-      {editingCategory ? <Modal title="카테고리 수정" description="이름, 설명, 색상과 아이콘을 수정합니다." onClose={() => setEditingCategory(null)}><CategoryForm category={editingCategory} onSubmit={updateCategory} onCancel={() => setEditingCategory(null)} submitLabel="변경 저장" /></Modal> : null}
       {showOverdueImport ? <OverdueTodoImportModal todos={overdueTodos} onImport={onBringOverdueTodos} onClose={() => setShowOverdueImport(false)} /> : null}
     </div>
   );

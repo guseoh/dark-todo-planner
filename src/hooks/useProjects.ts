@@ -3,6 +3,14 @@ import { api, apiAllPages, jsonBody } from "../lib/api/client";
 import type { Milestone, MilestoneInput, Project, ProjectDecision, ProjectDecisionInput, ProjectInput } from "../types/project";
 
 const getMessage = (error: unknown) => error instanceof Error ? error.message : "프로젝트 요청 처리 중 오류가 발생했습니다.";
+const hasOwn = <T extends object>(value: T, key: PropertyKey) => Object.prototype.hasOwnProperty.call(value, key);
+const normalizeProject = (project: Project): Project => ({ ...project, resources: project.resources || [] });
+const fetchProjectRows = () => apiAllPages<Project>("/api/projects?archived=all", "projects");
+const fetchProjectDetailRows = () => Promise.all([
+  apiAllPages<Milestone>("/api/milestones", "milestones"),
+  apiAllPages<ProjectDecision>("/api/project-decisions", "decisions"),
+]);
+
 export type ProjectDuplicateMode = "STRUCTURE" | "WITH_TODOS";
 
 export function useProjects() {
@@ -13,15 +21,42 @@ export function useProjects() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const loadProjectList = useCallback(async () => {
+    setLoading(true);
+    try {
+      const projectRows = await fetchProjectRows();
+      setProjects(projectRows.map(normalizeProject));
+      setError("");
+      return projectRows;
+    } catch (err) {
+      setError(getMessage(err));
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadProjectDetails = useCallback(async () => {
+    try {
+      const [milestoneRows, decisionRows] = await fetchProjectDetailRows();
+      setMilestones(milestoneRows);
+      setDecisions(decisionRows);
+      setError("");
+      return { milestones: milestoneRows, decisions: decisionRows };
+    } catch (err) {
+      setError(getMessage(err));
+      throw err;
+    }
+  }, []);
+
   const loadProjects = useCallback(async () => {
     setLoading(true);
     try {
-      const [projectRows, milestoneRows, decisionRows] = await Promise.all([
-        apiAllPages<Project>("/api/projects?archived=all", "projects"),
-        apiAllPages<Milestone>("/api/milestones", "milestones"),
-        apiAllPages<ProjectDecision>("/api/project-decisions", "decisions"),
+      const [projectRows, [milestoneRows, decisionRows]] = await Promise.all([
+        fetchProjectRows(),
+        fetchProjectDetailRows(),
       ]);
-      setProjects(projectRows.map((project) => ({ ...project, resources: project.resources || [] })));
+      setProjects(projectRows.map(normalizeProject));
       setMilestones(milestoneRows);
       setDecisions(decisionRows);
       setError("");
@@ -38,44 +73,49 @@ export function useProjects() {
     setSaving(true);
     try {
       const result = await api<{ project: Project }>("/api/projects", { method: "POST", ...jsonBody({ status: "ACTIVE", resources: [], ...input }) });
-      const project = { ...result.project, resources: result.project.resources || [] };
+      const project = normalizeProject(result.project);
       setProjects((current) => [...current, project].sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt)));
       setError("");
       return project;
     } catch (err) {
       setError(getMessage(err));
       return undefined;
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   }, []);
 
   const updateProject = useCallback(async (id: string, updates: Partial<ProjectInput>) => {
     const existing = projects.find((project) => project.id === id);
     if (!existing) return undefined;
+
     setSaving(true);
     try {
       const result = await api<{ project: Project }>(`/api/projects/${id}`, {
         method: "PUT",
         ...jsonBody({
           name: updates.name ?? existing.name,
-          description: Object.prototype.hasOwnProperty.call(updates, "description") ? updates.description : existing.description,
+          description: hasOwn(updates, "description") ? updates.description : existing.description,
           status: updates.status ?? existing.status,
-          color: Object.prototype.hasOwnProperty.call(updates, "color") ? updates.color : existing.color,
-          icon: Object.prototype.hasOwnProperty.call(updates, "icon") ? updates.icon : existing.icon,
-          startDate: Object.prototype.hasOwnProperty.call(updates, "startDate") ? updates.startDate : existing.startDate,
-          targetDate: Object.prototype.hasOwnProperty.call(updates, "targetDate") ? updates.targetDate : existing.targetDate,
-          resources: Object.prototype.hasOwnProperty.call(updates, "resources") ? updates.resources : existing.resources,
+          color: hasOwn(updates, "color") ? updates.color : existing.color,
+          icon: hasOwn(updates, "icon") ? updates.icon : existing.icon,
+          startDate: hasOwn(updates, "startDate") ? updates.startDate : existing.startDate,
+          targetDate: hasOwn(updates, "targetDate") ? updates.targetDate : existing.targetDate,
+          resources: hasOwn(updates, "resources") ? updates.resources : existing.resources,
           archived: updates.archived ?? existing.archived,
           order: updates.order ?? existing.order,
         }),
       });
-      const project = { ...result.project, resources: result.project.resources || [] };
+      const project = normalizeProject(result.project);
       setProjects((current) => current.map((item) => item.id === id ? project : item));
       setError("");
       return project;
     } catch (err) {
       setError(getMessage(err));
       return undefined;
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   }, [projects]);
 
   const duplicateProject = useCallback(async (id: string, input: { name: string; mode: ProjectDuplicateMode }) => {
@@ -84,17 +124,19 @@ export function useProjects() {
       const result = await api<{ project: Project }>(`/api/projects/${id}/duplicate`, { method: "POST", ...jsonBody(input) });
       await loadProjects();
       setError("");
-      return { ...result.project, resources: result.project.resources || [] };
+      return normalizeProject(result.project);
     } catch (err) {
       setError(getMessage(err));
       return undefined;
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   }, [loadProjects]);
 
   const setArchived = useCallback(async (id: string, archived: boolean) => {
     try {
       const result = await api<{ project: Project }>(`/api/projects/${id}/${archived ? "archive" : "unarchive"}`, { method: "PATCH" });
-      const project = { ...result.project, resources: result.project.resources || [] };
+      const project = normalizeProject(result.project);
       setProjects((current) => current.map((item) => item.id === id ? project : item));
       setError("");
       return project;
@@ -114,12 +156,15 @@ export function useProjects() {
     } catch (err) {
       setError(getMessage(err));
       return undefined;
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   }, []);
 
   const updateMilestone = useCallback(async (id: string, updates: Partial<MilestoneInput>) => {
     const existing = milestones.find((milestone) => milestone.id === id);
     if (!existing) return undefined;
+
     setSaving(true);
     try {
       const result = await api<{ milestone: Milestone }>(`/api/milestones/${id}`, {
@@ -127,8 +172,8 @@ export function useProjects() {
         ...jsonBody({
           projectId: updates.projectId ?? existing.projectId,
           title: updates.title ?? existing.title,
-          description: Object.prototype.hasOwnProperty.call(updates, "description") ? updates.description : existing.description,
-          targetDate: Object.prototype.hasOwnProperty.call(updates, "targetDate") ? updates.targetDate : existing.targetDate,
+          description: hasOwn(updates, "description") ? updates.description : existing.description,
+          targetDate: hasOwn(updates, "targetDate") ? updates.targetDate : existing.targetDate,
           status: updates.status ?? existing.status,
           order: updates.order ?? existing.order,
         }),
@@ -139,7 +184,9 @@ export function useProjects() {
     } catch (err) {
       setError(getMessage(err));
       return undefined;
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   }, [milestones]);
 
   const deleteMilestone = useCallback(async (id: string) => {
@@ -166,12 +213,15 @@ export function useProjects() {
     } catch (err) {
       setError(getMessage(err));
       return undefined;
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   }, []);
 
   const updateDecision = useCallback(async (id: string, updates: Partial<ProjectDecisionInput>) => {
     const existing = decisions.find((decision) => decision.id === id);
     if (!existing) return undefined;
+
     setSaving(true);
     try {
       const result = await api<{ decision: ProjectDecision }>(`/api/project-decisions/${id}`, {
@@ -180,17 +230,21 @@ export function useProjects() {
           projectId: updates.projectId ?? existing.projectId,
           title: updates.title ?? existing.title,
           decision: updates.decision ?? existing.decision,
-          rationale: Object.prototype.hasOwnProperty.call(updates, "rationale") ? updates.rationale : existing.rationale,
+          rationale: hasOwn(updates, "rationale") ? updates.rationale : existing.rationale,
           decidedAt: updates.decidedAt ?? existing.decidedAt,
         }),
       });
-      setDecisions((current) => current.map((decision) => decision.id === id ? result.decision : decision).sort((a, b) => b.decidedAt.localeCompare(a.decidedAt) || b.createdAt.localeCompare(a.createdAt)));
+      setDecisions((current) => current
+        .map((decision) => decision.id === id ? result.decision : decision)
+        .sort((a, b) => b.decidedAt.localeCompare(a.decidedAt) || b.createdAt.localeCompare(a.createdAt)));
       setError("");
       return result.decision;
     } catch (err) {
       setError(getMessage(err));
       return undefined;
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   }, [decisions]);
 
   const deleteDecision = useCallback(async (id: string) => {
@@ -211,11 +265,27 @@ export function useProjects() {
   const archivedProjects = useMemo(() => projects.filter((project) => project.archived), [projects]);
 
   return {
-    projects, activeProjects, archivedProjects, milestones, decisions, loading, saving, error,
-    loadProjects, addProject, updateProject, duplicateProject,
+    projects,
+    activeProjects,
+    archivedProjects,
+    milestones,
+    decisions,
+    loading,
+    saving,
+    error,
+    loadProjectList,
+    loadProjectDetails,
+    loadProjects,
+    addProject,
+    updateProject,
+    duplicateProject,
     archiveProject: (id: string) => setArchived(id, true),
     unarchiveProject: (id: string) => setArchived(id, false),
-    addMilestone, updateMilestone, deleteMilestone,
-    addDecision, updateDecision, deleteDecision,
+    addMilestone,
+    updateMilestone,
+    deleteMilestone,
+    addDecision,
+    updateDecision,
+    deleteDecision,
   };
 }
