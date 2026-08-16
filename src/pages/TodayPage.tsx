@@ -76,7 +76,7 @@ export function TodayPage({
   const [showOverdueImport, setShowOverdueImport] = useState(false);
   const [activeCategoryId, setActiveCategoryId] = useState<CategoryFilter>("all");
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
-  const [showCompleted, setShowCompleted] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(true);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -127,7 +127,7 @@ export function TodayPage({
   }, [activeCategoryId, categories]);
 
   useEffect(() => {
-    setShowCompleted(false);
+    setShowCompleted(true);
   }, [activeCategoryId]);
 
   const moveCategory = async (categoryId: string, direction: -1 | 1) => {
@@ -183,7 +183,10 @@ export function TodayPage({
     <TodoRow
       key={todo.id}
       todo={todo}
-      onToggle={onToggle}
+      onToggle={(id) => {
+        if (!todo.completed) setShowCompleted(true);
+        onToggle(id);
+      }}
       onDelete={onDelete}
       onEdit={setEditingTodo}
       showDate={false}
@@ -269,7 +272,7 @@ export function TodayPage({
             <h3 id="today-todo-list-title" className="text-sm font-bold text-ink-100">
               {activeCategoryId === "all" ? "오늘 할 일" : activeCategoryId === "uncategorized" ? "미분류 할 일" : `${categories.find((category) => category.id === activeCategoryId)?.name || "카테고리"} 할 일`}
             </h3>
-            <p className="mt-0.5 text-[11px] text-ink-500">미완료 Todo를 먼저 보여주고 완료한 항목은 아래에 접어둡니다.</p>
+            <p className="mt-0.5 text-[11px] text-ink-500">미완료 Todo를 먼저 보여주고 완료한 항목은 아래에서 취소선으로 바로 확인합니다.</p>
           </div>
           <span className="shrink-0 text-xs font-semibold text-ink-400">미완료 {activeTodos.length}</span>
         </div>

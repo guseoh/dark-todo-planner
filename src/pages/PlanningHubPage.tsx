@@ -36,7 +36,7 @@ export function PlanningHubPage({
     }`;
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto w-full max-w-[1180px] space-y-4">
       <div className="flex justify-end">
         <div className="inline-flex rounded-lg border border-ink-700/70 bg-ink-950/45 p-1">
           <button

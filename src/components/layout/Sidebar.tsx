@@ -152,14 +152,14 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
   return (
     <>
       <aside
-        className={`relative z-20 hidden shrink-0 transition-[width] duration-150 ease-out lg:block ${
+        className={`sticky top-14 z-20 hidden h-[calc(100vh-3.5rem)] shrink-0 self-start transition-[width] duration-150 ease-out lg:block ${
           showExpandedContent ? "w-[16.25rem]" : "w-[4.25rem]"
         }`}
         data-sidebar-mode={mode}
         data-sidebar-hover-expanded={hoverExpanded ? "true" : "false"}
       >
         <nav
-          className="sticky top-14 flex h-[calc(100vh-3.5rem)] min-h-0 w-full flex-col border-r border-ink-700/65 bg-ink-900 px-2 py-2.5"
+          className="flex h-full min-h-0 w-full flex-col border-r border-ink-700/65 bg-ink-900 px-2 py-2.5"
           onMouseEnter={openHoverPanel}
           onMouseLeave={closeHoverPanel}
           onFocusCapture={openHoverPanel}

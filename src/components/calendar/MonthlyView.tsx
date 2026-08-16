@@ -77,7 +77,7 @@ export function MonthlyView({
   };
 
   return (
-    <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(420px,460px)]">
+    <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(340px,360px)]">
       <MonthlyCalendar
         currentMonth={currentMonth}
         monthDays={monthDays}
@@ -89,7 +89,7 @@ export function MonthlyView({
         onCycleDayStatus={cycleDayStatus}
       />
 
-      <div ref={selectedPanelRef} className="min-w-0 xl:sticky xl:top-24 xl:self-start">
+      <div ref={selectedPanelRef} className="min-w-0 xl:sticky xl:top-20 xl:self-start">
         <MonthlySidePanel
           selectedDate={selectedDate}
           monthEndLabel={selectedMonthEndLabel}
