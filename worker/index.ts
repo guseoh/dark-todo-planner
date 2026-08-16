@@ -8,6 +8,7 @@ import { contentRoutes } from "./routes/content";
 import { libraryRoutes } from "./routes/library";
 import { planningRoutes } from "./routes/planning";
 import { projectRoutes } from "./routes/projects";
+import { timeRoutes } from "./routes/time";
 import { todoRoutes } from "./routes/todos";
 import { clientIdentifier, preventApiCaching, SAFE_METHODS, securityHeaders, tooManyRequests } from "./security";
 import { runDiscordIncompleteTodoReminder } from "./reminders/incompleteTodoReminder";
@@ -55,6 +56,7 @@ app.route("/api", todoRoutes);
 app.route("/api", projectRoutes);
 app.route("/api", contentRoutes);
 app.route("/api", planningRoutes);
+app.route("/api", timeRoutes);
 app.route("/api", libraryRoutes);
 app.route("/api", backupRoutes);
 

@@ -5,6 +5,7 @@ import { useGoals } from "./useGoals";
 import { useMemos } from "./useMemos";
 import { usePlanning } from "./usePlanning";
 import { useProjects } from "./useProjects";
+import { useTimePlanning } from "./useTimePlanning";
 import { useTodos } from "./useTodos";
 import { classifyPlannerErrors } from "../lib/plannerLoadState";
 
@@ -17,6 +18,7 @@ export function usePlannerData() {
   const memosState = useMemos();
   const projectsState = useProjects();
   const planningState = usePlanning();
+  const timeState = useTimePlanning();
   const [loading, setLoading] = useState(true);
   const [loadedOnce, setLoadedOnce] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -32,6 +34,7 @@ export function usePlannerData() {
         memosState.loadMemos(),
         projectsState.loadProjects(),
         planningState.loadPlanning(),
+        timeState.loadTimePlanning(),
       ]);
       setLoadedOnce(true);
       setLoadError("");
@@ -40,7 +43,7 @@ export function usePlannerData() {
     } finally {
       setLoading(false);
     }
-  }, [categoriesState.loadCategories, goalsState.loadGoals, memosState.loadMemos, planningState.loadPlanning, projectsState.loadProjects, todosState.loadTodos]);
+  }, [categoriesState.loadCategories, goalsState.loadGoals, memosState.loadMemos, planningState.loadPlanning, projectsState.loadProjects, timeState.loadTimePlanning, todosState.loadTodos]);
 
   useEffect(() => { void loadAll(); }, [loadAll]);
 
@@ -61,10 +64,10 @@ export function usePlannerData() {
   const reorderCategories = useCallback(async (ids: string[]) => { await categoriesState.reorderCategories(ids); }, [categoriesState.reorderCategories]);
 
   const saving = useMemo(() =>
-    todosState.saving || categoriesState.saving || goalsState.saving || memosState.saving || projectsState.saving || planningState.saving,
-  [categoriesState.saving, goalsState.saving, memosState.saving, planningState.saving, projectsState.saving, todosState.saving]);
+    todosState.saving || categoriesState.saving || goalsState.saving || memosState.saving || projectsState.saving || planningState.saving || timeState.saving,
+  [categoriesState.saving, goalsState.saving, memosState.saving, planningState.saving, projectsState.saving, timeState.saving, todosState.saving]);
 
-  const operationError = todosState.error || categoriesState.error || goalsState.error || memosState.error || projectsState.error || planningState.error;
+  const operationError = todosState.error || categoriesState.error || goalsState.error || memosState.error || projectsState.error || planningState.error || timeState.error;
   const { initialLoadError, backgroundOrOperationError } = classifyPlannerErrors({ loadedOnce, loadError, operationError });
 
   return {
@@ -86,6 +89,9 @@ export function usePlannerData() {
     weeklyReview: planningState.weeklyReview,
     savedViews: planningState.savedViews,
     taskTemplates: planningState.taskTemplates,
+    focusSessions: timeState.focusSessions,
+    timeBlocks: timeState.timeBlocks,
+    timerSettings: timeState.timerSettings,
     loading, loadedOnce, saving, initialLoadError, backgroundOrOperationError, connectionError: loadError,
     stats: todosState.stats, nearestGoal: goalsState.nearestGoal,
     pendingTodoDelete: todosState.pendingDelete, pendingMemoDelete: memosState.pendingDelete,
@@ -103,5 +109,7 @@ export function usePlannerData() {
     saveDailyPlan: planningState.saveDailyPlan, saveWeeklyReview: planningState.saveWeeklyReview,
     addSavedView: planningState.addSavedView, deleteSavedView: planningState.deleteSavedView,
     addTaskTemplate: planningState.addTaskTemplate, deleteTaskTemplate: planningState.deleteTaskTemplate,
+    addFocusSession: timeState.addFocusSession, saveTimerSettings: timeState.saveTimerSettings,
+    addTimeBlock: timeState.addTimeBlock, updateTimeBlock: timeState.updateTimeBlock, deleteTimeBlock: timeState.deleteTimeBlock,
   };
 }
