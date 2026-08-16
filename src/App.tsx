@@ -49,15 +49,15 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     all: <AllTodosPage allTodos={planner.allTodos} filterTodos={planner.filterTodos} tagOptions={planner.tagOptions} categories={planner.categories} projects={planner.projects} duplicateTodoIds={planner.duplicateTodoIds} onToggle={planner.toggleTodo} onDelete={planner.deleteTodo} onDeleteMany={planner.deleteTodos} onBulkUpdate={planner.bulkUpdateTodos} onUpdate={planner.updateTodo} onUnarchive={planner.unarchiveTodo} onAddTodo={planner.addTodo} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} />,
     memo: <MemoPage memos={planner.memos} todos={planner.allTodos} projects={planner.projects} onAdd={planner.addMemo} onUpdate={planner.updateMemo} onUpdateLinks={planner.updateMemoLinks} onDelete={planner.deleteMemo} onTogglePin={planner.toggleMemoPin} onAddTodo={planner.addTodo} />,
     trash: <TrashPage onRestored={planner.loadAll} />,
-    settings: <div className="space-y-6"><SettingsPage stats={planner.stats} categories={planner.categories} goals={planner.goals} memos={planner.memos} plannerSettings={planner.plannerSettings} onSavePlannerSettings={planner.savePlannerSettings} apiStatus={planner.connectionError ? "offline" : "online"} /><ExportPanel todos={planner.allTodos} projects={planner.projects} goals={planner.goals} memos={planner.memos} /></div>,
+    settings: <div className="space-y-4"><SettingsPage stats={planner.stats} categories={planner.categories} goals={planner.goals} memos={planner.memos} plannerSettings={planner.plannerSettings} onSavePlannerSettings={planner.savePlannerSettings} apiStatus={planner.connectionError ? "offline" : "online"} /><ExportPanel todos={planner.allTodos} projects={planner.projects} goals={planner.goals} memos={planner.memos} /></div>,
   } satisfies Record<AppView, JSX.Element>;
 
   const openQuickAdd = () => { setShowCommandPalette(false); setShowQuickAdd(true); };
 
   return (
-    <div className="min-h-screen pb-24 lg:pb-0">
+    <div className="min-h-screen pb-20 lg:pb-0">
       <Header storageStatus={planner.connectionError ? "offline" : "server"} onLogout={onLogout} onQuickAdd={openQuickAdd} onSearch={() => { setShowQuickAdd(false); setShowCommandPalette(true); }} />
-      <div className="mx-auto flex w-full max-w-[1680px] gap-5 px-4 py-5 sm:px-5 lg:px-6">
+      <div className="mx-auto flex w-full max-w-[1560px] gap-4 px-4 py-4 sm:px-5 lg:px-6">
         <Sidebar activeView={activeView} onChangeView={setActiveView} />
         <main className="min-w-0 flex-1 space-y-4">
           {planner.loading && !planner.loadedOnce ? <LoadingState /> : null}
@@ -66,10 +66,10 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
         </main>
       </div>
       {showCommandPalette ? <CommandPalette onClose={() => setShowCommandPalette(false)} onNavigate={setActiveView} onQuickAdd={openQuickAdd} todos={planner.allTodos} memos={planner.memos} projects={planner.projects} /> : null}
-      {showQuickAdd ? <Modal title="빠른 Todo 추가" description="Ctrl+Shift+K로 열 수 있습니다. 제목에 ‘내일’, !high, #태그, 45m, due:2026-08-20 같은 빠른 문법도 사용할 수 있습니다." onClose={() => setShowQuickAdd(false)}><TodoForm compact submitLabel="Todo 추가" categories={planner.categories} projects={planner.activeProjects} onAdd={(input) => { void planner.addTodo(input).then((created) => { if (created) setShowQuickAdd(false); }); }} /></Modal> : null}
-      {planner.pendingTodoDelete || planner.pendingMemoDelete ? <div className="fixed bottom-20 right-4 z-[90] flex w-[min(26rem,calc(100vw-2rem))] flex-col gap-2 lg:bottom-4" aria-live="polite">
-        {planner.pendingTodoDelete ? <div className="flex items-center justify-between gap-3 rounded-xl border border-ink-600 bg-ink-900/95 px-4 py-3 shadow-2xl backdrop-blur-xl"><p className="min-w-0 truncate text-sm font-semibold text-ink-200">“{planner.pendingTodoDelete.label}” Todo 삭제 대기</p><button type="button" className="btn-secondary min-h-9 shrink-0 px-2.5 py-1 text-xs" onClick={planner.undoDeleteTodo}><Undo2 size={14} />실행 취소</button></div> : null}
-        {planner.pendingMemoDelete ? <div className="flex items-center justify-between gap-3 rounded-xl border border-ink-600 bg-ink-900/95 px-4 py-3 shadow-2xl backdrop-blur-xl"><p className="min-w-0 truncate text-sm font-semibold text-ink-200">“{planner.pendingMemoDelete.label}” 메모 삭제 대기</p><button type="button" className="btn-secondary min-h-9 shrink-0 px-2.5 py-1 text-xs" onClick={planner.undoDeleteMemo}><Undo2 size={14} />실행 취소</button></div> : null}
+      {showQuickAdd ? <Modal title="빠른 Todo 추가" description="Ctrl+Shift+K · 내일 · !high · #태그 · 45m · due:2026-08-20 같은 빠른 문법을 사용할 수 있습니다." onClose={() => setShowQuickAdd(false)}><TodoForm compact submitLabel="Todo 추가" categories={planner.categories} projects={planner.activeProjects} onAdd={(input) => { void planner.addTodo(input).then((created) => { if (created) setShowQuickAdd(false); }); }} /></Modal> : null}
+      {planner.pendingTodoDelete || planner.pendingMemoDelete ? <div className="fixed bottom-20 right-4 z-[90] flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2 lg:bottom-4" aria-live="polite">
+        {planner.pendingTodoDelete ? <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-600 bg-ink-900/96 px-3 py-2.5 shadow-2xl backdrop-blur-xl"><p className="min-w-0 truncate text-sm font-semibold text-ink-200">“{planner.pendingTodoDelete.label}” Todo 삭제 대기</p><button type="button" className="btn-secondary shrink-0 px-2.5 text-xs" onClick={planner.undoDeleteTodo}><Undo2 size={14} />실행 취소</button></div> : null}
+        {planner.pendingMemoDelete ? <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-600 bg-ink-900/96 px-3 py-2.5 shadow-2xl backdrop-blur-xl"><p className="min-w-0 truncate text-sm font-semibold text-ink-200">“{planner.pendingMemoDelete.label}” 메모 삭제 대기</p><button type="button" className="btn-secondary shrink-0 px-2.5 text-xs" onClick={planner.undoDeleteMemo}><Undo2 size={14} />실행 취소</button></div> : null}
       </div> : null}
     </div>
   );

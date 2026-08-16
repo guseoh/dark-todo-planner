@@ -30,7 +30,7 @@ const getVisibleFocusableElements = (container: HTMLElement) =>
   Array.from(container.querySelectorAll<HTMLElement>(focusableSelector)).filter(isVisible);
 
 export function Modal({ title, description, children, onClose, size = "md" }: ModalProps) {
-  const sizeClass = size === "lg" ? "max-w-4xl" : "max-w-2xl";
+  const sizeClass = size === "lg" ? "max-w-3xl" : "max-w-xl";
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const onCloseRef = useRef(onClose);
@@ -106,7 +106,7 @@ export function Modal({ title, description, children, onClose, size = "md" }: Mo
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-ink-950/80 px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-black/70 px-3 py-4 backdrop-blur-sm sm:px-4">
       <div
         ref={dialogRef}
         role="dialog"
@@ -114,18 +114,18 @@ export function Modal({ title, description, children, onClose, size = "md" }: Mo
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
-        className={`w-full ${sizeClass} rounded-xl border border-ink-700/70 bg-ink-850 shadow-soft outline-none`}
+        className={`flex max-h-[calc(100vh-2rem)] w-full ${sizeClass} flex-col overflow-hidden rounded-lg border border-ink-700/70 bg-ink-900 shadow-soft outline-none`}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-ink-700/60 px-5 py-4">
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-ink-700/60 px-4 py-3">
           <div className="min-w-0">
-            <h2 id={titleId} className="text-lg font-bold text-ink-100">{title}</h2>
-            {description ? <p id={descriptionId} className="mt-1 text-sm text-ink-300">{description}</p> : null}
+            <h2 id={titleId} className="text-base font-bold text-ink-100 sm:text-lg">{title}</h2>
+            {description ? <p id={descriptionId} className="mt-1 text-xs leading-5 text-ink-400 sm:text-sm">{description}</p> : null}
           </div>
-          <button ref={closeButtonRef} type="button" className="icon-btn h-9 w-9 shrink-0" onClick={onClose} aria-label={`${title} 닫기`}>
-            <X size={16} />
+          <button ref={closeButtonRef} type="button" className="icon-btn h-8 w-8 shrink-0" onClick={onClose} aria-label={`${title} 닫기`}>
+            <X size={15} />
           </button>
         </div>
-        <div className="px-5 py-4">{children}</div>
+        <div className="min-h-0 overflow-y-auto px-4 py-4">{children}</div>
       </div>
     </div>
   );

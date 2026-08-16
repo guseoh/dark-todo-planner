@@ -4,8 +4,8 @@
 
 :root {
   color-scheme: dark;
-  background: #0f172a;
-  color: #f8fafc;
+  background: #080d18;
+  color: #f4f7fb;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
@@ -17,7 +17,7 @@
 
 html {
   min-width: 320px;
-  background: #0f172a;
+  background: #080d18;
   overflow-x: hidden;
 }
 
@@ -27,9 +27,9 @@ body {
   margin: 0;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at top left, rgba(99, 102, 241, 0.12), transparent 34rem),
-    linear-gradient(135deg, #0f172a 0%, #111827 46%, #101827 100%);
-  color: #f8fafc;
+    radial-gradient(circle at 72% -16%, rgba(109, 93, 252, 0.09), transparent 30rem),
+    #080d18;
+  color: #f4f7fb;
 }
 
 #root {
@@ -49,39 +49,39 @@ button {
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.58;
+  opacity: 0.52;
 }
 
 ::selection {
-  background: rgba(99, 102, 241, 0.45);
+  background: rgba(109, 93, 252, 0.42);
 }
 
 ::-webkit-scrollbar {
-  width: 0.75rem;
-  height: 0.75rem;
+  width: 0.65rem;
+  height: 0.65rem;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #475569;
-  border: 0.2rem solid #0f172a;
+  background: #3b4a60;
+  border: 0.18rem solid #080d18;
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #080d18;
 }
 
 @layer components {
   .app-card {
-    @apply rounded-xl border border-ink-700/60 bg-ink-850/90 shadow-soft backdrop-blur;
+    @apply rounded-lg border border-ink-700/55 bg-ink-900/78 shadow-soft backdrop-blur;
   }
 
   .field {
-    @apply min-h-10 w-full rounded-lg border border-ink-700/70 bg-ink-950/70 px-3 py-1.5 text-sm text-ink-100 outline-none transition placeholder:text-ink-500 hover:border-ink-600 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30;
+    @apply min-h-9 w-full rounded-md border border-ink-700/65 bg-ink-950/72 px-3 py-1.5 text-sm text-ink-100 outline-none transition placeholder:text-ink-500 hover:border-ink-600 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25;
   }
 
   .btn {
-    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-transparent px-3 py-1.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950;
+    @apply inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-transparent px-3 py-1.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/35 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950;
   }
 
   .btn-primary {
@@ -89,7 +89,7 @@ button:disabled {
   }
 
   .btn-secondary {
-    @apply btn border-ink-700/70 bg-ink-850 text-ink-200 hover:border-accent-500/60 hover:bg-ink-800 hover:text-ink-100;
+    @apply btn border-ink-700/65 bg-ink-900 text-ink-200 hover:border-accent-500/55 hover:bg-ink-800 hover:text-ink-100;
   }
 
   .btn-danger {
@@ -97,6 +97,6 @@ button:disabled {
   }
 
   .icon-btn {
-    @apply inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-ink-700/70 bg-ink-950/40 text-ink-400 transition hover:border-accent-500/60 hover:bg-ink-900 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950;
+    @apply inline-flex min-h-8 min-w-8 items-center justify-center rounded-md border border-ink-700/65 bg-ink-950/45 text-ink-400 transition hover:border-accent-500/55 hover:bg-ink-900 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/35 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950;
   }
 }

@@ -33,6 +33,9 @@ type CategoryTodoGroupProps = {
   variant?: "card" | "plain";
   dragHandle?: ReactNode;
   dragging?: boolean;
+  selectionMode?: boolean;
+  selectedIds?: ReadonlySet<string>;
+  onSelectTodo?: (id: string) => void;
 };
 
 export function CategoryTodoGroup({
@@ -53,12 +56,15 @@ export function CategoryTodoGroup({
   variant = "card",
   dragHandle,
   dragging = false,
+  selectionMode = false,
+  selectedIds = new Set<string>(),
+  onSelectTodo,
 }: CategoryTodoGroupProps) {
   const [adding, setAdding] = useState(false);
   const [showAllTodos, setShowAllTodos] = useState(false);
   const categoryId = group.category?.id;
-  const visibleTodos = showAllTodos ? group.todos : group.todos.slice(0, 5);
-  const hiddenTodoCount = Math.max(group.todos.length - visibleTodos.length, 0);
+  const visibleTodos = selectionMode || showAllTodos ? group.todos : group.todos.slice(0, 5);
+  const hiddenTodoCount = selectionMode ? 0 : Math.max(group.todos.length - visibleTodos.length, 0);
 
   const handleDeleteCategory = async () => {
     if (!group.category) return;
@@ -76,18 +82,18 @@ export function CategoryTodoGroup({
         completionRate={group.completionRate}
         collapsed={collapsed}
         onToggleCollapse={onToggleCollapse}
-        onAddTodo={() => {
+        onAddTodo={selectionMode ? undefined : () => {
           if (collapsed) onToggleCollapse();
           setAdding(true);
         }}
-        onEdit={group.category ? () => onStartEditCategory(group.category as Category) : undefined}
-        onDelete={group.category ? handleDeleteCategory : undefined}
-        dragHandle={dragHandle}
+        onEdit={!selectionMode && group.category ? () => onStartEditCategory(group.category as Category) : undefined}
+        onDelete={!selectionMode && group.category ? handleDeleteCategory : undefined}
+        dragHandle={selectionMode ? undefined : dragHandle}
       />
 
       {!collapsed ? (
-        <div className="border-l border-ink-700/80 pl-2.5 lg:max-w-4xl">
-          <div className="space-y-1.5">
+        <div className={variant === "card" ? "border-l border-ink-700/70 pl-2.5 lg:max-w-4xl" : "pl-1"}>
+          <div className="space-y-1">
             {group.todos.length ? (
               visibleTodos.map((todo) => (
                 <TodoRow
@@ -101,49 +107,37 @@ export function CategoryTodoGroup({
                   onUnarchive={onUnarchive}
                   showDate={showDate}
                   showCategoryBadge={false}
+                  selectionMode={selectionMode}
+                  selected={selectedIds.has(todo.id)}
+                  onSelect={onSelectTodo}
                 />
               ))
             ) : (
               <EmptyState
                 title={group.category ? "이 카테고리에 Todo가 없습니다." : "미분류 Todo가 없습니다."}
-                description={group.category ? "첫 번째 하위 Todo를 추가해보세요." : "카테고리를 정하지 않은 Todo가 이곳에 표시됩니다."}
+                description={group.category ? "첫 번째 Todo를 추가해보세요." : "카테고리를 정하지 않은 Todo가 이곳에 표시됩니다."}
               />
             )}
 
             {hiddenTodoCount ? (
-              <button
-                type="button"
-                className="flex min-h-8 w-full items-center justify-center rounded-lg border border-ink-700 bg-ink-950/45 px-3 text-xs font-semibold text-ink-400 transition hover:border-accent-500/60 hover:bg-ink-900 hover:text-ink-100"
-                onClick={() => setShowAllTodos(true)}
-              >
+              <button type="button" className="flex min-h-8 w-full items-center justify-center rounded-md border border-ink-700/70 bg-ink-950/40 px-3 text-xs font-semibold text-ink-400 transition hover:border-accent-500/55 hover:bg-ink-900 hover:text-ink-100" onClick={() => setShowAllTodos(true)}>
                 +{hiddenTodoCount}개 더보기
               </button>
-            ) : showAllTodos && group.todos.length > 5 ? (
-              <button
-                type="button"
-                className="flex min-h-8 w-full items-center justify-center rounded-lg border border-ink-700 bg-ink-950/45 px-3 text-xs font-semibold text-ink-400 transition hover:border-accent-500/60 hover:bg-ink-900 hover:text-ink-100"
-                onClick={() => setShowAllTodos(false)}
-              >
+            ) : showAllTodos && group.todos.length > 5 && !selectionMode ? (
+              <button type="button" className="flex min-h-8 w-full items-center justify-center rounded-md border border-ink-700/70 bg-ink-950/40 px-3 text-xs font-semibold text-ink-400 transition hover:border-accent-500/55 hover:bg-ink-900 hover:text-ink-100" onClick={() => setShowAllTodos(false)}>
                 접기
               </button>
             ) : null}
 
-            {adding ? (
-              <InlineTodoAdd
-                categoryId={categoryId}
-                defaultDate={defaultDate}
-                onAdd={(todo) => onAddTodo(todo)}
-                onCancel={() => setAdding(false)}
-              />
-            ) : (
-              <button
-                type="button"
-                className="flex min-h-9 w-full items-center rounded-lg border border-dashed border-ink-700 px-3 text-sm font-semibold text-ink-400 transition hover:border-accent-500/60 hover:bg-ink-900/60 hover:text-ink-100"
-                onClick={() => setAdding(true)}
-              >
-                + 하위 Todo 추가
-              </button>
-            )}
+            {!selectionMode ? (
+              adding ? (
+                <InlineTodoAdd categoryId={categoryId} defaultDate={defaultDate} onAdd={(todo) => onAddTodo(todo)} onCancel={() => setAdding(false)} />
+              ) : (
+                <button type="button" className="flex min-h-8 w-full items-center rounded-md border border-dashed border-ink-700/70 px-3 text-xs font-semibold text-ink-500 transition hover:border-accent-500/55 hover:bg-ink-900/60 hover:text-ink-100" onClick={() => setAdding(true)}>
+                  + Todo 추가
+                </button>
+              )
+            ) : null}
           </div>
         </div>
       ) : null}
