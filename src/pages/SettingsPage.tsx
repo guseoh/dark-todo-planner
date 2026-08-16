@@ -64,7 +64,7 @@ export function SettingsPage({
   };
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="mx-auto w-full max-w-[1180px] space-y-6">
       <section>
         <h2 className="text-2xl font-bold text-ink-100 sm:text-3xl">앱 정보</h2>
         <p className="mt-2 text-sm text-ink-400">앱 연결 상태, 자동화와 알림 기준, 저장된 데이터 현황을 관리합니다.</p>
