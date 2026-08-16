@@ -31,6 +31,7 @@ import { newId, normalizeIcon, nowIso, optional } from "../utils";
 const MAX_D1_QUERIES_PER_INVOCATION = 50;
 const MAX_BINDINGS_PER_STATEMENT = 90;
 type SqlValue = string | number | null;
+type ProjectResource = { id: string; label: string; url: string };
 
 class BackupError extends Error {}
 const array = (value: unknown) => Array.isArray(value) ? value.filter((item): item is Item => !!item && typeof item === "object" && !Array.isArray(item)) : [];
@@ -38,6 +39,29 @@ const enumValue = <T extends string>(value: unknown, values: readonly T[], fallb
 const bool = (value: unknown) => value ? 1 : 0;
 const dateValue = (value: unknown, fallback: string) => typeof value === "string" && value ? value : fallback;
 const tagsOf = (value: unknown) => Array.from(new Set((Array.isArray(value) ? value : []).map(String).map((tag) => tag.trim().replace(/^#/, "")).filter(Boolean)));
+const projectResourcesOf = (value: unknown): ProjectResource[] => {
+  const resources: ProjectResource[] = [];
+  const seenIds = new Set<string>();
+  const seenUrls = new Set<string>();
+  for (const item of array(value).slice(0, 12)) {
+    const id = typeof item.id === "string" ? item.id.trim().slice(0, 80) : "";
+    const label = typeof item.label === "string" ? item.label.trim().slice(0, 80) : "";
+    const url = typeof item.url === "string" ? item.url.trim().slice(0, 2048) : "";
+    if (!id || !label || !url || seenIds.has(id) || seenUrls.has(url)) continue;
+    try {
+      const protocol = new URL(url).protocol;
+      if (protocol !== "http:" && protocol !== "https:") continue;
+    } catch {
+      continue;
+    }
+    seenIds.add(id); seenUrls.add(url); resources.push({ id, label, url });
+  }
+  return resources;
+};
+const storedProjectResources = (value: unknown) => {
+  if (typeof value !== "string" || !value) return [];
+  try { return projectResourcesOf(JSON.parse(value)); } catch { return []; }
+};
 
 function addBulkInsert(env: Bindings, statements: D1PreparedStatement[], table: string, columns: readonly string[], rows: SqlValue[][]) {
   if (rows.length === 0) return;
@@ -86,12 +110,16 @@ async function buildBackup(env: Bindings, userId: string) {
     db.select().from(topics).where(eq(topics.userId, userId)),
     db.select().from(musicLinks).where(eq(musicLinks.userId, userId)),
   ]);
-  const serializedTopics = await serializeTopics(db, topicRows);
+  const [serializedTopics, projectResourceResult] = await Promise.all([
+    serializeTopics(db, topicRows),
+    env.DB.prepare("SELECT id, resources_json FROM projects WHERE user_id = ?").bind(userId).all<{ id: string; resources_json: string | null }>(),
+  ]);
+  const projectResourceMap = new Map(projectResourceResult.results.map((row) => [row.id, storedProjectResources(row.resources_json)]));
   return {
     version: BACKUP_VERSION,
     exportedAt: nowIso(),
     categories: categoryRows.map(serializeCategory),
-    projects: projectRows,
+    projects: projectRows.map((project) => ({ ...project, resources: projectResourceMap.get(project.id) || [] })),
     projectDecisions: decisionRows,
     milestones: milestoneRows,
     todos: await serializeTodos(db, todoRows),
@@ -141,7 +169,7 @@ async function importBackup(env: Bindings, userId: string, input: unknown) {
     const id = String(item.id); projectIds.add(id);
     projectRows.push([
       id, userId, String(item.name), optional(item.description as string), enumValue(item.status, ["PLANNING", "ACTIVE", "ON_HOLD", "DONE"], "ACTIVE"),
-      String(item.color || "#6366f1"), normalizeIcon(item.icon as string), optional(item.startDate as string), optional(item.targetDate as string), bool(item.archived), item.archivedAt ? String(item.archivedAt) : null,
+      String(item.color || "#6366f1"), normalizeIcon(item.icon as string), optional(item.startDate as string), optional(item.targetDate as string), JSON.stringify(projectResourcesOf(item.resources)), bool(item.archived), item.archivedAt ? String(item.archivedAt) : null,
       Number(item.order) || 0, dateValue(item.createdAt, now), dateValue(item.updatedAt, now),
     ]);
     imported.projects++;
@@ -249,7 +277,7 @@ async function importBackup(env: Bindings, userId: string, input: unknown) {
   ];
 
   addBulkInsert(env, statements, "categories", ["id", "user_id", "name", "description", "color", "icon", "sort_order", "created_at", "updated_at"], categoryRows);
-  addBulkInsert(env, statements, "projects", ["id", "user_id", "name", "description", "status", "color", "icon", "start_date", "target_date", "archived", "archived_at", "sort_order", "created_at", "updated_at"], projectRows);
+  addBulkInsert(env, statements, "projects", ["id", "user_id", "name", "description", "status", "color", "icon", "start_date", "target_date", "resources_json", "archived", "archived_at", "sort_order", "created_at", "updated_at"], projectRows);
   addBulkInsert(env, statements, "project_decisions", ["id", "user_id", "project_id", "title", "decision", "rationale", "decided_at", "created_at", "updated_at"], projectDecisionRows);
   addBulkInsert(env, statements, "milestones", ["id", "user_id", "project_id", "title", "description", "target_date", "status", "sort_order", "created_at", "updated_at"], milestoneRows);
   addBulkInsert(env, statements, "todos", ["id", "user_id", "category_id", "project_id", "milestone_id", "parent_todo_id", "title", "memo", "date", "due_date", "start_time", "end_time", "estimate_minutes", "planning_state", "workflow_status", "priority", "completed", "repeat", "archived", "archived_at", "sort_order", "created_at", "updated_at"], todoRows);

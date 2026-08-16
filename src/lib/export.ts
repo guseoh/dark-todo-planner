@@ -62,6 +62,9 @@ export const buildPlannerMarkdown = ({
     const projectTodos = activeTodos.filter((todo) => todo.projectId === project.id);
     lines.push(`### ${project.name}${project.archived ? " (archived)" : ""}`, "");
     if (project.description) lines.push(project.description, "");
+    if (project.resources?.length) {
+      lines.push("자료", ...project.resources.map((resource) => `- [${resource.label}](${resource.url})`), "");
+    }
     if (projectTodos.length) lines.push(...projectTodos.map(todoDetail), "");
     else lines.push("- Todo 없음", "");
   }

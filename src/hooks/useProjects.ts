@@ -20,7 +20,7 @@ export function useProjects() {
         apiAllPages<Milestone>("/api/milestones", "milestones"),
         apiAllPages<ProjectDecision>("/api/project-decisions", "decisions"),
       ]);
-      setProjects(projectRows);
+      setProjects(projectRows.map((project) => ({ ...project, resources: project.resources || [] })));
       setMilestones(milestoneRows);
       setDecisions(decisionRows);
       setError("");
@@ -36,10 +36,11 @@ export function useProjects() {
   const addProject = useCallback(async (input: ProjectInput) => {
     setSaving(true);
     try {
-      const result = await api<{ project: Project }>("/api/projects", { method: "POST", ...jsonBody({ status: "ACTIVE", ...input }) });
-      setProjects((current) => [...current, result.project].sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt)));
+      const result = await api<{ project: Project }>("/api/projects", { method: "POST", ...jsonBody({ status: "ACTIVE", resources: [], ...input }) });
+      const project = { ...result.project, resources: result.project.resources || [] };
+      setProjects((current) => [...current, project].sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt)));
       setError("");
-      return result.project;
+      return project;
     } catch (err) {
       setError(getMessage(err));
       return undefined;
@@ -61,13 +62,15 @@ export function useProjects() {
           icon: Object.prototype.hasOwnProperty.call(updates, "icon") ? updates.icon : existing.icon,
           startDate: Object.prototype.hasOwnProperty.call(updates, "startDate") ? updates.startDate : existing.startDate,
           targetDate: Object.prototype.hasOwnProperty.call(updates, "targetDate") ? updates.targetDate : existing.targetDate,
+          resources: Object.prototype.hasOwnProperty.call(updates, "resources") ? updates.resources : existing.resources,
           archived: updates.archived ?? existing.archived,
           order: updates.order ?? existing.order,
         }),
       });
-      setProjects((current) => current.map((project) => project.id === id ? result.project : project));
+      const project = { ...result.project, resources: result.project.resources || [] };
+      setProjects((current) => current.map((item) => item.id === id ? project : item));
       setError("");
-      return result.project;
+      return project;
     } catch (err) {
       setError(getMessage(err));
       return undefined;
@@ -77,9 +80,10 @@ export function useProjects() {
   const setArchived = useCallback(async (id: string, archived: boolean) => {
     try {
       const result = await api<{ project: Project }>(`/api/projects/${id}/${archived ? "archive" : "unarchive"}`, { method: "PATCH" });
-      setProjects((current) => current.map((project) => project.id === id ? result.project : project));
+      const project = { ...result.project, resources: result.project.resources || [] };
+      setProjects((current) => current.map((item) => item.id === id ? project : item));
       setError("");
-      return result.project;
+      return project;
     } catch (err) {
       setError(getMessage(err));
       return undefined;

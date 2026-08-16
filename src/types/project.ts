@@ -1,6 +1,12 @@
 export type ProjectStatus = "PLANNING" | "ACTIVE" | "ON_HOLD" | "DONE";
 export type MilestoneStatus = "TODO" | "IN_PROGRESS" | "DONE";
 
+export type ProjectResource = {
+  id: string;
+  label: string;
+  url: string;
+};
+
 export type Project = {
   id: string;
   userId?: string;
@@ -11,6 +17,7 @@ export type Project = {
   icon?: string;
   startDate?: string;
   targetDate?: string;
+  resources?: ProjectResource[];
   archived: boolean;
   archivedAt?: string;
   order: number;
@@ -26,6 +33,7 @@ export type ProjectInput = {
   icon?: string;
   startDate?: string;
   targetDate?: string;
+  resources?: ProjectResource[];
   archived?: boolean;
   order?: number;
 };

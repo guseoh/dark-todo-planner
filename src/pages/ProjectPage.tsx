@@ -1,11 +1,11 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Archive, ArchiveRestore, CheckCircle2, CircleDot, FileText, FolderKanban, GitBranch, PauseCircle, Plus, Target, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, CheckCircle2, CircleDot, ExternalLink, FileText, FolderKanban, GitBranch, Link2, PauseCircle, Pencil, Plus, Save, Target, Trash2, X } from "lucide-react";
 import { TodoForm } from "../components/todo/TodoForm";
 import { todayKey } from "../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../lib/todo";
 import type { Category } from "../types/category";
 import type { Memo } from "../types/memo";
-import type { Milestone, MilestoneInput, Project, ProjectDecision, ProjectDecisionInput, ProjectInput, ProjectStatus } from "../types/project";
+import type { Milestone, MilestoneInput, Project, ProjectDecision, ProjectDecisionInput, ProjectInput, ProjectResource, ProjectStatus } from "../types/project";
 import type { Todo, TodoInput, TodoWorkflowStatus } from "../types/todo";
 
 const projectStatusLabel: Record<ProjectStatus, string> = { PLANNING: "계획", ACTIVE: "진행 중", ON_HOLD: "보류", DONE: "완료" };
@@ -14,6 +14,15 @@ const workflowColumns: Array<{ status: TodoWorkflowStatus; label: string }> = [
 ];
 
 const memoTitle = (memo: Memo) => memo.title || memo.content.split("\n").find((line) => line.trim())?.replace(/^[-#>*\s]+/, "").slice(0, 36) || "제목 없음";
+const createResourceId = () => typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `resource-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const isHttpUrl = (value: string) => {
+  try {
+    const protocol = new URL(value).protocol;
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+};
 
 export function ProjectPage({
   projects, milestones, decisions, memos, todos, categories, onAddProject, onUpdateProject, onArchiveProject, onUnarchiveProject,
@@ -53,11 +62,27 @@ export function ProjectPage({
   const [decisionDate, setDecisionDate] = useState(todayKey());
   const [subtaskParentId, setSubtaskParentId] = useState("");
   const [subtaskTitle, setSubtaskTitle] = useState("");
+  const [editingProject, setEditingProject] = useState(false);
+  const [projectName, setProjectName] = useState("");
+  const [projectDescription, setProjectDescription] = useState("");
+  const [projectStartDate, setProjectStartDate] = useState("");
+  const [projectTargetDate, setProjectTargetDate] = useState("");
+  const [projectColor, setProjectColor] = useState("#0b72d7");
+  const [resourceLabel, setResourceLabel] = useState("");
+  const [resourceUrl, setResourceUrl] = useState("");
+  const [resourceError, setResourceError] = useState("");
 
   useEffect(() => {
     const candidates = showArchived ? archivedProjects : activeProjects;
     if (!candidates.some((project) => project.id === selectedId)) setSelectedId(candidates[0]?.id || "");
   }, [activeProjects, archivedProjects, selectedId, showArchived]);
+
+  useEffect(() => {
+    setEditingProject(false);
+    setResourceLabel("");
+    setResourceUrl("");
+    setResourceError("");
+  }, [selectedId]);
 
   const selected = projects.find((project) => project.id === selectedId);
   const projectTodos = useMemo(() => todos.filter((todo) => todo.projectId === selectedId && !todo.archived), [selectedId, todos]);
@@ -71,8 +96,51 @@ export function ProjectPage({
   const createProject = async (event: FormEvent) => {
     event.preventDefault();
     if (!newName.trim()) return;
-    const created = await onAddProject({ name: newName.trim(), targetDate: newTargetDate || undefined, status: "ACTIVE" });
+    const created = await onAddProject({ name: newName.trim(), targetDate: newTargetDate || undefined, status: "ACTIVE", resources: [] });
     if (created) { setSelectedId(created.id); setNewName(""); setNewTargetDate(""); setShowArchived(false); }
+  };
+
+  const beginProjectEdit = () => {
+    if (!selected) return;
+    setProjectName(selected.name);
+    setProjectDescription(selected.description || "");
+    setProjectStartDate(selected.startDate || "");
+    setProjectTargetDate(selected.targetDate || "");
+    setProjectColor(selected.color || "#0b72d7");
+    setEditingProject(true);
+  };
+
+  const saveProjectInfo = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!selected || !projectName.trim()) return;
+    const updated = await onUpdateProject(selected.id, {
+      name: projectName.trim(),
+      description: projectDescription.trim() || undefined,
+      startDate: projectStartDate || undefined,
+      targetDate: projectTargetDate || undefined,
+      color: projectColor,
+    });
+    if (updated) setEditingProject(false);
+  };
+
+  const addResource = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!selected || selected.archived) return;
+    const label = resourceLabel.trim();
+    const url = resourceUrl.trim();
+    if (!label) { setResourceError("링크 이름을 입력하세요."); return; }
+    if (!isHttpUrl(url)) { setResourceError("http 또는 https 주소를 입력하세요."); return; }
+    const resources = selected.resources || [];
+    if (resources.length >= 12) { setResourceError("프로젝트 자료 링크는 최대 12개까지 등록할 수 있습니다."); return; }
+    if (resources.some((resource) => resource.url === url)) { setResourceError("이미 등록된 주소입니다."); return; }
+    const next: ProjectResource[] = [...resources, { id: createResourceId(), label, url }];
+    const updated = await onUpdateProject(selected.id, { resources: next });
+    if (updated) { setResourceLabel(""); setResourceUrl(""); setResourceError(""); }
+  };
+
+  const removeResource = async (resourceId: string) => {
+    if (!selected || selected.archived) return;
+    await onUpdateProject(selected.id, { resources: (selected.resources || []).filter((resource) => resource.id !== resourceId) });
   };
 
   const createMilestone = async (event: FormEvent) => {
@@ -139,14 +207,54 @@ export function ProjectPage({
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2"><FolderKanban size={20} className="text-accent-300" /><h3 className="text-xl font-bold text-ink-100">{selected.name}</h3><span className="rounded-full border border-ink-700 px-2 py-0.5 text-xs text-ink-300">{projectStatusLabel[selected.status]}</span></div>
                   <p className="mt-2 text-sm text-ink-400">{selected.description || "설명이 없습니다."}</p>
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-ink-400"><span>진행률 {progress}% ({completed}/{projectTodos.length})</span>{selected.targetDate ? <span>목표일 {selected.targetDate}</span> : null}<span>마일스톤 {projectMilestones.length}개</span><span>연결 메모 {linkedMemos.length}개</span><span>결정 {projectDecisions.length}개</span></div>
+                  <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-400">
+                    <span>진행률 {progress}% ({completed}/{projectTodos.length})</span>
+                    {selected.startDate ? <span>시작일 {selected.startDate}</span> : null}
+                    {selected.targetDate ? <span>목표일 {selected.targetDate}</span> : null}
+                    <span>마일스톤 {projectMilestones.length}개</span><span>자료 {(selected.resources || []).length}개</span><span>연결 메모 {linkedMemos.length}개</span><span>결정 {projectDecisions.length}개</span>
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <select className="field min-h-10 w-auto py-1.5 text-sm" value={selected.status} onChange={(event) => void onUpdateProject(selected.id, { status: event.target.value as ProjectStatus })}><option value="PLANNING">계획</option><option value="ACTIVE">진행 중</option><option value="ON_HOLD">보류</option><option value="DONE">완료</option></select>
+                  {!selected.archived ? <button type="button" className="btn-secondary" onClick={beginProjectEdit}><Pencil size={15} />정보 수정</button> : null}
+                  <select className="field min-h-10 w-auto py-1.5 text-sm" value={selected.status} onChange={(event) => void onUpdateProject(selected.id, { status: event.target.value as ProjectStatus })} disabled={selected.archived}><option value="PLANNING">계획</option><option value="ACTIVE">진행 중</option><option value="ON_HOLD">보류</option><option value="DONE">완료</option></select>
                   {selected.archived ? <button type="button" className="btn-secondary" onClick={() => void onUnarchiveProject(selected.id)}><ArchiveRestore size={15} />복원</button> : <button type="button" className="btn-secondary" onClick={() => void onArchiveProject(selected.id)}><Archive size={15} />보관</button>}
                 </div>
               </div>
+
+              {editingProject ? (
+                <form className="mt-4 grid gap-3 rounded-lg border border-ink-700/70 bg-ink-950/25 p-3 lg:grid-cols-2" onSubmit={saveProjectInfo}>
+                  <label className="text-xs font-semibold text-ink-400">프로젝트 이름<input className="field mt-1.5" value={projectName} onChange={(event) => setProjectName(event.target.value)} maxLength={120} /></label>
+                  <label className="text-xs font-semibold text-ink-400">색상<div className="mt-1.5 flex gap-2"><input className="h-10 w-14 rounded-md border border-ink-700 bg-ink-950 p-1" type="color" value={projectColor} onChange={(event) => setProjectColor(event.target.value)} /><input className="field" value={projectColor} onChange={(event) => setProjectColor(event.target.value)} maxLength={20} /></div></label>
+                  <label className="text-xs font-semibold text-ink-400">시작일<input className="field mt-1.5" type="date" value={projectStartDate} onChange={(event) => setProjectStartDate(event.target.value)} /></label>
+                  <label className="text-xs font-semibold text-ink-400">목표일<input className="field mt-1.5" type="date" value={projectTargetDate} onChange={(event) => setProjectTargetDate(event.target.value)} /></label>
+                  <label className="text-xs font-semibold text-ink-400 lg:col-span-2">설명<textarea className="field mt-1.5 min-h-24 resize-y" value={projectDescription} onChange={(event) => setProjectDescription(event.target.value)} maxLength={1000} placeholder="프로젝트의 목표와 범위를 짧게 기록하세요." /></label>
+                  <div className="flex justify-end gap-2 lg:col-span-2"><button type="button" className="btn-secondary" onClick={() => setEditingProject(false)}><X size={15} />취소</button><button type="submit" className="btn-primary" disabled={!projectName.trim()}><Save size={15} />저장</button></div>
+                </form>
+              ) : null}
+
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-ink-800"><div className="h-full rounded-full bg-accent-500 transition-all" style={{ width: `${progress}%` }} /></div>
+
+              <div className="mt-4 border-t border-ink-800/80 pt-4">
+                <div className="flex flex-wrap items-center justify-between gap-2"><div className="flex items-center gap-2"><Link2 size={16} className="text-accent-300" /><h4 className="text-sm font-bold text-ink-100">자료 링크</h4><span className="text-[11px] text-ink-500">Notion · GitHub · 배포 · 문서</span></div><span className="text-[11px] text-ink-500">{(selected.resources || []).length}/12</span></div>
+                {(selected.resources || []).length ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(selected.resources || []).map((resource) => (
+                      <div key={resource.id} className="inline-flex max-w-full items-center rounded-md border border-ink-700/70 bg-ink-950/35">
+                        <a className="inline-flex min-h-9 min-w-0 items-center gap-1.5 px-2.5 text-xs font-semibold text-ink-300 hover:text-accent-200" href={resource.url} target="_blank" rel="noreferrer" title={resource.url}><ExternalLink size={13} className="shrink-0" /><span className="truncate">{resource.label}</span></a>
+                        {!selected.archived ? <button type="button" className="flex h-9 w-8 shrink-0 items-center justify-center border-l border-ink-800 text-ink-600 hover:text-red-200" onClick={() => void removeResource(resource.id)} aria-label={`${resource.label} 링크 삭제`}><X size={13} /></button> : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : <p className="mt-3 text-xs text-ink-500">자주 여는 Notion 문서, GitHub 저장소, 배포 주소 등을 연결해두면 프로젝트 화면에서 바로 이동할 수 있습니다.</p>}
+                {!selected.archived ? (
+                  <form className="mt-3 grid gap-2 lg:grid-cols-[11rem_minmax(0,1fr)_auto]" onSubmit={addResource}>
+                    <input className="field min-h-9 py-1.5 text-xs" value={resourceLabel} onChange={(event) => setResourceLabel(event.target.value)} placeholder="예: Notion 설계" maxLength={80} />
+                    <input className="field min-h-9 py-1.5 text-xs" type="url" value={resourceUrl} onChange={(event) => { setResourceUrl(event.target.value); setResourceError(""); }} placeholder="https://..." maxLength={2048} />
+                    <button type="submit" className="btn-secondary min-h-9 py-1.5 text-xs" disabled={!resourceLabel.trim() || !resourceUrl.trim()}><Plus size={14} />링크 추가</button>
+                    {resourceError ? <p className="text-xs font-semibold text-red-200 lg:col-span-3">{resourceError}</p> : null}
+                  </form>
+                ) : null}
+              </div>
             </section>
 
             {!selected.archived ? <TodoForm compact submitLabel="프로젝트 Todo 추가" categories={categories} projects={activeProjects} defaultProjectId={selected.id} onAdd={onAddTodo} /> : null}
