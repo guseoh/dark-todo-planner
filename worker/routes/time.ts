@@ -34,10 +34,16 @@ timeRoutes.get("/focus-sessions", async (c) => {
   const db = drizzle(c.env.DB);
   const filters = [eq(focusSessionsV2.userId, c.get("userId"))];
   const date = c.req.query("date");
+  const from = c.req.query("from");
+  const to = c.req.query("to");
   const todoId = c.req.query("todoId");
   if (date) filters.push(eq(focusSessionsV2.plannerDate, date));
+  else {
+    if (from) filters.push(sql`${focusSessionsV2.plannerDate} >= ${from}`);
+    if (to) filters.push(sql`${focusSessionsV2.plannerDate} <= ${to}`);
+  }
   if (todoId) filters.push(eq(focusSessionsV2.todoId, todoId));
-  const rows = await db.select().from(focusSessionsV2).where(and(...filters)).orderBy(desc(focusSessionsV2.startedAt)).limit(200);
+  const rows = await db.select().from(focusSessionsV2).where(and(...filters)).orderBy(desc(focusSessionsV2.startedAt)).limit(500);
   return c.json({ focusSessions: rows });
 });
 

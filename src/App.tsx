@@ -10,6 +10,7 @@ import { TodoForm } from "./components/todo/TodoForm";
 import { usePlannerData } from "./hooks/usePlannerData";
 import { AllTodosPage } from "./pages/AllTodosPage";
 import { InboxPage } from "./pages/InboxPage";
+import { InsightsPage } from "./pages/InsightsPage";
 import { MemoPage } from "./pages/MemoPage";
 import { MonthPage } from "./pages/MonthPage";
 import { PlanningHubPage } from "./pages/PlanningHubPage";
@@ -46,6 +47,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     week: <WeekPage weekTodos={weekTodos} getTodosByDate={planner.getTodosByDate} onAdd={planner.addTodo} onToggle={planner.toggleTodo} onDelete={planner.deleteTodo} onUpdate={planner.updateTodo} onAddGoal={planner.addGoal} onUpdateGoal={planner.updateGoal} onToggleGoal={planner.toggleGoal} onDeleteGoal={planner.deleteGoal} categories={planner.categories} goals={planner.goals} />,
     month: <MonthPage todos={planner.todos} getTodosByDate={planner.getTodosByDate} onAdd={planner.addTodo} onToggle={planner.toggleTodo} onDelete={planner.deleteTodo} onUpdate={planner.updateTodo} categories={planner.categories} goals={planner.goals} onAddGoal={planner.addGoal} onToggleGoal={planner.toggleGoal} onDeleteGoal={planner.deleteGoal} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} />,
     projects: <ProjectPage projects={planner.projects} milestones={planner.milestones} decisions={planner.projectDecisions} memos={planner.memos} todos={planner.todos} categories={planner.categories} onAddProject={planner.addProject} onUpdateProject={planner.updateProject} onArchiveProject={planner.archiveProject} onUnarchiveProject={planner.unarchiveProject} onAddMilestone={planner.addMilestone} onUpdateMilestone={planner.updateMilestone} onDeleteMilestone={planner.deleteMilestone} onAddDecision={planner.addProjectDecision} onDeleteDecision={planner.deleteProjectDecision} onAddTodo={planner.addTodo} onUpdateTodo={planner.updateTodo} onToggleTodo={planner.toggleTodo} />,
+    insights: <InsightsPage todos={planner.allTodos} projects={planner.projects} />,
     all: <AllTodosPage allTodos={planner.allTodos} filterTodos={planner.filterTodos} tagOptions={planner.tagOptions} categories={planner.categories} projects={planner.projects} duplicateTodoIds={planner.duplicateTodoIds} onToggle={planner.toggleTodo} onDelete={planner.deleteTodo} onDeleteMany={planner.deleteTodos} onBulkUpdate={planner.bulkUpdateTodos} onUpdate={planner.updateTodo} onUnarchive={planner.unarchiveTodo} onAddTodo={planner.addTodo} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} />,
     memo: <MemoPage memos={planner.memos} todos={planner.allTodos} projects={planner.projects} onAdd={planner.addMemo} onUpdate={planner.updateMemo} onUpdateLinks={planner.updateMemoLinks} onDelete={planner.deleteMemo} onTogglePin={planner.toggleMemoPin} onAddTodo={planner.addTodo} />,
     trash: <TrashPage onRestored={planner.loadAll} />,

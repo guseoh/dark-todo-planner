@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   Calendar,
   CalendarCheck,
   CalendarRange,
@@ -15,7 +16,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-export type AppView = "today" | "inbox" | "planning" | "week" | "month" | "projects" | "all" | "memo" | "trash" | "settings";
+export type AppView = "today" | "inbox" | "planning" | "week" | "month" | "projects" | "insights" | "all" | "memo" | "trash" | "settings";
 
 type SidebarProps = {
   activeView: AppView;
@@ -40,6 +41,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
       { id: "week", label: "주간", icon: CalendarRange },
       { id: "month", label: "월간", icon: Calendar },
       { id: "projects", label: "프로젝트", icon: FolderKanban },
+      { id: "insights", label: "인사이트", icon: BarChart3 },
       { id: "all", label: "전체 Todo", icon: ClipboardList },
     ],
   },
