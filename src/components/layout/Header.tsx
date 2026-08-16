@@ -29,9 +29,9 @@ export function Header({ storageStatus = "server", onLogout, onQuickAdd, onSearc
             </div>
           ) : null}
           {onSearch ? (
-            <button type="button" onClick={onSearch} className="btn-secondary px-2.5" title="검색 및 명령 (Ctrl+K)">
+            <button type="button" onClick={onSearch} className="btn-secondary px-2.5 lg:hidden" title="검색 및 명령 (Ctrl+K)">
               <Search size={15} />
-              <span className="hidden lg:inline">검색</span>
+              <span className="hidden sm:inline">검색</span>
             </button>
           ) : null}
           {onQuickAdd ? (

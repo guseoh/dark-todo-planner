@@ -53,12 +53,13 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
   } satisfies Record<AppView, JSX.Element>;
 
   const openQuickAdd = () => { setShowCommandPalette(false); setShowQuickAdd(true); };
+  const openSearch = () => { setShowQuickAdd(false); setShowCommandPalette(true); };
 
   return (
     <div className="min-h-screen pb-20 lg:pb-0">
-      <Header storageStatus={planner.connectionError ? "offline" : "server"} onLogout={onLogout} onQuickAdd={openQuickAdd} onSearch={() => { setShowQuickAdd(false); setShowCommandPalette(true); }} />
+      <Header storageStatus={planner.connectionError ? "offline" : "server"} onLogout={onLogout} onQuickAdd={openQuickAdd} onSearch={openSearch} />
       <div className="mx-auto flex w-full max-w-[1560px] gap-4 px-4 py-4 sm:px-5 lg:px-6">
-        <Sidebar activeView={activeView} onChangeView={setActiveView} />
+        <Sidebar activeView={activeView} onChangeView={setActiveView} onSearch={openSearch} />
         <main className="min-w-0 flex-1 space-y-4">
           {planner.loading && !planner.loadedOnce ? <LoadingState /> : null}
           {!planner.loading && planner.initialLoadError ? <ErrorState message={planner.initialLoadError} onRetry={planner.loadAll} /> : null}

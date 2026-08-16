@@ -8,6 +8,7 @@ import {
   ListTodo,
   PanelLeftClose,
   PanelLeftOpen,
+  Search,
   Settings,
   StickyNote,
   Trash2,
@@ -16,7 +17,11 @@ import { useEffect, useRef, useState } from "react";
 
 export type AppView = "today" | "inbox" | "planning" | "week" | "month" | "projects" | "all" | "memo" | "trash" | "settings";
 
-type SidebarProps = { activeView: AppView; onChangeView: (view: AppView) => void };
+type SidebarProps = {
+  activeView: AppView;
+  onChangeView: (view: AppView) => void;
+  onSearch: () => void;
+};
 type NavItem = { id: AppView; label: string; icon: typeof CalendarCheck };
 type SidebarMode = "expanded" | "collapsed";
 
@@ -61,7 +66,7 @@ const readInitialMode = (): SidebarMode => {
   return localStorage.getItem(LEGACY_SIDEBAR_COLLAPSED_KEY) === "true" ? "collapsed" : "expanded";
 };
 
-export function Sidebar({ activeView, onChangeView }: SidebarProps) {
+export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
   const [mode, setMode] = useState<SidebarMode>(readInitialMode);
   const [hoverExpanded, setHoverExpanded] = useState(false);
   const activeMobileItemRef = useRef<HTMLButtonElement | null>(null);
@@ -171,6 +176,31 @@ export function Sidebar({ activeView, onChangeView }: SidebarProps) {
             if (!event.currentTarget.contains(event.relatedTarget as Node | null)) closeHoverPanel();
           }}
         >
+          <button
+            type="button"
+            onClick={onSearch}
+            aria-label="빠른 검색 및 명령"
+            title={collapsed && !hoverExpanded ? "빠른 검색 (Ctrl+K)" : undefined}
+            className={`group relative mb-4 flex min-h-10 w-full items-center rounded-xl border border-ink-700/80 bg-ink-950/75 text-sm text-ink-400 transition-colors hover:border-ink-600 hover:bg-ink-800/80 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${
+              showExpandedContent ? "gap-2.5 px-3 text-left" : "justify-center px-2"
+            }`}
+          >
+            <Search size={17} className="shrink-0" />
+            {showExpandedContent ? (
+              <>
+                <span className="min-w-0 flex-1 truncate">빠른 검색...</span>
+                <kbd className="shrink-0 rounded-md border border-ink-700 bg-ink-900 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-ink-500">
+                  Ctrl K
+                </kbd>
+              </>
+            ) : null}
+            {collapsed && !hoverExpanded ? (
+              <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md border border-ink-700 bg-ink-900 px-2.5 py-1.5 text-xs font-semibold text-ink-100 shadow-xl group-hover:block group-focus-visible:block">
+                빠른 검색 · Ctrl K
+              </span>
+            ) : null}
+          </button>
+
           <div className="min-h-0 flex-1 overflow-visible">
             <div className="space-y-4">
               {navGroups.map((group, index) => (
