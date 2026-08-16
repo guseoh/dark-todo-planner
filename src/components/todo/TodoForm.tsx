@@ -52,7 +52,7 @@ export function TodoForm({
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    const parsed = parseQuickTodoTitle(title, todayKey());
+    const parsed = parseQuickTodoTitle(title, todayKey(), { categories, projects });
     if (!parsed.title) { titleInputRef.current?.focus(); return; }
 
     const nextPlanningState = parsed.planningState ?? planningState;
@@ -64,15 +64,15 @@ export function TodoForm({
 
     onAdd({
       title: parsed.title,
-      categoryId: categoryId || undefined,
-      projectId: projectId || undefined,
+      categoryId: (parsed.categoryId ?? categoryId) || undefined,
+      projectId: (parsed.projectId ?? projectId) || undefined,
       memo,
       date: nextPlanningState === "SCHEDULED" ? nextDate : UNSCHEDULED_DATE,
       dueDate: parsed.dueDate || dueDate || undefined,
       estimateMinutes: parsed.estimateMinutes ?? (estimateMinutes ? Number(estimateMinutes) : undefined),
       planningState: nextPlanningState,
       priority: parsed.priority || priority,
-      repeat,
+      repeat: parsed.repeat ?? repeat,
       tags: mergedTags,
     });
     reset();
@@ -88,7 +88,7 @@ export function TodoForm({
         </select>
         <div className="flex"><button type="submit" className="btn-primary"><Plus size={18} />{submitLabel}</button></div>
       </div>
-      {showSyntaxHint ? <p className="mt-1.5 px-1 text-[11px] text-ink-500">빠른 문법: 내일 · !high · #태그 · 45m/1h · due:2026-08-20 · inbox/someday/waiting</p> : null}
+      {showSyntaxHint ? <p className="mt-1.5 px-1 text-[11px] text-ink-500">빠른 문법: 내일 · !high · @프로젝트 · +카테고리 · #태그 · 45m/1h · due:내일 · date:2026-08-20 · repeat:weekly · inbox/someday/waiting · 공백 이름은 @{"{"}프로젝트 이름{"}"} / +{"{"}카테고리 이름{"}"}</p> : null}
       <button type="button" className="mt-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-ink-400 transition hover:bg-ink-900/70 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40" onClick={() => setShowDetails((value) => !value)} aria-expanded={showDetails}>
         <ChevronDown className={`transition ${showDetails ? "rotate-180" : ""}`} size={15} />상세 옵션
       </button>
