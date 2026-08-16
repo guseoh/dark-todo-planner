@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { BellRing, RefreshCw, Save } from "lucide-react";
 import { StatCard } from "../components/common/StatCard";
+import { PwaInstallCard } from "../components/settings/PwaInstallCard";
 import type { Category } from "../types/category";
 import type { Goal } from "../types/goal";
 import type { Memo } from "../types/memo";
@@ -67,7 +68,7 @@ export function SettingsPage({
     <div className="mx-auto w-full max-w-[1180px] space-y-6">
       <section>
         <h2 className="text-2xl font-bold text-ink-100 sm:text-3xl">앱 정보</h2>
-        <p className="mt-2 text-sm text-ink-400">앱 연결 상태, 자동화와 알림 기준, 저장된 데이터 현황을 관리합니다.</p>
+        <p className="mt-2 text-sm text-ink-400">앱 연결 상태, 설치, 자동화와 알림 기준, 저장된 데이터 현황을 관리합니다.</p>
       </section>
 
       {message ? <div className="rounded-lg border border-ink-700/70 bg-ink-900/75 px-3 py-2 text-sm font-semibold text-ink-200" aria-live="polite">{message}</div> : null}
@@ -86,6 +87,8 @@ export function SettingsPage({
           <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs font-semibold text-ink-500">Discord Todo 알림 예약</dt><dd className="mt-1 text-sm font-bold text-ink-100">매일 오후 9시</dd><p className="mt-1 text-xs text-ink-400">아래 알림 조건을 합쳐 하루 한 번 전송합니다.</p></div>
         </dl>
       </section>
+
+      <PwaInstallCard />
 
       <section className="app-card p-4 sm:p-5" aria-labelledby="automation-settings-title">
         <div className="flex items-center gap-2"><RefreshCw size={18} className="text-accent-300" /><h3 id="automation-settings-title" className="text-base font-bold text-ink-100">Todo 자동화</h3></div>
