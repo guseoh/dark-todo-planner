@@ -1,6 +1,10 @@
-import { pbkdf2, randomBytes } from "node:crypto";
+import { randomBytes, scrypt } from "node:crypto";
 
-const PBKDF2_ROUNDS = 600_000;
+const SCRYPT_N = 16_384;
+const SCRYPT_R = 8;
+const SCRYPT_P = 5;
+const SCRYPT_KEY_LENGTH = 32;
+const SCRYPT_MAXMEM = 32 * 1024 * 1024;
 const MIN_PASSWORD_LENGTH = 12;
 
 const readSecret = async (prompt) => {
@@ -50,9 +54,14 @@ if (password !== confirmation) {
 
 const salt = randomBytes(16);
 const digest = await new Promise((resolve, reject) => {
-  pbkdf2(password, salt, PBKDF2_ROUNDS, 32, "sha256", (error, value) => {
+  scrypt(password, salt, SCRYPT_KEY_LENGTH, {
+    N: SCRYPT_N,
+    r: SCRYPT_R,
+    p: SCRYPT_P,
+    maxmem: SCRYPT_MAXMEM,
+  }, (error, value) => {
     error ? reject(error) : resolve(value);
   });
 });
 
-console.log(`pbkdf2-sha256$${PBKDF2_ROUNDS}$${salt.toString("base64url")}$${digest.toString("base64url")}`);
+console.log(`scrypt$${SCRYPT_N}$${SCRYPT_R}$${SCRYPT_P}$${salt.toString("base64url")}$${digest.toString("base64url")}`);
