@@ -58,9 +58,9 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
   return (
     <div className="min-h-screen pb-20 lg:pb-0">
       <Header storageStatus={planner.connectionError ? "offline" : "server"} onLogout={onLogout} onQuickAdd={openQuickAdd} onSearch={openSearch} />
-      <div className="mx-auto flex w-full max-w-[1560px] gap-4 px-4 py-4 sm:px-5 lg:px-6">
+      <div className="flex w-full items-start">
         <Sidebar activeView={activeView} onChangeView={setActiveView} onSearch={openSearch} />
-        <main className="min-w-0 flex-1 space-y-4">
+        <main className="min-w-0 flex-1 space-y-4 px-4 py-4 sm:px-5 lg:px-6">
           {planner.loading && !planner.loadedOnce ? <LoadingState /> : null}
           {!planner.loading && planner.initialLoadError ? <ErrorState message={planner.initialLoadError} onRetry={planner.loadAll} /> : null}
           {planner.loadedOnce ? <>{planner.backgroundOrOperationError ? <ErrorBanner message={planner.backgroundOrOperationError} onRetry={planner.loadAll} /> : null}{content[activeView]}</> : null}

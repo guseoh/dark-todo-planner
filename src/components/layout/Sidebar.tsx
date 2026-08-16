@@ -48,12 +48,12 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
     items: [
       { id: "memo", label: "메모", icon: StickyNote },
       { id: "trash", label: "휴지통", icon: Trash2 },
-      { id: "settings", label: "설정", icon: Settings },
     ],
   },
 ];
 
-const navItems = navGroups.flatMap((group) => group.items);
+const settingsItem: NavItem = { id: "settings", label: "설정", icon: Settings };
+const navItems = [...navGroups.flatMap((group) => group.items), settingsItem];
 const SIDEBAR_MODE_KEY = "dark-todo-planner:sidebar-mode";
 const LEGACY_SIDEBAR_COLLAPSED_KEY = "dark-todo-planner:sidebar-collapsed";
 const HOVER_OPEN_DELAY_MS = 110;
@@ -136,20 +136,15 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
         aria-label={item.label}
         aria-current={active ? "page" : undefined}
         title={collapsed && !hoverExpanded ? item.label : undefined}
-        className={`group relative flex min-h-10 w-full items-center rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${
+        className={`relative flex min-h-10 w-full items-center rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${
           active
             ? "bg-ink-800 text-ink-100"
             : "text-ink-400 hover:bg-ink-800/75 hover:text-ink-100"
         } ${showExpandedContent ? "gap-3 px-3 text-left" : "justify-center px-2"}`}
       >
-        {active ? <span aria-hidden="true" className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-accent-500" /> : null}
+        {active ? <span aria-hidden="true" className="absolute bottom-2 left-0 top-2 w-0.5 rounded-full bg-accent-500" /> : null}
         <Icon size={17} className="shrink-0" />
         {showExpandedContent ? <span className="truncate">{item.label}</span> : null}
-        {collapsed && !hoverExpanded ? (
-          <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md border border-ink-700 bg-ink-900 px-2.5 py-1.5 text-xs font-semibold text-ink-100 shadow-xl group-hover:block group-focus-visible:block">
-            {item.label}
-          </span>
-        ) : null}
       </button>
     );
   };
@@ -157,18 +152,14 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
   return (
     <>
       <aside
-        className="relative z-20 hidden w-[16.25rem] shrink-0 lg:block"
+        className={`relative z-20 hidden shrink-0 transition-[width] duration-150 ease-out lg:block ${
+          showExpandedContent ? "w-[16.25rem]" : "w-[4.25rem]"
+        }`}
         data-sidebar-mode={mode}
         data-sidebar-hover-expanded={hoverExpanded ? "true" : "false"}
       >
         <nav
-          className={`sticky top-[4.75rem] flex h-[calc(100vh-5.75rem)] min-h-0 flex-col overflow-visible rounded-xl border border-ink-700/70 bg-ink-900 px-2 py-2.5 transition-[width,box-shadow] duration-150 ease-out ${
-            collapsed
-              ? hoverExpanded
-                ? "w-[16.25rem] shadow-[0_18px_48px_rgba(0,0,0,0.38)]"
-                : "w-[4.25rem]"
-              : "w-[16.25rem]"
-          }`}
+          className="sticky top-14 flex h-[calc(100vh-3.5rem)] min-h-0 w-full flex-col border-r border-ink-700/65 bg-ink-900 px-2 py-2.5"
           onMouseEnter={openHoverPanel}
           onMouseLeave={closeHoverPanel}
           onFocusCapture={openHoverPanel}
@@ -178,10 +169,30 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
         >
           <button
             type="button"
+            onClick={() => onChangeView("today")}
+            aria-label="Todo Planner 홈"
+            title={collapsed && !hoverExpanded ? "Todo Planner" : undefined}
+            className={`mb-2 flex min-h-10 shrink-0 items-center rounded-lg text-left transition-colors hover:bg-ink-800/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${
+              showExpandedContent ? "gap-2.5 px-2.5" : "justify-center px-2"
+            }`}
+          >
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent-500 text-white">
+              <CalendarCheck size={18} />
+            </span>
+            {showExpandedContent ? (
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-bold text-ink-100">Todo Planner</span>
+                <span className="block truncate text-[10px] text-ink-500">개인 작업 관리</span>
+              </span>
+            ) : null}
+          </button>
+
+          <button
+            type="button"
             onClick={onSearch}
             aria-label="빠른 검색 및 명령"
             title={collapsed && !hoverExpanded ? "빠른 검색 (Ctrl+K)" : undefined}
-            className={`group relative mb-3 flex min-h-10 shrink-0 w-full items-center rounded-xl border border-ink-700/80 bg-ink-950/75 text-sm text-ink-400 transition-colors hover:border-ink-600 hover:bg-ink-800/80 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${
+            className={`mb-3 flex min-h-10 shrink-0 w-full items-center rounded-lg border border-ink-700/80 bg-ink-950/75 text-sm text-ink-400 transition-colors hover:border-ink-600 hover:bg-ink-800/80 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${
               showExpandedContent ? "gap-2.5 px-3 text-left" : "justify-center px-2"
             }`}
           >
@@ -194,14 +205,9 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
                 </kbd>
               </>
             ) : null}
-            {collapsed && !hoverExpanded ? (
-              <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md border border-ink-700 bg-ink-900 px-2.5 py-1.5 text-xs font-semibold text-ink-100 shadow-xl group-hover:block group-focus-visible:block">
-                빠른 검색 · Ctrl K
-              </span>
-            ) : null}
           </button>
 
-          <div className={`min-h-0 flex-1 ${showExpandedContent ? "overflow-y-auto overflow-x-hidden pr-0.5" : "overflow-visible"}`}>
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-0.5">
             <div className="space-y-3">
               {navGroups.map((group, index) => (
                 <section key={group.label} className={!showExpandedContent && index > 0 ? "border-t border-ink-700/60 pt-3" : ""}>
@@ -214,40 +220,38 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
             </div>
           </div>
 
-          <div className="mt-3 shrink-0 border-t border-ink-700/70 pt-2.5">
-            <button
-              type="button"
-              onClick={() => {
-                clearHoverTimers();
-                setHoverExpanded(false);
-                setMode((current) => current === "expanded" ? "collapsed" : "expanded");
-              }}
-              className={`group relative flex min-h-10 w-full items-center rounded-lg text-sm font-semibold text-ink-400 transition-colors hover:bg-ink-800/75 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${
-                showExpandedContent ? "justify-between gap-3 px-3 text-left" : "justify-center px-2"
-              }`}
-              aria-label={collapsed ? "사이드바 펼쳐서 고정" : "사이드바 축소"}
-              aria-pressed={!collapsed}
-              title={collapsed && !hoverExpanded ? "사이드바 펼쳐서 고정" : undefined}
-            >
-              {collapsed && !hoverExpanded ? (
-                <PanelLeftOpen size={17} />
-              ) : collapsed ? (
-                <>
-                  <span>사이드바 펼쳐서 고정</span>
-                  <PanelLeftOpen size={17} className="shrink-0" />
-                </>
-              ) : (
-                <>
-                  <span>사이드바 축소</span>
-                  <PanelLeftClose size={17} className="shrink-0" />
-                </>
-              )}
-              {collapsed && !hoverExpanded ? (
-                <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md border border-ink-700 bg-ink-900 px-2.5 py-1.5 text-xs font-semibold text-ink-100 shadow-xl group-hover:block group-focus-visible:block">
-                  사이드바 펼쳐서 고정
-                </span>
-              ) : null}
-            </button>
+          <div className="mt-2 shrink-0 border-t border-ink-700/70 pt-2">
+            <div className="space-y-1">
+              {renderDesktopItem(settingsItem)}
+              <button
+                type="button"
+                onClick={() => {
+                  clearHoverTimers();
+                  setHoverExpanded(false);
+                  setMode((current) => current === "expanded" ? "collapsed" : "expanded");
+                }}
+                className={`flex min-h-10 w-full items-center rounded-lg text-sm font-semibold text-ink-400 transition-colors hover:bg-ink-800/75 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${
+                  showExpandedContent ? "justify-between gap-3 px-3 text-left" : "justify-center px-2"
+                }`}
+                aria-label={collapsed ? "사이드바 펼쳐서 고정" : "사이드바 축소"}
+                aria-pressed={!collapsed}
+                title={collapsed && !hoverExpanded ? "사이드바 펼쳐서 고정" : undefined}
+              >
+                {collapsed && !hoverExpanded ? (
+                  <PanelLeftOpen size={17} />
+                ) : collapsed ? (
+                  <>
+                    <span>사이드바 펼쳐서 고정</span>
+                    <PanelLeftOpen size={17} className="shrink-0" />
+                  </>
+                ) : (
+                  <>
+                    <span>사이드바 축소</span>
+                    <PanelLeftClose size={17} className="shrink-0" />
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </nav>
       </aside>

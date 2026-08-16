@@ -1,5 +1,4 @@
 import { AlertCircle, CalendarCheck2, LogOut, Plus, Search } from "lucide-react";
-import { formatKoreanDate } from "../../lib/date";
 
 type HeaderProps = {
   storageStatus?: "server" | "offline";
@@ -10,16 +9,13 @@ type HeaderProps = {
 
 export function Header({ storageStatus = "server", onLogout, onQuickAdd, onSearch }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-30 border-b border-ink-700/55 bg-ink-950/94 backdrop-blur-xl">
-      <div className="mx-auto flex w-full max-w-[1560px] items-center justify-between gap-3 px-4 py-3 sm:px-5 lg:px-6">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent-500 text-white shadow-sm">
-            <CalendarCheck2 size={19} />
+    <header className="sticky top-0 z-40 border-b border-ink-700/55 bg-ink-950/94 backdrop-blur-xl">
+      <div className="flex h-14 w-full items-center justify-between gap-3 px-4 sm:px-5 lg:justify-end lg:px-6">
+        <div className="flex min-w-0 items-center gap-2.5 lg:hidden">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent-500 text-white">
+            <CalendarCheck2 size={18} />
           </div>
-          <div className="min-w-0">
-            <h1 className="truncate text-base font-bold text-ink-100 sm:text-lg">Todo Planner</h1>
-            <p className="hidden truncate text-[11px] text-ink-500 sm:block">{formatKoreanDate(new Date(), "yyyy년 M월 d일 EEEE")}</p>
-          </div>
+          <h1 className="truncate text-base font-bold text-ink-100">Todo Planner</h1>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
           {storageStatus === "offline" ? (
