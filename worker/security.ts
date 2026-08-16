@@ -39,6 +39,29 @@ export const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 export const clientIdentifier = (request: Request) =>
   request.headers.get("CF-Connecting-IP")?.trim() || "unknown";
 
+export const browserMutationIsSameOrigin = (request: Request) => {
+  if (SAFE_METHODS.has(request.method.toUpperCase())) return true;
+
+  const fetchSite = request.headers.get("Sec-Fetch-Site")?.toLowerCase();
+  if (fetchSite === "cross-site" || fetchSite === "same-site") return false;
+
+  const origin = request.headers.get("Origin");
+  if (!origin) return !fetchSite || fetchSite === "same-origin" || fetchSite === "none";
+
+  try {
+    return new URL(origin).origin === new URL(request.url).origin;
+  } catch {
+    return false;
+  }
+};
+
+export const enforceSameOriginMutations: MiddlewareHandler<{ Bindings: Bindings; Variables: Variables }> = async (context, next) => {
+  if (!browserMutationIsSameOrigin(context.req.raw)) {
+    return context.json({ message: "교차 출처 요청은 허용되지 않습니다." }, 403);
+  }
+  await next();
+};
+
 export const securityHeaders: MiddlewareHandler<{ Bindings: Bindings; Variables: Variables }> = async (context, next) => {
   await next();
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) context.header(name, value);
