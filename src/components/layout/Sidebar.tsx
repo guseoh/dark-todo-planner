@@ -157,17 +157,17 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
   return (
     <>
       <aside
-        className={`relative z-20 hidden shrink-0 transition-[width] duration-200 ease-out lg:block ${
-          collapsed ? "w-[4.25rem]" : "w-[16.25rem]"
-        }`}
+        className="relative z-20 hidden w-[16.25rem] shrink-0 lg:block"
         data-sidebar-mode={mode}
         data-sidebar-hover-expanded={hoverExpanded ? "true" : "false"}
       >
         <nav
-          className={`sticky top-[4.75rem] flex h-[calc(100vh-5.75rem)] min-h-[30rem] flex-col overflow-visible rounded-xl border border-ink-700/70 bg-ink-900 px-2 py-2.5 transition-[width,box-shadow] duration-150 ease-out ${
-            collapsed && hoverExpanded
-              ? "w-[16.25rem] shadow-[0_18px_48px_rgba(0,0,0,0.38)]"
-              : "w-full"
+          className={`sticky top-[4.75rem] flex h-[calc(100vh-5.75rem)] min-h-0 flex-col overflow-visible rounded-xl border border-ink-700/70 bg-ink-900 px-2 py-2.5 transition-[width,box-shadow] duration-150 ease-out ${
+            collapsed
+              ? hoverExpanded
+                ? "w-[16.25rem] shadow-[0_18px_48px_rgba(0,0,0,0.38)]"
+                : "w-[4.25rem]"
+              : "w-[16.25rem]"
           }`}
           onMouseEnter={openHoverPanel}
           onMouseLeave={closeHoverPanel}
@@ -181,7 +181,7 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
             onClick={onSearch}
             aria-label="빠른 검색 및 명령"
             title={collapsed && !hoverExpanded ? "빠른 검색 (Ctrl+K)" : undefined}
-            className={`group relative mb-4 flex min-h-10 w-full items-center rounded-xl border border-ink-700/80 bg-ink-950/75 text-sm text-ink-400 transition-colors hover:border-ink-600 hover:bg-ink-800/80 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${
+            className={`group relative mb-3 flex min-h-10 shrink-0 w-full items-center rounded-xl border border-ink-700/80 bg-ink-950/75 text-sm text-ink-400 transition-colors hover:border-ink-600 hover:bg-ink-800/80 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${
               showExpandedContent ? "gap-2.5 px-3 text-left" : "justify-center px-2"
             }`}
           >
@@ -201,8 +201,8 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
             ) : null}
           </button>
 
-          <div className="min-h-0 flex-1 overflow-visible">
-            <div className="space-y-4">
+          <div className={`min-h-0 flex-1 ${showExpandedContent ? "overflow-y-auto overflow-x-hidden pr-0.5" : "overflow-visible"}`}>
+            <div className="space-y-3">
               {navGroups.map((group, index) => (
                 <section key={group.label} className={!showExpandedContent && index > 0 ? "border-t border-ink-700/60 pt-3" : ""}>
                   {showExpandedContent ? (
@@ -214,7 +214,7 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
             </div>
           </div>
 
-          <div className="mt-3 border-t border-ink-700/70 pt-2.5">
+          <div className="mt-3 shrink-0 border-t border-ink-700/70 pt-2.5">
             <button
               type="button"
               onClick={() => {
