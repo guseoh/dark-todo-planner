@@ -13,6 +13,9 @@ type TodoRowProps = {
   onUnarchive?: (id: string) => void;
   showDate?: boolean;
   showCategoryBadge?: boolean;
+  showCategoryMeta?: boolean;
+  projectName?: string;
+  hideMediumPriority?: boolean;
   duplicateCandidate?: boolean;
   selectionMode?: boolean;
   selected?: boolean;
@@ -30,6 +33,9 @@ export function TodoRow({
   onUnarchive,
   showDate = true,
   showCategoryBadge = true,
+  showCategoryMeta = false,
+  projectName,
+  hideMediumPriority = false,
   duplicateCandidate = false,
   selectionMode = false,
   selected = false,
@@ -59,7 +65,7 @@ export function TodoRow({
         <button type="button" className="min-w-0 flex-1 rounded-md px-1 py-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/30" onClick={openOrSelect} aria-pressed={selectionMode ? selected : undefined}>
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
             <h4 className={`min-w-0 break-words text-sm font-semibold leading-5 text-ink-100 ${todo.completed ? "text-ink-500 line-through" : ""}`}>{todo.title}</h4>
-            <PriorityBadge priority={todo.priority} compact />
+            {!(hideMediumPriority && todo.priority === "MEDIUM") ? <PriorityBadge priority={todo.priority} compact /> : null}
             {showCategoryBadge ? <span className="rounded-full border border-ink-700/70 bg-ink-900 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-ink-400">{todo.category?.name || "미분류"}</span> : null}
             {todo.planningState !== "SCHEDULED" ? <span className="rounded-full border border-sky-400/25 bg-sky-400/10 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-sky-100">{planningLabel[todo.planningState]}</span> : null}
             {todo.repeat !== "NONE" ? <span className="rounded-full border border-accent-500/30 bg-accent-500/12 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-indigo-100">{repeatLabel[todo.repeat]}</span> : null}
@@ -68,6 +74,8 @@ export function TodoRow({
           </div>
           {todo.memo ? <p className="mt-0.5 line-clamp-1 whitespace-pre-wrap text-[11px] text-ink-500">{todo.memo}</p> : null}
           <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] text-ink-500">
+            {projectName ? <span className="font-semibold text-ink-400">{projectName}</span> : null}
+            {showCategoryMeta ? <span>{todo.category?.name || "미분류"}</span> : null}
             {showDate && todo.planningState === "SCHEDULED" ? <span className="inline-flex items-center gap-1"><CalendarDays size={12} />{formatKoreanDate(todo.date, "M월 d일 E")}</span> : null}
             {todo.estimateMinutes ? <span>예상 {todo.estimateMinutes}분</span> : null}
             {todo.dueDate ? <span className={`rounded-full border px-1.5 py-0.5 font-semibold ${overdue ? "border-danger/40 bg-danger/10 text-red-100" : dueSoon ? "border-warning/40 bg-warning/10 text-amber-100" : "border-ink-700/70 text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {getDdayLabel(todo.dueDate)}</span> : null}

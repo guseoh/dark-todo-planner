@@ -19,10 +19,11 @@ type TodoFormProps = {
   defaultCategoryId?: string;
   defaultProjectId?: string;
   defaultPlanningState?: TodoPlanningState;
+  showSyntaxHint?: boolean;
 };
 
 export function TodoForm({
-  onAdd, defaultDate, compact = false, submitLabel = "추가", categories = [], projects = [], defaultCategoryId = "", defaultProjectId = "", defaultPlanningState = "SCHEDULED",
+  onAdd, defaultDate, compact = false, submitLabel = "추가", categories = [], projects = [], defaultCategoryId = "", defaultProjectId = "", defaultPlanningState = "SCHEDULED", showSyntaxHint = true,
 }: TodoFormProps) {
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const [title, setTitle] = useState("");
@@ -87,7 +88,7 @@ export function TodoForm({
         </select>
         <div className="flex"><button type="submit" className="btn-primary"><Plus size={18} />{submitLabel}</button></div>
       </div>
-      <p className="mt-1.5 px-1 text-[11px] text-ink-500">빠른 문법: 내일 · !high · #태그 · 45m/1h · due:2026-08-20 · inbox/someday/waiting</p>
+      {showSyntaxHint ? <p className="mt-1.5 px-1 text-[11px] text-ink-500">빠른 문법: 내일 · !high · #태그 · 45m/1h · due:2026-08-20 · inbox/someday/waiting</p> : null}
       <button type="button" className="mt-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-ink-400 transition hover:bg-ink-900/70 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40" onClick={() => setShowDetails((value) => !value)} aria-expanded={showDetails}>
         <ChevronDown className={`transition ${showDetails ? "rotate-180" : ""}`} size={15} />상세 옵션
       </button>
