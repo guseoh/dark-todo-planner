@@ -62,9 +62,20 @@ export function usePlannerData() {
   }, [categoriesState.updateCategory, todosState.syncCategory]);
 
   const deleteCategory = useCallback(async (id: string, mode: "moveTodos" | "deleteTodos" = "moveTodos") => {
-    await categoriesState.deleteCategory(id, mode);
-    todosState.removeCategoryFromTodos(id, mode);
-  }, [categoriesState.deleteCategory, todosState.removeCategoryFromTodos]);
+    if (mode === "deleteTodos") {
+      const todoIds = todosState.allTodos.filter((todo) => todo.categoryId === id).map((todo) => todo.id);
+      if (todoIds.length) {
+        const movedToTrash = await todosState.deleteTodos(todoIds);
+        if (!movedToTrash) throw new Error("카테고리의 Todo를 휴지통으로 이동하지 못했습니다.");
+      }
+      await categoriesState.deleteCategory(id, "moveTodos");
+      todosState.removeCategoryFromTodos(id, "deleteTodos");
+      return;
+    }
+
+    await categoriesState.deleteCategory(id, "moveTodos");
+    todosState.removeCategoryFromTodos(id, "moveTodos");
+  }, [categoriesState.deleteCategory, todosState.allTodos, todosState.deleteTodos, todosState.removeCategoryFromTodos]);
 
   const reorderCategories = useCallback(async (ids: string[]) => { await categoriesState.reorderCategories(ids); }, [categoriesState.reorderCategories]);
 

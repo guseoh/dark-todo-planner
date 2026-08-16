@@ -29,6 +29,9 @@ export function TimePlanningPanel({
 }) {
   const today = todayKey();
   const activeTodos = useMemo(() => todos.filter((todo) => !todo.archived && !todo.completed), [todos]);
+  const todayFocusSessions = useMemo(() => focusSessions
+    .filter((session) => session.plannerDate === today && session.mode === "FOCUS" && session.completed)
+    .sort((a, b) => b.endedAt.localeCompare(a.endedAt)), [focusSessions, today]);
   const [message, setMessage] = useState("");
   const [selectedTodoId, setSelectedTodoId] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(timerSettings.focusMinutes || 25);
@@ -148,7 +151,7 @@ export function TimePlanningPanel({
   };
 
   const plannedToday = timeBlocks.filter((block) => block.date === today).reduce((sum, block) => sum + block.plannedMinutes, 0);
-  const actualToday = focusSessions.filter((session) => session.plannerDate === today && session.mode === "FOCUS" && session.completed).reduce((sum, session) => sum + session.durationMinutes, 0);
+  const actualToday = todayFocusSessions.reduce((sum, session) => sum + session.durationMinutes, 0);
   const todayBlocks = timeBlocks.filter((block) => block.date === today).sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   return (
@@ -191,10 +194,10 @@ export function TimePlanningPanel({
             <div className="rounded-lg bg-ink-950/45 p-3"><p className="text-xs text-ink-500">차이</p><p className="mt-1 text-xl font-bold text-ink-100">{actualToday - plannedToday > 0 ? "+" : ""}{actualToday - plannedToday}분</p></div>
           </div>
           <div className="mt-4">
-            <p className="text-sm font-semibold text-ink-200">최근 집중 기록</p>
+            <p className="text-sm font-semibold text-ink-200">오늘 집중 기록</p>
             <div className="mt-2 space-y-2">
-              {focusSessions.slice(0, 8).map((session) => <div key={session.id} className="flex items-center justify-between rounded-lg bg-ink-950/35 px-3 py-2"><div className="min-w-0"><p className="truncate text-sm font-semibold text-ink-200">{session.todoTitle || "자유 집중"}</p><p className="mt-0.5 text-xs text-ink-500">{new Date(session.endedAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</p></div><span className="text-sm font-bold text-accent-200">{session.durationMinutes}분</span></div>)}
-              {!focusSessions.length ? <p className="py-4 text-center text-sm text-ink-500">오늘 집중 기록이 없습니다.</p> : null}
+              {todayFocusSessions.slice(0, 8).map((session) => <div key={session.id} className="flex items-center justify-between rounded-lg bg-ink-950/35 px-3 py-2"><div className="min-w-0"><p className="truncate text-sm font-semibold text-ink-200">{session.todoTitle || "자유 집중"}</p><p className="mt-0.5 text-xs text-ink-500">{new Date(session.endedAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</p></div><span className="text-sm font-bold text-accent-200">{session.durationMinutes}분</span></div>)}
+              {!todayFocusSessions.length ? <p className="py-4 text-center text-sm text-ink-500">오늘 집중 기록이 없습니다.</p> : null}
             </div>
           </div>
         </section>
