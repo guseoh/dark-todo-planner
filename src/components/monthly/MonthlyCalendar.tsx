@@ -25,6 +25,12 @@ type MonthlyCalendarProps = {
   onCycleDayStatus: (date: string) => void;
 };
 
+const getBaseCellTone = (isHolidayLike: boolean, isSaturday: boolean) => {
+  if (isHolidayLike) return "border-red-400/18 bg-rose-500/[0.025]";
+  if (isSaturday) return "border-sky-400/18 bg-sky-500/[0.025]";
+  return "border-ink-700/65 bg-ink-950/35";
+};
+
 export function MonthlyCalendar({
   currentMonth,
   monthDays,
@@ -36,45 +42,48 @@ export function MonthlyCalendar({
   onCycleDayStatus,
 }: MonthlyCalendarProps) {
   return (
-    <section className="app-card p-4 sm:p-5">
-      <div className="mb-4 grid grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] items-center gap-3">
+    <section className="app-card p-3 sm:p-4">
+      <div className="mb-3 grid grid-cols-[2.25rem_minmax(0,1fr)_2.25rem] items-center gap-2">
         <button
           type="button"
-          className="icon-btn"
+          className="icon-btn h-9 w-9"
           onClick={() => onMonthChange(getPrevMonth(currentMonth))}
           aria-label="이전 달"
         >
-          <ChevronLeft size={18} />
+          <ChevronLeft size={17} />
         </button>
-        <h2 className="truncate text-center text-lg font-bold text-ink-100 sm:text-xl">
+        <h2 className="truncate text-center text-lg font-bold text-ink-100">
           {formatKoreanDate(currentMonth, "yyyy년 M월")}
         </h2>
         <button
           type="button"
-          className="icon-btn"
+          className="icon-btn h-9 w-9"
           onClick={() => onMonthChange(getNextMonth(currentMonth))}
           aria-label="다음 달"
         >
-          <ChevronRight size={18} />
+          <ChevronRight size={17} />
         </button>
       </div>
 
-      <p className="mb-3 text-right text-[11px] font-medium text-ink-400" aria-label="일일 수행 상태 범례">
-        O 수행 완료 · X 미수행 · - 미설정
-      </p>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[10px] text-ink-500">
+        <p>날짜를 선택하면 오른쪽에서 Todo를 자세히 관리합니다.</p>
+        <p className="font-medium" aria-label="일일 수행 상태 범례">O 완료 · X 미수행 · - 미설정</p>
+      </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-ink-500 sm:gap-2">
-        {weekdayLabels.map((label) => (
-          <div key={label} className="py-1.5">
+      <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-ink-500 sm:gap-1.5">
+        {weekdayLabels.map((label, index) => (
+          <div key={label} className={`py-1 ${index === 5 ? "text-sky-300/80" : index === 6 ? "text-red-300/80" : ""}`}>
             {label}
           </div>
         ))}
       </div>
 
-      <div className="mt-1 grid grid-cols-7 gap-1 sm:gap-2">
+      <div className="mt-1 grid grid-cols-7 gap-1 sm:gap-1.5">
         {monthDays.map((day) => {
           const dateKey = toDateKey(day);
           const dayTodos = getTodosByDate(dateKey);
+          const activeCount = dayTodos.filter((todo) => !todo.completed).length;
+          const completedCount = dayTodos.length - activeCount;
           const dayGoals = goals.filter((goal) => goal.type === "DAILY" && !isDayStatusGoal(goal) && (goal.targetDate === dateKey || goal.dueDate === dateKey));
           const categoryColors = Array.from(new Set(dayTodos.map((todo) => todo.category?.color).filter(Boolean)));
           const selected = dateKey === selectedDate;
@@ -86,19 +95,7 @@ export function MonthlyCalendar({
           const isSaturday = dayIndex === 6;
           const isHolidayLike = dayIndex === 0 || !!holidayName;
           const dateTone = isHolidayLike ? "text-red-200" : isSaturday ? "text-sky-200" : "text-ink-100";
-          const borderTone = isHolidayLike ? "border-red-400/25" : isSaturday ? "border-sky-400/25" : "border-ink-700";
-          const statusTone =
-            dayStatus === "O"
-              ? "border-emerald-400/45 bg-emerald-500/10"
-              : dayStatus === "X"
-                ? "border-rose-400/45 bg-rose-500/10"
-                : `${borderTone} bg-ink-950/40`;
-          const selectedTone =
-            dayStatus === "O"
-              ? "border-accent-500 bg-emerald-500/15"
-              : dayStatus === "X"
-                ? "border-accent-500 bg-rose-500/15"
-                : "border-accent-500 bg-accent-500/10";
+          const baseTone = getBaseCellTone(isHolidayLike, isSaturday);
           const formattedDate = formatKoreanDate(day, "M월 d일");
           const statusActionLabel =
             dayStatus === "O"
@@ -110,69 +107,69 @@ export function MonthlyCalendar({
           return (
             <article
               key={dateKey}
-              className={`group relative min-h-[5.8rem] cursor-pointer rounded-lg border p-1.5 text-left transition hover:border-accent-500/60 sm:min-h-[6.8rem] sm:p-2 lg:min-h-[7.2rem] ${
-                selected ? selectedTone : statusTone
-              } ${inMonth ? "text-ink-100" : "text-ink-600"} ${today ? "ring-2 ring-accent-400/30" : ""}`}
+              className={`group relative h-[6.25rem] overflow-hidden rounded-md border text-left transition sm:h-[7rem] ${
+                selected ? "border-accent-500/80 bg-accent-500/[0.08] ring-1 ring-accent-500/20" : `${baseTone} hover:border-ink-500/80 hover:bg-ink-900/60`
+              } ${inMonth ? "" : "opacity-40"} ${today ? "ring-2 ring-accent-400/30" : ""}`}
             >
               <button
                 type="button"
-                className="absolute inset-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950"
+                className="absolute inset-0 z-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500/45"
                 onClick={() => onSelectDate(dateKey)}
                 aria-label={`${formattedDate} Todo 보기`}
               />
 
-              <div className="pointer-events-none relative z-[1]">
-                <div className="flex min-w-0 flex-wrap items-start justify-between gap-1">
-                  <span className={`text-sm font-semibold leading-5 ${dateTone}`}>{formatKoreanDate(day, "d")}</span>
-                  <div className="flex min-w-0 flex-wrap justify-end gap-1 text-right">
-                    {today ? (
-                      <span className="rounded-full bg-accent-500 px-1.5 py-0.5 text-[10px] font-bold leading-4 text-white">
-                        오늘
-                      </span>
-                    ) : null}
-                    <button
-                      type="button"
-                      className={`pointer-events-auto relative z-10 inline-flex h-8 min-w-8 items-center justify-center rounded-full border px-1 text-[10px] font-bold leading-4 transition hover:border-accent-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 ${
-                        dayStatus === "O"
-                          ? "border-success/45 bg-success/10 text-emerald-100"
-                          : dayStatus === "X"
-                            ? "border-danger/45 bg-danger/10 text-red-100"
-                            : "border-ink-700 bg-transparent text-ink-500"
-                      }`}
-                      onClick={() => onCycleDayStatus(dateKey)}
-                      aria-label={statusActionLabel}
-                      title="O → X → 미설정"
-                    >
-                      {dayStatus || "-"}
-                    </button>
-                    {dayTodos.length ? (
-                      <span className="rounded-full bg-accent-500/20 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-accent-400">
-                        Todo {dayTodos.length}
-                      </span>
-                    ) : null}
-                    {dayGoals.length ? (
-                      <span className="rounded-full bg-warning/20 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-amber-100">
-                        목표 {dayGoals.length}
-                      </span>
-                    ) : null}
+              <div className="pointer-events-none relative z-10 flex h-full min-w-0 flex-col px-1.5 py-1.5 sm:px-2 sm:py-2">
+                <div className="min-w-0 pr-7">
+                  <div className="flex min-w-0 items-center gap-1">
+                    <span className={`shrink-0 text-xs font-bold sm:text-sm ${dateTone}`}>{formatKoreanDate(day, "d")}</span>
+                    {today ? <span className="hidden rounded-full bg-accent-500 px-1.5 py-0.5 text-[9px] font-bold text-white sm:inline-flex">오늘</span> : null}
+                  </div>
+                  <div className="mt-0.5 min-h-3 truncate text-[9px] font-semibold sm:text-[10px]">
+                    {holidayName ? <span className="text-red-200/75">{holidayName}</span> : null}
                   </div>
                 </div>
 
-                <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1">
-                  {holidayName ? <span className="truncate text-[10px] font-semibold text-red-200/80">{holidayName}</span> : null}
-                  {isSaturday && !holidayName ? <span className="text-[10px] font-semibold text-sky-200/75">토요일</span> : null}
-                  {isHolidayLike && !holidayName ? <span className="text-[10px] font-semibold text-red-200/75">일요일</span> : null}
-                </div>
+                <div className="mt-auto min-w-0 space-y-0.5">
+                  {dayTodos.length ? (
+                    <>
+                      <div className="flex min-w-0 items-baseline justify-between gap-1">
+                        <span className="truncate text-[10px] font-bold text-ink-200 sm:text-[11px]">Todo {dayTodos.length}</span>
+                        <span className="hidden shrink-0 text-[9px] text-ink-500 sm:inline">미완료 {activeCount}</span>
+                      </div>
+                      <p className="hidden truncate text-[9px] text-ink-600 sm:block">완료 {completedCount}{dayGoals.length ? ` · 목표 ${dayGoals.length}` : ""}</p>
+                    </>
+                  ) : dayGoals.length ? (
+                    <p className="truncate text-[9px] font-semibold text-amber-200/80 sm:text-[10px]">목표 {dayGoals.length}</p>
+                  ) : (
+                    <p className="text-[9px] text-ink-700 sm:text-[10px]">Todo 없음</p>
+                  )}
 
-                {categoryColors.length ? (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {categoryColors.slice(0, 3).map((color) => (
-                      <span key={color} className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
-                    ))}
-                    {categoryColors.length > 3 ? <span className="text-[10px] leading-4 text-ink-500">+{categoryColors.length - 3}</span> : null}
-                  </div>
-                ) : null}
+                  {categoryColors.length ? (
+                    <div className="flex items-center gap-1 pt-0.5">
+                      {categoryColors.slice(0, 3).map((color) => (
+                        <span key={color} className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
+                      ))}
+                      {categoryColors.length > 3 ? <span className="text-[9px] text-ink-600">+{categoryColors.length - 3}</span> : null}
+                    </div>
+                  ) : null}
+                </div>
               </div>
+
+              <button
+                type="button"
+                className={`absolute right-1 top-1 z-20 inline-flex h-7 w-7 items-center justify-center rounded-md border text-[10px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 sm:right-1.5 sm:top-1.5 ${
+                  dayStatus === "O"
+                    ? "border-success/45 bg-success/10 text-emerald-100 hover:border-success/75"
+                    : dayStatus === "X"
+                      ? "border-danger/45 bg-danger/10 text-red-100 hover:border-danger/75"
+                      : "border-ink-700 bg-ink-950/75 text-ink-500 hover:border-ink-500 hover:text-ink-200"
+                }`}
+                onClick={() => onCycleDayStatus(dateKey)}
+                aria-label={statusActionLabel}
+                title="O → X → 미설정"
+              >
+                {dayStatus || "-"}
+              </button>
             </article>
           );
         })}

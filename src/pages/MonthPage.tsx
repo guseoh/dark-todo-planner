@@ -37,10 +37,10 @@ export function MonthPage({
   onDeleteCategory,
 }: MonthPageProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <section>
-        <h2 className="text-2xl font-bold text-ink-100 sm:text-3xl">월간 보기</h2>
-        <p className="mt-2 text-sm text-ink-400">달력에서 날짜를 선택하고 해당 날짜의 Todo를 관리합니다.</p>
+        <h2 className="text-2xl font-bold text-ink-100">월간 보기</h2>
+        <p className="mt-1 text-sm text-ink-500">한 달의 Todo 분포와 수행 상태를 보고, 선택한 날짜의 상세 Todo는 옆 패널에서 관리합니다.</p>
       </section>
       <MonthlyView
         todos={todos}
