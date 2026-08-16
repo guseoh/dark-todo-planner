@@ -5,8 +5,9 @@ import { parseJsonArray } from "./utils";
 
 export type Db = DrizzleD1Database;
 export const serializeCategory = (row: typeof categories.$inferSelect) => row;
+type TodoRow = Omit<typeof todos.$inferSelect, "referenceUrl" | "referenceLabel"> & { referenceUrl?: string | null; referenceLabel?: string | null };
 
-export async function serializeTodos(db: Db, rows: Array<typeof todos.$inferSelect>) {
+export async function serializeTodos(db: Db, rows: TodoRow[]) {
   if (!rows.length) return [];
   const ids = rows.map((row) => row.id);
   const categoryIds = Array.from(new Set(rows.map((row) => row.categoryId).filter((id): id is string => !!id)));
