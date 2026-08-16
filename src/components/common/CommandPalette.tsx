@@ -27,6 +27,7 @@ type Result = {
 const navigation: Result[] = [
   { id: "nav-today", label: "오늘", detail: "오늘 실행할 Todo", view: "today", kind: "이동" },
   { id: "nav-inbox", label: "Inbox", detail: "아직 분류하지 않은 Todo", view: "inbox", kind: "이동" },
+  { id: "nav-planning", label: "계획", detail: "오늘 계획, 주간 리뷰, Smart List와 템플릿", view: "planning", kind: "이동" },
   { id: "nav-projects", label: "프로젝트", detail: "프로젝트와 Kanban", view: "projects", kind: "이동" },
   { id: "nav-all", label: "전체 Todo", detail: "모든 Todo 검색과 관리", view: "all", kind: "이동" },
   { id: "nav-memo", label: "메모", detail: "메모 검색과 작성", view: "memo", kind: "이동" },

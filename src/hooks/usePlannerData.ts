@@ -3,6 +3,7 @@ import type { Category } from "../types/category";
 import { useCategories } from "./useCategories";
 import { useGoals } from "./useGoals";
 import { useMemos } from "./useMemos";
+import { usePlanning } from "./usePlanning";
 import { useProjects } from "./useProjects";
 import { useTodos } from "./useTodos";
 import { classifyPlannerErrors } from "../lib/plannerLoadState";
@@ -15,6 +16,7 @@ export function usePlannerData() {
   const goalsState = useGoals();
   const memosState = useMemos();
   const projectsState = useProjects();
+  const planningState = usePlanning();
   const [loading, setLoading] = useState(true);
   const [loadedOnce, setLoadedOnce] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -29,6 +31,7 @@ export function usePlannerData() {
         goalsState.loadGoals(),
         memosState.loadMemos(),
         projectsState.loadProjects(),
+        planningState.loadPlanning(),
       ]);
       setLoadedOnce(true);
       setLoadError("");
@@ -37,7 +40,7 @@ export function usePlannerData() {
     } finally {
       setLoading(false);
     }
-  }, [categoriesState.loadCategories, goalsState.loadGoals, memosState.loadMemos, projectsState.loadProjects, todosState.loadTodos]);
+  }, [categoriesState.loadCategories, goalsState.loadGoals, memosState.loadMemos, planningState.loadPlanning, projectsState.loadProjects, todosState.loadTodos]);
 
   useEffect(() => { void loadAll(); }, [loadAll]);
 
@@ -58,10 +61,10 @@ export function usePlannerData() {
   const reorderCategories = useCallback(async (ids: string[]) => { await categoriesState.reorderCategories(ids); }, [categoriesState.reorderCategories]);
 
   const saving = useMemo(() =>
-    todosState.saving || categoriesState.saving || goalsState.saving || memosState.saving || projectsState.saving,
-  [categoriesState.saving, goalsState.saving, memosState.saving, projectsState.saving, todosState.saving]);
+    todosState.saving || categoriesState.saving || goalsState.saving || memosState.saving || projectsState.saving || planningState.saving,
+  [categoriesState.saving, goalsState.saving, memosState.saving, planningState.saving, projectsState.saving, todosState.saving]);
 
-  const operationError = todosState.error || categoriesState.error || goalsState.error || memosState.error || projectsState.error;
+  const operationError = todosState.error || categoriesState.error || goalsState.error || memosState.error || projectsState.error || planningState.error;
   const { initialLoadError, backgroundOrOperationError } = classifyPlannerErrors({ loadedOnce, loadError, operationError });
 
   return {
@@ -79,6 +82,10 @@ export function usePlannerData() {
     archivedProjects: projectsState.archivedProjects,
     milestones: projectsState.milestones,
     projectDecisions: projectsState.decisions,
+    dailyPlan: planningState.dailyPlan,
+    weeklyReview: planningState.weeklyReview,
+    savedViews: planningState.savedViews,
+    taskTemplates: planningState.taskTemplates,
     loading, loadedOnce, saving, initialLoadError, backgroundOrOperationError, connectionError: loadError,
     stats: todosState.stats, nearestGoal: goalsState.nearestGoal,
     pendingTodoDelete: todosState.pendingDelete, pendingMemoDelete: memosState.pendingDelete,
@@ -93,5 +100,8 @@ export function usePlannerData() {
     addProject: projectsState.addProject, updateProject: projectsState.updateProject, archiveProject: projectsState.archiveProject, unarchiveProject: projectsState.unarchiveProject,
     addMilestone: projectsState.addMilestone, updateMilestone: projectsState.updateMilestone, deleteMilestone: projectsState.deleteMilestone,
     addProjectDecision: projectsState.addDecision, updateProjectDecision: projectsState.updateDecision, deleteProjectDecision: projectsState.deleteDecision,
+    saveDailyPlan: planningState.saveDailyPlan, saveWeeklyReview: planningState.saveWeeklyReview,
+    addSavedView: planningState.addSavedView, deleteSavedView: planningState.deleteSavedView,
+    addTaskTemplate: planningState.addTaskTemplate, deleteTaskTemplate: planningState.deleteTaskTemplate,
   };
 }

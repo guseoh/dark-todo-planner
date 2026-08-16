@@ -6,6 +6,7 @@ import type { Bindings, Variables } from "./types";
 import { backupRoutes } from "./routes/backup";
 import { contentRoutes } from "./routes/content";
 import { libraryRoutes } from "./routes/library";
+import { planningRoutes } from "./routes/planning";
 import { projectRoutes } from "./routes/projects";
 import { todoRoutes } from "./routes/todos";
 import { clientIdentifier, preventApiCaching, SAFE_METHODS, securityHeaders, tooManyRequests } from "./security";
@@ -53,6 +54,7 @@ app.get("/api/auth/session", async (c) => {
 app.route("/api", todoRoutes);
 app.route("/api", projectRoutes);
 app.route("/api", contentRoutes);
+app.route("/api", planningRoutes);
 app.route("/api", libraryRoutes);
 app.route("/api", backupRoutes);
 

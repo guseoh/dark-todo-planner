@@ -5,6 +5,7 @@ import {
   ClipboardList,
   FolderKanban,
   Inbox,
+  ListTodo,
   StickyNote,
   Settings,
   PanelLeftClose,
@@ -12,13 +13,14 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-export type AppView = "today" | "inbox" | "week" | "month" | "projects" | "all" | "memo" | "settings";
+export type AppView = "today" | "inbox" | "planning" | "week" | "month" | "projects" | "all" | "memo" | "settings";
 
 type SidebarProps = { activeView: AppView; onChangeView: (view: AppView) => void; };
 
 const navItems = [
   { id: "today", label: "오늘", icon: CalendarCheck },
   { id: "inbox", label: "Inbox", icon: Inbox },
+  { id: "planning", label: "계획", icon: ListTodo },
   { id: "week", label: "주간", icon: CalendarRange },
   { id: "month", label: "월간", icon: Calendar },
   { id: "projects", label: "프로젝트", icon: FolderKanban },
