@@ -10,6 +10,7 @@ import { planningRoutes } from "./routes/planning";
 import { projectRoutes } from "./routes/projects";
 import { timeRoutes } from "./routes/time";
 import { todoRoutes } from "./routes/todos";
+import { trashRoutes } from "./routes/trash";
 import { clientIdentifier, preventApiCaching, SAFE_METHODS, securityHeaders, tooManyRequests } from "./security";
 import { runDiscordIncompleteTodoReminder } from "./reminders/incompleteTodoReminder";
 
@@ -57,6 +58,7 @@ app.route("/api", projectRoutes);
 app.route("/api", contentRoutes);
 app.route("/api", planningRoutes);
 app.route("/api", timeRoutes);
+app.route("/api", trashRoutes);
 app.route("/api", libraryRoutes);
 app.route("/api", backupRoutes);
 

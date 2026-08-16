@@ -15,6 +15,7 @@ import { PlanningHubPage } from "./pages/PlanningHubPage";
 import { ProjectPage } from "./pages/ProjectPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { TodayPage } from "./pages/TodayPage";
+import { TrashPage } from "./pages/TrashPage";
 import { WeekPage } from "./pages/WeekPage";
 
 function App({ onLogout }: { onLogout: () => Promise<void> }) {
@@ -52,6 +53,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     projects: <ProjectPage projects={planner.projects} milestones={planner.milestones} decisions={planner.projectDecisions} memos={planner.memos} todos={planner.todos} categories={planner.categories} onAddProject={planner.addProject} onUpdateProject={planner.updateProject} onArchiveProject={planner.archiveProject} onUnarchiveProject={planner.unarchiveProject} onAddMilestone={planner.addMilestone} onUpdateMilestone={planner.updateMilestone} onDeleteMilestone={planner.deleteMilestone} onAddDecision={planner.addProjectDecision} onDeleteDecision={planner.deleteProjectDecision} onAddTodo={planner.addTodo} onUpdateTodo={planner.updateTodo} onToggleTodo={planner.toggleTodo} />,
     all: <AllTodosPage allTodos={planner.allTodos} filterTodos={planner.filterTodos} tagOptions={planner.tagOptions} categories={planner.categories} projects={planner.projects} duplicateTodoIds={planner.duplicateTodoIds} onToggle={planner.toggleTodo} onDelete={planner.deleteTodo} onDeleteMany={planner.deleteTodos} onBulkUpdate={planner.bulkUpdateTodos} onUpdate={planner.updateTodo} onUnarchive={planner.unarchiveTodo} onAddTodo={planner.addTodo} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} />,
     memo: <MemoPage memos={planner.memos} todos={planner.allTodos} projects={planner.projects} onAdd={planner.addMemo} onUpdate={planner.updateMemo} onUpdateLinks={planner.updateMemoLinks} onDelete={planner.deleteMemo} onTogglePin={planner.toggleMemoPin} onAddTodo={planner.addTodo} />,
+    trash: <TrashPage onRestored={planner.loadAll} />,
     settings: <SettingsPage stats={planner.stats} categories={planner.categories} goals={planner.goals} memos={planner.memos} apiStatus={planner.connectionError ? "offline" : "online"} />,
   } satisfies Record<AppView, JSX.Element>;
 

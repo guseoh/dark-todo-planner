@@ -14,6 +14,7 @@ import {
 } from "../lib/todoRecovery";
 
 const DELETE_UNDO_MS = 6000;
+const BULK_TRASH_CHUNK_SIZE = 3;
 
 export const defaultFilters: TodoFilters = {
   query: "",
@@ -121,7 +122,7 @@ export function useTodos() {
   const finalizeDelete = useCallback(async (id: string) => {
     const snapshot = deletedSnapshotsRef.current.get(id);
     try {
-      await api(`/api/todos/${id}`, { method: "DELETE" });
+      await api(`/api/todos/${id}/trash`, { method: "POST" });
       deletedSnapshotsRef.current.delete(id);
       setError("");
     } catch (err) {
@@ -172,17 +173,24 @@ export function useTodos() {
     setAllTodos((current) => current.filter((todo) => !targetIds.has(todo.id)));
     setSaving(true);
     try {
-      await api("/api/todos/bulk-delete", { method: "POST", ...jsonBody({ ids: uniqueIds }) });
+      for (let index = 0; index < uniqueIds.length; index += BULK_TRASH_CHUNK_SIZE) {
+        const chunk = uniqueIds.slice(index, index + BULK_TRASH_CHUNK_SIZE);
+        await api("/api/todos/bulk-trash", { method: "POST", ...jsonBody({ ids: chunk }) });
+      }
       setError("");
       return true;
     } catch (err) {
-      setAllTodos(previous);
+      try {
+        await loadTodos();
+      } catch {
+        setAllTodos(previous);
+      }
       setError(getMessage(err));
       return false;
     } finally {
       setSaving(false);
     }
-  }, [allTodos]);
+  }, [allTodos, loadTodos]);
 
   const bulkUpdateTodos = useCallback(async (ids: string[], action: TodoBulkAction) => {
     const uniqueIds = Array.from(new Set(ids.map((id) => id.trim()).filter(Boolean)));

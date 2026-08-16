@@ -74,12 +74,12 @@ export function AllTodosPage({
     const ids = [...selectedIds];
     if (!ids.length) return;
     const deletingAll = ids.length === allTodos.length && allTodos.length > 0;
-    const message = deletingAll ? `저장된 모든 Todo ${ids.length}개를 영구 삭제할까요? 이 작업은 되돌릴 수 없습니다.` : `선택한 Todo ${ids.length}개를 영구 삭제할까요? 이 작업은 되돌릴 수 없습니다.`;
+    const message = deletingAll ? `저장된 모든 Todo ${ids.length}개를 휴지통으로 이동할까요? 휴지통에서 복원할 수 있습니다.` : `선택한 Todo ${ids.length}개를 휴지통으로 이동할까요? 휴지통에서 복원할 수 있습니다.`;
     if (!window.confirm(message)) return;
     setDeleting(true); setActionError(""); setActionMessage("");
     const deleted = await onDeleteMany(ids);
     setDeleting(false);
-    if (!deleted) { setActionError("선택한 Todo를 삭제하지 못했습니다. 잠시 후 다시 시도해주세요."); return; }
+    if (!deleted) { setActionError("선택한 Todo를 휴지통으로 이동하지 못했습니다. 잠시 후 다시 시도해주세요."); return; }
     setShowSelectionManager(false); setSelectedIds(new Set());
   };
 
@@ -104,7 +104,7 @@ export function AllTodosPage({
       />
 
       {showSelectionManager ? (
-        <Modal title="Todo 선택 작업" description="여러 Todo를 선택한 뒤 프로젝트·실행일·작업 상태·우선순위를 일괄 변경하거나 삭제합니다." onClose={closeSelectionManager} size="lg">
+        <Modal title="Todo 선택 작업" description="여러 Todo를 선택한 뒤 프로젝트·실행일·작업 상태·우선순위를 일괄 변경하거나 휴지통으로 이동합니다." onClose={closeSelectionManager} size="lg">
           <div className="space-y-4">
             <div className="flex flex-col gap-3 rounded-lg bg-ink-950/45 p-3 sm:flex-row sm:items-center sm:justify-between">
               <div><p className="text-sm font-bold text-ink-100">{selectedIds.size}개 선택됨</p><p className="mt-1 text-xs text-ink-400">보관된 Todo도 ‘모든 Todo 선택’에 포함됩니다.</p></div>
@@ -155,7 +155,7 @@ export function AllTodosPage({
             </div>
 
             <div className="flex flex-col-reverse gap-2 border-t border-ink-700/60 pt-4 sm:flex-row sm:justify-between">
-              <button type="button" className="btn-danger" onClick={deleteSelected} disabled={!selectedIds.size || deleting || updating}><Trash2 size={16} />{deleting ? "삭제 중..." : `선택 ${selectedIds.size}개 삭제`}</button>
+              <button type="button" className="btn-danger" onClick={deleteSelected} disabled={!selectedIds.size || deleting || updating}><Trash2 size={16} />{deleting ? "이동 중..." : `선택 ${selectedIds.size}개 휴지통 이동`}</button>
               <button type="button" className="btn-secondary" onClick={closeSelectionManager} disabled={deleting || updating}>닫기</button>
             </div>
           </div>

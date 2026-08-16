@@ -7,13 +7,14 @@ import {
   Inbox,
   ListTodo,
   StickyNote,
+  Trash2,
   Settings,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-export type AppView = "today" | "inbox" | "planning" | "week" | "month" | "projects" | "all" | "memo" | "settings";
+export type AppView = "today" | "inbox" | "planning" | "week" | "month" | "projects" | "all" | "memo" | "trash" | "settings";
 
 type SidebarProps = { activeView: AppView; onChangeView: (view: AppView) => void; };
 
@@ -26,6 +27,7 @@ const navItems = [
   { id: "projects", label: "프로젝트", icon: FolderKanban },
   { id: "all", label: "전체 Todo", icon: ClipboardList },
   { id: "memo", label: "메모", icon: StickyNote },
+  { id: "trash", label: "휴지통", icon: Trash2 },
   { id: "settings", label: "앱 정보", icon: Settings },
 ] satisfies Array<{ id: AppView; label: string; icon: typeof CalendarCheck }>;
 
