@@ -5,7 +5,7 @@ import type { Todo } from "../types/todo";
 
 const csvCell = (value: unknown) => {
   const text = value == null ? "" : String(value);
-  return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 };
 
 export const buildTodoCsv = (todos: Todo[], projects: Project[]) => {
