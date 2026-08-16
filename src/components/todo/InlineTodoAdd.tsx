@@ -7,11 +7,12 @@ type InlineTodoAddProps = {
   categoryId?: string;
   defaultDate?: string;
   layout?: "inline" | "stacked";
+  placeholder?: string;
   onAdd: (todo: TodoInput) => void;
   onCancel: () => void;
 };
 
-export function InlineTodoAdd({ categoryId, defaultDate, layout = "inline", onAdd, onCancel }: InlineTodoAddProps) {
+export function InlineTodoAdd({ categoryId, defaultDate, layout = "inline", placeholder = "하위 Todo 입력 후 Enter", onAdd, onCancel }: InlineTodoAddProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [title, setTitle] = useState("");
 
@@ -34,8 +35,10 @@ export function InlineTodoAdd({ categoryId, defaultDate, layout = "inline", onAd
       tags: [],
     });
     setTitle("");
-    window.requestAnimationFrame(() => inputRef.current?.focus());
+    window.requestAnimationFrame(() => titleInputRefFocus());
   };
+
+  const titleInputRefFocus = () => inputRef.current?.focus();
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Escape") {
@@ -55,8 +58,8 @@ export function InlineTodoAdd({ categoryId, defaultDate, layout = "inline", onAd
         value={title}
         onChange={(event) => setTitle(event.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="하위 Todo 입력 후 Enter"
-        aria-label="하위 Todo 제목"
+        placeholder={placeholder}
+        aria-label="Todo 제목"
       />
       <button
         type="submit"

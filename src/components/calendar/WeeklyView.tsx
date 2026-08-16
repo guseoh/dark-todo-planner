@@ -1,15 +1,14 @@
-import { useMemo, useState } from "react";
-import { CalendarCheck2, Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CalendarCheck2, ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { calculateRate, formatCompletionRate } from "../../lib/todo";
 import { formatKoreanDate, getWeekDays, toDateKey, todayKey } from "../../lib/date";
 import type { Todo, TodoInput } from "../../types/todo";
 import type { Category } from "../../types/category";
 import type { Goal } from "../../types/goal";
-import { isDayStatusGoal } from "../../lib/goals";
 import { GoalChecklist } from "../goal/GoalChecklist";
-import { IconRenderer } from "../common/IconRenderer";
 import { InlineTodoAdd } from "../todo/InlineTodoAdd";
 import { TodoEditModal } from "../todo/TodoEditModal";
+import { TodoRow } from "../todo/TodoRow";
 
 type WeeklyViewProps = {
   todos: Todo[];
@@ -26,10 +25,10 @@ type WeeklyViewProps = {
   goals?: Goal[];
 };
 
-const weekendClass = (dayIndex: number) => {
-  if (dayIndex === 5) return "border-sky-500/25 bg-sky-500/5";
-  if (dayIndex === 6) return "border-rose-500/25 bg-rose-500/5";
-  return "border-ink-700 bg-ink-800/85";
+const dayButtonClass = (index: number) => {
+  if (index === 5) return "border-sky-500/20 bg-sky-500/[0.035]";
+  if (index === 6) return "border-rose-500/20 bg-rose-500/[0.035]";
+  return "border-ink-700/65 bg-ink-900/55";
 };
 
 export function WeeklyView({
@@ -46,13 +45,21 @@ export function WeeklyView({
   categories = [],
   goals = [],
 }: WeeklyViewProps) {
-  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  const weekDays = useMemo(() => getWeekDays(), []);
+  const weekDateKeys = useMemo(() => weekDays.map(toDateKey), [weekDays]);
+  const today = todayKey();
+  const weekStart = weekDateKeys[0];
+  const weekEnd = weekDateKeys[6];
+  const [selectedDate, setSelectedDate] = useState(() => {
+    if (weekDateKeys.includes(today)) return today;
+    return weekDateKeys.find((date) => getTodosByDate(date).length > 0) || weekStart;
+  });
   const [addingDate, setAddingDate] = useState<string | null>(null);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
-  const weekDays = useMemo(() => getWeekDays(), []);
-  const weekStart = toDateKey(weekDays[0]);
-  const weekEnd = toDateKey(weekDays[6]);
+  const [showCompleted, setShowCompleted] = useState(false);
+
   const weekRate = calculateRate(todos);
+  const weekActiveCount = todos.filter((todo) => !todo.completed).length;
   const weeklyGoals = goals.filter(
     (goal) =>
       goal.type === "WEEKLY" &&
@@ -60,56 +67,56 @@ export function WeeklyView({
       (!goal.weekEndDate || goal.weekEndDate >= weekStart),
   );
   const completedWeeklyGoals = weeklyGoals.filter((goal) => goal.completed).length;
-  const activeWeeklyGoals = weeklyGoals.length - completedWeeklyGoals;
+  const selectedTodos = getTodosByDate(selectedDate);
+  const selectedActiveTodos = selectedTodos.filter((todo) => !todo.completed);
+  const selectedCompletedTodos = selectedTodos.filter((todo) => todo.completed);
 
-  const toggleExpanded = (date: string) => {
-    setExpandedDates((current) => {
-      const next = new Set(current);
-      if (next.has(date)) next.delete(date);
-      else next.add(date);
-      return next;
-    });
-  };
+  const daySummaries = weekDays.map((day, index) => {
+    const date = toDateKey(day);
+    const dayTodos = getTodosByDate(date);
+    const active = dayTodos.filter((todo) => !todo.completed).length;
+    return {
+      date,
+      day,
+      index,
+      total: dayTodos.length,
+      active,
+      completed: dayTodos.length - active,
+      high: dayTodos.filter((todo) => !todo.completed && todo.priority === "HIGH").length,
+    };
+  });
+
+  useEffect(() => {
+    setAddingDate(null);
+    setShowCompleted(false);
+  }, [selectedDate]);
 
   return (
     <div className="space-y-4">
-      <section className="app-card p-4" aria-labelledby="week-summary-title">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold text-ink-500">이번 주</p>
-            <h3 id="week-summary-title" className="mt-1 text-lg font-bold text-ink-100">
+      <section className="app-card px-3.5 py-3" aria-labelledby="week-summary-title">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold text-ink-500">이번 주</p>
+            <h3 id="week-summary-title" className="mt-0.5 text-base font-bold text-ink-100">
               {formatKoreanDate(weekStart, "M.d")} ~ {formatKoreanDate(weekEnd, "M.d")}
             </h3>
           </div>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 lg:min-w-[34rem]">
-            <div>
-              <dt className="text-[11px] font-semibold text-ink-500">Todo 완료율</dt>
-              <dd
-                className="mt-1 text-lg font-bold text-ink-100"
-                aria-label={todos.length ? `Todo 완료율 ${weekRate}%` : "Todo 완료율 계산 대상 없음"}
-              >
-                {formatCompletionRate(todos.length, weekRate)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-[11px] font-semibold text-ink-500">주간 목표</dt>
-              <dd className="mt-1 text-lg font-bold text-ink-100">{weeklyGoals.length}개</dd>
-            </div>
-            <div className="col-span-2 sm:col-span-1">
-              <dt className="text-[11px] font-semibold text-ink-500">목표 완료 / 미완료</dt>
-              <dd className="mt-1 text-lg font-bold text-ink-100">{completedWeeklyGoals} / {activeWeeklyGoals}</dd>
-            </div>
+          <dl className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs">
+            <div className="flex items-center gap-1.5"><dt className="text-ink-500">Todo</dt><dd className="font-bold text-ink-100">{todos.length}</dd></div>
+            <div className="flex items-center gap-1.5"><dt className="text-ink-500">미완료</dt><dd className="font-bold text-ink-100">{weekActiveCount}</dd></div>
+            <div className="flex items-center gap-1.5"><dt className="text-ink-500">완료율</dt><dd className="font-bold text-accent-300">{formatCompletionRate(todos.length, weekRate)}</dd></div>
+            <div className="flex items-center gap-1.5"><dt className="text-ink-500">주간 목표</dt><dd className="font-bold text-ink-300">{completedWeeklyGoals}/{weeklyGoals.length}</dd></div>
           </dl>
         </div>
       </section>
 
       <GoalChecklist
         title="이번 주 목표"
-        subtitle={`${formatKoreanDate(weekStart, "yyyy.MM.dd")} ~ ${formatKoreanDate(weekEnd, "yyyy.MM.dd")}`}
+        subtitle={`Todo 일정과 분리된 주간 단위 목표 · ${formatKoreanDate(weekStart, "yyyy.MM.dd")} ~ ${formatKoreanDate(weekEnd, "yyyy.MM.dd")}`}
         goals={weeklyGoals}
         type="WEEKLY"
         addDefaults={{ weekStartDate: weekStart, weekEndDate: weekEnd, dueDate: weekEnd }}
-        placeholder="이번 주 목표"
+        placeholder="이번 주에 끝낼 핵심 목표"
         emptyTitle="이번 주 목표가 없습니다."
         onAdd={onAddGoal}
         onUpdate={onUpdateGoal}
@@ -117,164 +124,129 @@ export function WeeklyView({
         onDelete={onDeleteGoal}
       />
 
-      <section className="app-card space-y-3 p-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <section className="space-y-3" aria-labelledby="week-days-title">
+        <div className="flex items-end justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2 text-ink-100">
-              <CalendarCheck2 size={18} className="text-accent-400" />
-              <h3 className="text-base font-bold">주간 To-do list</h3>
+            <div className="flex items-center gap-2">
+              <CalendarCheck2 size={17} className="text-accent-300" />
+              <h3 id="week-days-title" className="text-sm font-bold text-ink-100">7일 흐름</h3>
             </div>
-            <p className="mt-1 text-xs text-ink-500">요일별 Todo를 체크리스트처럼 바로 확인합니다.</p>
-          </div>
-          <span className="rounded-full border border-ink-700 bg-ink-950/70 px-2 py-0.5 text-xs text-ink-400">
-            {todos.length}개 Todo
-          </span>
-        </div>
-
-        <div className="-mx-1 max-w-full overflow-x-auto overscroll-x-contain px-1 pb-1">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:min-w-[67rem] lg:grid-cols-7">
-            {weekDays.map((day, index) => {
-              const dateKey = toDateKey(day);
-              const dayTodos = getTodosByDate(dateKey);
-              const activeCount = dayTodos.filter((todo) => !todo.completed).length;
-              const completedCount = dayTodos.length - activeCount;
-              const dayGoals = goals.filter((goal) => goal.type === "DAILY" && !isDayStatusGoal(goal) && (goal.targetDate === dateKey || goal.dueDate === dateKey));
-              const isToday = dateKey === todayKey();
-              const expanded = expandedDates.has(dateKey);
-              const visibleTodos = expanded ? dayTodos : dayTodos.slice(0, 6);
-              const hiddenCount = Math.max(dayTodos.length - visibleTodos.length, 0);
-              const hasDayContent = dayTodos.length > 0 || dayGoals.length > 0 || addingDate === dateKey;
-
-              return (
-                <article
-                  key={dateKey}
-                  className={`flex min-w-0 flex-col rounded-xl border p-3 transition ${
-                    hasDayContent ? "min-h-64" : "min-h-44"
-                  } ${weekendClass(index)} ${
-                    isToday ? "ring-2 ring-accent-500/45" : ""
-                  }`}
-                >
-                  <div className="mb-2 flex items-start justify-between gap-2 border-b border-ink-700/70 pb-2">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <h4 className="whitespace-nowrap text-sm font-bold text-ink-100">{formatKoreanDate(day, "E요일")}</h4>
-                        {isToday ? <span className="rounded-full bg-accent-500 px-2 py-0.5 text-[10px] font-bold text-white">오늘</span> : null}
-                      </div>
-                      <p className="mt-0.5 text-xs text-ink-500">{formatKoreanDate(day, "M월 d일")}</p>
-                    </div>
-                    <span className="shrink-0 rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-[11px] font-semibold text-amber-100">
-                      미완료 {activeCount}
-                    </span>
-                  </div>
-
-                  <p className="mb-2 text-[11px] text-ink-500">
-                    완료 {completedCount}개{dayGoals.length ? ` · 목표 ${dayGoals.length}개` : ""}
-                  </p>
-
-                  <div className={`${hasDayContent ? "min-h-0 flex-1" : ""} space-y-1.5`}>
-                    {visibleTodos.length ? (
-                      visibleTodos.map((todo) => (
-                        <div key={todo.id} className="min-w-0 rounded-lg border border-ink-800 bg-ink-950/35 p-1 hover:border-ink-600">
-                          <div className="flex min-w-0 items-center gap-1">
-                            <button
-                              type="button"
-                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md transition hover:bg-ink-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40"
-                              onClick={() => onToggle(todo.id)}
-                              aria-label={todo.completed ? `"${todo.title}" 미완료로 변경` : `"${todo.title}" 완료로 변경`}
-                              title={todo.completed ? "미완료로 변경" : "완료로 변경"}
-                            >
-                              <span
-                                className={`h-4 w-4 rounded-full border ${
-                                  todo.completed ? "border-success bg-success" : "border-ink-600"
-                                }`}
-                                aria-hidden="true"
-                              />
-                            </button>
-                            <button
-                              type="button"
-                              className="min-h-10 min-w-0 flex-1 rounded-md px-1 text-left transition hover:bg-ink-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40"
-                              onClick={() => setEditingTodo(todo)}
-                              aria-label={`"${todo.title}" Todo 수정`}
-                              title={`${todo.title} 수정`}
-                            >
-                              <span className={`block truncate text-xs font-semibold ${todo.completed ? "text-ink-500 line-through" : "text-ink-100"}`}>
-                                {todo.title}
-                              </span>
-                            </button>
-                          </div>
-                          <div className="flex min-w-0 items-center gap-1 border-t border-ink-800/80">
-                            <div className="flex min-w-0 flex-1 items-center gap-1 px-1 text-[11px] text-ink-500" title={todo.category?.name || "미분류"}>
-                              <IconRenderer
-                                icon={todo.category?.icon}
-                                color={todo.category?.color || "#64748b"}
-                                name={todo.category?.name || "미분류"}
-                                className="h-4 w-4"
-                                iconClassName="h-2.5 w-2.5"
-                              />
-                              <span className="truncate">{todo.category?.name || "미분류"}</span>
-                            </div>
-                            <button
-                              type="button"
-                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-ink-500 transition hover:bg-danger/10 hover:text-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40"
-                              onClick={() => window.confirm(`"${todo.title}" Todo를 삭제할까요?`) && onDelete(todo.id)}
-                              aria-label={`"${todo.title}" Todo 삭제`}
-                              title="Todo 삭제"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="rounded-lg border border-dashed border-ink-800 bg-ink-950/25 px-3 py-2 text-center">
-                        <p className="text-xs font-semibold text-ink-500">계획 없음</p>
-                      </div>
-                    )}
-
-                    {hiddenCount ? (
-                      <button
-                        type="button"
-                        className="flex min-h-10 w-full items-center justify-center rounded-lg border border-ink-700 bg-ink-950/45 px-3 text-xs font-semibold text-ink-400 transition hover:border-accent-500/60 hover:bg-ink-900 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40"
-                        onClick={() => toggleExpanded(dateKey)}
-                      >
-                        +{hiddenCount}개 더보기
-                      </button>
-                    ) : expanded && dayTodos.length > 6 ? (
-                      <button
-                        type="button"
-                        className="flex min-h-10 w-full items-center justify-center rounded-lg border border-ink-700 bg-ink-950/45 px-3 text-xs font-semibold text-ink-400 transition hover:border-accent-500/60 hover:bg-ink-900 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40"
-                        onClick={() => toggleExpanded(dateKey)}
-                      >
-                        접기
-                      </button>
-                    ) : null}
-                  </div>
-
-                  <div className={`${hasDayContent ? "mt-2" : "mt-auto"} border-t border-ink-700/70 pt-2`}>
-                    {addingDate === dateKey ? (
-                      <InlineTodoAdd
-                        defaultDate={dateKey}
-                        layout="stacked"
-                        onAdd={onAdd}
-                        onCancel={() => setAddingDate(null)}
-                      />
-                    ) : (
-                      <button
-                        type="button"
-                        className={`flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-ink-700 px-2 text-xs font-semibold text-ink-400 transition hover:border-accent-500/60 hover:bg-ink-900/60 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 ${
-                          hasDayContent ? "min-h-10" : "min-h-9"
-                        }`}
-                        onClick={() => setAddingDate(dateKey)}
-                      >
-                        <Plus size={13} /> 추가
-                      </button>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
+            <p className="mt-1 text-[11px] text-ink-500">요일은 분포만 보고, Todo 내용은 선택한 날짜에서 확인합니다.</p>
           </div>
         </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+          {daySummaries.map(({ date, day, index, active, completed, high }) => {
+            const selected = date === selectedDate;
+            const isToday = date === today;
+            return (
+              <button
+                key={date}
+                type="button"
+                className={`min-w-0 rounded-md border px-2.5 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 ${
+                  selected
+                    ? "border-accent-500/65 bg-accent-500/12 ring-1 ring-accent-500/25"
+                    : `${dayButtonClass(index)} hover:border-ink-500 hover:bg-ink-800/70`
+                }`}
+                onClick={() => setSelectedDate(date)}
+                aria-pressed={selected}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`text-xs font-bold ${selected ? "text-ink-100" : "text-ink-300"}`}>{formatKoreanDate(day, "E요일")}</span>
+                  {isToday ? <span className="rounded-full bg-accent-500 px-1.5 py-0.5 text-[9px] font-bold text-white">오늘</span> : null}
+                </div>
+                <p className="mt-0.5 text-[11px] text-ink-500">{formatKoreanDate(day, "M월 d일")}</p>
+                <div className="mt-2 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px]">
+                  <span className={active ? "font-bold text-amber-100" : "text-ink-600"}>미완료 {active}</span>
+                  <span className="text-ink-500">완료 {completed}</span>
+                  {high ? <span className="font-bold text-red-100">HIGH {high}</span> : null}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="app-card p-3.5" aria-labelledby="selected-day-title">
+        <div className="flex flex-col gap-3 border-b border-ink-700/55 pb-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 id="selected-day-title" className="text-base font-bold text-ink-100">{formatKoreanDate(selectedDate, "M월 d일 EEEE")}</h3>
+            <p className="mt-0.5 text-xs text-ink-500">미완료 {selectedActiveTodos.length}개 · 완료 {selectedCompletedTodos.length}개</p>
+          </div>
+          <button
+            type="button"
+            className={addingDate === selectedDate ? "btn-secondary" : "btn-primary"}
+            onClick={() => setAddingDate((current) => current === selectedDate ? null : selectedDate)}
+          >
+            <Plus size={15} />{addingDate === selectedDate ? "추가 닫기" : `${formatKoreanDate(selectedDate, "M월 d일")} Todo 추가`}
+          </button>
+        </div>
+
+        {addingDate === selectedDate ? (
+          <div className="mt-3">
+            <InlineTodoAdd
+              defaultDate={selectedDate}
+              layout="inline"
+              placeholder="선택한 날짜에 Todo 추가"
+              onAdd={onAdd}
+              onCancel={() => setAddingDate(null)}
+            />
+          </div>
+        ) : null}
+
+        <div className="mt-3 space-y-1.5">
+          {selectedActiveTodos.length ? (
+            selectedActiveTodos.map((todo) => (
+              <TodoRow
+                key={todo.id}
+                todo={todo}
+                onToggle={onToggle}
+                onDelete={onDelete}
+                onEdit={setEditingTodo}
+                showDate={false}
+                showCategoryBadge={false}
+                showCategoryMeta
+                hideMediumPriority
+              />
+            ))
+          ) : (
+            <div className="rounded-md border border-dashed border-ink-700/60 px-3 py-4 text-center">
+              <p className="text-sm font-semibold text-ink-400">미완료 Todo가 없습니다.</p>
+              <p className="mt-1 text-[11px] text-ink-600">다른 날짜를 선택하거나 새 Todo를 추가할 수 있습니다.</p>
+            </div>
+          )}
+        </div>
+
+        {selectedCompletedTodos.length ? (
+          <div className="mt-3 border-t border-ink-700/50 pt-2.5">
+            <button
+              type="button"
+              className="flex min-h-9 w-full items-center justify-between rounded-md px-2 text-left text-xs font-semibold text-ink-400 transition hover:bg-ink-900/70 hover:text-ink-200"
+              onClick={() => setShowCompleted((value) => !value)}
+              aria-expanded={showCompleted}
+            >
+              <span>완료 {selectedCompletedTodos.length}개</span>
+              {showCompleted ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+            {showCompleted ? (
+              <div className="mt-1.5 space-y-1.5">
+                {selectedCompletedTodos.map((todo) => (
+                  <TodoRow
+                    key={todo.id}
+                    todo={todo}
+                    onToggle={onToggle}
+                    onDelete={onDelete}
+                    onEdit={setEditingTodo}
+                    showDate={false}
+                    showCategoryBadge={false}
+                    showCategoryMeta
+                    hideMediumPriority
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </section>
 
       <TodoEditModal

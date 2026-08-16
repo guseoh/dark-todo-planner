@@ -33,10 +33,10 @@ export function WeekPage({
   goals = [],
 }: WeekPageProps) {
   return (
-    <div className="space-y-4">
+    <div className="mx-auto w-full max-w-[1120px] space-y-4">
       <section>
-        <h2 className="text-2xl font-bold text-ink-100 sm:text-3xl">주간 보기</h2>
-        <p className="mt-2 text-sm text-ink-400">월요일부터 일요일까지 한 주의 계획을 확인합니다.</p>
+        <h2 className="text-2xl font-bold text-ink-100">주간</h2>
+        <p className="mt-1 text-sm text-ink-500">한 주의 작업 분포를 보고, 선택한 날짜의 Todo를 집중해서 관리합니다.</p>
       </section>
       <WeeklyView
         todos={weekTodos}
