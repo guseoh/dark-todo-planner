@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { BACKUP_VERSION, SUPPORTED_BACKUP_VERSIONS, normalizeBackupPayload, normalizeBackupV8Relations } from "./backupFormat";
 
-describe("backup format v11", () => {
+describe("backup format v12", () => {
   it("keeps older backups compatible while exposing newer collections", () => {
     const { data, warnings } = normalizeBackupPayload({ version: 7, projects: [{ id: "project-1", name: "기존 프로젝트" }], todos: [{ id: "todo-1", title: "기존 Todo", date: "2026-08-16" }], memos: [{ id: "memo-1", content: "기존 메모" }] });
-    expect(BACKUP_VERSION).toBe(11);
-    expect(SUPPORTED_BACKUP_VERSIONS).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(BACKUP_VERSION).toBe(12);
+    expect(SUPPORTED_BACKUP_VERSIONS).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     expect(warnings).toEqual([]);
     expect(data.projectDecisions).toEqual([]);
     expect(data.memoTodoLinks).toEqual([]);
@@ -15,6 +15,10 @@ describe("backup format v11", () => {
     expect(data.plannerSettings).toEqual([]);
     expect(data.todoTrash).toEqual([]);
     expect(data.learningItems).toEqual([]);
+    expect(data.todoReminders).toEqual([]);
+    expect(data.routineTemplates).toEqual([]);
+    expect(data.routineTemplateItems).toEqual([]);
+    expect(data.routineRuns).toEqual([]);
   });
 
   it("keeps learning items in a v11 payload", () => {
@@ -28,6 +32,25 @@ describe("backup format v11", () => {
     const { data, warnings } = normalizeBackupPayload({ version: 11, learningItems: [learningItem] });
     expect(warnings).toEqual([]);
     expect(data.learningItems).toEqual([learningItem]);
+  });
+
+  it("keeps reminder and routine collections in a v12 payload", () => {
+    const reminder = { id: "reminder-1", todoId: "todo-1", remindAt: "2026-08-17T09:00:00.000Z" };
+    const routine = { id: "routine-1", name: "아침 루틴" };
+    const routineItem = { id: "item-1", routineId: "routine-1", title: "오늘 계획 확인" };
+    const routineRun = { id: "run-1", routineId: "routine-1", targetDate: "2026-08-17" };
+    const { data, warnings } = normalizeBackupPayload({
+      version: 12,
+      todoReminders: [reminder],
+      routineTemplates: [routine],
+      routineTemplateItems: [routineItem],
+      routineRuns: [routineRun],
+    });
+    expect(warnings).toEqual([]);
+    expect(data.todoReminders).toEqual([reminder]);
+    expect(data.routineTemplates).toEqual([routine]);
+    expect(data.routineTemplateItems).toEqual([routineItem]);
+    expect(data.routineRuns).toEqual([routineRun]);
   });
 
   it("restores only valid project decisions and memo relations", () => {
