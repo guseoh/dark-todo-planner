@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { BellRing, RefreshCw, Save } from "lucide-react";
 import { StatCard } from "../components/common/StatCard";
+import { CalendarExportCard } from "../components/settings/CalendarExportCard";
 import { PwaInstallCard } from "../components/settings/PwaInstallCard";
 import { RoutinePanel } from "../components/settings/RoutinePanel";
 import type { Category } from "../types/category";
@@ -95,6 +96,7 @@ export function SettingsPage({
       </section>
 
       <PwaInstallCard />
+      <CalendarExportCard />
 
       <section className="app-card p-4 sm:p-5" aria-labelledby="automation-settings-title">
         <div className="flex items-center gap-2"><RefreshCw size={18} className="text-accent-300" /><h3 id="automation-settings-title" className="text-base font-bold text-ink-100">Todo 자동화</h3></div>
