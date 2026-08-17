@@ -23,7 +23,7 @@ describe("parseShareTargetLocation", () => {
   it("extracts an http URL from shared text when url is omitted", () => {
     const draft = parseShareTargetLocation(
       "/share-target/",
-      "?text=JPA%20Lock%20%EC%A0%95%EB%A6%AC%5Cnhttps%3A%2F%2Ftech.example.com%2Fjpa%3Ffrom%3Dshare",
+      "?text=JPA%20Lock%20%EC%A0%95%EB%A6%AC%0Ahttps%3A%2F%2Ftech.example.com%2Fjpa%3Ffrom%3Dshare",
     );
 
     expect(draft?.title).toBe("JPA Lock 정리");
