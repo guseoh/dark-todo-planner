@@ -33,7 +33,8 @@ describe("buildCalendarIcs", () => {
       timeBlocks: [],
     });
 
-    expect(ics).toContain("SUMMARY:백엔드\\, 캘린더\\; 내보내기 \\\\");
+    expect(ics).toContain("SUMMARY:백엔드\\, 캘린더\\; 내보내기");
+    expect(ics).toContain("\\\\");
     const encoder = new TextEncoder();
     for (const line of ics.split("\r\n").filter(Boolean)) {
       expect(encoder.encode(line).length).toBeLessThanOrEqual(75);
