@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { deleteLearningItem, findLearningItem, importLearningItems, listLearningItems, updateLearningStatus, convertLearningItemToTodo } from "../learningStore";
+import { getLearningSyncStatus, runNotionLearningSync } from "../notionLearningSync";
 import { learningDateSchema, learningImportSchema, learningStatusSchema, learningTodoSchema } from "../learningValidation";
 import type { Bindings, Variables } from "../types";
 
@@ -10,6 +11,10 @@ learningRoutes.get("/learning-items", async (c) => {
   if (!parsedDate.success) return c.json({ message: "날짜 형식이 올바르지 않습니다." }, 400);
   return c.json({ items: await listLearningItems(c.env, c.get("userId"), parsedDate.data) });
 });
+
+learningRoutes.get("/learning-items/sync-status", async (c) => c.json(await getLearningSyncStatus(c.env)));
+
+learningRoutes.post("/learning-items/sync", async (c) => c.json(await runNotionLearningSync(c.env)));
 
 learningRoutes.post("/learning-items/import", async (c) => {
   const { items } = learningImportSchema.parse(await c.req.json());
