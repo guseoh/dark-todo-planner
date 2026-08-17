@@ -10,6 +10,7 @@ export const learningItems = sqliteTable("learning_items", {
   summary: text("summary"),
   sourceUrl: text("source_url"),
   sourceName: text("source_name"),
+  categories: text("categories"),
   status: text("status", { enum: ["UNREAD", "READING", "DONE", "SKIPPED"] }).notNull().default("UNREAD"),
   externalKey: text("external_key").notNull(),
   todoId: text("todo_id").references(() => todos.id, { onDelete: "set null" }),

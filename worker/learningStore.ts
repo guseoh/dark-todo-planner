@@ -10,10 +10,11 @@ export type LearningImportItem = {
   summary?: string | null;
   sourceUrl?: string | null;
   sourceName?: string | null;
+  categories?: string[] | null;
   externalKey: string;
 };
 
-export type LearningRow = {
+type DbLearningRow = {
   id: string;
   userId: string;
   learningDate: string;
@@ -22,6 +23,7 @@ export type LearningRow = {
   summary: string | null;
   sourceUrl: string | null;
   sourceName: string | null;
+  categoriesJson: string | null;
   status: LearningItemStatus;
   externalKey: string;
   todoId: string | null;
@@ -29,25 +31,73 @@ export type LearningRow = {
   updatedAt: string;
 };
 
-const columns = `id, user_id AS userId, learning_date AS learningDate, type, title, summary, source_url AS sourceUrl, source_name AS sourceName, status, external_key AS externalKey, todo_id AS todoId, created_at AS createdAt, updated_at AS updatedAt`;
+export type LearningRow = Omit<DbLearningRow, "categoriesJson"> & {
+  categories: string[];
+};
+
+const cleanCategories = (values: unknown) => {
+  if (!Array.isArray(values)) return [];
+  return [...new Set(values
+    .filter((value): value is string => typeof value === "string")
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .map((value) => value.slice(0, 80)))]
+    .slice(0, 2);
+};
+
+const parseCategories = (value: string | null) => {
+  if (!value) return [];
+  try {
+    return cleanCategories(JSON.parse(value));
+  } catch {
+    return [];
+  }
+};
+
+const serializeCategories = (values: string[] | null | undefined) => {
+  const categories = cleanCategories(values);
+  return categories.length ? JSON.stringify(categories) : null;
+};
+
+const mapRow = (row: DbLearningRow | null): LearningRow | null => row ? {
+  id: row.id,
+  userId: row.userId,
+  learningDate: row.learningDate,
+  type: row.type,
+  title: row.title,
+  summary: row.summary,
+  sourceUrl: row.sourceUrl,
+  sourceName: row.sourceName,
+  categories: parseCategories(row.categoriesJson),
+  status: row.status,
+  externalKey: row.externalKey,
+  todoId: row.todoId,
+  createdAt: row.createdAt,
+  updatedAt: row.updatedAt,
+} : null;
+
+const columns = `id, user_id AS userId, learning_date AS learningDate, type, title, summary, source_url AS sourceUrl, source_name AS sourceName, categories AS categoriesJson, status, external_key AS externalKey, todo_id AS todoId, created_at AS createdAt, updated_at AS updatedAt`;
 
 export const listLearningItems = async (env: Bindings, userId: string, date: string) => {
   const result = await env.DB.prepare(`SELECT ${columns} FROM learning_items WHERE user_id = ? AND learning_date = ? ORDER BY CASE type WHEN 'DAILY_PROBLEM' THEN 0 ELSE 1 END, created_at DESC`)
     .bind(userId, date)
-    .all<LearningRow>();
-  return result.results;
+    .all<DbLearningRow>();
+  return result.results.map((row) => mapRow(row)!);
 };
 
-export const findLearningItem = async (env: Bindings, userId: string, id: string) => env.DB
-  .prepare(`SELECT ${columns} FROM learning_items WHERE id = ? AND user_id = ? LIMIT 1`)
-  .bind(id, userId)
-  .first<LearningRow>();
+export const findLearningItem = async (env: Bindings, userId: string, id: string) => {
+  const row = await env.DB
+    .prepare(`SELECT ${columns} FROM learning_items WHERE id = ? AND user_id = ? LIMIT 1`)
+    .bind(id, userId)
+    .first<DbLearningRow>();
+  return mapRow(row);
+};
 
 export const importLearningItems = async (env: Bindings, userId: string, items: LearningImportItem[]) => {
   const now = nowIso();
   await env.DB.batch(items.map((item) => env.DB.prepare(`
-    INSERT INTO learning_items (id, user_id, learning_date, type, title, summary, source_url, source_name, status, external_key, todo_id, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'UNREAD', ?, NULL, ?, ?)
+    INSERT INTO learning_items (id, user_id, learning_date, type, title, summary, source_url, source_name, categories, status, external_key, todo_id, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'UNREAD', ?, NULL, ?, ?)
     ON CONFLICT(user_id, external_key) DO UPDATE SET
       learning_date = excluded.learning_date,
       type = excluded.type,
@@ -55,11 +105,12 @@ export const importLearningItems = async (env: Bindings, userId: string, items: 
       summary = excluded.summary,
       source_url = excluded.source_url,
       source_name = excluded.source_name,
+      categories = excluded.categories,
       updated_at = excluded.updated_at
   `).bind(
     newId(), userId, item.learningDate, item.type, item.title,
     item.summary?.trim() || null, item.sourceUrl?.trim() || null, item.sourceName?.trim() || null,
-    item.externalKey, now, now,
+    serializeCategories(item.categories), item.externalKey, now, now,
   )));
 };
 

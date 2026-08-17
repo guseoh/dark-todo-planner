@@ -18,6 +18,7 @@ export const learningImportItemSchema = z.object({
   summary: z.string().trim().max(8000).nullable().optional(),
   sourceUrl: z.union([httpUrlSchema, z.literal(""), z.null()]).optional(),
   sourceName: z.string().trim().max(80).nullable().optional(),
+  categories: z.array(z.string().trim().min(1).max(80)).max(2).optional(),
   externalKey: z.string().trim().min(1).max(240),
 });
 

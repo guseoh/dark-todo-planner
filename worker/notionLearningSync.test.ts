@@ -5,6 +5,7 @@ import type { NotionPage } from "./notionClient";
 const title = (value: string) => ({ type: "title", title: [{ plain_text: value }] });
 const text = (value: string) => ({ type: "rich_text", rich_text: [{ plain_text: value }] });
 const select = (value: string) => ({ type: "select", select: { name: value } });
+const multiSelect = (...values: string[]) => ({ type: "multi_select", multi_select: values.map((name) => ({ name })) });
 const url = (value: string) => ({ type: "url", url: value });
 
 const page = (properties: Record<string, unknown>, id = "3be7c8e3-1236-8153-b650-ff401c5d46fb"): NotionPage => ({
@@ -34,7 +35,33 @@ describe("Notion Learning sync mapping", () => {
     expect(item.externalKey).toBe("notion:3be7c8e312368153b650ff401c5d46fb");
   });
 
-  it("maps one technical blog row to one Learning item", () => {
+  it("maps technical blog body and multi-select categories", () => {
+    const item = techBlogPageToLearning(page({
+      "제목": title("MongoDB 8.0 업그레이드 해야하는 12가지 이유"),
+      "유형": multiSelect("DB·데이터", "성능"),
+      "원문 URL": url("https://tech.kakao.com/posts/803"),
+    }, "11111111-2222-3333-4444-555555555555"), "2026-08-17", [
+      "Kakao Tech · 2025년 12월 17일",
+      "한 줄 정리",
+      "MongoDB 8.0은 성능 개선과 읽기 정합성을 함께 검증해야 합니다.",
+      "핵심 내용",
+      "• 성능: 쓰기 처리량이 약 30~47% 증가했습니다.",
+      "• 주의점: Secondary 읽기 정합성을 확인해야 합니다.",
+      "원문",
+      "MongoDB 8.0 업그레이드 해야하는 12가지 이유",
+    ].join("\n"));
+
+    expect(item).not.toBeNull();
+    expect(item?.type).toBe("TECH_BLOG");
+    expect(item?.sourceUrl).toBe("https://tech.kakao.com/posts/803");
+    expect(item?.sourceName).toBe("Kakao Tech");
+    expect(item?.categories).toEqual(["DB·데이터", "성능"]);
+    expect(item?.summary).toContain("30~47%");
+    expect(item?.summary).not.toContain("Kakao Tech ·");
+    expect(item?.summary).not.toContain("\n원문\n");
+  });
+
+  it("keeps legacy property mapping as a fallback when body is unavailable", () => {
     const item = techBlogPageToLearning(page({
       "제목": title("느린 PR, 빠른 개발"),
       "요약": text("PR 리뷰 병목을 다룬다."),
@@ -42,11 +69,8 @@ describe("Notion Learning sync mapping", () => {
       "적용 포인트": text("PawCycle PR 흐름에 적용"),
       "출처": text("카카오페이 기술 블로그"),
       "원문 URL": url("https://example.com/article"),
-    }, "11111111-2222-3333-4444-555555555555"), "2026-08-17");
+    }, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"), "2026-08-17");
 
-    expect(item).not.toBeNull();
-    expect(item?.type).toBe("TECH_BLOG");
-    expect(item?.sourceUrl).toBe("https://example.com/article");
     expect(item?.sourceName).toBe("카카오페이 기술 블로그");
     expect(item?.summary).toContain("읽을 가치:");
     expect(item?.summary).toContain("적용 포인트:");
