@@ -59,6 +59,12 @@ export async function replaceTodoDependencies(db: D1Database, userId: string, bl
   await db.batch(statements);
 }
 
+async function dependencyCount(db: D1Database, userId: string, blockedTodoId: string) {
+  const row = await db.prepare("SELECT COUNT(*) AS value FROM todo_dependencies WHERE user_id = ? AND blocked_todo_id = ?")
+    .bind(userId, blockedTodoId).first<{ value: number }>();
+  return Number(row?.value || 0);
+}
+
 async function unresolvedBlockerCount(db: D1Database, userId: string, blockedTodoId: string) {
   const row = await db.prepare(`
     SELECT COUNT(*) AS value
@@ -82,6 +88,10 @@ export async function syncBlockedTodoStatus(db: D1Database, userId: string, bloc
     await db.prepare("UPDATE todos SET workflow_status = 'TODO', updated_at = ? WHERE user_id = ? AND id = ?")
       .bind(nowIso(), userId, blockedTodoId).run();
   }
+}
+
+export async function enforceOwnDependencyStatus(db: D1Database, userId: string, todoId: string) {
+  if (await dependencyCount(db, userId, todoId)) await syncBlockedTodoStatus(db, userId, todoId);
 }
 
 export async function syncDependentsForBlocker(db: D1Database, userId: string, blockingTodoId: string) {
