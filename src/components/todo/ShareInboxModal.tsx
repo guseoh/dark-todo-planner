@@ -45,7 +45,7 @@ export function ShareInboxModal({ draft, onClose, onSave }: ShareInboxModalProps
         title: title.trim(),
         memo: memo.trim(),
         referenceUrl: normalizedReferenceUrl,
-        referenceLabel: normalizedReferenceUrl ? referenceLabel.trim() : "",
+        referenceLabel: normalizedReferenceUrl ? referenceLabel.trim().slice(0, 80) : "",
       });
       if (!result.ok) setError(result.message || "Inbox에 저장하지 못했습니다.");
     } catch (cause) {
@@ -108,6 +108,7 @@ export function ShareInboxModal({ draft, onClose, onSave }: ShareInboxModalProps
               onChange={(event) => setReferenceLabel(event.target.value)}
               placeholder="링크 이름"
               aria-label="관련 링크 이름"
+              maxLength={80}
               disabled={!referenceUrl.trim()}
             />
             <input
@@ -117,6 +118,7 @@ export function ShareInboxModal({ draft, onClose, onSave }: ShareInboxModalProps
               onChange={(event) => { setReferenceUrl(event.target.value); setError(""); }}
               placeholder="https://..."
               aria-label="관련 링크 URL"
+              maxLength={2048}
             />
           </div>
           {invalidReferenceUrl ? <p className="text-xs font-semibold text-red-200">http 또는 https 링크만 사용할 수 있습니다.</p> : null}
