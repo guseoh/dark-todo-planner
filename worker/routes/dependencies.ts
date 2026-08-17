@@ -27,7 +27,7 @@ dependencyRoutes.put("/todos/:id/dependencies", async (c) => {
   try {
     const selection = await inspectDependencySelection(c.env.DB, userId, id, input.blockingTodoIds);
     await replaceTodoDependencies(c.env.DB, userId, id, selection.ids);
-    await syncBlockedTodoStatus(c.env.DB, userId, id);
+    if (selection.ids.length || selection.previousCount) await syncBlockedTodoStatus(c.env.DB, userId, id);
     const blockers = await listTodoBlockers(c.env.DB, userId, id);
     const todo = await c.env.DB.prepare("SELECT workflow_status AS workflowStatus, completed FROM todos WHERE user_id = ? AND id = ? LIMIT 1")
       .bind(userId, id).first<{ workflowStatus: string; completed: number }>();
