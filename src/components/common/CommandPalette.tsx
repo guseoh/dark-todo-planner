@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   BarChart3,
+  BookOpen,
   Calendar,
   CalendarCheck,
   CalendarRange,
@@ -48,6 +49,7 @@ const navigation: Result[] = [
   { id: "time-planning", label: "시간 계획 / Focus Timer", detail: "Time Block과 Focus Timer 열기", action: "time-planning", kind: "명령" },
   { id: "nav-today", label: "오늘", detail: "오늘 실행할 Todo", view: "today", kind: "이동" },
   { id: "nav-inbox", label: "Inbox", detail: "아직 분류하지 않은 Todo", view: "inbox", kind: "이동" },
+  { id: "nav-learning", label: "학습", detail: "데일리 문제와 읽을 기술 글", view: "learning", kind: "이동" },
   { id: "nav-planning", label: "계획", detail: "오늘 계획, 주간 리뷰, Smart List와 템플릿", view: "planning", kind: "이동" },
   { id: "nav-week", label: "주간", detail: "이번 주 Todo 보기", view: "week", kind: "이동" },
   { id: "nav-month", label: "월간", detail: "월간 Calendar 보기", view: "month", kind: "이동" },
@@ -66,6 +68,7 @@ const resultIcon = (result: Result) => {
   if (result.kind === "Todo") return ListTodo;
   if (result.kind === "메모") return StickyNote;
   if (result.kind === "프로젝트") return FolderKanban;
+  if (result.view === "learning") return BookOpen;
   if (result.view === "scratchpad") return FileText;
   if (result.view === "inbox") return Inbox;
   if (result.view === "week") return CalendarRange;
