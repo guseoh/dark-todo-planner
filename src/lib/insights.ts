@@ -29,6 +29,28 @@ export type ProjectInsight = {
   remainingEstimateMinutes: number;
 };
 
+export type EstimateAccuracyTodo = {
+  id: string;
+  title: string;
+  projectId?: string;
+  projectName?: string;
+  estimateMinutes: number;
+  actualMinutes: number;
+  deltaMinutes: number;
+  actualVsEstimateRate: number;
+  errorRate: number;
+};
+
+export type EstimateAccuracyProject = {
+  id: string;
+  name: string;
+  sampleCount: number;
+  estimateMinutes: number;
+  actualMinutes: number;
+  actualVsEstimateRate: number;
+  errorRate: number;
+};
+
 type BuildInsightsInput = {
   todos: Todo[];
   projects: Project[];
@@ -84,6 +106,59 @@ export function buildInsightsSnapshot({ todos, projects, focusSessions, timeBloc
     })
     .sort((a, b) => Number(b.status === "ACTIVE") - Number(a.status === "ACTIVE") || b.total - a.total || a.name.localeCompare(b.name, "ko"));
 
+  const focusByTodo = new Map<string, number>();
+  for (const session of periodFocusSessions) {
+    if (!session.todoId) continue;
+    focusByTodo.set(session.todoId, (focusByTodo.get(session.todoId) || 0) + session.durationMinutes);
+  }
+  const projectMap = new Map(projects.map((project) => [project.id, project]));
+  const estimateAccuracyTodos: EstimateAccuracyTodo[] = completedPeriodTodos
+    .filter((todo) => Boolean(todo.estimateMinutes) && (focusByTodo.get(todo.id) || 0) > 0)
+    .map((todo) => {
+      const estimateMinutes = todo.estimateMinutes || 0;
+      const actualMinutes = focusByTodo.get(todo.id) || 0;
+      const deltaMinutes = actualMinutes - estimateMinutes;
+      return {
+        id: todo.id,
+        title: todo.title,
+        projectId: todo.projectId,
+        projectName: todo.projectId ? projectMap.get(todo.projectId)?.name : undefined,
+        estimateMinutes,
+        actualMinutes,
+        deltaMinutes,
+        actualVsEstimateRate: estimateMinutes ? Math.round((actualMinutes / estimateMinutes) * 100) : 0,
+        errorRate: estimateMinutes ? Math.round((Math.abs(deltaMinutes) / estimateMinutes) * 100) : 0,
+      };
+    })
+    .sort((a, b) => b.errorRate - a.errorRate || b.actualMinutes - a.actualMinutes);
+
+  const accuracyProjectMap = new Map<string, EstimateAccuracyProject>();
+  for (const sample of estimateAccuracyTodos) {
+    if (!sample.projectId || !sample.projectName) continue;
+    const current = accuracyProjectMap.get(sample.projectId) || {
+      id: sample.projectId,
+      name: sample.projectName,
+      sampleCount: 0,
+      estimateMinutes: 0,
+      actualMinutes: 0,
+      actualVsEstimateRate: 0,
+      errorRate: 0,
+    };
+    current.sampleCount += 1;
+    current.estimateMinutes += sample.estimateMinutes;
+    current.actualMinutes += sample.actualMinutes;
+    const delta = current.actualMinutes - current.estimateMinutes;
+    current.actualVsEstimateRate = current.estimateMinutes ? Math.round((current.actualMinutes / current.estimateMinutes) * 100) : 0;
+    current.errorRate = current.estimateMinutes ? Math.round((Math.abs(delta) / current.estimateMinutes) * 100) : 0;
+    accuracyProjectMap.set(sample.projectId, current);
+  }
+  const estimateAccuracyProjects = [...accuracyProjectMap.values()].sort((a, b) => b.sampleCount - a.sampleCount || b.errorRate - a.errorRate);
+  const estimateSampleMinutes = sumMinutes(estimateAccuracyTodos.map((sample) => sample.estimateMinutes));
+  const actualSampleMinutes = sumMinutes(estimateAccuracyTodos.map((sample) => sample.actualMinutes));
+  const planningMultiplier = estimateAccuracyTodos.length >= 5 && estimateSampleMinutes > 0
+    ? Math.round((actualSampleMinutes / estimateSampleMinutes) * 100) / 100
+    : undefined;
+
   return {
     periodTodoTotal: periodTodos.length,
     periodTodoCompleted: completedPeriodTodos.length,
@@ -97,6 +172,15 @@ export function buildInsightsSnapshot({ todos, projects, focusSessions, timeBloc
     timeBlockCount: periodTimeBlocks.length,
     completedTimeBlockCount: periodTimeBlocks.filter((block) => block.completed).length,
     focusVsPlanRate: plannedMinutes ? Math.round((focusMinutes / plannedMinutes) * 100) : undefined,
+    estimateAccuracy: {
+      sampleCount: estimateAccuracyTodos.length,
+      estimateMinutes: estimateSampleMinutes,
+      actualMinutes: actualSampleMinutes,
+      actualVsEstimateRate: estimateSampleMinutes ? Math.round((actualSampleMinutes / estimateSampleMinutes) * 100) : undefined,
+      planningMultiplier,
+      todos: estimateAccuracyTodos,
+      projects: estimateAccuracyProjects,
+    },
     daily,
     projects: projectInsights,
   };
