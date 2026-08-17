@@ -12,10 +12,12 @@ import {
   verifySessionToken,
 } from "./auth";
 import { backupV9ExportMiddleware, backupV9ImportMiddleware } from "./backupMiddleware";
+import { learningBackupExportMiddleware, learningBackupImportMiddleware } from "./learningBackupMiddleware";
 import { todoReferenceTrashRestoreMiddleware } from "./referenceLinkMiddleware";
 import { runDiscordIncompleteTodoReminder } from "./reminders/incompleteTodoReminder";
 import { backupRoutes } from "./routes/backup";
 import { contentRoutes } from "./routes/content";
+import { learningRoutes } from "./routes/learning";
 import { libraryRoutes } from "./routes/library";
 import { planningRoutes } from "./routes/planning";
 import { projectDuplicateRoutes } from "./routes/projectDuplicate";
@@ -91,6 +93,9 @@ app.get("/api/auth/session", async (c) => {
   return c.json(authenticated ? { authenticated: true, username: c.env.AUTH_USERNAME } : { authenticated: false }, authenticated ? 200 : 401);
 });
 
+app.use("/api/backup/export", learningBackupExportMiddleware);
+app.use("/api/backup/import", learningBackupImportMiddleware);
+app.use("/api/migrate/local-storage", learningBackupImportMiddleware);
 app.use("/api/backup/export", backupV9ExportMiddleware);
 app.use("/api/backup/import", backupV9ImportMiddleware);
 app.use("/api/migrate/local-storage", backupV9ImportMiddleware);
@@ -100,6 +105,7 @@ app.route("/api", projectRoutes);
 app.route("/api", projectDuplicateRoutes);
 app.route("/api", referenceLinkRoutes);
 app.route("/api", contentRoutes);
+app.route("/api", learningRoutes);
 app.route("/api", planningRoutes);
 app.route("/api", timeRoutes);
 app.route("/api", settingsRoutes);

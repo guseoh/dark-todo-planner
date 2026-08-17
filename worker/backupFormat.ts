@@ -1,9 +1,9 @@
-export const BACKUP_VERSION = 10;
-export const SUPPORTED_BACKUP_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+export const BACKUP_VERSION = 11;
+export const SUPPORTED_BACKUP_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
 export const BACKUP_KEYS = [
   "categories", "projects", "projectDecisions", "milestones", "todos", "reflections", "goals", "memos",
   "memoTodoLinks", "memoProjectLinks", "topics", "topicLinks", "musicLinks",
-  "dailyPlans", "weeklyReviews", "savedViews", "taskTemplates", "focusSessions", "timerSettings", "timeBlocks", "plannerSettings", "todoTrash",
+  "dailyPlans", "weeklyReviews", "savedViews", "taskTemplates", "focusSessions", "timerSettings", "timeBlocks", "plannerSettings", "todoTrash", "learningItems",
 ] as const;
 
 export type BackupKey = (typeof BACKUP_KEYS)[number];

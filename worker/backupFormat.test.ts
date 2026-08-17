@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { BACKUP_VERSION, SUPPORTED_BACKUP_VERSIONS, normalizeBackupPayload, normalizeBackupV8Relations } from "./backupFormat";
 
-describe("backup format v10", () => {
+describe("backup format v11", () => {
   it("keeps older backups compatible while exposing newer collections", () => {
     const { data, warnings } = normalizeBackupPayload({ version: 7, projects: [{ id: "project-1", name: "기존 프로젝트" }], todos: [{ id: "todo-1", title: "기존 Todo", date: "2026-08-16" }], memos: [{ id: "memo-1", content: "기존 메모" }] });
-    expect(BACKUP_VERSION).toBe(10);
-    expect(SUPPORTED_BACKUP_VERSIONS).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(BACKUP_VERSION).toBe(11);
+    expect(SUPPORTED_BACKUP_VERSIONS).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
     expect(warnings).toEqual([]);
     expect(data.projectDecisions).toEqual([]);
     expect(data.memoTodoLinks).toEqual([]);
@@ -14,6 +14,20 @@ describe("backup format v10", () => {
     expect(data.timeBlocks).toEqual([]);
     expect(data.plannerSettings).toEqual([]);
     expect(data.todoTrash).toEqual([]);
+    expect(data.learningItems).toEqual([]);
+  });
+
+  it("keeps learning items in a v11 payload", () => {
+    const learningItem = {
+      id: "learning-1",
+      learningDate: "2026-08-17",
+      type: "DAILY_PROBLEM",
+      title: "CR-2026-08-17",
+      externalKey: "notion:CR-2026-08-17",
+    };
+    const { data, warnings } = normalizeBackupPayload({ version: 11, learningItems: [learningItem] });
+    expect(warnings).toEqual([]);
+    expect(data.learningItems).toEqual([learningItem]);
   });
 
   it("restores only valid project decisions and memo relations", () => {

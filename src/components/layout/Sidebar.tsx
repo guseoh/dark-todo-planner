@@ -1,8 +1,8 @@
-import { BarChart3, Calendar, CalendarCheck, CalendarRange, ClipboardList, FileText, FolderKanban, Inbox, ListTodo, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Trash2 } from "lucide-react";
+import { BarChart3, BookOpen, Calendar, CalendarCheck, CalendarRange, ClipboardList, FileText, FolderKanban, Inbox, ListTodo, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { SmartViewSidebarSection, type SidebarSmartView } from "./SmartViewSidebarSection";
 
-export type AppView = "today" | "inbox" | "planning" | "week" | "month" | "projects" | "insights" | "all" | "memo" | "scratchpad" | "trash" | "settings";
+export type AppView = "today" | "inbox" | "learning" | "planning" | "week" | "month" | "projects" | "insights" | "all" | "memo" | "scratchpad" | "trash" | "settings";
 
 type SidebarProps = {
   activeView: AppView;
@@ -16,7 +16,7 @@ type NavItem = { id: AppView; label: string; icon: typeof CalendarCheck };
 type SidebarMode = "expanded" | "collapsed";
 
 const navGroups: Array<{ label: string; items: NavItem[] }> = [
-  { label: "실행", items: [{ id: "today", label: "오늘", icon: CalendarCheck }, { id: "inbox", label: "Inbox", icon: Inbox }, { id: "planning", label: "계획", icon: ListTodo }] },
+  { label: "실행", items: [{ id: "today", label: "오늘", icon: CalendarCheck }, { id: "inbox", label: "Inbox", icon: Inbox }, { id: "learning", label: "학습", icon: BookOpen }, { id: "planning", label: "계획", icon: ListTodo }] },
   { label: "보기", items: [{ id: "week", label: "주간", icon: CalendarRange }, { id: "month", label: "월간", icon: Calendar }, { id: "projects", label: "프로젝트", icon: FolderKanban }, { id: "insights", label: "인사이트", icon: BarChart3 }, { id: "all", label: "전체 Todo", icon: ClipboardList }] },
   { label: "관리", items: [{ id: "memo", label: "메모", icon: StickyNote }, { id: "scratchpad", label: "낙서장", icon: FileText }, { id: "trash", label: "휴지통", icon: Trash2 }] },
 ];
