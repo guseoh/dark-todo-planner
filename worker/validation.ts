@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const tagsSchema = z.array(z.string()).optional().default([]).transform((values) => Array.from(new Set(values.map((value) => value.trim().replace(/^#/, "")).filter(Boolean))));
 export const todoInputSchema = z.object({
+  clientId: z.string().uuid().optional(),
   categoryId: z.string().nullable().optional(), projectId: z.string().nullable().optional(), milestoneId: z.string().nullable().optional(), parentTodoId: z.string().nullable().optional(),
   title: z.string().trim().min(1), memo: z.string().optional().nullable(), date: z.string().min(1), dueDate: z.string().optional().nullable(),
   startTime: z.string().optional().nullable(), endTime: z.string().optional().nullable(), estimateMinutes: z.coerce.number().int().min(1).max(24 * 60).optional().nullable(),
