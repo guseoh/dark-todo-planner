@@ -46,7 +46,7 @@ const replaceResponseJson = (c: Parameters<MiddlewareHandler<AppEnv>>[0], payloa
 export const learningBackupExportMiddleware: MiddlewareHandler<AppEnv> = async (c, next) => {
   await next();
   if (!c.res.ok || c.req.method !== "GET") return;
-  const payload = await c.res.clone().json<BackupObject>();
+  const payload = await c.res.clone().json() as BackupObject;
   const rows = await c.env.DB.prepare(`
     SELECT id, learning_date AS learningDate, type, title, summary, source_url AS sourceUrl,
       source_name AS sourceName, status, external_key AS externalKey, todo_id AS todoId,
@@ -117,7 +117,7 @@ export const learningBackupImportMiddleware: MiddlewareHandler<AppEnv> = async (
     `).bind(userId, JSON.stringify(normalized)).run();
   }
 
-  const payload = await c.res.clone().json<BackupObject>();
+  const payload = await c.res.clone().json() as BackupObject;
   const imported = isObject(payload.imported) ? payload.imported : {};
   replaceResponseJson(c, { ...payload, imported: { ...imported, learningItems: normalized.length } });
 };
