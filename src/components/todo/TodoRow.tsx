@@ -3,6 +3,7 @@ import { formatKoreanDate, getDdayLabel, todayKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline, repeatLabel } from "../../lib/todo";
 import type { Todo } from "../../types/todo";
 import { PriorityBadge } from "./PriorityBadge";
+import { QuickSnoozeMenu } from "./QuickSnoozeMenu";
 
 type TodoRowProps = {
   todo: Todo;
@@ -86,6 +87,7 @@ export function TodoRow({
 
         {!selectionMode ? (
           <div className="flex shrink-0 flex-wrap justify-end gap-1 opacity-100 sm:opacity-55 sm:transition sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+            <QuickSnoozeMenu todo={todo} />
             {todo.referenceUrl ? <a href={todo.referenceUrl} target="_blank" rel="noreferrer" className="icon-btn h-8 w-8" aria-label={`"${todo.title}" 관련 링크 열기`} title={todo.referenceLabel || "관련 링크 열기"}><ExternalLink size={13} /></a> : null}
             {todo.archived && onUnarchive ? <button type="button" className="icon-btn h-8 w-8" onClick={() => onUnarchive(todo.id)} aria-label={`"${todo.title}" 보관 해제`}><RotateCcw size={13} /></button> : null}
             {!todo.archived && todo.completed && onArchive ? <button type="button" className="icon-btn h-8 w-8" onClick={() => onArchive(todo.id)} aria-label={`"${todo.title}" Todo 보관`}><Archive size={13} /></button> : null}
