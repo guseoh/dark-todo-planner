@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from "hono";
-import { enforceOwnDependencyStatus, syncBlockedTodoStatus, syncDependentsForBlocker } from "./todoDependencies";
+import { syncKnownBlockedTodos, syncStatusesForChangedTodos } from "./todoDependencies";
 import type { Bindings, Variables } from "./types";
 
 type AppEnv = { Bindings: Bindings; Variables: Variables };
@@ -12,17 +12,22 @@ const cleanIds = (value: unknown, limit = 4000) => Array.isArray(value)
 
 const dependentIdsForBlockers = async (db: D1Database, userId: string, blockerIds: string[]) => {
   if (!blockerIds.length) return [];
-  const placeholders = blockerIds.map(() => "?").join(",");
-  const result = await db.prepare(`SELECT DISTINCT blocked_todo_id AS id FROM todo_dependencies WHERE user_id = ? AND blocking_todo_id IN (${placeholders})`)
-    .bind(userId, ...blockerIds).all<{ id: string }>();
-  return result.results.map((row) => row.id);
+  const result: string[] = [];
+  for (let index = 0; index < blockerIds.length; index += 80) {
+    const chunk = blockerIds.slice(index, index + 80);
+    const placeholders = chunk.map(() => "?").join(",");
+    const rows = await db.prepare(`SELECT DISTINCT blocked_todo_id AS id FROM todo_dependencies WHERE user_id = ? AND blocking_todo_id IN (${placeholders})`)
+      .bind(userId, ...chunk).all<{ id: string }>();
+    result.push(...rows.results.map((row) => row.id));
+  }
+  return Array.from(new Set(result));
 };
 
 export const dependencyStatusMiddleware: MiddlewareHandler<AppEnv> = async (c, next) => {
   const method = c.req.method.toUpperCase();
   const path = c.req.path;
   const userId = c.get("userId");
-  let blockerIds: string[] = [];
+  let changedTodoIds: string[] = [];
   let deletedDependentIds: string[] = [];
   let shouldSync = false;
 
@@ -33,48 +38,45 @@ export const dependencyStatusMiddleware: MiddlewareHandler<AppEnv> = async (c, n
         const input = await c.req.raw.clone().json();
         if (isObject(input)) {
           shouldSync = "completed" in input || "workflowStatus" in input;
-          if (shouldSync) blockerIds = [decodeURIComponent(match[1])];
+          if (shouldSync) changedTodoIds = [decodeURIComponent(match[1])];
         }
       } catch { /* validation route will handle malformed JSON */ }
     }
   } else if (method === "PATCH") {
     const match = path.match(/^\/api\/todos\/([^/]+)\/toggle$/);
-    if (match) { shouldSync = true; blockerIds = [decodeURIComponent(match[1])]; }
+    if (match) { shouldSync = true; changedTodoIds = [decodeURIComponent(match[1])]; }
   } else if (method === "DELETE") {
     const match = path.match(/^\/api\/todos\/([^/]+)$/);
     if (match) {
-      blockerIds = [decodeURIComponent(match[1])];
-      deletedDependentIds = await dependentIdsForBlockers(c.env.DB, userId, blockerIds);
+      changedTodoIds = [decodeURIComponent(match[1])];
+      deletedDependentIds = await dependentIdsForBlockers(c.env.DB, userId, changedTodoIds);
     }
   } else if (method === "POST" && path === "/api/todos/bulk-update") {
     try {
       const input = await c.req.raw.clone().json();
       if (isObject(input) && isObject(input.action) && input.action.type === "WORKFLOW_STATUS") {
-        blockerIds = cleanIds(input.ids);
-        shouldSync = blockerIds.length > 0;
+        changedTodoIds = cleanIds(input.ids);
+        shouldSync = changedTodoIds.length > 0;
       }
     } catch { /* validation route will handle malformed JSON */ }
   } else if (method === "POST" && path === "/api/todos/bulk-trash") {
     try {
       const input = await c.req.raw.clone().json();
       if (isObject(input)) {
-        blockerIds = cleanIds(input.ids, 100);
-        deletedDependentIds = await dependentIdsForBlockers(c.env.DB, userId, blockerIds);
+        changedTodoIds = cleanIds(input.ids, 100);
+        deletedDependentIds = await dependentIdsForBlockers(c.env.DB, userId, changedTodoIds);
       }
     } catch { /* validation route will handle malformed JSON */ }
   } else if (method === "POST") {
     const match = path.match(/^\/api\/todos\/([^/]+)\/trash$/);
     if (match) {
-      blockerIds = [decodeURIComponent(match[1])];
-      deletedDependentIds = await dependentIdsForBlockers(c.env.DB, userId, blockerIds);
+      changedTodoIds = [decodeURIComponent(match[1])];
+      deletedDependentIds = await dependentIdsForBlockers(c.env.DB, userId, changedTodoIds);
     }
   }
 
   await next();
   if (!c.res.ok) return;
-  if (shouldSync) {
-    for (const todoId of blockerIds) await enforceOwnDependencyStatus(c.env.DB, userId, todoId);
-    for (const blockerId of blockerIds) await syncDependentsForBlocker(c.env.DB, userId, blockerId);
-  }
-  for (const blockedTodoId of deletedDependentIds) await syncBlockedTodoStatus(c.env.DB, userId, blockedTodoId);
+  if (shouldSync) await syncStatusesForChangedTodos(c.env.DB, userId, changedTodoIds);
+  if (deletedDependentIds.length) await syncKnownBlockedTodos(c.env.DB, userId, deletedDependentIds);
 };
