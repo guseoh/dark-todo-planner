@@ -29,23 +29,24 @@ export function getKstDate(now = new Date()): string {
   return new Date(now.getTime() + KST_OFFSET_MS).toISOString().slice(0, 10);
 }
 
-export function codeReadingPageToLearning(page: NotionPage, date: string): LearningImportItem {
+export function codeReadingPageToLearning(page: NotionPage, date: string, bodyText = ""): LearningImportItem {
   const javaTopic = notionText(page, "Java 주제");
   const springTopic = notionText(page, "Spring 주제");
   const designTopic = notionText(page, "설계 주제");
   const status = notionSelect(page, "상태");
-  const lines = [
+  const fallbackLines = [
     javaTopic ? `Java: ${javaTopic}` : "",
     springTopic ? `Spring: ${springTopic}` : "",
     designTopic ? `설계: ${designTopic}` : "",
     status ? `Notion 상태: ${status}` : "",
   ].filter(Boolean);
+  const body = clipped(bodyText, 8000);
 
   return {
     learningDate: date,
     type: "DAILY_PROBLEM",
     title: notionText(page, "세트 ID") || `CR-${date}`,
-    summary: clipped(lines.join("\n"), 8000) || undefined,
+    summary: body || clipped(fallbackLines.join("\n"), 8000) || undefined,
     sourceUrl: page.url,
     sourceName: "Notion · 데일리 코드 읽기",
     externalKey: externalKey(page),
@@ -180,7 +181,13 @@ export async function runNotionLearningSync(env: Bindings, now = new Date()): Pr
     });
     const latest = pages[0];
     if (latest) {
-      await importLearningItems(env, USER_ID, [codeReadingPageToLearning(latest, date)]);
+      let bodyText = "";
+      try {
+        bodyText = await retrieveNotionPageText({ token: env.NOTION_TOKEN!, pageId: latest.id, maxChars: 8000 });
+      } catch (error) {
+        codeReadingError = `코드 읽기 본문 읽기 실패: ${errorMessage(error)}`.slice(0, 1000);
+      }
+      await importLearningItems(env, USER_ID, [codeReadingPageToLearning(latest, date, bodyText)]);
       codeReadingCount = 1;
     }
   } catch (error) {
