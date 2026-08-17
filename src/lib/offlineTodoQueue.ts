@@ -120,7 +120,8 @@ const updateMutation = async (mutation: QueuedTodoMutation) => {
   await withStore<IDBValidKey>("readwrite", (store) => store.put(mutation));
 };
 
-export const isRetryableTodoMutationError = (error: unknown) => !(error instanceof ApiError) || error.status >= 500;
+export const isRetryableTodoMutationError = (error: unknown) =>
+  !(error instanceof ApiError) || error.status >= 500 || error.status === 429 || error.status === 401 || error.status === 403;
 
 const isAlreadyApplied = (mutation: QueuedTodoMutation, error: ApiError) =>
   error.status === 404 && (mutation.kind === "TRASH" || mutation.kind === "BULK_TRASH");
@@ -155,7 +156,7 @@ export async function flushTodoMutationQueue(): Promise<OfflineTodoFlushResult> 
         emit(OFFLINE_TODO_QUEUE_CHANGED);
         continue;
       }
-      if (error instanceof ApiError && error.status >= 400 && error.status < 500 && error.status !== 401 && error.status !== 403) {
+      if (!isRetryableTodoMutationError(error) && error instanceof ApiError) {
         mutation.state = "FAILED";
         mutation.attempts += 1;
         mutation.lastError = error.message;
