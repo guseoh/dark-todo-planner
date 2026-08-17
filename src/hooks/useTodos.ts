@@ -1,8 +1,15 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Category } from "../types/category";
 import type { Todo, TodoBulkAction, TodoFilters, TodoInput } from "../types/todo";
 import { api, apiAllPages, jsonBody } from "../lib/api/client";
 import { getMonthGrid, getPlannerToday, getWeekDays, todayKey, toDateKey } from "../lib/date";
+import {
+  flushTodoMutationQueue,
+  OFFLINE_TODO_SYNC_REQUEST,
+  queueTodoMutation,
+  shouldQueueTodoMutation,
+  type QueuedTodoMutation,
+} from "../lib/offlineTodoQueue";
 import { calculateRate, getAllTags, priorityRank, todoOccursOnDate } from "../lib/todo";
 import {
   dedupeTodosById,
@@ -42,6 +49,61 @@ const toTodoRequestBody = (todo: Todo | (Partial<Todo> & TodoInput)) => {
   return body;
 };
 
+type QueueMutationInput = Pick<QueuedTodoMutation, "kind" | "method" | "path" | "body">;
+
+const runQueueableMutation = async <T>(mutation: QueueMutationInput, request: () => Promise<T>) => {
+  if (shouldQueueTodoMutation()) {
+    await queueTodoMutation(mutation);
+    return { queued: true as const, data: undefined };
+  }
+  try {
+    return { queued: false as const, data: await request() };
+  } catch (error) {
+    if (!shouldQueueTodoMutation(error)) throw error;
+    await queueTodoMutation(mutation);
+    return { queued: true as const, data: undefined };
+  }
+};
+
+const createOptimisticTodo = (id: string, input: TodoInput): Todo => {
+  const now = new Date().toISOString();
+  const planningState = input.planningState || "SCHEDULED";
+  const workflowStatus = input.workflowStatus || "TODO";
+  return {
+    id,
+    title: input.title,
+    categoryId: input.categoryId,
+    projectId: input.projectId,
+    milestoneId: input.milestoneId,
+    parentTodoId: input.parentTodoId,
+    memo: input.memo,
+    date: input.date || todayKey(),
+    dueDate: input.dueDate,
+    estimateMinutes: input.estimateMinutes,
+    planningState,
+    workflowStatus,
+    priority: input.priority || "MEDIUM",
+    completed: workflowStatus === "DONE",
+    createdAt: now,
+    updatedAt: now,
+    repeat: input.repeat || "NONE",
+    tags: input.tags || [],
+    archived: false,
+  };
+};
+
+const applyOptimisticUpdates = (existing: Todo, updates: Partial<Omit<Todo, "id" | "createdAt">>): Todo => {
+  const next: Todo = { ...existing, ...updates, updatedAt: new Date().toISOString() };
+  if (updates.workflowStatus !== undefined && updates.completed === undefined) next.completed = updates.workflowStatus === "DONE";
+  if (updates.completed !== undefined && updates.workflowStatus === undefined) {
+    next.workflowStatus = updates.completed ? "DONE" : existing.workflowStatus === "DONE" ? "TODO" : existing.workflowStatus;
+  }
+  if (updates.archived === true && !existing.archived) next.archivedAt = next.updatedAt;
+  if (updates.archived === false) next.archivedAt = undefined;
+  if (updates.categoryId !== undefined && updates.categoryId !== existing.categoryId) next.category = undefined;
+  return next;
+};
+
 export function useTodos() {
   const [allTodos, setAllTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -73,6 +135,30 @@ export function useTodos() {
     }
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    let syncing = false;
+    const sync = async () => {
+      if (syncing) return;
+      syncing = true;
+      try {
+        const result = await flushTodoMutationQueue();
+        if (active && result.flushed > 0) await loadTodos();
+      } catch {
+        // Queue state is surfaced by OfflineSyncIndicator. Keep queued mutations intact.
+      } finally {
+        syncing = false;
+      }
+    };
+    const handleSyncRequest = () => { void sync(); };
+    window.addEventListener(OFFLINE_TODO_SYNC_REQUEST, handleSyncRequest);
+    if (navigator.onLine) void sync();
+    return () => {
+      active = false;
+      window.removeEventListener(OFFLINE_TODO_SYNC_REQUEST, handleSyncRequest);
+    };
+  }, [loadTodos]);
+
   const todos = useMemo(() => allTodos.filter((todo) => !todo.archived), [allTodos]);
   const archivedTodos = useMemo(() => allTodos.filter((todo) => todo.archived), [allTodos]);
   const inboxTodos = useMemo(() => todos.filter((todo) => todo.planningState === "INBOX"), [todos]);
@@ -82,15 +168,15 @@ export function useTodos() {
   const addTodo = useCallback(async (input: TodoInput) => {
     setSaving(true);
     try {
-      const result = await api<{ todo: Todo }>("/api/todos", {
-        method: "POST",
-        ...jsonBody(toTodoRequestBody({
-          date: todayKey(), priority: "MEDIUM", repeat: "NONE", planningState: "SCHEDULED", workflowStatus: "TODO", ...input,
-        })),
-      });
-      setAllTodos((current) => [result.todo, ...current]);
+      const clientId = crypto.randomUUID();
+      const optimistic = createOptimisticTodo(clientId, input);
+      const body = toTodoRequestBody(optimistic);
+      const mutation: QueueMutationInput = { kind: "CREATE", method: "PUT", path: `/api/offline/todos/${clientId}`, body };
+      const result = await runQueueableMutation<{ todo: Todo }>(mutation, () => api<{ todo: Todo }>(mutation.path, { method: "PUT", ...jsonBody(body) }));
+      const todo = result.queued ? optimistic : result.data!.todo;
+      setAllTodos((current) => [todo, ...current.filter((item) => item.id !== todo.id)]);
       setError("");
-      return result.todo;
+      return todo;
     } catch (err) {
       setError(getMessage(err));
       return undefined;
@@ -104,13 +190,14 @@ export function useTodos() {
     if (!existing) return undefined;
     setSaving(true);
     try {
-      const result = await api<{ todo: Todo }>(`/api/todos/${id}`, {
-        method: "PUT",
-        ...jsonBody(toTodoRequestBody({ ...existing, ...updates })),
-      });
-      setAllTodos((current) => current.map((todo) => (todo.id === id ? result.todo : todo)));
+      const optimistic = applyOptimisticUpdates(existing, updates);
+      const body = toTodoRequestBody(optimistic);
+      const mutation: QueueMutationInput = { kind: "UPDATE", method: "PUT", path: `/api/todos/${id}`, body };
+      const result = await runQueueableMutation<{ todo: Todo }>(mutation, () => api<{ todo: Todo }>(mutation.path, { method: "PUT", ...jsonBody(body) }));
+      const todo = result.queued ? optimistic : result.data!.todo;
+      setAllTodos((current) => current.map((item) => (item.id === id ? todo : item)));
       setError("");
-      return result.todo;
+      return todo;
     } catch (err) {
       setError(getMessage(err));
       return undefined;
@@ -122,7 +209,8 @@ export function useTodos() {
   const finalizeDelete = useCallback(async (id: string) => {
     const snapshot = deletedSnapshotsRef.current.get(id);
     try {
-      await api(`/api/todos/${id}/trash`, { method: "POST" });
+      const mutation: QueueMutationInput = { kind: "TRASH", method: "POST", path: `/api/todos/${id}/trash` };
+      await runQueueableMutation(mutation, () => api(mutation.path, { method: "POST" }));
       deletedSnapshotsRef.current.delete(id);
       setError("");
     } catch (err) {
@@ -175,7 +263,9 @@ export function useTodos() {
     try {
       for (let index = 0; index < uniqueIds.length; index += BULK_TRASH_CHUNK_SIZE) {
         const chunk = uniqueIds.slice(index, index + BULK_TRASH_CHUNK_SIZE);
-        await api("/api/todos/bulk-trash", { method: "POST", ...jsonBody({ ids: chunk }) });
+        const body = { ids: chunk };
+        const mutation: QueueMutationInput = { kind: "BULK_TRASH", method: "POST", path: "/api/todos/bulk-trash", body };
+        await runQueueableMutation(mutation, () => api(mutation.path, { method: "POST", ...jsonBody(body) }));
       }
       setError("");
       return true;
@@ -199,14 +289,16 @@ export function useTodos() {
     const targetIds = new Set(uniqueIds);
     setAllTodos((current) => current.map((todo) => {
       if (!targetIds.has(todo.id)) return todo;
-      if (action.type === "PROJECT") return { ...todo, projectId: action.value || undefined, milestoneId: undefined, parentTodoId: undefined };
-      if (action.type === "DATE") return { ...todo, date: action.value, planningState: "SCHEDULED" };
-      if (action.type === "WORKFLOW_STATUS") return { ...todo, workflowStatus: action.value, completed: action.value === "DONE" };
-      return { ...todo, priority: action.value };
+      if (action.type === "PROJECT") return { ...todo, projectId: action.value || undefined, milestoneId: undefined, parentTodoId: undefined, updatedAt: new Date().toISOString() };
+      if (action.type === "DATE") return { ...todo, date: action.value, planningState: "SCHEDULED", updatedAt: new Date().toISOString() };
+      if (action.type === "WORKFLOW_STATUS") return { ...todo, workflowStatus: action.value, completed: action.value === "DONE", updatedAt: new Date().toISOString() };
+      return { ...todo, priority: action.value, updatedAt: new Date().toISOString() };
     }));
     setSaving(true);
     try {
-      await api("/api/todos/bulk-update", { method: "POST", ...jsonBody({ ids: uniqueIds, action }) });
+      const body = { ids: uniqueIds, action };
+      const mutation: QueueMutationInput = { kind: "BULK_UPDATE", method: "POST", path: "/api/todos/bulk-update", body };
+      await runQueueableMutation(mutation, () => api(mutation.path, { method: "POST", ...jsonBody(body) }));
       setError("");
       return true;
     } catch (err) {
@@ -219,33 +311,20 @@ export function useTodos() {
   }, [allTodos]);
 
   const toggleTodo = useCallback(async (id: string) => {
-    const previous = allTodos;
-    setAllTodos((current) => current.map((todo) => todo.id === id ? { ...todo, completed: !todo.completed, workflowStatus: !todo.completed ? "DONE" : todo.workflowStatus === "DONE" ? "TODO" : todo.workflowStatus } : todo));
-    try {
-      const result = await api<{ todo: Todo }>(`/api/todos/${id}/toggle`, { method: "PATCH" });
-      setAllTodos((current) => current.map((todo) => (todo.id === id ? result.todo : todo)));
-      setError("");
-    } catch (err) {
-      setAllTodos(previous);
-      setError(getMessage(err));
-    }
-  }, [allTodos]);
+    const existing = allTodos.find((todo) => todo.id === id);
+    if (!existing) return;
+    const completed = !existing.completed;
+    const workflowStatus = completed ? "DONE" : existing.workflowStatus === "DONE" ? "TODO" : existing.workflowStatus;
+    await updateTodo(id, { completed, workflowStatus });
+  }, [allTodos, updateTodo]);
 
   const archiveTodo = useCallback(async (id: string) => {
-    try {
-      const result = await api<{ todo: Todo }>(`/api/todos/${id}/archive`, { method: "PATCH" });
-      setAllTodos((current) => current.map((todo) => (todo.id === id ? result.todo : todo)));
-      setError("");
-    } catch (err) { setError(getMessage(err)); }
-  }, []);
+    await updateTodo(id, { archived: true });
+  }, [updateTodo]);
 
   const unarchiveTodo = useCallback(async (id: string) => {
-    try {
-      const result = await api<{ todo: Todo }>(`/api/todos/${id}/unarchive`, { method: "PATCH" });
-      setAllTodos((current) => current.map((todo) => (todo.id === id ? result.todo : todo)));
-      setError("");
-    } catch (err) { setError(getMessage(err)); }
-  }, []);
+    await updateTodo(id, { archived: false });
+  }, [updateTodo]);
 
   const syncCategory = useCallback((category: Category) => {
     setAllTodos((current) => current.map((todo) => (todo.categoryId === category.id ? { ...todo, category } : todo)));

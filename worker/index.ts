@@ -22,6 +22,7 @@ import { calendarRoutes } from "./routes/calendar";
 import { contentRoutes } from "./routes/content";
 import { learningRoutes } from "./routes/learning";
 import { libraryRoutes } from "./routes/library";
+import { offlineTodoRoutes } from "./routes/offlineTodos";
 import { planningRoutes } from "./routes/planning";
 import { projectDuplicateRoutes } from "./routes/projectDuplicate";
 import { projectRoutes } from "./routes/projects";
@@ -112,6 +113,7 @@ app.use("/api/backup/import", backupV9ImportMiddleware);
 app.use("/api/migrate/local-storage", backupV9ImportMiddleware);
 
 app.route("/api", todoRoutes);
+app.route("/api", offlineTodoRoutes);
 app.route("/api", projectRoutes);
 app.route("/api", projectDuplicateRoutes);
 app.route("/api", referenceLinkRoutes);
