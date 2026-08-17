@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { CalendarPlus2, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { CalendarCheck2, CalendarPlus2, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { api, jsonBody } from "../../lib/api/client";
 import { todayKey } from "../../lib/date";
 import type { Category } from "../../types/category";
@@ -20,6 +20,7 @@ type Routine = {
   id: string;
   name: string;
   description?: string | null;
+  lastRunDate?: string | null;
   items: RoutineItem[];
   createdAt: string;
   updatedAt: string;
@@ -49,6 +50,7 @@ export function RoutinePanel({ categories, projects, onTodosCreated }: { categor
   const [message, setMessage] = useState("");
 
   const activeProjects = useMemo(() => projects.filter((project) => !project.archived), [projects]);
+  const today = todayKey();
 
   const load = async () => {
     setLoading(true);
@@ -104,9 +106,14 @@ export function RoutinePanel({ categories, projects, onTodosCreated }: { categor
   };
 
   const runToday = async (routine: Routine) => {
+    if (routine.lastRunDate === today) {
+      setMessage(`“${routine.name}”은 오늘 이미 생성했습니다.`);
+      return;
+    }
     setRunningId(routine.id); setMessage("");
     try {
-      const result = await api<{ todoCount: number }>(`/api/routines/${routine.id}/run`, { method: "POST", ...jsonBody({ targetDate: todayKey() }) });
+      const result = await api<{ todoCount: number; targetDate: string }>(`/api/routines/${routine.id}/run`, { method: "POST", ...jsonBody({ targetDate: today }) });
+      setRoutines((current) => current.map((entry) => entry.id === routine.id ? { ...entry, lastRunDate: result.targetDate } : entry));
       await Promise.resolve(onTodosCreated());
       setMessage(`“${routine.name}”에서 오늘 Todo ${result.todoCount}개를 생성했습니다.`);
     } catch (error) { setMessage(messageOf(error)); }
@@ -121,13 +128,30 @@ export function RoutinePanel({ categories, projects, onTodosCreated }: { categor
       </div>
       {message ? <div className="mt-3 rounded-lg border border-ink-700/70 bg-ink-950/35 px-3 py-2 text-xs font-semibold text-ink-300" aria-live="polite">{message}</div> : null}
       <div className="mt-4 grid gap-3 lg:grid-cols-2">
-        {routines.map((routine) => (
-          <article key={routine.id} className="rounded-xl border border-ink-700/70 bg-ink-950/30 p-3.5">
-            <div className="flex items-start justify-between gap-3"><div><h4 className="text-sm font-bold text-ink-100">{routine.name}</h4>{routine.description ? <p className="mt-1 text-xs leading-5 text-ink-400">{routine.description}</p> : null}</div><span className="rounded-full border border-ink-700 px-2 py-0.5 text-[11px] font-semibold text-ink-400">{routine.items.length}개</span></div>
-            <ul className="mt-3 space-y-1.5 text-xs text-ink-400">{routine.items.slice(0, 5).map((item) => <li key={item.id || item.title} className="flex items-center justify-between gap-2"><span className="truncate">• {item.title}</span><span className="shrink-0 text-ink-500">{item.estimateMinutes ? `${item.estimateMinutes}분` : item.priority}</span></li>)}{routine.items.length > 5 ? <li className="text-ink-500">외 {routine.items.length - 5}개</li> : null}</ul>
-            <div className="mt-3 flex flex-wrap gap-2 border-t border-ink-800 pt-3"><button type="button" className="btn-primary min-h-9 px-3 py-1.5 text-xs" disabled={runningId === routine.id} onClick={() => void runToday(routine)}><CalendarPlus2 size={14} />{runningId === routine.id ? "생성 중..." : "오늘 루틴 생성"}</button><button type="button" className="btn-secondary min-h-9 px-3 py-1.5 text-xs" onClick={() => openEdit(routine)}><Pencil size={14} />수정</button><button type="button" className="ml-auto inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-ink-500 hover:bg-red-500/10 hover:text-red-200" onClick={() => void remove(routine)}><Trash2 size={14} />삭제</button></div>
-          </article>
-        ))}
+        {routines.map((routine) => {
+          const ranToday = routine.lastRunDate === today;
+          return (
+            <article key={routine.id} className="rounded-xl border border-ink-700/70 bg-ink-950/30 p-3.5">
+              <div className="flex items-start justify-between gap-3">
+                <div><h4 className="text-sm font-bold text-ink-100">{routine.name}</h4>{routine.description ? <p className="mt-1 text-xs leading-5 text-ink-400">{routine.description}</p> : null}</div>
+                <div className="flex flex-wrap justify-end gap-1.5">
+                  {ranToday ? <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/[0.07] px-2 py-0.5 text-[11px] font-semibold text-emerald-100"><CalendarCheck2 size={12} />오늘 생성 완료</span> : null}
+                  <span className="rounded-full border border-ink-700 px-2 py-0.5 text-[11px] font-semibold text-ink-400">{routine.items.length}개</span>
+                </div>
+              </div>
+              <ul className="mt-3 space-y-1.5 text-xs text-ink-400">{routine.items.slice(0, 5).map((item) => <li key={item.id || item.title} className="flex items-center justify-between gap-2"><span className="truncate">• {item.title}</span><span className="shrink-0 text-ink-500">{item.estimateMinutes ? `${item.estimateMinutes}분` : item.priority}</span></li>)}{routine.items.length > 5 ? <li className="text-ink-500">외 {routine.items.length - 5}개</li> : null}</ul>
+              {ranToday ? <p className="mt-3 rounded-lg border border-success/20 bg-success/[0.05] px-3 py-2 text-xs text-emerald-100">오늘 Todo는 이미 생성됐습니다. 내일 다시 생성할 수 있습니다.</p> : null}
+              <div className="mt-3 flex flex-wrap gap-2 border-t border-ink-800 pt-3">
+                <button type="button" className={ranToday ? "btn-secondary min-h-9 px-3 py-1.5 text-xs" : "btn-primary min-h-9 px-3 py-1.5 text-xs"} disabled={runningId === routine.id || ranToday} onClick={() => void runToday(routine)}>
+                  {ranToday ? <CalendarCheck2 size={14} /> : <CalendarPlus2 size={14} />}
+                  {runningId === routine.id ? "생성 중..." : ranToday ? "오늘 생성됨" : "오늘 루틴 생성"}
+                </button>
+                <button type="button" className="btn-secondary min-h-9 px-3 py-1.5 text-xs" onClick={() => openEdit(routine)}><Pencil size={14} />수정</button>
+                <button type="button" className="ml-auto inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-ink-500 hover:bg-red-500/10 hover:text-red-200" onClick={() => void remove(routine)}><Trash2 size={14} />삭제</button>
+              </div>
+            </article>
+          );
+        })}
         {!loading && !routines.length ? <div className="rounded-xl border border-dashed border-ink-700 px-4 py-8 text-center text-sm text-ink-500 lg:col-span-2">아직 저장된 루틴이 없습니다.</div> : null}
       </div>
 
