@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { getOrCreateLearningAiGuide } from "../learningAiGuide";
 import { deleteLearningItem, findLearningItem, importLearningItems, listLearningItems, updateLearningStatus, convertLearningItemToTodo } from "../learningStore";
 import { getLearningSyncStatus, runNotionLearningSync } from "../notionLearningSync";
 import { learningDateSchema, learningImportSchema, learningStatusSchema, learningTodoSchema } from "../learningValidation";
@@ -20,6 +21,20 @@ learningRoutes.post("/learning-items/import", async (c) => {
   const { items } = learningImportSchema.parse(await c.req.json());
   await importLearningItems(c.env, c.get("userId"), items);
   return c.json({ ok: true, imported: items.length });
+});
+
+learningRoutes.post("/learning-items/:id/ai-guide", async (c) => {
+  const id = c.req.param("id");
+  const userId = c.get("userId");
+  const item = await findLearningItem(c.env, userId, id);
+  if (!item) return c.json({ message: "학습 항목을 찾을 수 없습니다." }, 404);
+  const body = await c.req.json<{ force?: unknown }>().catch(() => ({}));
+  try {
+    return c.json({ guide: await getOrCreateLearningAiGuide(c.env, userId, item, body.force === true) });
+  } catch (error) {
+    console.error("[learning-ai] guide generation failed", error);
+    return c.json({ message: error instanceof Error ? error.message : "AI 학습 가이드를 생성하지 못했습니다." }, 503);
+  }
 });
 
 learningRoutes.patch("/learning-items/:id/status", async (c) => {
