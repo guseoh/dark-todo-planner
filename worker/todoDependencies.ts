@@ -1,5 +1,7 @@
 import { nowIso } from "./utils";
 
+const STATUS_SYNC_CHUNK = 80;
+
 export const normalizeDependencyIds = (values: unknown): string[] => {
   if (!Array.isArray(values)) return [];
   return Array.from(new Set(values.filter((value): value is string => typeof value === "string").map((value) => value.trim()).filter(Boolean))).slice(0, 20);
@@ -59,12 +61,6 @@ export async function replaceTodoDependencies(db: D1Database, userId: string, bl
   await db.batch(statements);
 }
 
-async function dependencyCount(db: D1Database, userId: string, blockedTodoId: string) {
-  const row = await db.prepare("SELECT COUNT(*) AS value FROM todo_dependencies WHERE user_id = ? AND blocked_todo_id = ?")
-    .bind(userId, blockedTodoId).first<{ value: number }>();
-  return Number(row?.value || 0);
-}
-
 async function unresolvedBlockerCount(db: D1Database, userId: string, blockedTodoId: string) {
   const row = await db.prepare(`
     SELECT COUNT(*) AS value
@@ -90,14 +86,79 @@ export async function syncBlockedTodoStatus(db: D1Database, userId: string, bloc
   }
 }
 
-export async function enforceOwnDependencyStatus(db: D1Database, userId: string, todoId: string) {
-  if (await dependencyCount(db, userId, todoId)) await syncBlockedTodoStatus(db, userId, todoId);
+export async function syncStatusesForChangedTodos(db: D1Database, userId: string, todoIds: string[]) {
+  const ids = Array.from(new Set(todoIds.map((id) => id.trim()).filter(Boolean)));
+  const now = nowIso();
+  const statements: D1PreparedStatement[] = [];
+  for (let index = 0; index < ids.length; index += STATUS_SYNC_CHUNK) {
+    const chunk = ids.slice(index, index + STATUS_SYNC_CHUNK);
+    const placeholders = chunk.map(() => "?").join(",");
+
+    statements.push(db.prepare(`
+      UPDATE todos
+      SET workflow_status = CASE
+        WHEN EXISTS (
+          SELECT 1 FROM todo_dependencies d
+          INNER JOIN todos blocker ON blocker.id = d.blocking_todo_id
+          WHERE d.user_id = ? AND d.blocked_todo_id = todos.id AND blocker.completed = 0 AND blocker.workflow_status <> 'DONE'
+        ) THEN 'BLOCKED'
+        WHEN workflow_status = 'BLOCKED' THEN 'TODO'
+        ELSE workflow_status
+      END,
+      updated_at = ?
+      WHERE user_id = ? AND completed = 0 AND id IN (${placeholders})
+        AND EXISTS (SELECT 1 FROM todo_dependencies own_d WHERE own_d.user_id = ? AND own_d.blocked_todo_id = todos.id)
+    `).bind(userId, now, userId, ...chunk, userId));
+
+    statements.push(db.prepare(`
+      UPDATE todos
+      SET workflow_status = CASE
+        WHEN EXISTS (
+          SELECT 1 FROM todo_dependencies d
+          INNER JOIN todos blocker ON blocker.id = d.blocking_todo_id
+          WHERE d.user_id = ? AND d.blocked_todo_id = todos.id AND blocker.completed = 0 AND blocker.workflow_status <> 'DONE'
+        ) THEN 'BLOCKED'
+        WHEN workflow_status = 'BLOCKED' THEN 'TODO'
+        ELSE workflow_status
+      END,
+      updated_at = ?
+      WHERE user_id = ? AND completed = 0
+        AND EXISTS (
+          SELECT 1 FROM todo_dependencies changed
+          WHERE changed.user_id = ? AND changed.blocking_todo_id IN (${placeholders}) AND changed.blocked_todo_id = todos.id
+        )
+    `).bind(userId, now, userId, userId, ...chunk));
+  }
+  if (statements.length) await db.batch(statements);
+}
+
+export async function syncKnownBlockedTodos(db: D1Database, userId: string, blockedTodoIds: string[]) {
+  const ids = Array.from(new Set(blockedTodoIds.map((id) => id.trim()).filter(Boolean)));
+  const now = nowIso();
+  const statements: D1PreparedStatement[] = [];
+  for (let index = 0; index < ids.length; index += STATUS_SYNC_CHUNK) {
+    const chunk = ids.slice(index, index + STATUS_SYNC_CHUNK);
+    const placeholders = chunk.map(() => "?").join(",");
+    statements.push(db.prepare(`
+      UPDATE todos
+      SET workflow_status = CASE
+        WHEN EXISTS (
+          SELECT 1 FROM todo_dependencies d
+          INNER JOIN todos blocker ON blocker.id = d.blocking_todo_id
+          WHERE d.user_id = ? AND d.blocked_todo_id = todos.id AND blocker.completed = 0 AND blocker.workflow_status <> 'DONE'
+        ) THEN 'BLOCKED'
+        WHEN workflow_status = 'BLOCKED' THEN 'TODO'
+        ELSE workflow_status
+      END,
+      updated_at = ?
+      WHERE user_id = ? AND completed = 0 AND id IN (${placeholders})
+    `).bind(userId, now, userId, ...chunk));
+  }
+  if (statements.length) await db.batch(statements);
 }
 
 export async function syncDependentsForBlocker(db: D1Database, userId: string, blockingTodoId: string) {
-  const result = await db.prepare("SELECT blocked_todo_id AS id FROM todo_dependencies WHERE user_id = ? AND blocking_todo_id = ?")
-    .bind(userId, blockingTodoId).all<{ id: string }>();
-  for (const row of result.results) await syncBlockedTodoStatus(db, userId, row.id);
+  await syncStatusesForChangedTodos(db, userId, [blockingTodoId]);
 }
 
 export async function listTodoBlockers(db: D1Database, userId: string, blockedTodoId: string) {
