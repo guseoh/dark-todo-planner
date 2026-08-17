@@ -73,10 +73,6 @@ export function useTodos() {
     }
   }, []);
 
-  const syncDependents = useCallback(async (ids: string[]) => {
-    for (const id of Array.from(new Set(ids))) await api(`/api/todos/${id}/dependents/sync`, { method: "POST" });
-  }, []);
-
   const todos = useMemo(() => allTodos.filter((todo) => !todo.archived), [allTodos]);
   const archivedTodos = useMemo(() => allTodos.filter((todo) => todo.archived), [allTodos]);
   const inboxTodos = useMemo(() => todos.filter((todo) => todo.planningState === "INBOX"), [todos]);
@@ -114,7 +110,6 @@ export function useTodos() {
       });
       const statusChanged = existing.completed !== result.todo.completed || existing.workflowStatus !== result.todo.workflowStatus;
       if (statusChanged) {
-        await syncDependents([id]);
         const loaded = await loadTodos();
         setError("");
         return loaded.find((todo) => todo.id === id) || result.todo;
@@ -128,7 +123,7 @@ export function useTodos() {
     } finally {
       setSaving(false);
     }
-  }, [allTodos, loadTodos, syncDependents]);
+  }, [allTodos, loadTodos]);
 
   const finalizeDelete = useCallback(async (id: string) => {
     const snapshot = deletedSnapshotsRef.current.get(id);
@@ -218,10 +213,7 @@ export function useTodos() {
     setSaving(true);
     try {
       await api("/api/todos/bulk-update", { method: "POST", ...jsonBody({ ids: uniqueIds, action }) });
-      if (action.type === "WORKFLOW_STATUS") {
-        await syncDependents(uniqueIds);
-        await loadTodos();
-      }
+      if (action.type === "WORKFLOW_STATUS") await loadTodos();
       setError("");
       return true;
     } catch (err) {
@@ -231,21 +223,20 @@ export function useTodos() {
     } finally {
       setSaving(false);
     }
-  }, [allTodos, loadTodos, syncDependents]);
+  }, [allTodos, loadTodos]);
 
   const toggleTodo = useCallback(async (id: string) => {
     const previous = allTodos;
     setAllTodos((current) => current.map((todo) => todo.id === id ? { ...todo, completed: !todo.completed, workflowStatus: !todo.completed ? "DONE" : todo.workflowStatus === "DONE" ? "TODO" : todo.workflowStatus } : todo));
     try {
       await api<{ todo: Todo }>(`/api/todos/${id}/toggle`, { method: "PATCH" });
-      await syncDependents([id]);
       await loadTodos();
       setError("");
     } catch (err) {
       setAllTodos(previous);
       setError(getMessage(err));
     }
-  }, [allTodos, loadTodos, syncDependents]);
+  }, [allTodos, loadTodos]);
 
   const archiveTodo = useCallback(async (id: string) => {
     try {
