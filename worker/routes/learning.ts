@@ -28,7 +28,7 @@ learningRoutes.post("/learning-items/:id/ai-guide", async (c) => {
   const userId = c.get("userId");
   const item = await findLearningItem(c.env, userId, id);
   if (!item) return c.json({ message: "학습 항목을 찾을 수 없습니다." }, 404);
-  const body = await c.req.json<{ force?: unknown }>().catch(() => ({}));
+  const body: { force?: unknown } = await c.req.json<{ force?: unknown }>().catch(() => ({}));
   try {
     return c.json({ guide: await getOrCreateLearningAiGuide(c.env, userId, item, body.force === true) });
   } catch (error) {
