@@ -11,6 +11,7 @@ type RoutineItemRow = {
   routineDescription: string | null;
   routineCreatedAt: string;
   routineUpdatedAt: string;
+  lastRunDate: string | null;
   itemId: string | null;
   title: string | null;
   priority: "LOW" | "MEDIUM" | "HIGH" | null;
@@ -24,6 +25,7 @@ const listRoutines = async (db: D1Database, userId: string) => {
   const result = await db.prepare(`
     SELECT r.id AS routineId, r.name AS routineName, r.description AS routineDescription,
       r.created_at AS routineCreatedAt, r.updated_at AS routineUpdatedAt,
+      (SELECT MAX(rr.target_date) FROM routine_runs rr WHERE rr.routine_id = r.id) AS lastRunDate,
       i.id AS itemId, i.title, i.priority, i.estimate_minutes AS estimateMinutes,
       i.project_id AS projectId, i.category_id AS categoryId, i.sort_order AS sortOrder
     FROM routine_templates r
@@ -31,12 +33,13 @@ const listRoutines = async (db: D1Database, userId: string) => {
     WHERE r.user_id = ?
     ORDER BY r.updated_at DESC, i.sort_order ASC, i.created_at ASC
   `).bind(userId).all<RoutineItemRow>();
-  const map = new Map<string, { id: string; name: string; description: string | null; createdAt: string; updatedAt: string; items: unknown[] }>();
+  const map = new Map<string, { id: string; name: string; description: string | null; lastRunDate: string | null; createdAt: string; updatedAt: string; items: unknown[] }>();
   for (const row of result.results) {
     const routine = map.get(row.routineId) || {
       id: row.routineId,
       name: row.routineName,
       description: row.routineDescription,
+      lastRunDate: row.lastRunDate,
       createdAt: row.routineCreatedAt,
       updatedAt: row.routineUpdatedAt,
       items: [],
