@@ -16,6 +16,14 @@ describe("MarkdownPreview", () => {
     expect(html).toContain(">3.</span>");
   });
 
+  it("renders Notion quotes, legacy bullets, and fenced code", () => {
+    const html = renderMarkdownPreviewHtml("> 💡 한 줄 정리\n• 기존 불릿\n```java\nvar value = 1;\n```");
+    expect(html).toContain("<blockquote");
+    expect(html).toContain("기존 불릿");
+    expect(html).toContain("java</div>");
+    expect(html).toContain("var value = 1;");
+  });
+
   it("continues escaping raw html", () => {
     const html = renderMarkdownPreviewHtml("<script>alert('x')</script>");
     expect(html).toContain("&lt;script&gt;");
