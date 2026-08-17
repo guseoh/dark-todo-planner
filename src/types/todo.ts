@@ -12,7 +12,6 @@ export type Todo = {
   projectId?: string;
   milestoneId?: string;
   parentTodoId?: string;
-  blockingTodoIds?: string[];
   title: string;
   memo?: string;
   referenceUrl?: string;
@@ -42,7 +41,6 @@ export type TodoInput = {
   projectId?: string;
   milestoneId?: string;
   parentTodoId?: string;
-  blockingTodoIds?: string[];
   memo?: string;
   date?: string;
   dueDate?: string;
