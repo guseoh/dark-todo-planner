@@ -120,6 +120,20 @@ const updateMutation = async (mutation: QueuedTodoMutation) => {
   await withStore<IDBValidKey>("readwrite", (store) => store.put(mutation));
 };
 
+export async function retryFailedTodoMutations() {
+  const mutations = await listTodoMutations();
+  let changed = 0;
+  for (const mutation of mutations) {
+    if (!mutation.id || mutation.state !== "FAILED") continue;
+    mutation.state = "PENDING";
+    mutation.lastError = undefined;
+    await updateMutation(mutation);
+    changed += 1;
+  }
+  if (changed > 0) emit(OFFLINE_TODO_QUEUE_CHANGED);
+  return changed;
+}
+
 export const isRetryableTodoMutationError = (error: unknown) =>
   !(error instanceof ApiError) || error.status >= 500 || error.status === 429 || error.status === 401 || error.status === 403;
 
