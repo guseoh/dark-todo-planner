@@ -13,6 +13,7 @@ import {
 } from "./auth";
 import { backupV9ExportMiddleware, backupV9ImportMiddleware } from "./backupMiddleware";
 import { learningBackupExportMiddleware, learningBackupImportMiddleware } from "./learningBackupMiddleware";
+import { runNotionLearningSync } from "./notionLearningSync";
 import { todoReferenceTrashRestoreMiddleware } from "./referenceLinkMiddleware";
 import { runDiscordIncompleteTodoReminder } from "./reminders/incompleteTodoReminder";
 import { backupRoutes } from "./routes/backup";
@@ -124,5 +125,9 @@ app.onError((error, c) => {
 
 export default {
   fetch: (request: Request, env: Bindings, executionContext: ExecutionContext) => app.fetch(request, env, executionContext),
-  scheduled: (controller: ScheduledController, env: Bindings, executionContext: ExecutionContext) => executionContext.waitUntil(runDiscordIncompleteTodoReminder(env, new Date(controller.scheduledTime))),
+  scheduled: (controller: ScheduledController, env: Bindings, executionContext: ExecutionContext) => {
+    const jobs: Promise<unknown>[] = [runNotionLearningSync(env, new Date(controller.scheduledTime))];
+    if (controller.cron === "0 12 * * *") jobs.push(runDiscordIncompleteTodoReminder(env, new Date(controller.scheduledTime)));
+    executionContext.waitUntil(Promise.allSettled(jobs).then(() => undefined));
+  },
 } satisfies ExportedHandler<Bindings>;
