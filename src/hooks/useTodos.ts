@@ -248,7 +248,7 @@ export function useTodos() {
   }, []);
 
   const syncCategory = useCallback((category: Category) => {
-    setAllTodos((current) => current.map((todo) => (todo.categoryId === category.id ? { ...todo, category } : todo));
+    setAllTodos((current) => current.map((todo) => (todo.categoryId === category.id ? { ...todo, category } : todo)));
   }, []);
 
   const removeCategoryFromTodos = useCallback((categoryId: string, mode: "moveTodos" | "deleteTodos" = "moveTodos") => {
