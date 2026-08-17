@@ -1,5 +1,6 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { BookOpen, CalendarCheck2, ExternalLink, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { BookOpen, CalendarCheck2, ExternalLink, Plus, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { MarkdownPreview } from "../components/editor/MarkdownPreview";
 import { api, jsonBody } from "../lib/api/client";
 import { todayKey } from "../lib/date";
 import type { LearningImportInput, LearningItem, LearningItemStatus, LearningItemType } from "../types/learning";
@@ -14,7 +15,7 @@ const statusLabel: Record<LearningItemStatus, string> = {
 const typeMeta: Record<LearningItemType, { title: string; description: string; empty: string }> = {
   DAILY_PROBLEM: {
     title: "오늘의 문제",
-    description: "Notion 데일리 코드 읽기 기록을 자동으로 가져옵니다.",
+    description: "Notion 데일리 코드 읽기 문제와 해설을 자동으로 가져옵니다.",
     empty: "동기화된 데일리 문제가 없습니다.",
   },
   TECH_BLOG: {
@@ -32,6 +33,13 @@ type LearningSyncStatus = {
   techBlog: { count: number; error: string | null };
 };
 
+type LearningAiGuide = {
+  content: string;
+  model: string;
+  generatedAt: string;
+  cached: boolean;
+};
+
 const messageOf = (error: unknown) => error instanceof Error ? error.message : "요청 처리 중 오류가 발생했습니다.";
 const formatSyncTime = (value: string | null) => value
   ? new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(value))
@@ -42,6 +50,8 @@ export function LearningPage({ onTodoCreated }: { onTodoCreated: () => unknown |
   const [items, setItems] = useState<LearningItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState("");
+  const [aiLoadingId, setAiLoadingId] = useState("");
+  const [aiGuides, setAiGuides] = useState<Record<string, LearningAiGuide>>({});
   const [error, setError] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [type, setType] = useState<LearningItemType>("DAILY_PROBLEM");
@@ -92,6 +102,7 @@ export function LearningPage({ onTodoCreated }: { onTodoCreated: () => unknown |
     try {
       const result = await api<LearningSyncStatus>("/api/learning-items/sync", { method: "POST" });
       setSyncStatus(result);
+      setAiGuides({});
       if (date === todayKey()) await load(date);
     } catch (cause) {
       setError(messageOf(cause));
@@ -144,6 +155,22 @@ export function LearningPage({ onTodoCreated }: { onTodoCreated: () => unknown |
     }
   };
 
+  const generateAiGuide = async (item: LearningItem, force = false) => {
+    setAiLoadingId(item.id);
+    setError("");
+    try {
+      const result = await api<{ guide: LearningAiGuide }>(`/api/learning-items/${item.id}/ai-guide`, {
+        method: "POST",
+        ...jsonBody({ force }),
+      });
+      setAiGuides((current) => ({ ...current, [item.id]: result.guide }));
+    } catch (cause) {
+      setError(messageOf(cause));
+    } finally {
+      setAiLoadingId("");
+    }
+  };
+
   const addToToday = async (item: LearningItem) => {
     setSavingId(item.id);
     setError("");
@@ -172,6 +199,11 @@ export function LearningPage({ onTodoCreated }: { onTodoCreated: () => unknown |
     try {
       await api(`/api/learning-items/${item.id}`, { method: "DELETE" });
       setItems((current) => current.filter((entry) => entry.id !== item.id));
+      setAiGuides((current) => {
+        const next = { ...current };
+        delete next[item.id];
+        return next;
+      });
     } catch (cause) {
       setError(messageOf(cause));
     } finally {
@@ -191,7 +223,9 @@ export function LearningPage({ onTodoCreated }: { onTodoCreated: () => unknown |
           </div>
           <span className="rounded-full border border-ink-700 px-2.5 py-1 text-xs font-semibold text-ink-400">{rows.length}개</span>
         </div>
-        {rows.length ? <div className="space-y-3">{rows.map((item) => (
+        {rows.length ? <div className="space-y-3">{rows.map((item) => {
+          const guide = aiGuides[item.id];
+          return (
           <article key={item.id} className="rounded-xl border border-ink-700/70 bg-ink-950/35 p-3.5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 flex-1">
@@ -201,12 +235,22 @@ export function LearningPage({ onTodoCreated }: { onTodoCreated: () => unknown |
                   {item.todoId ? <span className="rounded-full border border-accent-500/30 bg-accent-500/[0.06] px-2 py-0.5 text-[10px] font-bold text-accent-100">오늘 Todo 추가됨</span> : null}
                 </div>
                 <h3 className="mt-2 text-sm font-bold text-ink-100">{item.title}</h3>
-                {item.summary ? itemType === "TECH_BLOG" ? (
+                {item.summary ? (
                   <details className="mt-2 rounded-lg border border-ink-800 bg-ink-950/30 px-3 py-2">
-                    <summary className="cursor-pointer text-xs font-semibold text-ink-400">Notion 본문 보기</summary>
+                    <summary className="cursor-pointer text-xs font-semibold text-ink-400">{itemType === "DAILY_PROBLEM" ? "Notion 문제·해설 보기" : "Notion 본문 보기"}</summary>
                     <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-ink-400">{item.summary}</p>
                   </details>
-                ) : <p className="mt-1.5 whitespace-pre-wrap text-sm leading-6 text-ink-400">{item.summary}</p> : null}
+                ) : null}
+                {guide ? (
+                  <details open className="mt-2 rounded-lg border border-accent-500/20 bg-accent-500/[0.04] px-3 py-2.5">
+                    <summary className="cursor-pointer text-xs font-bold text-accent-200">AI 학습 가이드</summary>
+                    <MarkdownPreview className="mt-2 text-sm leading-6 text-ink-300" value={guide.content} />
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-accent-500/15 pt-2">
+                      <span className="text-[10px] text-ink-600">{guide.cached ? "저장된 가이드 재사용" : "새 가이드 생성"}</span>
+                      <button type="button" className="btn-secondary min-h-8 px-2.5 py-1 text-[11px]" disabled={aiLoadingId === item.id} onClick={() => void generateAiGuide(item, true)}><RefreshCw size={12} className={aiLoadingId === item.id ? "animate-spin" : ""} />다시 생성</button>
+                    </div>
+                  </details>
+                ) : null}
               </div>
               <select className="field w-full shrink-0 sm:w-28" value={item.status} disabled={savingId === item.id} onChange={(event) => void changeStatus(item, event.target.value as LearningItemStatus)} aria-label={`${item.title} 학습 상태`}>
                 {(Object.keys(statusLabel) as LearningItemStatus[]).map((status) => <option key={status} value={status}>{statusLabel[status]}</option>)}
@@ -214,11 +258,12 @@ export function LearningPage({ onTodoCreated }: { onTodoCreated: () => unknown |
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-ink-800 pt-3">
               {item.sourceUrl ? <a className="btn-secondary min-h-9 px-3 py-1.5 text-xs" href={item.sourceUrl} target="_blank" rel="noreferrer"><ExternalLink size={14} />원문 열기</a> : null}
+              <button type="button" className="btn-secondary min-h-9 px-3 py-1.5 text-xs" disabled={aiLoadingId === item.id} onClick={() => void generateAiGuide(item)}><Sparkles size={14} />{aiLoadingId === item.id ? "AI 생성 중..." : guide ? "AI 가이드 보기" : "AI 학습 가이드"}</button>
               <button type="button" className="btn-secondary min-h-9 px-3 py-1.5 text-xs" disabled={savingId === item.id || Boolean(item.todoId)} onClick={() => void addToToday(item)}><CalendarCheck2 size={14} />{item.todoId ? "Todo 추가됨" : "오늘 할 일로 추가"}</button>
               <button type="button" className="ml-auto inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-ink-500 transition hover:bg-red-500/10 hover:text-red-200" disabled={savingId === item.id} onClick={() => void removeItem(item)}><Trash2 size={14} />삭제</button>
             </div>
           </article>
-        ))}</div> : <p className="rounded-lg border border-dashed border-ink-700 px-4 py-7 text-center text-sm text-ink-500">{meta.empty}</p>}
+        );})}</div> : <p className="rounded-lg border border-dashed border-ink-700 px-4 py-7 text-center text-sm text-ink-500">{meta.empty}</p>}
       </section>
     );
   };
@@ -229,7 +274,7 @@ export function LearningPage({ onTodoCreated }: { onTodoCreated: () => unknown |
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex items-center gap-2"><BookOpen size={20} className="text-accent-300" /><h1 className="text-lg font-bold text-ink-100">Learning Inbox</h1></div>
-            <p className="mt-1 text-sm text-ink-500">Notion의 데일리 문제와 추천 기술 글을 자동으로 모아 정리합니다.</p>
+            <p className="mt-1 text-sm text-ink-500">Notion에서 모은 문제와 기술 글을 읽고, 필요한 항목만 AI 학습 가이드로 깊게 복습합니다.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <input type="date" className="field w-auto" value={date} onChange={(event) => setDate(event.target.value)} aria-label="학습 날짜" />
