@@ -22,6 +22,12 @@
       "database_id": "local"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "ATTACHMENTS",
+      "bucket_name": "dark-todo-planner-attachments-local"
+    }
+  ],
   "ratelimits": [
     {
       "name": "LOGIN_RATE_LIMITER",
@@ -46,6 +52,12 @@
           "binding": "DB",
           "database_name": "dark-todo-planner-preview",
           "database_id": "7f58d3e8-56b4-49a7-985f-4d9360dae673"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "ATTACHMENTS",
+          "bucket_name": "dark-todo-planner-attachments-preview"
         }
       ],
       "ratelimits": [
@@ -75,6 +87,12 @@
           "binding": "DB",
           "database_name": "dark-todo-planner-production",
           "database_id": "f48e3e51-4635-410b-9e76-e9e0a5be9f4b"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "ATTACHMENTS",
+          "bucket_name": "dark-todo-planner-attachments-production"
         }
       ],
       "ratelimits": [
