@@ -19,6 +19,7 @@ import { runDiscordIncompleteTodoReminder } from "./reminders/incompleteTodoRemi
 import { runDueTodoReminders } from "./reminders/todoReminder";
 import { backupRoutes } from "./routes/backup";
 import { contentRoutes } from "./routes/content";
+import { dependencyRoutes } from "./routes/dependencies";
 import { learningRoutes } from "./routes/learning";
 import { libraryRoutes } from "./routes/library";
 import { planningRoutes } from "./routes/planning";
@@ -111,6 +112,7 @@ app.use("/api/backup/import", backupV9ImportMiddleware);
 app.use("/api/migrate/local-storage", backupV9ImportMiddleware);
 
 app.route("/api", todoRoutes);
+app.route("/api", dependencyRoutes);
 app.route("/api", projectRoutes);
 app.route("/api", projectDuplicateRoutes);
 app.route("/api", referenceLinkRoutes);
