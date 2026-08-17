@@ -14,17 +14,28 @@ const statusLabel: Record<LearningItemStatus, string> = {
 const typeMeta: Record<LearningItemType, { title: string; description: string; empty: string }> = {
   DAILY_PROBLEM: {
     title: "오늘의 문제",
-    description: "데일리 코드 읽기와 학습 문제를 모아둡니다.",
-    empty: "등록된 데일리 문제가 없습니다.",
+    description: "Notion 데일리 코드 읽기 기록을 자동으로 가져옵니다.",
+    empty: "동기화된 데일리 문제가 없습니다.",
   },
   TECH_BLOG: {
     title: "오늘 읽을 기술 글",
-    description: "추천받은 기술 블로그와 읽을 자료를 모아둡니다.",
-    empty: "등록된 기술 글이 없습니다.",
+    description: "매일 추천된 기술 블로그를 Notion에서 자동으로 가져옵니다.",
+    empty: "동기화된 기술 글이 없습니다.",
   },
 };
 
+type LearningSyncStatus = {
+  configured: boolean;
+  lastAttemptAt: string | null;
+  lastSuccessAt: string | null;
+  codeReading: { count: number; error: string | null };
+  techBlog: { count: number; error: string | null };
+};
+
 const messageOf = (error: unknown) => error instanceof Error ? error.message : "요청 처리 중 오류가 발생했습니다.";
+const formatSyncTime = (value: string | null) => value
+  ? new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(value))
+  : "아직 없음";
 
 export function LearningPage({ onTodoCreated }: { onTodoCreated: () => unknown | Promise<unknown> }) {
   const [date, setDate] = useState(todayKey());
@@ -38,6 +49,8 @@ export function LearningPage({ onTodoCreated }: { onTodoCreated: () => unknown |
   const [summary, setSummary] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [sourceName, setSourceName] = useState("");
+  const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<LearningSyncStatus | null>(null);
 
   const load = useCallback(async (targetDate = date) => {
     setLoading(true);
@@ -52,7 +65,16 @@ export function LearningPage({ onTodoCreated }: { onTodoCreated: () => unknown |
     }
   }, [date]);
 
+  const loadSyncStatus = useCallback(async () => {
+    try {
+      setSyncStatus(await api<LearningSyncStatus>("/api/learning-items/sync-status"));
+    } catch {
+      setSyncStatus(null);
+    }
+  }, []);
+
   useEffect(() => { void load(date); }, [date, load]);
+  useEffect(() => { void loadSyncStatus(); }, [loadSyncStatus]);
 
   const groups = useMemo(() => ({
     DAILY_PROBLEM: items.filter((item) => item.type === "DAILY_PROBLEM"),
@@ -62,6 +84,21 @@ export function LearningPage({ onTodoCreated }: { onTodoCreated: () => unknown |
   const doneCount = items.filter((item) => item.status === "DONE").length;
   const resetForm = () => {
     setTitle(""); setSummary(""); setSourceUrl(""); setSourceName(""); setType("DAILY_PROBLEM");
+  };
+
+  const syncNow = async () => {
+    setSyncing(true);
+    setError("");
+    try {
+      const result = await api<LearningSyncStatus>("/api/learning-items/sync", { method: "POST" });
+      setSyncStatus(result);
+      if (date === todayKey()) await load(date);
+    } catch (cause) {
+      setError(messageOf(cause));
+      await loadSyncStatus();
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const addItem = async (event: FormEvent) => {
@@ -186,13 +223,14 @@ export function LearningPage({ onTodoCreated }: { onTodoCreated: () => unknown |
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex items-center gap-2"><BookOpen size={20} className="text-accent-300" /><h1 className="text-lg font-bold text-ink-100">Learning Inbox</h1></div>
-            <p className="mt-1 text-sm text-ink-500">데일리 문제와 읽을 기술 글을 한 곳에서 정리합니다.</p>
+            <p className="mt-1 text-sm text-ink-500">Notion의 데일리 문제와 추천 기술 글을 자동으로 모아 정리합니다.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <input type="date" className="field w-auto" value={date} onChange={(event) => setDate(event.target.value)} aria-label="학습 날짜" />
             <button type="button" className="btn-secondary" onClick={() => setDate(todayKey())}>오늘</button>
             <button type="button" className="btn-secondary" onClick={() => void load(date)} disabled={loading}><RefreshCw size={15} className={loading ? "animate-spin" : ""} />새로고침</button>
-            <button type="button" className="btn-primary" onClick={() => setShowAdd((value) => !value)}><Plus size={16} />항목 추가</button>
+            <button type="button" className="btn-primary" onClick={() => void syncNow()} disabled={syncing || syncStatus?.configured === false}><RefreshCw size={15} className={syncing ? "animate-spin" : ""} />{syncing ? "동기화 중" : "Notion 동기화"}</button>
+            <button type="button" className="btn-secondary" onClick={() => setShowAdd((value) => !value)}><Plus size={16} />수동 추가</button>
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2 text-xs text-ink-400">
@@ -200,11 +238,22 @@ export function LearningPage({ onTodoCreated }: { onTodoCreated: () => unknown |
           <span className="rounded-full border border-ink-700 px-2.5 py-1">완료 {doneCount}</span>
           <span className="rounded-full border border-ink-700 px-2.5 py-1">남음 {items.length - doneCount}</span>
         </div>
+        <div className="mt-4 rounded-xl border border-ink-800 bg-ink-950/30 px-3.5 py-3 text-xs text-ink-400">
+          {!syncStatus ? <span>동기화 상태를 확인하는 중...</span> : syncStatus.configured ? (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span>마지막 성공: <strong className="text-ink-200">{formatSyncTime(syncStatus.lastSuccessAt)}</strong></span>
+              <span>문제 {syncStatus.codeReading.count}개</span>
+              <span>기술 글 {syncStatus.techBlog.count}개</span>
+              {syncStatus.codeReading.error ? <span className="text-red-300">문제 동기화 오류</span> : null}
+              {syncStatus.techBlog.error ? <span className="text-red-300">블로그 동기화 오류</span> : null}
+            </div>
+          ) : <span className="text-amber-200">Notion Integration 연결이 필요합니다. 연결 전에는 수동 추가만 사용할 수 있습니다.</span>}
+        </div>
       </section>
 
       {showAdd ? <section className="app-card p-4 sm:p-5">
         <form className="space-y-3" onSubmit={addItem}>
-          <div><h2 className="text-sm font-bold text-ink-100">외부 학습 항목 추가</h2><p className="mt-1 text-xs text-ink-500">Notion 코드 읽기 페이지나 추천 기술 글 링크를 직접 등록할 수 있습니다.</p></div>
+          <div><h2 className="text-sm font-bold text-ink-100">수동 학습 항목 추가</h2><p className="mt-1 text-xs text-ink-500">자동 동기화 누락이나 일회성 자료를 직접 넣을 때만 사용합니다.</p></div>
           <div className="grid gap-3 md:grid-cols-2">
             <label className="space-y-1 text-sm text-ink-400">유형<select className="field" value={type} onChange={(event) => setType(event.target.value as LearningItemType)}><option value="DAILY_PROBLEM">데일리 문제</option><option value="TECH_BLOG">기술 블로그</option></select></label>
             <label className="space-y-1 text-sm text-ink-400">출처 이름<input className="field" value={sourceName} maxLength={80} onChange={(event) => setSourceName(event.target.value)} placeholder="Notion, 우아한형제들 기술블로그" /></label>
