@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { addDays } from "date-fns";
 import { BarChart3, Clock3, Flame, ListChecks, RefreshCw, TimerReset } from "lucide-react";
+import { EstimateAccuracyPanel } from "../components/insights/EstimateAccuracyPanel";
 import { ProgressBar } from "../components/common/ProgressBar";
 import { api } from "../lib/api/client";
 import { formatKoreanDate, parseDateKey, todayKey, toDateKey } from "../lib/date";
@@ -156,6 +157,8 @@ export function InsightsPage({ todos, projects }: InsightsPageProps) {
           </div>
         </section>
       </div>
+
+      <EstimateAccuracyPanel accuracy={summary.estimateAccuracy} />
 
       <section className="rounded-lg border border-ink-700/60 bg-ink-900/45 p-3.5">
         <div className="mb-3">
