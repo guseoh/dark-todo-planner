@@ -105,6 +105,33 @@ const plainText = (items: unknown) => {
   return items.map((item) => isRecord(item) && typeof item.plain_text === "string" ? item.plain_text : "").join("").trim();
 };
 
+const safeMarkdownUrl = (value: unknown) => {
+  if (typeof value !== "string") return "";
+  try {
+    const parsed = new URL(value);
+    return ["http:", "https:", "mailto:"].includes(parsed.protocol) ? parsed.toString() : "";
+  } catch {
+    return "";
+  }
+};
+
+export const notionRichTextToMarkdown = (items: unknown) => {
+  if (!Array.isArray(items)) return "";
+  return items.map((item) => {
+    if (!isRecord(item) || typeof item.plain_text !== "string") return "";
+    let text = item.plain_text;
+    const annotations = isRecord(item.annotations) ? item.annotations : undefined;
+    if (annotations?.code === true) text = `\`${text.replaceAll("`", "\\`")}\``;
+    else {
+      if (annotations?.bold === true) text = `**${text}**`;
+      if (annotations?.italic === true) text = `_${text}_`;
+      if (annotations?.strikethrough === true) text = `~~${text}~~`;
+    }
+    const href = safeMarkdownUrl(item.href);
+    return href ? `[${text}](${href})` : text;
+  }).join("").trim();
+};
+
 export function notionText(page: NotionPage, name: string): string {
   const value = property(page, name);
   if (!value) return "";
@@ -132,16 +159,35 @@ export function notionUrl(page: NotionPage, name: string): string {
   return value && typeof value.url === "string" ? value.url.trim() : "";
 }
 
-const blockText = (block: NotionBlock) => {
+const calloutIcon = (value: Record<string, unknown> | undefined) => {
+  if (!value || !isRecord(value.icon)) return "💡";
+  return value.icon.type === "emoji" && typeof value.icon.emoji === "string" ? value.icon.emoji : "💡";
+};
+
+export const notionBlockToMarkdown = (block: NotionBlock, numberedIndex = 1, depth = 0) => {
   const value = isRecord(block[block.type]) ? block[block.type] as Record<string, unknown> : undefined;
-  const text = value ? plainText(value.rich_text) : "";
+  if (block.type === "divider") return "---";
+
+  const rawText = value ? plainText(value.rich_text) : "";
+  const text = value ? notionRichTextToMarkdown(value.rich_text) : "";
+  const indent = "  ".repeat(Math.min(depth, 3));
+
+  if (block.type === "code") {
+    const language = typeof value?.language === "string" && value.language !== "plain text" ? value.language : "";
+    return rawText ? `\`\`\`${language}\n${rawText}\n\`\`\`` : "";
+  }
   if (!text) return "";
+
   switch (block.type) {
-    case "bulleted_list_item": return `• ${text}`;
-    case "numbered_list_item": return `1. ${text}`;
-    case "to_do": return `${value?.checked === true ? "☑" : "☐"} ${text}`;
-    case "callout": return `💡 ${text}`;
-    case "toggle": return `▸ ${text}`;
+    case "heading_1": return rawText === "원문" ? "원문" : `# ${text}`;
+    case "heading_2": return rawText === "원문" ? "원문" : `## ${text}`;
+    case "heading_3": return rawText === "원문" ? "원문" : `### ${text}`;
+    case "bulleted_list_item": return `${indent}- ${text}`;
+    case "numbered_list_item": return `${indent}${numberedIndex}. ${text}`;
+    case "to_do": return `${indent}- [${value?.checked === true ? "x" : " "}] ${text}`;
+    case "callout": return `> ${calloutIcon(value)} ${text}`;
+    case "quote": return `> ${text}`;
+    case "toggle": return `### ▸ ${text}`;
     default: return text;
   }
 };
@@ -172,8 +218,13 @@ async function listBlockChildren(token: string, blockId: string): Promise<Notion
 async function collectBlockLines(token: string, blockId: string, depth: number): Promise<string[]> {
   const lines: string[] = [];
   const blocks = await listBlockChildren(token, blockId);
+  let numberedIndex = 0;
+
   for (const block of blocks) {
-    const line = blockText(block);
+    if (block.type === "numbered_list_item") numberedIndex += 1;
+    else numberedIndex = 0;
+
+    const line = notionBlockToMarkdown(block, numberedIndex || 1, depth);
     if (line) lines.push(line);
     if (block.has_children && depth < MAX_BLOCK_DEPTH) {
       lines.push(...await collectBlockLines(token, block.id, depth + 1));
