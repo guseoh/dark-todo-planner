@@ -36,6 +36,18 @@ const renderInline = (source: string) => {
 
 const renderLine = (line: string) => {
   if (!line.trim()) return '<div class="h-2"></div>';
+
+  const heading = line.match(/^(#{1,3})\s+(.+)$/);
+  if (heading) {
+    const level = heading[1].length;
+    const className = level === 1
+      ? "mt-4 text-base font-bold text-ink-100"
+      : level === 2
+        ? "mt-3 text-sm font-bold text-ink-100"
+        : "mt-2 text-sm font-semibold text-ink-200";
+    return `<h${level} class="${className}">${renderInline(heading[2])}</h${level}>`;
+  }
+
   const check = line.match(/^- \[( |x|X)\] (.*)$/);
   if (check) {
     const checked = check[1].toLowerCase() === "x";
@@ -43,19 +55,21 @@ const renderLine = (line: string) => {
   }
   const bullet = line.match(/^- (.*)$/);
   if (bullet) return `<div class="flex gap-2"><span class="text-ink-500">•</span><span>${renderInline(bullet[1])}</span></div>`;
-  const numbered = line.match(/^\d+\. (.*)$/);
-  if (numbered) return `<div class="flex gap-2"><span class="text-ink-500">1.</span><span>${renderInline(numbered[1])}</span></div>`;
+  const numbered = line.match(/^(\d+)\. (.*)$/);
+  if (numbered) return `<div class="flex gap-2"><span class="min-w-4 text-right text-ink-500">${numbered[1]}.</span><span>${renderInline(numbered[2])}</span></div>`;
   const quote = line.match(/^> (.*)$/);
   if (quote) return `<blockquote class="border-l-2 border-accent-500/50 pl-3 text-ink-300">${renderInline(quote[1])}</blockquote>`;
   return `<p>${renderInline(line)}</p>`;
 };
 
+export const renderMarkdownPreviewHtml = (value: string, emptyText = "비어 있음") =>
+  value.trim() ? value.split("\n").map(renderLine).join("") : `<p class="text-ink-600">${escapeHtml(emptyText)}</p>`;
+
 export function MarkdownPreview({ value, emptyText = "비어 있음", className = "" }: MarkdownPreviewProps) {
-  const html = value.trim() ? value.split("\n").map(renderLine).join("") : `<p class="text-ink-600">${escapeHtml(emptyText)}</p>`;
   return (
     <div
       className={`space-y-1 text-sm leading-6 text-ink-400 ${className}`}
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={{ __html: renderMarkdownPreviewHtml(value, emptyText) }}
     />
   );
 }

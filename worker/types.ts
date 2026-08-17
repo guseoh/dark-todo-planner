@@ -5,6 +5,10 @@ export type WorkersAiBinding = {
     messages: Array<{ role: "system" | "user" | "assistant"; content: string }>;
     max_tokens?: number;
     temperature?: number;
+    response_format?: {
+      type: "json_schema";
+      json_schema: Record<string, unknown>;
+    };
   }) => Promise<unknown>;
 };
 
