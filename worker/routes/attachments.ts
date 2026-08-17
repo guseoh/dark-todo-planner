@@ -54,14 +54,9 @@ attachmentRoutes.post("/attachments/:entityType/:entityId", async (c) => {
   if (!entityType || !entityId) return c.json({ message: "첨부 대상을 지정해주세요." }, 400);
   if (!await ensureEntity(c.env, userId, entityType, entityId)) return c.json({ message: "첨부 대상을 찾을 수 없습니다." }, 404);
 
-  const db = drizzle(c.env.DB);
-  const [{ count }] = await db.select({ count: attachments.id }).from(attachments).where(and(
-    eq(attachments.userId, userId), eq(attachments.entityType, entityType), eq(attachments.entityId, entityId),
-  ));
   const countResult = await c.env.DB.prepare("SELECT COUNT(*) AS count FROM attachments WHERE user_id = ? AND entity_type = ? AND entity_id = ?")
     .bind(userId, entityType, entityId)
     .first<{ count: number }>();
-  void count;
   if ((countResult?.count || 0) >= MAX_ATTACHMENTS_PER_ENTITY) return c.json({ message: `첨부파일은 항목당 최대 ${MAX_ATTACHMENTS_PER_ENTITY}개까지 추가할 수 있습니다.` }, 400);
 
   const form = await c.req.formData();
@@ -81,6 +76,7 @@ attachmentRoutes.post("/attachments/:entityType/:entityId", async (c) => {
     customMetadata: { attachmentId: id, entityType, entityId },
   });
 
+  const db = drizzle(c.env.DB);
   const row = { id, userId, entityType, entityId, objectKey, fileName, contentType, sizeBytes: value.size, createdAt };
   try {
     await db.insert(attachments).values(row);
