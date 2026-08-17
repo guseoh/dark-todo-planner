@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { FolderKanban, Link2, ListPlus, Pencil, Pin, PinOff, Plus, Save, Search, Trash2, X } from "lucide-react";
+import { AttachmentPanel } from "../components/common/AttachmentPanel";
 import { EmptyState } from "../components/common/EmptyState";
 import { Modal } from "../components/common/Modal";
 import { MarkdownEditor } from "../components/editor/MarkdownEditor";
@@ -144,6 +145,8 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, todos, projects
           </div>
         </div>
       </details>
+
+      {initial ? <AttachmentPanel entityType="MEMO" entityId={initial.id} /> : <p className="text-xs text-ink-500">첨부파일은 메모를 한 번 저장한 뒤 수정 화면에서 추가할 수 있습니다.</p>}
 
       <div className="flex min-h-5 items-center justify-between gap-3">
         {error ? <p className="text-xs text-red-200">{error}</p> : <span />}
