@@ -16,6 +16,17 @@ describe("learning validation", () => {
     expect(item.externalKey).toBe("notion:CR-2026-08-17");
   });
 
+  it("accepts up to two technical blog categories", () => {
+    const item = learningImportItemSchema.parse({
+      learningDate: "2026-08-17",
+      type: "TECH_BLOG",
+      title: "MongoDB 8.0 업그레이드",
+      categories: ["DB·데이터", "성능"],
+      externalKey: "blog:mongodb-8",
+    });
+    expect(item.categories).toEqual(["DB·데이터", "성능"]);
+  });
+
   it("rejects unsafe source URL protocols", () => {
     expect(() => learningImportItemSchema.parse({
       learningDate: "2026-08-17",

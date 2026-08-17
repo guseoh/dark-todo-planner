@@ -1,6 +1,6 @@
 import { USER_ID } from "./auth";
 import { importLearningItems, type LearningImportItem } from "./learningStore";
-import { notionSelect, notionText, notionUrl, queryNotionPages, type NotionPage } from "./notionClient";
+import { notionMultiSelect, notionSelect, notionText, notionUrl, queryNotionPages, retrieveNotionPageText, type NotionPage } from "./notionClient";
 import type { Bindings } from "./types";
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
@@ -52,22 +52,45 @@ export function codeReadingPageToLearning(page: NotionPage, date: string): Learn
   };
 }
 
-export function techBlogPageToLearning(page: NotionPage, date: string): LearningImportItem | null {
+const cleanBody = (bodyText: string) => {
+  const lines = bodyText.split("\n").map((line) => line.trim()).filter(Boolean);
+  const originalIndex = lines.findIndex((line) => line === "원문");
+  const beforeOriginal = originalIndex >= 0 ? lines.slice(0, originalIndex) : lines;
+  const content = beforeOriginal[0]?.includes(" · ") ? beforeOriginal.slice(1) : beforeOriginal;
+  return content.join("\n").trim();
+};
+
+const sourceNameFromBody = (bodyText: string) => {
+  const firstLine = bodyText.split("\n").map((line) => line.trim()).find(Boolean) || "";
+  const separatorIndex = firstLine.indexOf(" · ");
+  const source = separatorIndex >= 0 ? firstLine.slice(0, separatorIndex) : firstLine;
+  return clipped(source.replace(/^💡\s*/, ""), 80);
+};
+
+export function techBlogPageToLearning(page: NotionPage, date: string, bodyText = ""): LearningImportItem | null {
   const title = notionText(page, "제목");
   if (!title) return null;
-  const summary = notionText(page, "요약");
-  const value = notionText(page, "읽을 가치");
-  const application = notionText(page, "적용 포인트");
-  const lines = [summary, value ? `읽을 가치: ${value}` : "", application ? `적용 포인트: ${application}` : ""].filter(Boolean);
+
+  const cleanedBody = cleanBody(bodyText);
+  const sourceName = sourceNameFromBody(bodyText);
+  const legacySummary = notionText(page, "요약");
+  const legacyValue = notionText(page, "읽을 가치");
+  const legacyApplication = notionText(page, "적용 포인트");
+  const legacyLines = [
+    legacySummary,
+    legacyValue ? `읽을 가치: ${legacyValue}` : "",
+    legacyApplication ? `적용 포인트: ${legacyApplication}` : "",
+  ].filter(Boolean);
   const originalUrl = notionUrl(page, "원문 URL");
 
   return {
     learningDate: date,
     type: "TECH_BLOG",
     title: clipped(title, 240),
-    summary: clipped(lines.join("\n\n"), 8000) || undefined,
+    summary: clipped(cleanedBody || legacyLines.join("\n\n"), 8000) || undefined,
     sourceUrl: originalUrl || page.url,
-    sourceName: clipped(notionText(page, "출처"), 80) || "Notion · 기술 블로그",
+    sourceName: sourceName || clipped(notionText(page, "출처"), 80) || "Notion · 기술 블로그",
+    categories: notionMultiSelect(page, "유형").slice(0, 2),
     externalKey: externalKey(page),
   };
 }
@@ -171,9 +194,25 @@ export async function runNotionLearningSync(env: Bindings, now = new Date()): Pr
       dateProperty: "날짜",
       date,
     });
-    const items = pages.map((page) => techBlogPageToLearning(page, date)).filter((item): item is LearningImportItem => Boolean(item));
+
+    const items: LearningImportItem[] = [];
+    const bodyErrors: string[] = [];
+    for (const page of pages) {
+      let bodyText = "";
+      try {
+        bodyText = await retrieveNotionPageText({ token: env.NOTION_TOKEN!, pageId: page.id, maxChars: 8000 });
+      } catch (error) {
+        bodyErrors.push(errorMessage(error));
+      }
+      const item = techBlogPageToLearning(page, date, bodyText);
+      if (item) items.push(item);
+    }
+
     if (items.length) await importLearningItems(env, USER_ID, items);
     techBlogCount = items.length;
+    if (bodyErrors.length) {
+      techBlogError = `기술 블로그 본문 ${bodyErrors.length}건 읽기 실패: ${bodyErrors[0]}`.slice(0, 1000);
+    }
   } catch (error) {
     techBlogError = errorMessage(error);
   }

@@ -10,6 +10,7 @@ export type LearningItem = {
   summary?: string;
   sourceUrl?: string;
   sourceName?: string;
+  categories?: string[];
   status: LearningItemStatus;
   externalKey: string;
   todoId?: string;
@@ -24,5 +25,6 @@ export type LearningImportInput = {
   summary?: string;
   sourceUrl?: string;
   sourceName?: string;
+  categories?: string[];
   externalKey: string;
 };

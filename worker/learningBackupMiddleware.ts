@@ -14,11 +14,16 @@ type LearningBackupRow = {
   summary: string | null;
   sourceUrl: string | null;
   sourceName: string | null;
+  categories: string[];
   status: string;
   externalKey: string;
   todoId: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+type LearningBackupDbRow = Omit<LearningBackupRow, "categories"> & {
+  categoriesJson: string | null;
 };
 
 const isObject = (value: unknown): value is RawItem => !!value && typeof value === "object" && !Array.isArray(value);
@@ -37,6 +42,25 @@ const validUrl = (value: unknown) => {
   }
 };
 
+const validCategories = (value: unknown) => {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value
+    .filter((entry): entry is string => typeof entry === "string")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => entry.slice(0, 80)))]
+    .slice(0, 2);
+};
+
+const parseCategories = (value: string | null) => {
+  if (!value) return [];
+  try {
+    return validCategories(JSON.parse(value));
+  } catch {
+    return [];
+  }
+};
+
 const replaceResponseJson = (c: Parameters<MiddlewareHandler<AppEnv>>[0], payload: BackupObject) => {
   const headers = new Headers(c.res.headers);
   headers.set("content-type", "application/json; charset=UTF-8");
@@ -49,11 +73,26 @@ export const learningBackupExportMiddleware: MiddlewareHandler<AppEnv> = async (
   const payload = await c.res.clone().json() as BackupObject;
   const rows = await c.env.DB.prepare(`
     SELECT id, learning_date AS learningDate, type, title, summary, source_url AS sourceUrl,
-      source_name AS sourceName, status, external_key AS externalKey, todo_id AS todoId,
-      created_at AS createdAt, updated_at AS updatedAt
+      source_name AS sourceName, categories AS categoriesJson, status, external_key AS externalKey,
+      todo_id AS todoId, created_at AS createdAt, updated_at AS updatedAt
     FROM learning_items WHERE user_id = ? ORDER BY learning_date DESC, created_at DESC
-  `).bind(c.get("userId")).all<LearningBackupRow>();
-  replaceResponseJson(c, { ...payload, learningItems: rows.results });
+  `).bind(c.get("userId")).all<LearningBackupDbRow>();
+  const learningItems: LearningBackupRow[] = rows.results.map((row) => ({
+    id: row.id,
+    learningDate: row.learningDate,
+    type: row.type,
+    title: row.title,
+    summary: row.summary,
+    sourceUrl: row.sourceUrl,
+    sourceName: row.sourceName,
+    categories: parseCategories(row.categoriesJson),
+    status: row.status,
+    externalKey: row.externalKey,
+    todoId: row.todoId,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }));
+  replaceResponseJson(c, { ...payload, learningItems });
 };
 
 export const learningBackupImportMiddleware: MiddlewareHandler<AppEnv> = async (c, next) => {
@@ -93,6 +132,7 @@ export const learningBackupImportMiddleware: MiddlewareHandler<AppEnv> = async (
       summary: text(raw.summary, 8000) || null,
       sourceUrl: validUrl(raw.sourceUrl) || null,
       sourceName: text(raw.sourceName, 80) || null,
+      categories: validCategories(raw.categories),
       status: validStatus(raw.status),
       externalKey,
       todoId: typeof raw.todoId === "string" && todoIds.has(raw.todoId) ? raw.todoId : null,
@@ -105,14 +145,15 @@ export const learningBackupImportMiddleware: MiddlewareHandler<AppEnv> = async (
   if (normalized.length) {
     await c.env.DB.prepare(`
       INSERT INTO learning_items (
-        id, user_id, learning_date, type, title, summary, source_url, source_name,
+        id, user_id, learning_date, type, title, summary, source_url, source_name, categories,
         status, external_key, todo_id, created_at, updated_at
       )
       SELECT
         json_extract(value, '$.id'), ?, json_extract(value, '$.learningDate'), json_extract(value, '$.type'),
         json_extract(value, '$.title'), json_extract(value, '$.summary'), json_extract(value, '$.sourceUrl'),
-        json_extract(value, '$.sourceName'), json_extract(value, '$.status'), json_extract(value, '$.externalKey'),
-        json_extract(value, '$.todoId'), json_extract(value, '$.createdAt'), json_extract(value, '$.updatedAt')
+        json_extract(value, '$.sourceName'), json_extract(value, '$.categories'), json_extract(value, '$.status'),
+        json_extract(value, '$.externalKey'), json_extract(value, '$.todoId'), json_extract(value, '$.createdAt'),
+        json_extract(value, '$.updatedAt')
       FROM json_each(?)
     `).bind(userId, JSON.stringify(normalized)).run();
   }
