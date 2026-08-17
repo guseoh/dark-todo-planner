@@ -27,8 +27,10 @@ describe("offline Todo queue helpers", () => {
     });
   });
 
-  it("retries network and server failures but not permanent client validation failures", () => {
+  it("retries network, auth, rate-limit, and server failures but not permanent validation failures", () => {
     expect(isRetryableTodoMutationError(new TypeError("Failed to fetch"))).toBe(true);
+    expect(isRetryableTodoMutationError(new ApiError("로그인 필요", 401))).toBe(true);
+    expect(isRetryableTodoMutationError(new ApiError("잠시 후 다시 시도", 429))).toBe(true);
     expect(isRetryableTodoMutationError(new ApiError("서버 오류", 503))).toBe(true);
     expect(isRetryableTodoMutationError(new ApiError("입력 오류", 400))).toBe(false);
   });
