@@ -12,6 +12,7 @@ import {
   verifySessionToken,
 } from "./auth";
 import { backupV9ExportMiddleware, backupV9ImportMiddleware } from "./backupMiddleware";
+import { dependencyStatusMiddleware } from "./dependencyStatusMiddleware";
 import { learningBackupExportMiddleware, learningBackupImportMiddleware } from "./learningBackupMiddleware";
 import { runNotionLearningSync } from "./notionLearningSync";
 import { todoReferenceTrashRestoreMiddleware } from "./referenceLinkMiddleware";
@@ -66,6 +67,7 @@ app.use("/api/*", async (c, next) => {
   return next();
 });
 app.use("/api/trash/todos/*", todoReferenceTrashRestoreMiddleware);
+app.use("/api/todos/*", dependencyStatusMiddleware);
 
 app.get("/api/health", async (c) => {
   await c.env.DB.prepare("SELECT 1").first();
