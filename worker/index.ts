@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import { z, ZodError } from "zod";
+import { attachmentCleanupMiddleware } from "./attachmentCleanupMiddleware";
 import {
   clearSessionCookie,
   constantTimeTextEqual,
@@ -17,6 +18,7 @@ import { runNotionLearningSync } from "./notionLearningSync";
 import { todoReferenceTrashRestoreMiddleware } from "./referenceLinkMiddleware";
 import { runDiscordIncompleteTodoReminder } from "./reminders/incompleteTodoReminder";
 import { runDueTodoReminders } from "./reminders/todoReminder";
+import { attachmentRoutes } from "./routes/attachments";
 import { backupRoutes } from "./routes/backup";
 import { calendarRoutes } from "./routes/calendar";
 import { contentRoutes } from "./routes/content";
@@ -66,6 +68,7 @@ app.use("/api/*", async (c, next) => {
   return next();
 });
 app.use("/api/trash/todos/*", todoReferenceTrashRestoreMiddleware);
+app.use("/api/*", attachmentCleanupMiddleware);
 
 app.get("/api/health", async (c) => {
   await c.env.DB.prepare("SELECT 1").first();
@@ -112,6 +115,7 @@ app.use("/api/backup/export", backupV9ExportMiddleware);
 app.use("/api/backup/import", backupV9ImportMiddleware);
 app.use("/api/migrate/local-storage", backupV9ImportMiddleware);
 
+app.route("/api", attachmentRoutes);
 app.route("/api", todoRoutes);
 app.route("/api", offlineTodoRoutes);
 app.route("/api", projectRoutes);
