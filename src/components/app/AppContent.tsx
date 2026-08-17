@@ -20,14 +20,7 @@ const TrashPage = lazy(() => import("../../pages/TrashPage").then((module) => ({
 const SettingsPage = lazy(() => import("../../pages/SettingsPage").then((module) => ({ default: module.SettingsPage })));
 const ExportPanel = lazy(() => import("../settings/ExportPanel").then((module) => ({ default: module.ExportPanel })));
 
-export const viewsRequiringDeferredData = new Set<AppView>([
-  "planning",
-  "week",
-  "month",
-  "projects",
-  "memo",
-  "settings",
-]);
+export const viewsRequiringDeferredData = new Set<AppView>(["planning", "week", "month", "projects", "memo", "settings"]);
 
 type AppContentProps = {
   activeView: AppView;
@@ -35,39 +28,24 @@ type AppContentProps = {
   onToggleTodo?: ToggleTodo;
   onUpdateTodo?: UpdateTodo;
   openTimePlanningSignal?: number;
+  openSmartViewId?: string | null;
+  onExitSmartView?: () => void;
 };
 
-export function AppContent({ activeView, planner, onToggleTodo, onUpdateTodo, openTimePlanningSignal }: AppContentProps) {
+export function AppContent({ activeView, planner, onToggleTodo, onUpdateTodo, openTimePlanningSignal, openSmartViewId, onExitSmartView }: AppContentProps) {
   const toggleTodo = onToggleTodo ?? planner.toggleTodo;
   const updateTodo = onUpdateTodo ?? planner.updateTodo;
   let content: JSX.Element;
 
   switch (activeView) {
     case "today":
-      content = (
-        <TodayPage
-          todayTodos={planner.getTodayTodos()}
-          stats={planner.stats}
-          onAdd={planner.addTodo}
-          onToggle={toggleTodo}
-          onDelete={planner.deleteTodo}
-          onUpdate={updateTodo}
-          categories={planner.categories}
-          projects={planner.projects}
-          onAddCategory={planner.addCategory}
-          onUpdateCategory={planner.updateCategory}
-          onDeleteCategory={planner.deleteCategory}
-          onReorderCategories={planner.reorderCategories}
-          overdueTodos={planner.getOverdueIncompleteTodos()}
-          onBringOverdueTodos={planner.bringOverdueTodosToToday}
-        />
-      );
+      content = <TodayPage todayTodos={planner.getTodayTodos()} stats={planner.stats} onAdd={planner.addTodo} onToggle={toggleTodo} onDelete={planner.deleteTodo} onUpdate={updateTodo} categories={planner.categories} projects={planner.projects} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} onReorderCategories={planner.reorderCategories} overdueTodos={planner.getOverdueIncompleteTodos()} onBringOverdueTodos={planner.bringOverdueTodosToToday} />;
       break;
     case "inbox":
       content = <InboxPage todos={planner.todos} categories={planner.categories} projects={planner.activeProjects} onAdd={planner.addTodo} onUpdate={updateTodo} onDelete={planner.deleteTodo} />;
       break;
     case "planning":
-      content = <PlanningHubPage todos={planner.allTodos} projects={planner.activeProjects} dailyPlan={planner.dailyPlan} weeklyReview={planner.weeklyReview} savedViews={planner.savedViews} taskTemplates={planner.taskTemplates} onSaveDailyPlan={planner.saveDailyPlan} onSaveWeeklyReview={planner.saveWeeklyReview} onAddSavedView={planner.addSavedView} onDeleteSavedView={planner.deleteSavedView} onAddTaskTemplate={planner.addTaskTemplate} onDeleteTaskTemplate={planner.deleteTaskTemplate} onAddTodo={planner.addTodo} focusSessions={planner.focusSessions} timeBlocks={planner.timeBlocks} timerSettings={planner.timerSettings} openTimePlanningSignal={openTimePlanningSignal} onAddFocusSession={planner.addFocusSession} onSaveTimerSettings={planner.saveTimerSettings} onAddTimeBlock={planner.addTimeBlock} onUpdateTimeBlock={planner.updateTimeBlock} onDeleteTimeBlock={planner.deleteTimeBlock} />;
+      content = <PlanningHubPage todos={planner.allTodos} projects={planner.activeProjects} dailyPlan={planner.dailyPlan} weeklyReview={planner.weeklyReview} savedViews={planner.savedViews} taskTemplates={planner.taskTemplates} onSaveDailyPlan={planner.saveDailyPlan} onSaveWeeklyReview={planner.saveWeeklyReview} onAddSavedView={planner.addSavedView} onDeleteSavedView={planner.deleteSavedView} onAddTaskTemplate={planner.addTaskTemplate} onDeleteTaskTemplate={planner.deleteTaskTemplate} onAddTodo={planner.addTodo} focusSessions={planner.focusSessions} timeBlocks={planner.timeBlocks} timerSettings={planner.timerSettings} openTimePlanningSignal={openTimePlanningSignal} openSmartViewId={openSmartViewId} onExitSmartView={onExitSmartView} onAddFocusSession={planner.addFocusSession} onSaveTimerSettings={planner.saveTimerSettings} onAddTimeBlock={planner.addTimeBlock} onUpdateTimeBlock={planner.updateTimeBlock} onDeleteTimeBlock={planner.deleteTimeBlock} />;
       break;
     case "week":
       content = <WeekPage weekTodos={planner.getWeekTodos()} getTodosByDate={planner.getTodosByDate} onAdd={planner.addTodo} onToggle={toggleTodo} onDelete={planner.deleteTodo} onUpdate={updateTodo} onAddGoal={planner.addGoal} onUpdateGoal={planner.updateGoal} onToggleGoal={planner.toggleGoal} onDeleteGoal={planner.deleteGoal} categories={planner.categories} goals={planner.goals} />;
@@ -94,12 +72,7 @@ export function AppContent({ activeView, planner, onToggleTodo, onUpdateTodo, op
       content = <TrashPage onRestored={planner.loadAll} />;
       break;
     case "settings":
-      content = (
-        <div className="space-y-4">
-          <SettingsPage stats={planner.stats} categories={planner.categories} goals={planner.goals} memos={planner.memos} plannerSettings={planner.plannerSettings} onSavePlannerSettings={planner.savePlannerSettings} apiStatus={planner.connectionError ? "offline" : "online"} />
-          <ExportPanel todos={planner.allTodos} projects={planner.projects} goals={planner.goals} memos={planner.memos} />
-        </div>
-      );
+      content = <div className="space-y-4"><SettingsPage stats={planner.stats} categories={planner.categories} goals={planner.goals} memos={planner.memos} plannerSettings={planner.plannerSettings} onSavePlannerSettings={planner.savePlannerSettings} apiStatus={planner.connectionError ? "offline" : "online"} /><ExportPanel todos={planner.allTodos} projects={planner.projects} goals={planner.goals} memos={planner.memos} /></div>;
       break;
   }
 
