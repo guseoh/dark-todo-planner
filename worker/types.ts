@@ -1,8 +1,18 @@
 import type { Context } from "hono";
 
+export type WorkersAiBinding = {
+  run: (model: string, input: {
+    messages: Array<{ role: "system" | "user" | "assistant"; content: string }>;
+    max_tokens?: number;
+    temperature?: number;
+  }) => Promise<unknown>;
+};
+
 export type Bindings = {
   DB: D1Database;
   ASSETS: Fetcher;
+  AI?: WorkersAiBinding;
+  AI_LEARNING_MODEL?: string;
   AUTH_USERNAME: string;
   AUTH_PASSWORD_HASH: string;
   SESSION_SECRET: string;
