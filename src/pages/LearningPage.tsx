@@ -236,9 +236,9 @@ export function LearningPage({ onTodoCreated }: { onTodoCreated: () => unknown |
                 </div>
                 <h3 className="mt-2 text-sm font-bold text-ink-100">{item.title}</h3>
                 {item.summary ? (
-                  <details className="mt-2 rounded-lg border border-ink-800 bg-ink-950/30 px-3 py-2">
+                  <details className="mt-2 rounded-lg border border-ink-800 bg-ink-950/30 px-3 py-2.5">
                     <summary className="cursor-pointer text-xs font-semibold text-ink-400">{itemType === "DAILY_PROBLEM" ? "Notion 문제·해설 보기" : "Notion 본문 보기"}</summary>
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-ink-400">{item.summary}</p>
+                    <MarkdownPreview className="mt-3 text-sm leading-6 text-ink-300" value={item.summary} />
                   </details>
                 ) : null}
                 {guide ? (
