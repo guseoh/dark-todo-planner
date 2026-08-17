@@ -7,6 +7,7 @@ export type ShareTargetDraft = {
 
 export const SHARE_TARGET_PATH = "/share-target";
 const MAX_REFERENCE_URL_LENGTH = 2048;
+const MAX_REFERENCE_LABEL_LENGTH = 80;
 const HTTP_URL_PATTERN = /https?:\/\/[^\s<>"']+/i;
 
 const trimTrailingPunctuation = (value: string) => value.replace(/[),.\]!?;]+$/g, "");
@@ -52,7 +53,7 @@ export const parseShareTargetLocation = (pathname: string, search: string): Shar
   let referenceLabel = "";
   if (referenceUrl) {
     try {
-      referenceLabel = new URL(referenceUrl).hostname.replace(/^www\./, "");
+      referenceLabel = new URL(referenceUrl).hostname.replace(/^www\./, "").slice(0, MAX_REFERENCE_LABEL_LENGTH);
     } catch {
       referenceLabel = "공유 링크";
     }
