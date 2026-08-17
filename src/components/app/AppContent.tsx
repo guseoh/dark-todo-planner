@@ -8,6 +8,7 @@ type ToggleTodo = PlannerData["toggleTodo"];
 type UpdateTodo = PlannerData["updateTodo"];
 
 const InboxPage = lazy(() => import("../../pages/InboxPage").then((module) => ({ default: module.InboxPage })));
+const LearningPage = lazy(() => import("../../pages/LearningPage").then((module) => ({ default: module.LearningPage })));
 const PlanningHubPage = lazy(() => import("../../pages/PlanningHubPage").then((module) => ({ default: module.PlanningHubPage })));
 const WeekPage = lazy(() => import("../../pages/WeekPage").then((module) => ({ default: module.WeekPage })));
 const MonthPage = lazy(() => import("../../pages/MonthPage").then((module) => ({ default: module.MonthPage })));
@@ -43,6 +44,9 @@ export function AppContent({ activeView, planner, onToggleTodo, onUpdateTodo, op
       break;
     case "inbox":
       content = <InboxPage todos={planner.todos} categories={planner.categories} projects={planner.activeProjects} onAdd={planner.addTodo} onUpdate={updateTodo} onDelete={planner.deleteTodo} />;
+      break;
+    case "learning":
+      content = <LearningPage onTodoCreated={planner.loadAll} />;
       break;
     case "planning":
       content = <PlanningHubPage todos={planner.allTodos} projects={planner.activeProjects} dailyPlan={planner.dailyPlan} weeklyReview={planner.weeklyReview} savedViews={planner.savedViews} taskTemplates={planner.taskTemplates} onSaveDailyPlan={planner.saveDailyPlan} onSaveWeeklyReview={planner.saveWeeklyReview} onAddSavedView={planner.addSavedView} onDeleteSavedView={planner.deleteSavedView} onAddTaskTemplate={planner.addTaskTemplate} onDeleteTaskTemplate={planner.deleteTaskTemplate} onAddTodo={planner.addTodo} focusSessions={planner.focusSessions} timeBlocks={planner.timeBlocks} timerSettings={planner.timerSettings} openTimePlanningSignal={openTimePlanningSignal} openSmartViewId={openSmartViewId} onExitSmartView={onExitSmartView} onAddFocusSession={planner.addFocusSession} onSaveTimerSettings={planner.saveTimerSettings} onAddTimeBlock={planner.addTimeBlock} onUpdateTimeBlock={planner.updateTimeBlock} onDeleteTimeBlock={planner.deleteTimeBlock} />;
