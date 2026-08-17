@@ -13,6 +13,7 @@ export function CalendarExportCard() {
   const validation = useMemo(() => {
     if (!from || !to) return { valid: false, message: "시작일과 종료일을 지정해 주세요.", days: 0 };
     const days = differenceInCalendarDays(parseDateKey(to), parseDateKey(from)) + 1;
+    if (!Number.isFinite(days)) return { valid: false, message: "날짜 형식이 올바르지 않습니다.", days: 0 };
     if (days <= 0) return { valid: false, message: "종료일은 시작일보다 빠를 수 없습니다.", days };
     if (days > 366) return { valid: false, message: "한 번에 최대 366일까지 내보낼 수 있습니다.", days };
     return { valid: true, message: `${days}일 범위를 내보냅니다.`, days };
