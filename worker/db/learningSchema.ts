@@ -32,3 +32,17 @@ export const learningSyncState = sqliteTable("learning_sync_state", {
   codeReadingError: text("code_reading_error"),
   techBlogError: text("tech_blog_error"),
 });
+
+export const learningAiGuides = sqliteTable("learning_ai_guides", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  learningItemId: text("learning_item_id").notNull().references(() => learningItems.id, { onDelete: "cascade" }),
+  sourceHash: text("source_hash").notNull(),
+  content: text("content").notNull(),
+  model: text("model").notNull(),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+}, (table) => [
+  uniqueIndex("learning_ai_guides_user_item_uidx").on(table.userId, table.learningItemId),
+  index("learning_ai_guides_item_idx").on(table.learningItemId),
+]);
