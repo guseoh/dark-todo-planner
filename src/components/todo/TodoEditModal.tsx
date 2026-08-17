@@ -8,6 +8,7 @@ import type { Project } from "../../types/project";
 import type { Todo, TodoPlanningState, TodoPriority, TodoRepeat, TodoWorkflowStatus } from "../../types/todo";
 import { Modal } from "../common/Modal";
 import { MarkdownEditor } from "../editor/MarkdownEditor";
+import { TodoReminderEditor } from "./TodoReminderEditor";
 
 const UNSCHEDULED_DATE = "9999-12-31";
 const safeHttpHref = (value: string) => {
@@ -111,6 +112,7 @@ export function TodoEditModal({ todo, categories = [], projects = [], onClose, o
             </div>
             {referenceError ? <p className="text-xs font-semibold text-red-200" role="alert">{referenceError}</p> : null}
           </div>
+          <TodoReminderEditor todoId={todo.id} />
           <label className="flex min-h-11 items-center gap-3 rounded-lg bg-ink-950/45 px-3 text-sm text-ink-300 md:col-span-2"><input type="checkbox" checked={completed} onChange={(event) => setCompleted(event.target.checked)} className="h-4 w-4 accent-accent-500" />완료된 Todo로 표시</label>
           <MarkdownEditor className="md:col-span-2" label="메모" value={memo} onChange={setMemo} placeholder="메모" />
         </div>
