@@ -5,6 +5,7 @@ import {
   extractStructuredGuide,
   hashLearningGuideSource,
   structuredGuideToMarkdown,
+  type StructuredLearningGuide,
 } from "./learningAiGuide";
 import type { LearningRow } from "./learningStore";
 
@@ -25,7 +26,7 @@ const item: LearningRow = {
   updatedAt: "2026-08-18T00:00:00.000Z",
 };
 
-const structured = {
+const structured: StructuredLearningGuide = {
   keyPoints: ["복합 인덱스를 적용했다.", "실행 계획을 비교했다.", "p95 응답 시간을 비교했다."],
   checkQuestions: ["어떤 인덱스를 적용했나요?", "실행 계획 비교가 필요한 이유는 무엇인가요?", "운영에서 어떤 응답 시간을 확인해야 하나요?"],
   projectQuestion: "현재 프로젝트에서도 인덱스 변경 전후의 p95를 측정할 수 있나요?",
