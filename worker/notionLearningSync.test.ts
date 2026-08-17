@@ -19,7 +19,28 @@ describe("Notion Learning sync mapping", () => {
     expect(getKstDate(new Date("2026-08-16T15:05:00.000Z"))).toBe("2026-08-17");
   });
 
-  it("maps the daily code reading page", () => {
+  it("maps the daily code reading page body when available", () => {
+    const item = codeReadingPageToLearning(page({
+      "세트 ID": title("CR-2026-08-17"),
+      "Java 주제": text("HashSet 중복 추가"),
+      "Spring 주제": text("@PostMapping"),
+      "설계 주제": text("상태 변경 책임"),
+      "상태": select("해설 완료"),
+    }), "2026-08-17", [
+      "## Java",
+      "HashSet에 같은 값을 두 번 추가하면 size는 어떻게 될까요?",
+      "## 해설",
+      "equals와 hashCode 결과를 기준으로 중복을 판단합니다.",
+    ].join("\n"));
+
+    expect(item.type).toBe("DAILY_PROBLEM");
+    expect(item.title).toBe("CR-2026-08-17");
+    expect(item.summary).toContain("같은 값을 두 번 추가");
+    expect(item.summary).toContain("equals와 hashCode");
+    expect(item.externalKey).toBe("notion:3be7c8e312368153b650ff401c5d46fb");
+  });
+
+  it("falls back to daily topic properties when page body is unavailable", () => {
     const item = codeReadingPageToLearning(page({
       "세트 ID": title("CR-2026-08-17"),
       "Java 주제": text("HashSet 중복 추가"),
@@ -28,11 +49,8 @@ describe("Notion Learning sync mapping", () => {
       "상태": select("해설 완료"),
     }), "2026-08-17");
 
-    expect(item.type).toBe("DAILY_PROBLEM");
-    expect(item.title).toBe("CR-2026-08-17");
     expect(item.summary).toContain("Java: HashSet 중복 추가");
     expect(item.summary).toContain("Notion 상태: 해설 완료");
-    expect(item.externalKey).toBe("notion:3be7c8e312368153b650ff401c5d46fb");
   });
 
   it("maps technical blog body and multi-select categories", () => {
