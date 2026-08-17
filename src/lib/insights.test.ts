@@ -113,6 +113,52 @@ describe("buildInsightsSnapshot", () => {
 
     expect(snapshot.projects[0]).toMatchObject({ total: 2, completed: 1, completionRate: 50, overdue: 1, remainingEstimateMinutes: 40 });
   });
+
+  it("uses only completed Todo samples with linked focus sessions for estimate accuracy", () => {
+    const sampleTodos = Array.from({ length: 5 }, (_, index) => todo({
+      id: `sample-${index}`,
+      title: `샘플 ${index}`,
+      projectId: "project-1",
+      completed: true,
+      workflowStatus: "DONE",
+      estimateMinutes: 30,
+    }));
+    const sessions = sampleTodos.map((entry, index) => focus({
+      id: `focus-${index}`,
+      todoId: entry.id,
+      durationMinutes: 45,
+    }));
+    const snapshot = buildInsightsSnapshot({
+      todos: [...sampleTodos, todo({ id: "unfinished", estimateMinutes: 30 })],
+      projects: [project()],
+      focusSessions: sessions,
+      timeBlocks: [],
+      from: "2026-08-10",
+      to: "2026-08-16",
+      today: "2026-08-16",
+    });
+
+    expect(snapshot.estimateAccuracy.sampleCount).toBe(5);
+    expect(snapshot.estimateAccuracy.estimateMinutes).toBe(150);
+    expect(snapshot.estimateAccuracy.actualMinutes).toBe(225);
+    expect(snapshot.estimateAccuracy.actualVsEstimateRate).toBe(150);
+    expect(snapshot.estimateAccuracy.planningMultiplier).toBe(1.5);
+    expect(snapshot.estimateAccuracy.projects[0]).toMatchObject({ sampleCount: 5, estimateMinutes: 150, actualMinutes: 225 });
+  });
+
+  it("does not suggest a planning multiplier with fewer than five samples", () => {
+    const snapshot = buildInsightsSnapshot({
+      todos: [todo({ completed: true, workflowStatus: "DONE", estimateMinutes: 30 })],
+      projects: [],
+      focusSessions: [focus({ todoId: "todo-1", durationMinutes: 45 })],
+      timeBlocks: [],
+      from: "2026-08-10",
+      to: "2026-08-16",
+      today: "2026-08-16",
+    });
+    expect(snapshot.estimateAccuracy.sampleCount).toBe(1);
+    expect(snapshot.estimateAccuracy.planningMultiplier).toBeUndefined();
+  });
 });
 
 describe("formatInsightMinutes", () => {

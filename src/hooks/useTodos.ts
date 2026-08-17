@@ -108,6 +108,12 @@ export function useTodos() {
         method: "PUT",
         ...jsonBody(toTodoRequestBody({ ...existing, ...updates })),
       });
+      const statusChanged = existing.completed !== result.todo.completed || existing.workflowStatus !== result.todo.workflowStatus;
+      if (statusChanged) {
+        const loaded = await loadTodos();
+        setError("");
+        return loaded.find((todo) => todo.id === id) || result.todo;
+      }
       setAllTodos((current) => current.map((todo) => (todo.id === id ? result.todo : todo)));
       setError("");
       return result.todo;
@@ -117,7 +123,7 @@ export function useTodos() {
     } finally {
       setSaving(false);
     }
-  }, [allTodos]);
+  }, [allTodos, loadTodos]);
 
   const finalizeDelete = useCallback(async (id: string) => {
     const snapshot = deletedSnapshotsRef.current.get(id);
@@ -207,6 +213,7 @@ export function useTodos() {
     setSaving(true);
     try {
       await api("/api/todos/bulk-update", { method: "POST", ...jsonBody({ ids: uniqueIds, action }) });
+      if (action.type === "WORKFLOW_STATUS") await loadTodos();
       setError("");
       return true;
     } catch (err) {
@@ -216,20 +223,20 @@ export function useTodos() {
     } finally {
       setSaving(false);
     }
-  }, [allTodos]);
+  }, [allTodos, loadTodos]);
 
   const toggleTodo = useCallback(async (id: string) => {
     const previous = allTodos;
     setAllTodos((current) => current.map((todo) => todo.id === id ? { ...todo, completed: !todo.completed, workflowStatus: !todo.completed ? "DONE" : todo.workflowStatus === "DONE" ? "TODO" : todo.workflowStatus } : todo));
     try {
-      const result = await api<{ todo: Todo }>(`/api/todos/${id}/toggle`, { method: "PATCH" });
-      setAllTodos((current) => current.map((todo) => (todo.id === id ? result.todo : todo)));
+      await api<{ todo: Todo }>(`/api/todos/${id}/toggle`, { method: "PATCH" });
+      await loadTodos();
       setError("");
     } catch (err) {
       setAllTodos(previous);
       setError(getMessage(err));
     }
-  }, [allTodos]);
+  }, [allTodos, loadTodos]);
 
   const archiveTodo = useCallback(async (id: string) => {
     try {

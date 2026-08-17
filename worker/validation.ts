@@ -8,6 +8,7 @@ export const todoInputSchema = z.object({
   planningState: z.enum(["INBOX", "SCHEDULED", "SOMEDAY", "WAITING"]).default("SCHEDULED"), workflowStatus: z.enum(["TODO", "IN_PROGRESS", "BLOCKED", "DONE"]).default("TODO"),
   priority: z.enum(["LOW", "MEDIUM", "HIGH"]).default("MEDIUM"), completed: z.boolean().optional(),
   repeat: z.enum(["NONE", "DAILY", "WEEKLY", "MONTHLY", "WEEKDAY", "WEEKEND"]).default("NONE"), archived: z.boolean().optional(), order: z.number().int().optional(), tags: tagsSchema,
+  blockingTodoIds: z.array(z.string()).max(20).optional(),
 });
 export const bulkTodoUpdateSchema = z.object({
   ids: z.array(z.string()).max(4000),
