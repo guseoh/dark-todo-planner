@@ -1,11 +1,17 @@
 import type { Bindings } from "./types";
 import { newId, nowIso } from "./utils";
-import type { z } from "zod";
-import type { learningImportItemSchema } from "./learningValidation";
 
 export type LearningItemType = "DAILY_PROBLEM" | "TECH_BLOG";
 export type LearningItemStatus = "UNREAD" | "READING" | "DONE" | "SKIPPED";
-export type LearningImportItem = z.infer<typeof learningImportItemSchema>;
+export type LearningImportItem = {
+  learningDate: string;
+  type: LearningItemType;
+  title: string;
+  summary?: string | null;
+  sourceUrl?: string | null;
+  sourceName?: string | null;
+  externalKey: string;
+};
 
 export type LearningRow = {
   id: string;
