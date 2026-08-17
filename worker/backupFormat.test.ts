@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { BACKUP_VERSION, SUPPORTED_BACKUP_VERSIONS, normalizeBackupPayload, normalizeBackupV8Relations } from "./backupFormat";
 
-describe("backup format v12", () => {
+describe("backup format v13", () => {
   it("keeps older backups compatible while exposing newer collections", () => {
     const { data, warnings } = normalizeBackupPayload({ version: 7, projects: [{ id: "project-1", name: "기존 프로젝트" }], todos: [{ id: "todo-1", title: "기존 Todo", date: "2026-08-16" }], memos: [{ id: "memo-1", content: "기존 메모" }] });
-    expect(BACKUP_VERSION).toBe(12);
-    expect(SUPPORTED_BACKUP_VERSIONS).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(BACKUP_VERSION).toBe(13);
+    expect(SUPPORTED_BACKUP_VERSIONS).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
     expect(warnings).toEqual([]);
     expect(data.projectDecisions).toEqual([]);
     expect(data.memoTodoLinks).toEqual([]);
@@ -19,6 +19,7 @@ describe("backup format v12", () => {
     expect(data.routineTemplates).toEqual([]);
     expect(data.routineTemplateItems).toEqual([]);
     expect(data.routineRuns).toEqual([]);
+    expect(data.todoDependencies).toEqual([]);
   });
 
   it("keeps learning items in a v11 payload", () => {
@@ -51,6 +52,13 @@ describe("backup format v12", () => {
     expect(data.routineTemplates).toEqual([routine]);
     expect(data.routineTemplateItems).toEqual([routineItem]);
     expect(data.routineRuns).toEqual([routineRun]);
+  });
+
+  it("keeps todo dependency collections in a v13 payload", () => {
+    const dependency = { blockingTodoId: "todo-a", blockedTodoId: "todo-b", createdAt: "2026-08-17T01:00:00.000Z" };
+    const { data, warnings } = normalizeBackupPayload({ version: 13, todoDependencies: [dependency] });
+    expect(warnings).toEqual([]);
+    expect(data.todoDependencies).toEqual([dependency]);
   });
 
   it("restores only valid project decisions and memo relations", () => {
