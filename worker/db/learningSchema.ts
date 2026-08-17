@@ -1,4 +1,4 @@
-import { index, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { todos, users } from "./schema";
 
 export const learningItems = sqliteTable("learning_items", {
@@ -21,3 +21,13 @@ export const learningItems = sqliteTable("learning_items", {
   index("learning_items_user_status_date_idx").on(table.userId, table.status, table.learningDate),
   index("learning_items_todo_idx").on(table.todoId),
 ]);
+
+export const learningSyncState = sqliteTable("learning_sync_state", {
+  userId: text("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  lastAttemptAt: text("last_attempt_at"),
+  lastSuccessAt: text("last_success_at"),
+  codeReadingCount: integer("code_reading_count").notNull().default(0),
+  techBlogCount: integer("tech_blog_count").notNull().default(0),
+  codeReadingError: text("code_reading_error"),
+  techBlogError: text("tech_blog_error"),
+});
