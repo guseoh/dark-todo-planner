@@ -8,14 +8,18 @@ import { Modal } from "./components/common/Modal";
 import { Header } from "./components/layout/Header";
 import { Sidebar, type AppView } from "./components/layout/Sidebar";
 import { DayCloseModal, type DayCloseDecision } from "./components/today/DayCloseModal";
+import { ShareInboxModal } from "./components/todo/ShareInboxModal";
 import { TodoForm } from "./components/todo/TodoForm";
 import { TodoQuickActionsProvider, type TodoSnoozeTarget } from "./components/todo/TodoQuickActionsContext";
 import { usePlannerData } from "./hooks/usePlannerData";
+import { api, jsonBody } from "./lib/api/client";
 import { parseDateKey, todayKey, toDateKey } from "./lib/date";
 import { builtInSmartViews, filterTodosBySavedView } from "./lib/planning";
+import { clearShareTargetLocation, parseShareTargetLocation, type ShareTargetDraft } from "./lib/shareTarget";
 import type { Todo } from "./types/todo";
 
 const TODO_UNDO_MS = 6000;
+const UNSCHEDULED_DATE = "9999-12-31";
 const UNDOABLE_UPDATE_FIELDS = new Set(["date", "planningState", "priority"]);
 
 type PendingTodoUndo = {
@@ -32,6 +36,9 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
   const [showDayClose, setShowDayClose] = useState(false);
   const [openTimePlanningSignal, setOpenTimePlanningSignal] = useState(0);
   const [pendingTodoUndo, setPendingTodoUndo] = useState<PendingTodoUndo | null>(null);
+  const [shareDraft, setShareDraft] = useState<ShareTargetDraft | null>(() => (
+    typeof window === "undefined" ? null : parseShareTargetLocation(window.location.pathname, window.location.search)
+  ));
   const todoUndoTimerRef = useRef<number | null>(null);
   const planner = usePlannerData();
 
@@ -172,6 +179,57 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     return failed ? { ok: false, message: `${failed}개 Todo를 반영하지 못했습니다. 남은 항목을 확인한 뒤 다시 시도해주세요.` } : { ok: true };
   };
 
+  const closeShareDraft = () => {
+    clearShareTargetLocation();
+    setShareDraft(null);
+  };
+
+  const saveShareDraft = async (draft: ShareTargetDraft) => {
+    const created = await planner.addTodo({
+      title: draft.title,
+      memo: draft.memo || undefined,
+      date: UNSCHEDULED_DATE,
+      planningState: "INBOX",
+      workflowStatus: "TODO",
+      priority: "MEDIUM",
+      repeat: "NONE",
+      tags: [],
+    });
+    if (!created) return { ok: false, message: "Inbox Todo를 생성하지 못했습니다." };
+
+    if (draft.referenceUrl) {
+      try {
+        await api(`/api/todos/${created.id}/reference-link`, {
+          method: "PUT",
+          ...jsonBody({ url: draft.referenceUrl, label: draft.referenceLabel || null }),
+        });
+        await planner.loadAll().catch(() => undefined);
+      } catch (cause) {
+        let rolledBack = true;
+        try {
+          await api(`/api/todos/${created.id}`, { method: "DELETE" });
+        } catch {
+          rolledBack = false;
+        }
+        await planner.loadAll().catch(() => undefined);
+        return {
+          ok: false,
+          message: rolledBack
+            ? "관련 링크를 저장하지 못해 생성된 Todo도 되돌렸습니다. 다시 시도해주세요."
+            : "관련 링크를 저장하지 못했습니다. Inbox에 생성된 Todo가 남아 있는지 확인해주세요.",
+        };
+      }
+    }
+
+    clearShareTargetLocation();
+    setShareDraft(null);
+    setShowQuickAdd(false);
+    setShowCommandPalette(false);
+    setActiveSmartViewId(null);
+    setActiveView("inbox");
+    return { ok: true };
+  };
+
   return (
     <TodoQuickActionsProvider snoozeTodo={snoozeTodo}>
       <div className="min-h-screen pb-20 lg:pb-0">
@@ -206,6 +264,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
           </Modal>
         ) : null}
 
+        {shareDraft ? <ShareInboxModal draft={shareDraft} onClose={closeShareDraft} onSave={saveShareDraft} /> : null}
         {showDayClose ? <DayCloseModal todos={todayOpenTodos} onClose={() => setShowDayClose(false)} onApply={applyDayClose} /> : null}
 
         {pendingTodoUndo || planner.pendingTodoDelete || planner.pendingMemoDelete ? (
