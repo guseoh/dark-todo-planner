@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from "hono";
-import { syncBlockedTodoStatus, syncDependentsForBlocker } from "./todoDependencies";
+import { enforceOwnDependencyStatus, syncBlockedTodoStatus, syncDependentsForBlocker } from "./todoDependencies";
 import type { Bindings, Variables } from "./types";
 
 type AppEnv = { Bindings: Bindings; Variables: Variables };
@@ -72,6 +72,9 @@ export const dependencyStatusMiddleware: MiddlewareHandler<AppEnv> = async (c, n
 
   await next();
   if (!c.res.ok) return;
-  if (shouldSync) for (const blockerId of blockerIds) await syncDependentsForBlocker(c.env.DB, userId, blockerId);
+  if (shouldSync) {
+    for (const todoId of blockerIds) await enforceOwnDependencyStatus(c.env.DB, userId, todoId);
+    for (const blockerId of blockerIds) await syncDependentsForBlocker(c.env.DB, userId, blockerId);
+  }
   for (const blockedTodoId of deletedDependentIds) await syncBlockedTodoStatus(c.env.DB, userId, blockedTodoId);
 };
