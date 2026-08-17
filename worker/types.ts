@@ -3,6 +3,7 @@ import type { Context } from "hono";
 export type Bindings = {
   DB: D1Database;
   ASSETS: Fetcher;
+  ATTACHMENTS: R2Bucket;
   AUTH_USERNAME: string;
   AUTH_PASSWORD_HASH: string;
   SESSION_SECRET: string;
