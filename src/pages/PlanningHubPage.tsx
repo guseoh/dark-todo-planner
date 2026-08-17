@@ -1,4 +1,4 @@
-import { useState, type ComponentProps } from "react";
+import { useEffect, useState, type ComponentProps } from "react";
 import { Clock3, ListChecks } from "lucide-react";
 import { TimePlanningPanel } from "../components/planning/TimePlanningPanel";
 import type { FocusSession, FocusSessionInput, TimeBlock, TimeBlockInput, TimerSettings, TimerSettingsInput } from "../types/time";
@@ -8,6 +8,7 @@ type PlanningHubPageProps = ComponentProps<typeof PlanningPage> & {
   focusSessions: FocusSession[];
   timeBlocks: TimeBlock[];
   timerSettings: TimerSettings;
+  openTimePlanningSignal?: number;
   onAddFocusSession: (input: FocusSessionInput) => Promise<FocusSession | undefined>;
   onSaveTimerSettings: (input: TimerSettingsInput) => Promise<TimerSettings | undefined>;
   onAddTimeBlock: (input: TimeBlockInput) => Promise<TimeBlock | undefined>;
@@ -19,6 +20,7 @@ export function PlanningHubPage({
   focusSessions,
   timeBlocks,
   timerSettings,
+  openTimePlanningSignal,
   onAddFocusSession,
   onSaveTimerSettings,
   onAddTimeBlock,
@@ -27,6 +29,11 @@ export function PlanningHubPage({
   ...planningProps
 }: PlanningHubPageProps) {
   const [mode, setMode] = useState<"planning" | "time">("planning");
+
+  useEffect(() => {
+    if (!openTimePlanningSignal) return;
+    setMode("time");
+  }, [openTimePlanningSignal]);
 
   const modeButtonClass = (active: boolean) =>
     `relative flex min-h-9 items-center gap-2 rounded-md px-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 ${

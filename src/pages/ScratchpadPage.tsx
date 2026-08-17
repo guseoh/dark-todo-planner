@@ -9,6 +9,7 @@ type ScratchpadResponse = {
 };
 
 type SaveState = "loading" | "saved" | "dirty" | "saving" | "error";
+type ScratchpadMenu = "file" | "edit" | "format" | "view";
 
 const AUTOSAVE_DELAY_MS = 700;
 const MIN_ZOOM = 80;
@@ -29,6 +30,7 @@ const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\
 export function ScratchpadPage() {
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const menuBarRef = useRef<HTMLDivElement | null>(null);
   const historyRef = useRef<string[]>([""]);
   const historyIndexRef = useRef(0);
   const loadedRef = useRef(false);
@@ -45,6 +47,7 @@ export function ScratchpadPage() {
   const [replaceOpen, setReplaceOpen] = useState(false);
   const [findText, setFindText] = useState("");
   const [replaceText, setReplaceText] = useState("");
+  const [openMenu, setOpenMenu] = useState<ScratchpadMenu | null>(null);
 
   const resetHistory = useCallback((value: string) => {
     historyRef.current = [value];
@@ -137,6 +140,22 @@ export function ScratchpadPage() {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [content, savedContent]);
+
+  useEffect(() => {
+    if (!openMenu) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!menuBarRef.current?.contains(event.target as Node)) setOpenMenu(null);
+    };
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") setOpenMenu(null);
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [openMenu]);
 
   const selection = () => {
     const editor = editorRef.current;
@@ -289,52 +308,66 @@ export function ScratchpadPage() {
   const lastSavedLabel = updatedAt ? new Date(updatedAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : "";
 
   const menuButtonClass = "rounded px-2 py-1 text-xs font-medium text-ink-300 hover:bg-ink-800 hover:text-ink-100";
+  const menuItemClass = "w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800";
   const toolButtonClass = "flex h-8 min-w-8 items-center justify-center rounded border border-transparent px-2 text-xs font-semibold text-ink-300 hover:border-ink-700 hover:bg-ink-800 hover:text-ink-100";
+  const toggleMenu = (menu: ScratchpadMenu) => setOpenMenu((current) => current === menu ? null : menu);
+  const closeMenuAndRun = (action: () => void) => {
+    setOpenMenu(null);
+    action();
+  };
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-[1500px] flex-col overflow-hidden rounded-lg border border-ink-700/70 bg-ink-950 shadow-2xl">
       <div className="flex shrink-0 items-center justify-between border-b border-ink-700/70 bg-ink-900 px-2 py-1">
-        <div className="flex items-center gap-0.5">
-          <details className="relative">
-            <summary className={`${menuButtonClass} cursor-pointer list-none`}>파일</summary>
-            <div className="absolute left-0 top-full z-40 mt-1 w-44 rounded-md border border-ink-700 bg-ink-900 p-1 shadow-xl">
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={newDocument}>새 문서</button>
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={() => fileInputRef.current?.click()}>텍스트 파일 열기</button>
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={() => void saveNow(content)}>저장 <span className="float-right text-ink-500">Ctrl+S</span></button>
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={downloadText}>텍스트로 다운로드</button>
-            </div>
-          </details>
-          <details className="relative">
-            <summary className={`${menuButtonClass} cursor-pointer list-none`}>편집</summary>
-            <div className="absolute left-0 top-full z-40 mt-1 w-44 rounded-md border border-ink-700 bg-ink-900 p-1 shadow-xl">
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={undo}>실행 취소 <span className="float-right text-ink-500">Ctrl+Z</span></button>
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={redo}>다시 실행 <span className="float-right text-ink-500">Ctrl+Y</span></button>
-              <div className="my-1 border-t border-ink-700" />
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={() => { setFindOpen(true); setReplaceOpen(false); }}>찾기 <span className="float-right text-ink-500">Ctrl+F</span></button>
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={() => { setFindOpen(true); setReplaceOpen(true); }}>바꾸기 <span className="float-right text-ink-500">Ctrl+H</span></button>
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={() => { editorRef.current?.focus(); editorRef.current?.select(); }}>전체 선택</button>
-            </div>
-          </details>
-          <details className="relative">
-            <summary className={`${menuButtonClass} cursor-pointer list-none`}>서식</summary>
-            <div className="absolute left-0 top-full z-40 mt-1 w-48 rounded-md border border-ink-700 bg-ink-900 p-1 shadow-xl">
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={() => prefixSelectedLines("# ")}>제목 H1</button>
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={() => prefixSelectedLines("- ")}>글머리 목록</button>
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={() => replaceSelection("**", "**")}>굵게</button>
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={() => replaceSelection("_", "_")}>기울임</button>
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={() => replaceSelection("~~", "~~")}>취소선</button>
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={() => replaceSelection("[", "](https://)", "링크")}>링크</button>
-            </div>
-          </details>
-          <details className="relative">
-            <summary className={`${menuButtonClass} cursor-pointer list-none`}>보기</summary>
-            <div className="absolute left-0 top-full z-40 mt-1 w-44 rounded-md border border-ink-700 bg-ink-900 p-1 shadow-xl">
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={() => setWrap((value) => !value)}>자동 줄 바꿈 <span className="float-right">{wrap ? "✓" : ""}</span></button>
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={() => setZoom((value) => Math.min(MAX_ZOOM, value + ZOOM_STEP))}>확대</button>
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={() => setZoom((value) => Math.max(MIN_ZOOM, value - ZOOM_STEP))}>축소</button>
-              <button type="button" className="w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800" onClick={() => setZoom(100)}>100%</button>
-            </div>
-          </details>
+        <div ref={menuBarRef} className="flex items-center gap-0.5">
+          <div className="relative">
+            <button type="button" className={menuButtonClass} aria-haspopup="menu" aria-expanded={openMenu === "file"} onClick={() => toggleMenu("file")}>파일</button>
+            {openMenu === "file" ? (
+              <div role="menu" className="absolute left-0 top-full z-40 mt-1 w-44 rounded-md border border-ink-700 bg-ink-900 p-1 shadow-xl">
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(newDocument)}>새 문서</button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => fileInputRef.current?.click())}>텍스트 파일 열기</button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => { void saveNow(content); })}>저장 <span className="float-right text-ink-500">Ctrl+S</span></button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(downloadText)}>텍스트로 다운로드</button>
+              </div>
+            ) : null}
+          </div>
+          <div className="relative">
+            <button type="button" className={menuButtonClass} aria-haspopup="menu" aria-expanded={openMenu === "edit"} onClick={() => toggleMenu("edit")}>편집</button>
+            {openMenu === "edit" ? (
+              <div role="menu" className="absolute left-0 top-full z-40 mt-1 w-44 rounded-md border border-ink-700 bg-ink-900 p-1 shadow-xl">
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(undo)}>실행 취소 <span className="float-right text-ink-500">Ctrl+Z</span></button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(redo)}>다시 실행 <span className="float-right text-ink-500">Ctrl+Y</span></button>
+                <div className="my-1 border-t border-ink-700" />
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => { setFindOpen(true); setReplaceOpen(false); })}>찾기 <span className="float-right text-ink-500">Ctrl+F</span></button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => { setFindOpen(true); setReplaceOpen(true); })}>바꾸기 <span className="float-right text-ink-500">Ctrl+H</span></button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => { editorRef.current?.focus(); editorRef.current?.select(); })}>전체 선택</button>
+              </div>
+            ) : null}
+          </div>
+          <div className="relative">
+            <button type="button" className={menuButtonClass} aria-haspopup="menu" aria-expanded={openMenu === "format"} onClick={() => toggleMenu("format")}>서식</button>
+            {openMenu === "format" ? (
+              <div role="menu" className="absolute left-0 top-full z-40 mt-1 w-48 rounded-md border border-ink-700 bg-ink-900 p-1 shadow-xl">
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => prefixSelectedLines("# "))}>제목 H1</button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => prefixSelectedLines("- "))}>글머리 목록</button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => replaceSelection("**", "**"))}>굵게</button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => replaceSelection("_", "_"))}>기울임</button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => replaceSelection("~~", "~~"))}>취소선</button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => replaceSelection("[", "](https://)", "링크"))}>링크</button>
+              </div>
+            ) : null}
+          </div>
+          <div className="relative">
+            <button type="button" className={menuButtonClass} aria-haspopup="menu" aria-expanded={openMenu === "view"} onClick={() => toggleMenu("view")}>보기</button>
+            {openMenu === "view" ? (
+              <div role="menu" className="absolute left-0 top-full z-40 mt-1 w-44 rounded-md border border-ink-700 bg-ink-900 p-1 shadow-xl">
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => setWrap((value) => !value))}>자동 줄 바꿈 <span className="float-right">{wrap ? "✓" : ""}</span></button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => setZoom((value) => Math.min(MAX_ZOOM, value + ZOOM_STEP)))}>확대</button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => setZoom((value) => Math.max(MIN_ZOOM, value - ZOOM_STEP)))}>축소</button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => setZoom(100))}>100%</button>
+              </div>
+            ) : null}
+          </div>
         </div>
         <div className="flex items-center gap-2 px-2 text-[11px] text-ink-500">
           <span>{saveLabel}</span>

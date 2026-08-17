@@ -1,5 +1,21 @@
 import { useMemo, useState } from "react";
-import { CalendarCheck, FileText, FolderKanban, Inbox, ListTodo, Plus, Search, StickyNote } from "lucide-react";
+import {
+  BarChart3,
+  Calendar,
+  CalendarCheck,
+  CalendarRange,
+  ClipboardList,
+  Clock3,
+  FileText,
+  FolderKanban,
+  Inbox,
+  ListTodo,
+  Plus,
+  Search,
+  Settings,
+  StickyNote,
+  Trash2,
+} from "lucide-react";
 import type { Memo } from "../../types/memo";
 import type { Project } from "../../types/project";
 import type { Todo } from "../../types/todo";
@@ -10,32 +26,58 @@ type CommandPaletteProps = {
   onClose: () => void;
   onNavigate: (view: AppView) => void;
   onQuickAdd: () => void;
+  onOpenTimePlanning: () => void;
   todos: Todo[];
   memos: Memo[];
   projects: Project[];
 };
+
+type CommandAction = "quick-add" | "time-planning";
 
 type Result = {
   id: string;
   label: string;
   detail: string;
   view?: AppView;
-  action?: "quick-add";
+  action?: CommandAction;
   kind: "이동" | "Todo" | "메모" | "프로젝트" | "명령";
 };
 
 const navigation: Result[] = [
+  { id: "quick-add", label: "빠른 Todo 추가", detail: "Ctrl+Shift+K", action: "quick-add", kind: "명령" },
+  { id: "time-planning", label: "시간 계획 / Focus Timer", detail: "Time Block과 Focus Timer 열기", action: "time-planning", kind: "명령" },
   { id: "nav-today", label: "오늘", detail: "오늘 실행할 Todo", view: "today", kind: "이동" },
   { id: "nav-inbox", label: "Inbox", detail: "아직 분류하지 않은 Todo", view: "inbox", kind: "이동" },
   { id: "nav-planning", label: "계획", detail: "오늘 계획, 주간 리뷰, Smart List와 템플릿", view: "planning", kind: "이동" },
+  { id: "nav-week", label: "주간", detail: "이번 주 Todo 보기", view: "week", kind: "이동" },
+  { id: "nav-month", label: "월간", detail: "월간 Calendar 보기", view: "month", kind: "이동" },
   { id: "nav-projects", label: "프로젝트", detail: "프로젝트와 Kanban", view: "projects", kind: "이동" },
+  { id: "nav-insights", label: "인사이트", detail: "완료율과 작업 현황 분석", view: "insights", kind: "이동" },
   { id: "nav-all", label: "전체 Todo", detail: "모든 Todo 검색과 관리", view: "all", kind: "이동" },
   { id: "nav-memo", label: "메모", detail: "메모 검색과 작성", view: "memo", kind: "이동" },
   { id: "nav-scratchpad", label: "낙서장", detail: "계속 이어 쓰는 개인 메모장", view: "scratchpad", kind: "이동" },
-  { id: "quick-add", label: "빠른 Todo 추가", detail: "Ctrl+Shift+K", action: "quick-add", kind: "명령" },
+  { id: "nav-trash", label: "휴지통", detail: "삭제한 항목 확인과 복원", view: "trash", kind: "이동" },
+  { id: "nav-settings", label: "설정", detail: "Planner 설정과 내보내기", view: "settings", kind: "이동" },
 ];
 
-export function CommandPalette({ onClose, onNavigate, onQuickAdd, todos, memos, projects }: CommandPaletteProps) {
+const resultIcon = (result: Result) => {
+  if (result.action === "quick-add") return Plus;
+  if (result.action === "time-planning") return Clock3;
+  if (result.kind === "Todo") return ListTodo;
+  if (result.kind === "메모") return StickyNote;
+  if (result.kind === "프로젝트") return FolderKanban;
+  if (result.view === "scratchpad") return FileText;
+  if (result.view === "inbox") return Inbox;
+  if (result.view === "week") return CalendarRange;
+  if (result.view === "month") return Calendar;
+  if (result.view === "insights") return BarChart3;
+  if (result.view === "all") return ClipboardList;
+  if (result.view === "trash") return Trash2;
+  if (result.view === "settings") return Settings;
+  return CalendarCheck;
+};
+
+export function CommandPalette({ onClose, onNavigate, onQuickAdd, onOpenTimePlanning, todos, memos, projects }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const results = useMemo(() => {
     const keyword = query.trim().toLocaleLowerCase("ko");
@@ -56,7 +98,7 @@ export function CommandPalette({ onClose, onNavigate, onQuickAdd, todos, memos, 
     for (const project of projects) {
       if (`${project.name} ${project.description || ""}`.toLocaleLowerCase("ko").includes(keyword)) matches.push({ id: `project-${project.id}`, label: project.name, detail: project.archived ? "보관된 프로젝트" : "프로젝트에서 열기", view: "projects", kind: "프로젝트" });
     }
-    return matches.slice(0, 14);
+    return matches.slice(0, 16);
   }, [memos, projects, query, todos]);
 
   const run = (result: Result) => {
@@ -65,31 +107,23 @@ export function CommandPalette({ onClose, onNavigate, onQuickAdd, todos, memos, 
       onQuickAdd();
       return;
     }
+    if (result.action === "time-planning") {
+      onOpenTimePlanning();
+      return;
+    }
     if (result.view) onNavigate(result.view);
   };
 
   return (
-    <Modal title="검색 및 명령" description="Todo, 메모, 프로젝트를 한 번에 찾거나 화면 이동 명령을 실행합니다. Ctrl+K로 열 수 있습니다." onClose={onClose} size="lg">
+    <Modal title="검색 및 명령" description="검색과 화면 이동, 빠른 실행을 한 곳에서 사용합니다. Ctrl+K로 열 수 있습니다." onClose={onClose} size="lg">
       <div className="space-y-3">
         <label className="relative block">
           <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" size={17} />
-          <input data-modal-initial-focus className="field pl-10" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Todo, 메모, 프로젝트 검색" />
+          <input data-modal-initial-focus className="field pl-10" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="검색하거나 실행할 명령 입력" />
         </label>
         <div className="max-h-[min(60vh,32rem)] space-y-1 overflow-y-auto pr-1">
           {results.length ? results.map((result) => {
-            const Icon = result.action === "quick-add"
-              ? Plus
-              : result.kind === "Todo"
-                ? ListTodo
-                : result.kind === "메모"
-                  ? StickyNote
-                  : result.kind === "프로젝트"
-                    ? FolderKanban
-                    : result.view === "scratchpad"
-                      ? FileText
-                      : result.view === "inbox"
-                        ? Inbox
-                        : CalendarCheck;
+            const Icon = resultIcon(result);
             return (
               <button key={result.id} type="button" onClick={() => run(result)} className="flex w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left transition hover:border-ink-700 hover:bg-ink-900">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-ink-950 text-ink-400"><Icon size={16} /></span>
