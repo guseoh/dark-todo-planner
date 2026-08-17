@@ -76,7 +76,7 @@ export function AppContent({ activeView, planner, onToggleTodo, onUpdateTodo, op
       content = <TrashPage onRestored={planner.loadAll} />;
       break;
     case "settings":
-      content = <div className="space-y-4"><SettingsPage stats={planner.stats} categories={planner.categories} goals={planner.goals} memos={planner.memos} plannerSettings={planner.plannerSettings} onSavePlannerSettings={planner.savePlannerSettings} apiStatus={planner.connectionError ? "offline" : "online"} /><ExportPanel todos={planner.allTodos} projects={planner.projects} goals={planner.goals} memos={planner.memos} /></div>;
+      content = <div className="space-y-4"><SettingsPage stats={planner.stats} categories={planner.categories} projects={planner.projects} goals={planner.goals} memos={planner.memos} plannerSettings={planner.plannerSettings} onSavePlannerSettings={planner.savePlannerSettings} onTodosCreated={planner.loadAll} apiStatus={planner.connectionError ? "offline" : "online"} /><ExportPanel todos={planner.allTodos} projects={planner.projects} goals={planner.goals} memos={planner.memos} /></div>;
       break;
   }
 

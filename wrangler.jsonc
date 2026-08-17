@@ -64,7 +64,7 @@
     "production": {
       "name": "dark-todo-planner",
       "triggers": {
-        "crons": ["15 15 * * *", "15 0 * * *", "15 1 * * *", "0 12 * * *"]
+        "crons": ["15 15 * * *", "15 0 * * *", "15 1 * * *", "0 12 * * *", "*/5 * * * *"]
       },
       "vars": {
         "NOTION_CODE_READING_DATA_SOURCE_ID": "1cf805f3-6996-4da7-a1d4-c29408d7ead4",

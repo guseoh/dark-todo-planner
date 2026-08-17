@@ -2,18 +2,22 @@ import { useEffect, useState } from "react";
 import { BellRing, RefreshCw, Save } from "lucide-react";
 import { StatCard } from "../components/common/StatCard";
 import { PwaInstallCard } from "../components/settings/PwaInstallCard";
+import { RoutinePanel } from "../components/settings/RoutinePanel";
 import type { Category } from "../types/category";
 import type { Goal } from "../types/goal";
 import type { Memo } from "../types/memo";
+import type { Project } from "../types/project";
 import type { PlannerSettings, PlannerSettingsInput } from "../types/settings";
 
 type SettingsPageProps = {
   categories: Category[];
+  projects: Project[];
   stats: { total: number; completedTotal: number; archivedTotal: number };
   goals: Goal[];
   memos: Memo[];
   plannerSettings: PlannerSettings;
   onSavePlannerSettings: (input: PlannerSettingsInput) => Promise<PlannerSettings | undefined>;
+  onTodosCreated: () => unknown | Promise<unknown>;
   apiStatus?: "online" | "offline";
 };
 
@@ -26,11 +30,13 @@ const optionCardClass = (enabled: boolean) =>
 
 export function SettingsPage({
   categories,
+  projects,
   stats,
   goals,
   memos,
   plannerSettings,
   onSavePlannerSettings,
+  onTodosCreated,
   apiStatus = "online",
 }: SettingsPageProps) {
   const connected = apiStatus === "online";
@@ -84,7 +90,7 @@ export function SettingsPage({
           <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs font-semibold text-ink-500">사용 모드</dt><dd className="mt-1 text-sm font-bold text-ink-100">단일 사용자</dd></div>
           <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs font-semibold text-ink-500">저장소</dt><dd className="mt-1 text-sm font-bold text-ink-100">Cloudflare D1</dd></div>
           <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs font-semibold text-ink-500">하루 시작 시각</dt><dd className="mt-1 text-sm font-bold text-ink-100">오전 3시</dd></div>
-          <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs font-semibold text-ink-500">Discord Todo 알림 예약</dt><dd className="mt-1 text-sm font-bold text-ink-100">매일 오후 9시</dd><p className="mt-1 text-xs text-ink-400">아래 알림 조건을 합쳐 하루 한 번 전송합니다.</p></div>
+          <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs font-semibold text-ink-500">Discord Todo 알림</dt><dd className="mt-1 text-sm font-bold text-ink-100">일괄 오후 9시 · 개별 5분 주기</dd><p className="mt-1 text-xs text-ink-400">Todo 수정 화면에서 개별 알림 시각을 예약할 수 있습니다.</p></div>
         </dl>
       </section>
 
@@ -107,7 +113,7 @@ export function SettingsPage({
 
       <section className="app-card p-4 sm:p-5" aria-labelledby="reminder-settings-title">
         <div className="flex items-center gap-2"><BellRing size={18} className="text-accent-300" /><h3 id="reminder-settings-title" className="text-base font-bold text-ink-100">Discord 리마인더</h3></div>
-        <p className="mt-1 text-xs text-ink-400">같은 Todo가 여러 조건에 맞아도 한 번만 표시됩니다.</p>
+        <p className="mt-1 text-xs text-ink-400">아래 조건은 오후 9시 일괄 알림에 사용됩니다. Todo별 알림은 Todo 수정 화면에서 따로 예약합니다.</p>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <label className={optionCardClass(draft.reminderTodayEnabled)}><input type="checkbox" className="mt-1 h-4 w-4 accent-accent-500" checked={draft.reminderTodayEnabled} onChange={(event) => setDraft((current) => ({ ...current, reminderTodayEnabled: event.target.checked }))} /><span><span className="block text-sm font-bold text-ink-100">오늘 미완료 Todo</span><span className="mt-1 block text-xs text-ink-400">기존 오후 9시 알림 기준입니다.</span></span></label>
           <label className={optionCardClass(draft.reminderOverdueEnabled)}><input type="checkbox" className="mt-1 h-4 w-4 accent-accent-500" checked={draft.reminderOverdueEnabled} onChange={(event) => setDraft((current) => ({ ...current, reminderOverdueEnabled: event.target.checked }))} /><span><span className="block text-sm font-bold text-ink-100">마감 초과 Todo</span><span className="mt-1 block text-xs text-ink-400">due date가 지난 미완료 Todo를 함께 알립니다.</span></span></label>
@@ -116,6 +122,8 @@ export function SettingsPage({
         </div>
         <div className="mt-4 flex justify-end"><button type="button" className="btn-primary" onClick={() => void save()} disabled={saving}><Save size={16} />{saving ? "저장 중..." : "운영 설정 저장"}</button></div>
       </section>
+
+      <RoutinePanel categories={categories} projects={projects} onTodosCreated={onTodosCreated} />
 
       <section aria-labelledby="data-summary-title">
         <h3 id="data-summary-title" className="mb-3 text-base font-bold text-ink-100">저장된 데이터</h3>
