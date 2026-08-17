@@ -42,6 +42,7 @@ import {
   tooManyRequests,
 } from "./security";
 import { step4BackupExportMiddleware, step4BackupImportMiddleware } from "./step4BackupMiddleware";
+import { step5BackupExportMiddleware, step5BackupImportMiddleware } from "./step5BackupMiddleware";
 import type { Bindings, Variables } from "./types";
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
@@ -101,6 +102,9 @@ app.get("/api/auth/session", async (c) => {
   return c.json(authenticated ? { authenticated: true, username: c.env.AUTH_USERNAME } : { authenticated: false }, authenticated ? 200 : 401);
 });
 
+app.use("/api/backup/export", step5BackupExportMiddleware);
+app.use("/api/backup/import", step5BackupImportMiddleware);
+app.use("/api/migrate/local-storage", step5BackupImportMiddleware);
 app.use("/api/backup/export", step4BackupExportMiddleware);
 app.use("/api/backup/import", step4BackupImportMiddleware);
 app.use("/api/migrate/local-storage", step4BackupImportMiddleware);
