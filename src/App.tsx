@@ -110,12 +110,12 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
 
   const toggleTodoWithUndo: typeof planner.toggleTodo = async (id) => {
     const before = planner.allTodos.find((todo) => todo.id === id);
-    if (!before) return;
+    if (!before) return false;
     const completed = !before.completed;
-    const workflowStatus = completed ? "DONE" : before.workflowStatus === "DONE" ? "TODO" : before.workflowStatus;
-    const updated = await planner.updateTodo(id, { completed, workflowStatus });
-    if (!updated) return;
+    const toggled = await planner.toggleTodo(id);
+    if (!toggled) return false;
     registerTodoUndo(before, completed ? `“${before.title}”을 완료 처리했습니다.` : `“${before.title}”을 미완료로 되돌렸습니다.`);
+    return true;
   };
 
   const updateTodoWithUndo: typeof planner.updateTodo = async (id, updates) => {
