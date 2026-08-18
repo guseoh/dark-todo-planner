@@ -76,7 +76,7 @@ export function IconPicker({ value, onChange, color = "#6366f1", name }: IconPic
     setError("");
   }, [value]);
 
-  const applyValue = (next: string) => {
+  const applyValue = (next: string, closePicker = false) => {
     const normalized = normalizeCategoryIcon(next);
     if (next.trim() && !normalized) {
       setError("http/https, data:image, emoji 또는 lucide 아이콘만 사용할 수 있습니다.");
@@ -85,13 +85,17 @@ export function IconPicker({ value, onChange, color = "#6366f1", name }: IconPic
     setError("");
     setDraft(normalized);
     onChange(normalized);
+    if (closePicker) {
+      setOpen(false);
+      setQuery("");
+    }
   };
 
   const handlePaste = (event: ClipboardEvent<HTMLInputElement>) => {
     const text = event.clipboardData.getData("text").trim();
     if (text) {
       event.preventDefault();
-      applyValue(text);
+      applyValue(text, true);
       return;
     }
 
@@ -103,7 +107,7 @@ export function IconPicker({ value, onChange, color = "#6366f1", name }: IconPic
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => applyValue(String(reader.result || ""));
+    reader.onload = () => applyValue(String(reader.result || ""), true);
     reader.onerror = () => setError("이미지 아이콘을 읽지 못했습니다.");
     reader.readAsDataURL(imageFile);
   };
@@ -137,7 +141,7 @@ export function IconPicker({ value, onChange, color = "#6366f1", name }: IconPic
 
       {open ? (
         <div className="absolute left-0 top-full z-40 mt-2 w-full max-w-xl rounded-xl border border-ink-700 bg-ink-900 p-3 shadow-soft">
-          <div className="mb-3 flex flex-wrap gap-2">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
             {[
               ["emoji", "이모지"],
               ["icon", "아이콘"],
@@ -158,6 +162,9 @@ export function IconPicker({ value, onChange, color = "#6366f1", name }: IconPic
               <ExternalLink size={13} />
               Noticon 열기
             </a>
+            <button type="button" className="icon-btn h-8 w-8" onClick={() => setOpen(false)} aria-label="아이콘 선택기 닫기" title="닫기">
+              <X size={14} />
+            </button>
           </div>
 
           {tab !== "url" ? (
@@ -170,7 +177,7 @@ export function IconPicker({ value, onChange, color = "#6366f1", name }: IconPic
           {tab === "emoji" ? (
             <div className="grid max-h-48 grid-cols-8 gap-1 overflow-y-auto sm:grid-cols-10">
               {emojiList.map((item) => (
-                <button key={item} type="button" className="flex h-9 items-center justify-center rounded-lg border border-ink-800 bg-ink-950/40 text-lg hover:border-accent-500/60" onClick={() => applyValue(item)}>
+                <button key={item} type="button" className="flex h-9 items-center justify-center rounded-lg border border-ink-800 bg-ink-950/40 text-lg hover:border-accent-500/60" onClick={() => applyValue(item, true)}>
                   {item}
                 </button>
               ))}
@@ -186,7 +193,7 @@ export function IconPicker({ value, onChange, color = "#6366f1", name }: IconPic
                     key={item}
                     type="button"
                     className="flex items-center gap-2 rounded-lg border border-ink-800 bg-ink-950/40 px-2 py-2 text-left text-xs font-semibold text-ink-300 hover:border-accent-500/60 hover:text-ink-100"
-                    onClick={() => applyValue(`lucide:${item}`)}
+                    onClick={() => applyValue(`lucide:${item}`, true)}
                   >
                     <Icon size={16} />
                     {iconLabels[item]}
