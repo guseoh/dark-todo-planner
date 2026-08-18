@@ -48,20 +48,20 @@ import type { Bindings, Variables } from "./types";
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 const loginSchema = z.object({ username: z.string().min(1).max(256), password: z.string().min(1).max(1024) });
+const PUBLIC_API_PATHS = new Set(["/api/health", "/api/auth/login", "/api/auth/logout", "/api/auth/session"]);
 const NOTION_SYNC_CRONS = new Set(["15 15 * * *", "15 0 * * *", "15 1 * * *"]);
 const TODO_REMINDER_CRON = "*/5 * * * *";
+const isPublicApiPath = (path: string) => PUBLIC_API_PATHS.has(path) || path.startsWith("/api/auth/");
 
 app.use("*", securityHeaders);
 app.use("/api/*", preventApiCaching);
 app.use("/api/*", enforceSameOriginMutations);
 app.use("/api/*", async (c, next) => {
-  const publicPaths = ["/api/health", "/api/auth/login", "/api/auth/logout", "/api/auth/session"];
-  if (publicPaths.includes(c.req.path)) return next();
+  if (PUBLIC_API_PATHS.has(c.req.path)) return next();
   return requireAuth(c, next);
 });
 app.use("/api/*", async (c, next) => {
-  const publicPath = c.req.path === "/api/health" || c.req.path.startsWith("/api/auth/");
-  if (SAFE_METHODS.has(c.req.method) || publicPath) return next();
+  if (SAFE_METHODS.has(c.req.method) || isPublicApiPath(c.req.path)) return next();
   const { success } = await c.env.MUTATION_RATE_LIMITER.limit({ key: c.get("userId") });
   if (!success) return tooManyRequests(c);
   return next();
