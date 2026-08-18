@@ -1,15 +1,10 @@
 node_modules
 backups/
 dist
-server/dist
 .wrangler
 *.tsbuildinfo
 .env
 .env.local
-data/*.db
-data/*.db-journal
-prisma/*.db
-prisma/*.db-journal
 .dev.vars
 .DS_Store
 npm-debug.log*
