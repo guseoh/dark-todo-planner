@@ -32,6 +32,7 @@ import { routineRoutes } from "./routes/routines";
 import { scratchpadRoutes } from "./routes/scratchpad";
 import { settingsRoutes } from "./routes/settings";
 import { timeRoutes } from "./routes/time";
+import { todoCompletionRoutes } from "./routes/todoCompletion";
 import { todoRoutes } from "./routes/todos";
 import { trashRoutes } from "./routes/trash";
 import {
@@ -112,6 +113,7 @@ app.use("/api/backup/export", backupV9ExportMiddleware);
 app.use("/api/backup/import", backupV9ImportMiddleware);
 app.use("/api/migrate/local-storage", backupV9ImportMiddleware);
 
+app.route("/api", todoCompletionRoutes);
 app.route("/api", todoRoutes);
 app.route("/api", offlineTodoRoutes);
 app.route("/api", projectRoutes);
