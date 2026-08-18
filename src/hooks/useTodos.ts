@@ -313,10 +313,33 @@ export function useTodos() {
   const toggleTodo = useCallback(async (id: string) => {
     const existing = allTodos.find((todo) => todo.id === id);
     if (!existing) return;
+
     const completed = !existing.completed;
-    const workflowStatus = completed ? "DONE" : existing.workflowStatus === "DONE" ? "TODO" : existing.workflowStatus;
-    await updateTodo(id, { completed, workflowStatus });
-  }, [allTodos, updateTodo]);
+    const workflowStatus = completed ? "DONE" as const : "TODO" as const;
+    const optimistic = applyOptimisticUpdates(existing, { completed, workflowStatus });
+    setAllTodos((current) => current.map((todo) => (todo.id === id ? optimistic : todo)));
+    setSaving(true);
+
+    try {
+      const body = { completed };
+      const mutation: QueueMutationInput = { kind: "UPDATE", method: "PUT", path: `/api/todos/${id}/completion`, body };
+      await runQueueableMutation(mutation, () => api(mutation.path, { method: "PUT", ...jsonBody(body) }));
+      setError("");
+    } catch (err) {
+      setAllTodos((current) => current.map((todo) => {
+        if (todo.id !== id || todo.completed !== completed) return todo;
+        return {
+          ...todo,
+          completed: existing.completed,
+          workflowStatus: existing.workflowStatus,
+          updatedAt: existing.updatedAt,
+        };
+      }));
+      setError(getMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  }, [allTodos]);
 
   const archiveTodo = useCallback(async (id: string) => {
     await updateTodo(id, { archived: true });
