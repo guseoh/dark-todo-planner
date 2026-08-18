@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react";
 import type { Category } from "../../types/category";
 import { CategoryForm } from "../category/CategoryForm";
 import { EmptyState } from "../common/EmptyState";
+import { IconRenderer } from "../common/IconRenderer";
 import { Modal } from "../common/Modal";
 
 type CategoryInput = { name: string; description?: string; color?: string; icon?: string };
@@ -118,7 +119,13 @@ export function TodayCategoryManager({
             <div className="space-y-2">
               {categories.map((category, index) => (
                 <div key={category.id} className="flex items-center gap-3 rounded-lg border border-ink-800/70 bg-ink-950/30 px-3 py-2.5">
-                  <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: category.color || "#0b72d7" }} />
+                  <IconRenderer
+                    icon={category.icon}
+                    color={category.color || "#0b72d7"}
+                    name={category.name}
+                    className={category.icon ? "h-8 w-8" : "h-3 w-3"}
+                    fallback="dot"
+                  />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold text-ink-100">{category.name}</p>
                     <p className="mt-0.5 truncate text-xs text-ink-400">오늘 {categoryCounts.get(category.id) || 0}개{category.description ? ` · ${category.description}` : ""}</p>
