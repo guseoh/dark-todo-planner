@@ -312,7 +312,7 @@ export function useTodos() {
 
   const toggleTodo = useCallback(async (id: string) => {
     const existing = allTodos.find((todo) => todo.id === id);
-    if (!existing) return;
+    if (!existing) return false;
 
     const completed = !existing.completed;
     const workflowStatus = completed ? "DONE" as const : "TODO" as const;
@@ -325,6 +325,7 @@ export function useTodos() {
       const mutation: QueueMutationInput = { kind: "UPDATE", method: "PUT", path: `/api/todos/${id}/completion`, body };
       await runQueueableMutation(mutation, () => api(mutation.path, { method: "PUT", ...jsonBody(body) }));
       setError("");
+      return true;
     } catch (err) {
       setAllTodos((current) => current.map((todo) => {
         if (todo.id !== id || todo.completed !== completed) return todo;
@@ -336,6 +337,7 @@ export function useTodos() {
         };
       }));
       setError(getMessage(err));
+      return false;
     } finally {
       setSaving(false);
     }
