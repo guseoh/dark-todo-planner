@@ -4,7 +4,22 @@ import { normalizeCategoryIcon } from "../../lib/categoryIcon";
 import { IconPicker } from "../common/IconPicker";
 import { IconRenderer } from "../common/IconRenderer";
 
-const colorOptions = ["#6366f1", "#8b5cf6", "#22c55e", "#f59e0b", "#ef4444", "#06b6d4", "#ec4899"];
+const colorOptions = [
+  "#6366f1",
+  "#8b5cf6",
+  "#a855f7",
+  "#ec4899",
+  "#ef4444",
+  "#f97316",
+  "#f59e0b",
+  "#eab308",
+  "#84cc16",
+  "#22c55e",
+  "#14b8a6",
+  "#06b6d4",
+  "#0ea5e9",
+  "#3b82f6",
+];
 
 type CategoryFormProps = {
   category?: Category;
