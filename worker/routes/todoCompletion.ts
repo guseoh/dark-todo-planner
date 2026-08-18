@@ -7,6 +7,11 @@ import { nowIso } from "../utils";
 
 export const todoCompletionRoutes = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
+export const toTodoCompletionState = (completed: boolean) => ({
+  completed,
+  workflowStatus: completed ? "DONE" as const : "TODO" as const,
+});
+
 todoCompletionRoutes.put("/todos/:id/completion", async (c) => {
   const body = await c.req.json<{ completed?: unknown }>();
   if (typeof body.completed !== "boolean") {
@@ -17,11 +22,10 @@ todoCompletionRoutes.put("/todos/:id/completion", async (c) => {
   const id = c.req.param("id");
   const userId = c.get("userId");
   const updatedAt = nowIso();
-  const workflowStatus = body.completed ? "DONE" as const : "TODO" as const;
+  const state = toTodoCompletionState(body.completed);
 
   await db.update(todos).set({
-    completed: body.completed,
-    workflowStatus,
+    ...state,
     updatedAt,
   }).where(and(eq(todos.id, id), eq(todos.userId, userId)));
 
