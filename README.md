@@ -10,16 +10,17 @@
 
 ## 현재 기능
 
-- Today / Week / Month / Inbox / Project 기반 Todo 관리
-- Planning, Time Block, Focus 기록과 예상 시간 정확도 확인
+- Today / Week / Month / Project 기반 Todo 관리
+- Project Kanban Drag & Drop 상태 관리
+- 전체 Todo 검색·필터·일괄 변경, 미처리 Todo 가져오기
 - Scratchpad, Memo, 휴지통, Backup / Restore
 - Routine Bundle, Discord Todo 리마인더, Calendar ICS 내보내기
-- PWA Share → Inbox, Todo 변경 IndexedDB 오프라인 큐
-- Learning Inbox: Notion 문제·기술 블로그 동기화 + Workers AI 학습 가이드
+- Todo 변경 IndexedDB 오프라인 큐
+- Learning: Notion 문제·기술 블로그 동기화 + Workers AI 학습 가이드
 
 ## 외부 연동
 
-- Notion: 데일리 코드 읽기와 기술 블로그를 Learning Inbox로 Pull 동기화
+- Notion: 데일리 코드 읽기와 기술 블로그를 Learning으로 Pull 동기화
 - Discord: 미완료 Todo 및 개별 Todo 리마인더
 - Cloudflare Workers AI: Learning 항목의 핵심 포인트·확인 질문·적용 질문 생성
 

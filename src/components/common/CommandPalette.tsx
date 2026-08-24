@@ -1,22 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  BarChart3,
-  BookOpen,
-  Calendar,
-  CalendarCheck,
-  CalendarRange,
-  ClipboardList,
-  Clock3,
-  FileText,
-  FolderKanban,
-  Inbox,
-  ListTodo,
-  Plus,
-  Search,
-  Settings,
-  StickyNote,
-  Trash2,
-} from "lucide-react";
+import { BookOpen, Calendar, CalendarCheck, CalendarRange, ClipboardList, FileText, FolderKanban, ListTodo, Plus, Search, Settings, StickyNote, Trash2 } from "lucide-react";
 import type { Memo } from "../../types/memo";
 import type { Project } from "../../types/project";
 import type { Todo } from "../../types/todo";
@@ -27,34 +10,27 @@ type CommandPaletteProps = {
   onClose: () => void;
   onNavigate: (view: AppView) => void;
   onQuickAdd: () => void;
-  onOpenTimePlanning: () => void;
   todos: Todo[];
   memos: Memo[];
   projects: Project[];
 };
-
-type CommandAction = "quick-add" | "time-planning";
 
 type Result = {
   id: string;
   label: string;
   detail: string;
   view?: AppView;
-  action?: CommandAction;
+  action?: "quick-add";
   kind: "이동" | "Todo" | "메모" | "프로젝트" | "명령";
 };
 
 const navigation: Result[] = [
   { id: "quick-add", label: "빠른 Todo 추가", detail: "Ctrl+Shift+K", action: "quick-add", kind: "명령" },
-  { id: "time-planning", label: "시간 계획 / Focus Timer", detail: "Time Block과 Focus Timer 열기", action: "time-planning", kind: "명령" },
   { id: "nav-today", label: "오늘", detail: "오늘 실행할 Todo", view: "today", kind: "이동" },
-  { id: "nav-inbox", label: "Inbox", detail: "아직 분류하지 않은 Todo", view: "inbox", kind: "이동" },
   { id: "nav-learning", label: "학습", detail: "데일리 문제와 읽을 기술 글", view: "learning", kind: "이동" },
-  { id: "nav-planning", label: "계획", detail: "오늘 계획, 주간 리뷰, Smart List와 템플릿", view: "planning", kind: "이동" },
   { id: "nav-week", label: "주간", detail: "이번 주 Todo 보기", view: "week", kind: "이동" },
   { id: "nav-month", label: "월간", detail: "월간 Calendar 보기", view: "month", kind: "이동" },
   { id: "nav-projects", label: "프로젝트", detail: "프로젝트와 Kanban", view: "projects", kind: "이동" },
-  { id: "nav-insights", label: "인사이트", detail: "완료율과 작업 현황 분석", view: "insights", kind: "이동" },
   { id: "nav-all", label: "전체 Todo", detail: "모든 Todo 검색과 관리", view: "all", kind: "이동" },
   { id: "nav-memo", label: "메모", detail: "메모 검색과 작성", view: "memo", kind: "이동" },
   { id: "nav-scratchpad", label: "낙서장", detail: "계속 이어 쓰는 개인 메모장", view: "scratchpad", kind: "이동" },
@@ -64,23 +40,20 @@ const navigation: Result[] = [
 
 const resultIcon = (result: Result) => {
   if (result.action === "quick-add") return Plus;
-  if (result.action === "time-planning") return Clock3;
   if (result.kind === "Todo") return ListTodo;
   if (result.kind === "메모") return StickyNote;
   if (result.kind === "프로젝트") return FolderKanban;
   if (result.view === "learning") return BookOpen;
   if (result.view === "scratchpad") return FileText;
-  if (result.view === "inbox") return Inbox;
   if (result.view === "week") return CalendarRange;
   if (result.view === "month") return Calendar;
-  if (result.view === "insights") return BarChart3;
   if (result.view === "all") return ClipboardList;
   if (result.view === "trash") return Trash2;
   if (result.view === "settings") return Settings;
   return CalendarCheck;
 };
 
-export function CommandPalette({ onClose, onNavigate, onQuickAdd, onOpenTimePlanning, todos, memos, projects }: CommandPaletteProps) {
+export function CommandPalette({ onClose, onNavigate, onQuickAdd, todos, memos, projects }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const results = useMemo(() => {
     const keyword = query.trim().toLocaleLowerCase("ko");
@@ -108,10 +81,6 @@ export function CommandPalette({ onClose, onNavigate, onQuickAdd, onOpenTimePlan
     onClose();
     if (result.action === "quick-add") {
       onQuickAdd();
-      return;
-    }
-    if (result.action === "time-planning") {
-      onOpenTimePlanning();
       return;
     }
     if (result.view) onNavigate(result.view);

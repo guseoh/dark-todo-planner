@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Todo Planner",
   "short_name": "Todo Planner",
-  "description": "개인 작업과 프로젝트를 계획하고 실행하는 Todo Planner",
+  "description": "개인 작업과 프로젝트를 관리하는 Todo Planner",
   "lang": "ko-KR",
   "start_url": "/",
   "scope": "/",
@@ -10,16 +10,6 @@
   "background_color": "#1a1c1e",
   "theme_color": "#181a1b",
   "categories": ["productivity"],
-  "share_target": {
-    "action": "/share-target",
-    "method": "GET",
-    "enctype": "application/x-www-form-urlencoded",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  },
   "icons": [
     {
       "src": "/pwa-icon-192.png",
