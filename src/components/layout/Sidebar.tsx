@@ -1,23 +1,19 @@
-import { BarChart3, BookOpen, Calendar, CalendarCheck, CalendarRange, ClipboardList, FileText, FolderKanban, Inbox, ListTodo, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Trash2 } from "lucide-react";
+import { BookOpen, Calendar, CalendarCheck, CalendarRange, ClipboardList, FileText, FolderKanban, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { SmartViewSidebarSection, type SidebarSmartView } from "./SmartViewSidebarSection";
 
-export type AppView = "today" | "inbox" | "learning" | "planning" | "week" | "month" | "projects" | "insights" | "all" | "memo" | "scratchpad" | "trash" | "settings";
+export type AppView = "today" | "learning" | "week" | "month" | "projects" | "all" | "memo" | "scratchpad" | "trash" | "settings";
 
 type SidebarProps = {
   activeView: AppView;
   onChangeView: (view: AppView) => void;
   onSearch: () => void;
-  smartViews?: SidebarSmartView[];
-  activeSmartViewId?: string | null;
-  onOpenSmartView?: (id: string) => void;
 };
 type NavItem = { id: AppView; label: string; icon: typeof CalendarCheck };
 type SidebarMode = "expanded" | "collapsed";
 
 const navGroups: Array<{ label: string; items: NavItem[] }> = [
-  { label: "실행", items: [{ id: "today", label: "오늘", icon: CalendarCheck }, { id: "inbox", label: "Inbox", icon: Inbox }, { id: "learning", label: "학습", icon: BookOpen }, { id: "planning", label: "계획", icon: ListTodo }] },
-  { label: "보기", items: [{ id: "week", label: "주간", icon: CalendarRange }, { id: "month", label: "월간", icon: Calendar }, { id: "projects", label: "프로젝트", icon: FolderKanban }, { id: "insights", label: "인사이트", icon: BarChart3 }, { id: "all", label: "전체 Todo", icon: ClipboardList }] },
+  { label: "실행", items: [{ id: "today", label: "오늘", icon: CalendarCheck }, { id: "learning", label: "학습", icon: BookOpen }] },
+  { label: "보기", items: [{ id: "week", label: "주간", icon: CalendarRange }, { id: "month", label: "월간", icon: Calendar }, { id: "projects", label: "프로젝트", icon: FolderKanban }, { id: "all", label: "전체 Todo", icon: ClipboardList }] },
   { label: "관리", items: [{ id: "memo", label: "메모", icon: StickyNote }, { id: "scratchpad", label: "낙서장", icon: FileText }, { id: "trash", label: "휴지통", icon: Trash2 }] },
 ];
 
@@ -35,7 +31,7 @@ const readInitialMode = (): SidebarMode => {
   return localStorage.getItem(LEGACY_SIDEBAR_COLLAPSED_KEY) === "true" ? "collapsed" : "expanded";
 };
 
-export function Sidebar({ activeView, onChangeView, onSearch, smartViews = [], activeSmartViewId, onOpenSmartView }: SidebarProps) {
+export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
   const [mode, setMode] = useState<SidebarMode>(readInitialMode);
   const [hoverExpanded, setHoverExpanded] = useState(false);
   const activeMobileItemRef = useRef<HTMLButtonElement | null>(null);
@@ -70,7 +66,7 @@ export function Sidebar({ activeView, onChangeView, onSearch, smartViews = [], a
 
   const renderDesktopItem = (item: NavItem) => {
     const Icon = item.icon;
-    const active = activeView === item.id && !(item.id === "planning" && activeSmartViewId);
+    const active = activeView === item.id;
     return (
       <button key={item.id} type="button" onClick={() => onChangeView(item.id)} aria-label={item.label} aria-current={active ? "page" : undefined} title={collapsed && !hoverExpanded ? item.label : undefined}
         className={`relative flex min-h-10 w-full items-center rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${active ? "bg-ink-800 text-ink-100" : "text-ink-400 hover:bg-ink-800/75 hover:text-ink-100"} ${showExpandedContent ? "gap-3 px-3 text-left" : "justify-center px-2"}`}>
@@ -99,7 +95,6 @@ export function Sidebar({ activeView, onChangeView, onSearch, smartViews = [], a
 
           <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-0.5">
             <div className="space-y-3">
-              {onOpenSmartView ? <SmartViewSidebarSection views={smartViews} activeId={activeView === "planning" ? activeSmartViewId : null} expanded={showExpandedContent} onOpen={onOpenSmartView} /> : null}
               {navGroups.map((group, index) => (
                 <section key={group.label} className={!showExpandedContent && index > 0 ? "border-t border-ink-700/60 pt-3" : ""}>
                   {showExpandedContent ? <p className="mb-1.5 px-3 text-[11px] font-medium text-ink-500">{group.label}</p> : null}

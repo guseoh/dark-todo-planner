@@ -4,10 +4,8 @@ import type { Category } from "../types/category";
 import { useCategories } from "./useCategories";
 import { useGoals } from "./useGoals";
 import { useMemos } from "./useMemos";
-import { usePlanning } from "./usePlanning";
 import { usePlannerSettings } from "./usePlannerSettings";
 import { useProjects, type ProjectDuplicateMode } from "./useProjects";
-import { useTimePlanning } from "./useTimePlanning";
 import { useTodos } from "./useTodos";
 
 const getMessage = (error: unknown) => error instanceof Error ? error.message : "요청 처리 중 오류가 발생했습니다.";
@@ -25,8 +23,6 @@ export function usePlannerData() {
   const goalsState = useGoals();
   const memosState = useMemos();
   const projectsState = useProjects();
-  const planningState = usePlanning();
-  const timeState = useTimePlanning();
   const settingsState = usePlannerSettings();
 
   const [loading, setLoading] = useState(true);
@@ -58,8 +54,6 @@ export function usePlannerData() {
       goalsState.loadGoals(),
       memosState.loadMemos(),
       projectsState.loadProjectDetails(),
-      planningState.loadPlanning(),
-      timeState.loadTimePlanning(),
     ]).then(() => {
       deferredLoadedRef.current = true;
     }).finally(() => {
@@ -68,7 +62,7 @@ export function usePlannerData() {
 
     deferredLoadRef.current = promise;
     return promise;
-  }, [goalsState.loadGoals, memosState.loadMemos, planningState.loadPlanning, projectsState.loadProjectDetails, timeState.loadTimePlanning]);
+  }, [goalsState.loadGoals, memosState.loadMemos, projectsState.loadProjectDetails]);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -80,8 +74,6 @@ export function usePlannerData() {
         goalsState.loadGoals(),
         memosState.loadMemos(),
         projectsState.loadProjects(),
-        planningState.loadPlanning(),
-        timeState.loadTimePlanning(),
         settingsState.loadSettings(),
       ]);
       await runPlannerAutomations();
@@ -93,7 +85,7 @@ export function usePlannerData() {
     } finally {
       setLoading(false);
     }
-  }, [categoriesState.loadCategories, goalsState.loadGoals, memosState.loadMemos, planningState.loadPlanning, projectsState.loadProjects, runPlannerAutomations, settingsState.loadSettings, timeState.loadTimePlanning, todosState.loadTodos]);
+  }, [categoriesState.loadCategories, goalsState.loadGoals, memosState.loadMemos, projectsState.loadProjects, runPlannerAutomations, settingsState.loadSettings, todosState.loadTodos]);
 
   const loadInitial = useCallback(async () => {
     setLoading(true);
@@ -169,18 +161,14 @@ export function usePlannerData() {
     || goalsState.saving
     || memosState.saving
     || projectsState.saving
-    || planningState.saving
-    || timeState.saving
     || settingsState.saving
-  ), [categoriesState.saving, goalsState.saving, memosState.saving, planningState.saving, projectsState.saving, settingsState.saving, timeState.saving, todosState.saving]);
+  ), [categoriesState.saving, goalsState.saving, memosState.saving, projectsState.saving, settingsState.saving, todosState.saving]);
 
   const operationError = todosState.error
     || categoriesState.error
     || goalsState.error
     || memosState.error
     || projectsState.error
-    || planningState.error
-    || timeState.error
     || settingsState.error;
   const { initialLoadError, backgroundOrOperationError } = classifyPlannerErrors({ loadedOnce, loadError, operationError });
 
@@ -199,13 +187,6 @@ export function usePlannerData() {
     archivedProjects: projectsState.archivedProjects,
     milestones: projectsState.milestones,
     projectDecisions: projectsState.decisions,
-    dailyPlan: planningState.dailyPlan,
-    weeklyReview: planningState.weeklyReview,
-    savedViews: planningState.savedViews,
-    taskTemplates: planningState.taskTemplates,
-    focusSessions: timeState.focusSessions,
-    timeBlocks: timeState.timeBlocks,
-    timerSettings: timeState.timerSettings,
     plannerSettings: settingsState.settings,
     loading,
     loadedOnce,
@@ -218,6 +199,7 @@ export function usePlannerData() {
     pendingTodoDelete: todosState.pendingDelete,
     pendingMemoDelete: memosState.pendingDelete,
     loadAll,
+    loadTodos: todosState.loadTodos,
     ensureDeferredData: loadDeferredData,
     addTodo: todosState.addTodo,
     updateTodo: todosState.updateTodo,
@@ -234,7 +216,6 @@ export function usePlannerData() {
     getWeekTodos: todosState.getWeekTodos,
     getMonthTodos: todosState.getMonthTodos,
     filterTodos: todosState.filterTodos,
-    bringOverdueTodosToToday: todosState.bringOverdueTodosToToday,
     addCategory,
     updateCategory,
     deleteCategory,
@@ -260,17 +241,6 @@ export function usePlannerData() {
     addProjectDecision: projectsState.addDecision,
     updateProjectDecision: projectsState.updateDecision,
     deleteProjectDecision: projectsState.deleteDecision,
-    saveDailyPlan: planningState.saveDailyPlan,
-    saveWeeklyReview: planningState.saveWeeklyReview,
-    addSavedView: planningState.addSavedView,
-    deleteSavedView: planningState.deleteSavedView,
-    addTaskTemplate: planningState.addTaskTemplate,
-    deleteTaskTemplate: planningState.deleteTaskTemplate,
-    addFocusSession: timeState.addFocusSession,
-    saveTimerSettings: timeState.saveTimerSettings,
-    addTimeBlock: timeState.addTimeBlock,
-    updateTimeBlock: timeState.updateTimeBlock,
-    deleteTimeBlock: timeState.deleteTimeBlock,
     savePlannerSettings: settingsState.saveSettings,
   };
 }
