@@ -1,4 +1,8 @@
 import { lazy, Suspense } from "react";
+import { api, jsonBody } from "../../lib/api/client";
+import { getPlannerToday } from "../../lib/date";
+import { prepareOverdueBulkImport } from "../../lib/todoBulkImport";
+import type { OverdueTodoImportMode, OverdueTodoImportResult } from "../../lib/todoRecovery";
 import { LoadingState } from "../common/LoadingState";
 import type { AppView } from "../layout/Sidebar";
 import { TodayPage } from "../../pages/TodayPage";
@@ -30,11 +34,62 @@ type AppContentProps = {
 export function AppContent({ activeView, planner, onToggleTodo, onUpdateTodo }: AppContentProps) {
   const toggleTodo = onToggleTodo ?? planner.toggleTodo;
   const updateTodo = onUpdateTodo ?? planner.updateTodo;
+
+  const bringOverdueTodosToToday = async (
+    selectedIds: ReadonlySet<string>,
+    mode: OverdueTodoImportMode,
+  ): Promise<OverdueTodoImportResult> => {
+    const today = getPlannerToday();
+    const prepared = prepareOverdueBulkImport(
+      planner.getOverdueIncompleteTodos(),
+      selectedIds,
+      planner.getTodosByDate(today),
+    );
+
+    if (!prepared.ids.length) {
+      return { total: prepared.total, success: 0, skipped: prepared.skipped, failed: 0, mode };
+    }
+
+    try {
+      if (mode === "move") {
+        const success = await planner.bulkUpdateTodos(prepared.ids, { type: "DATE", value: today });
+        return {
+          total: prepared.total,
+          success: success ? prepared.ids.length : 0,
+          skipped: prepared.skipped,
+          failed: success ? 0 : prepared.ids.length,
+          mode,
+        };
+      }
+
+      const result = await api<{ copied: number; missing: number }>("/api/todos/bulk-copy", {
+        method: "POST",
+        ...jsonBody({ ids: prepared.ids, date: today }),
+      });
+      if (result.copied > 0) await planner.loadTodos();
+      return {
+        total: prepared.total,
+        success: result.copied,
+        skipped: prepared.skipped,
+        failed: result.missing,
+        mode,
+      };
+    } catch {
+      return {
+        total: prepared.total,
+        success: 0,
+        skipped: prepared.skipped,
+        failed: prepared.ids.length,
+        mode,
+      };
+    }
+  };
+
   let content: JSX.Element;
 
   switch (activeView) {
     case "today":
-      content = <TodayPage todayTodos={planner.getTodayTodos()} stats={planner.stats} onAdd={planner.addTodo} onToggle={toggleTodo} onDelete={planner.deleteTodo} onUpdate={updateTodo} categories={planner.categories} projects={planner.projects} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} onReorderCategories={planner.reorderCategories} overdueTodos={planner.getOverdueIncompleteTodos()} onBringOverdueTodos={planner.bringOverdueTodosToToday} />;
+      content = <TodayPage todayTodos={planner.getTodayTodos()} stats={planner.stats} onAdd={planner.addTodo} onToggle={toggleTodo} onDelete={planner.deleteTodo} onUpdate={updateTodo} categories={planner.categories} projects={planner.projects} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} onReorderCategories={planner.reorderCategories} overdueTodos={planner.getOverdueIncompleteTodos()} onBringOverdueTodos={bringOverdueTodosToToday} />;
       break;
     case "learning":
       content = <LearningPage onTodoCreated={planner.loadAll} />;
