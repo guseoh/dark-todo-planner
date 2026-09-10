@@ -28,10 +28,10 @@ export type Todo = {
   completed: boolean;
   createdAt: string;
   updatedAt: string;
-  /** Legacy persisted value kept for existing records. New Todo flows use NONE. */
-  repeat: TodoRepeat;
+  /** Legacy persisted value kept for existing records. Missing values are treated as NONE. */
+  repeat?: TodoRepeat;
   /** Legacy persisted values kept for existing records. Tag editing/filtering is no longer exposed. */
-  tags: string[];
+  tags?: string[];
   archived: boolean;
   archivedAt?: string;
   order?: number;
