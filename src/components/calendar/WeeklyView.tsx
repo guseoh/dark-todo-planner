@@ -110,19 +110,21 @@ export function WeeklyView({
         </div>
       </section>
 
-      <GoalChecklist
-        title="이번 주 목표"
-        subtitle={`Todo 일정과 분리된 주간 단위 목표 · ${formatKoreanDate(weekStart, "yyyy.MM.dd")} ~ ${formatKoreanDate(weekEnd, "yyyy.MM.dd")}`}
-        goals={weeklyGoals}
-        type="WEEKLY"
-        addDefaults={{ weekStartDate: weekStart, weekEndDate: weekEnd, dueDate: weekEnd }}
-        placeholder="이번 주에 끝낼 핵심 목표"
-        emptyTitle="이번 주 목표가 없습니다."
-        onAdd={onAddGoal}
-        onUpdate={onUpdateGoal}
-        onToggle={onToggleGoal}
-        onDelete={onDeleteGoal}
-      />
+      <div className="mx-auto w-full max-w-[960px]">
+        <GoalChecklist
+          title="이번 주 목표"
+          subtitle={`Todo 일정과 분리된 주간 단위 목표 · ${formatKoreanDate(weekStart, "yyyy.MM.dd")} ~ ${formatKoreanDate(weekEnd, "yyyy.MM.dd")}`}
+          goals={weeklyGoals}
+          type="WEEKLY"
+          addDefaults={{ weekStartDate: weekStart, weekEndDate: weekEnd, dueDate: weekEnd }}
+          placeholder="이번 주에 끝낼 핵심 목표"
+          emptyTitle="이번 주 목표가 없습니다."
+          onAdd={onAddGoal}
+          onUpdate={onUpdateGoal}
+          onToggle={onToggleGoal}
+          onDelete={onDeleteGoal}
+        />
+      </div>
 
       <section className="space-y-3" aria-labelledby="week-days-title">
         <div className="flex items-end justify-between gap-3">
