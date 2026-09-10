@@ -27,6 +27,7 @@ type TodayPageProps = {
   onAdd: (todo: TodoInput) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  onDeleteMany: (ids: string[]) => Promise<boolean> | boolean;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   categories?: Category[];
   projects?: Project[];
@@ -53,6 +54,7 @@ export function TodayPage({
   onAdd,
   onToggle,
   onDelete,
+  onDeleteMany,
   onUpdate,
   categories = [],
   projects = [],
@@ -283,7 +285,7 @@ export function TodayPage({
         }}
       />
 
-      {showOverdueImport ? <OverdueTodoImportModal todos={overdueTodos} onImport={onBringOverdueTodos} onClose={() => setShowOverdueImport(false)} /> : null}
+      {showOverdueImport ? <OverdueTodoImportModal todos={overdueTodos} onImport={onBringOverdueTodos} onDeleteMany={onDeleteMany} onClose={() => setShowOverdueImport(false)} /> : null}
     </div>
   );
 }
