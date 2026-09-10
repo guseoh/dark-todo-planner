@@ -1,5 +1,5 @@
 import { addDays } from "date-fns";
-import { CalendarClock, MoonStar } from "lucide-react";
+import { MoonStar } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { formatKoreanDate, parseDateKey, todayKey, toDateKey } from "../../lib/date";
 import type { Todo } from "../../types/todo";
@@ -18,19 +18,17 @@ export function DayCloseModal({ todos, onClose, onApply }: DayCloseModalProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const tomorrow = useMemo(() => toDateKey(addDays(parseDateKey(todayKey()), 1)), []);
-  const actionableTodos = useMemo(() => todos.filter((todo) => todo.repeat === "NONE"), [todos]);
-  const repeatingTodos = useMemo(() => todos.filter((todo) => todo.repeat !== "NONE"), [todos]);
 
   useEffect(() => {
     setDecisions((current) => {
       const next: Record<string, DayCloseDecision> = {};
-      for (const todo of actionableTodos) next[todo.id] = current[todo.id] || "TOMORROW";
+      for (const todo of todos) next[todo.id] = current[todo.id] || "TOMORROW";
       return next;
     });
-  }, [actionableTodos]);
+  }, [todos]);
 
   const setAll = (decision: DayCloseDecision) => {
-    setDecisions(Object.fromEntries(actionableTodos.map((todo) => [todo.id, decision])));
+    setDecisions(Object.fromEntries(todos.map((todo) => [todo.id, decision])));
   };
 
   const apply = async () => {
@@ -66,14 +64,14 @@ export function DayCloseModal({ todos, onClose, onApply }: DayCloseModalProps) {
             </div>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            <button type="button" className="btn-secondary px-2.5 text-xs" disabled={!actionableTodos.length || saving} onClick={() => setAll("TOMORROW")}>모두 내일</button>
-            <button type="button" className="btn-secondary px-2.5 text-xs" disabled={!actionableTodos.length || saving} onClick={() => setAll("SOMEDAY")}>모두 Someday</button>
-            <button type="button" className="btn-secondary px-2.5 text-xs" disabled={!actionableTodos.length || saving} onClick={() => setAll("KEEP")}>모두 유지</button>
+            <button type="button" className="btn-secondary px-2.5 text-xs" disabled={!todos.length || saving} onClick={() => setAll("TOMORROW")}>모두 내일</button>
+            <button type="button" className="btn-secondary px-2.5 text-xs" disabled={!todos.length || saving} onClick={() => setAll("SOMEDAY")}>모두 Someday</button>
+            <button type="button" className="btn-secondary px-2.5 text-xs" disabled={!todos.length || saving} onClick={() => setAll("KEEP")}>모두 유지</button>
           </div>
         </div>
 
         <div className="max-h-[min(56vh,34rem)] space-y-2 overflow-y-auto pr-1">
-          {actionableTodos.map((todo) => (
+          {todos.map((todo) => (
             <div key={todo.id} className="flex flex-col gap-2 rounded-lg border border-ink-800 bg-ink-950/25 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-ink-100">{todo.title}</p>
@@ -92,25 +90,13 @@ export function DayCloseModal({ todos, onClose, onApply }: DayCloseModalProps) {
               </select>
             </div>
           ))}
-
-          {repeatingTodos.length ? (
-            <div className="rounded-lg border border-warning/20 bg-warning/[0.035] px-3 py-2.5">
-              <div className="flex items-start gap-2">
-                <CalendarClock size={15} className="mt-0.5 shrink-0 text-amber-200" />
-                <div>
-                  <p className="text-xs font-semibold text-amber-100">반복 Todo {repeatingTodos.length}개는 그대로 유지합니다.</p>
-                  <p className="mt-1 text-[11px] text-ink-500">현재 데이터 모델은 반복 발생 건을 별도 인스턴스로 저장하지 않아 원본 날짜를 이동하지 않습니다.</p>
-                </div>
-              </div>
-            </div>
-          ) : null}
         </div>
 
         <div className="flex flex-col gap-2 border-t border-ink-700/70 pt-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-ink-500">내일 {tomorrowCount} · Someday {somedayCount} · 유지 {keepCount}</p>
           <div className="flex justify-end gap-2">
             <button type="button" className="btn-secondary" disabled={saving} onClick={onClose}>취소</button>
-            <button type="button" className="btn-primary" disabled={saving || !actionableTodos.length} onClick={() => void apply()}>{saving ? "반영 중..." : "하루 마감 적용"}</button>
+            <button type="button" className="btn-primary" disabled={saving || !todos.length} onClick={() => void apply()}>{saving ? "반영 중..." : "하루 마감 적용"}</button>
           </div>
         </div>
 
