@@ -60,7 +60,7 @@ describe("duplicate Todo candidates", () => {
     ]);
 
     expect(groups).toHaveLength(1);
-    expect(groups[0].todos.map(({ id }) => id)).toEqual(["second", "legacy-repeat", "first"]);
+    expect(groups[0].todos.map(({ id }) => id)).toEqual(["second", "first", "legacy-repeat"]);
   });
 });
 
