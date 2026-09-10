@@ -1,9 +1,9 @@
 export type Bindings = {
   DB: D1Database;
   ASSETS: Fetcher;
-  AUTH_USERNAME?: string;
-  AUTH_PASSWORD_HASH?: string;
-  SESSION_SECRET?: string;
+  AUTH_USERNAME: string;
+  AUTH_PASSWORD_HASH: string;
+  SESSION_SECRET: string;
   DISCORD_WEBHOOK_URL?: string;
   LOGIN_RATE_LIMITER: RateLimit;
   MUTATION_RATE_LIMITER: RateLimit;
