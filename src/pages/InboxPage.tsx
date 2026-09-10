@@ -37,7 +37,7 @@ export function InboxPage({ todos, categories, projects, onAdd, onUpdate, onDele
           {inboxTodos.map((todo) => (
             <article key={todo.id} className="rounded-xl border border-ink-700/70 bg-ink-950/40 p-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="min-w-0 flex-1"><h4 className="break-words text-sm font-semibold text-ink-100">{todo.title}</h4><div className="mt-1 flex flex-wrap gap-2 text-[11px] text-ink-500">{todo.category?.name ? <span>{todo.category.name}</span> : null}{todo.estimateMinutes ? <span>{todo.estimateMinutes}분 예상</span> : null}{todo.dueDate ? <span>마감 {todo.dueDate}</span> : null}</div></div>
+                <div className="min-w-0 flex-1"><h4 className="break-words text-sm font-semibold text-ink-100">{todo.title}</h4><div className="mt-1 flex flex-wrap gap-2 text-[11px] text-ink-500">{todo.category?.name ? <span>{todo.category.name}</span> : null}{todo.dueDate ? <span>마감 {todo.dueDate}</span> : null}</div></div>
                 <div className="flex flex-wrap gap-1.5">
                   <button type="button" className="btn-secondary min-h-9 px-2.5 py-1 text-xs" onClick={() => schedule(todo, today)}><CalendarPlus size={14} />오늘</button>
                   <button type="button" className="btn-secondary min-h-9 px-2.5 py-1 text-xs" onClick={() => schedule(todo, tomorrow)}>내일</button>
