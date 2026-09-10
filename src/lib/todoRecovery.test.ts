@@ -16,8 +16,6 @@ const todo = (id: string, overrides: Partial<Todo> = {}): Todo => ({
   completed: false,
   createdAt: `2026-07-20T00:00:0${id.length}Z`,
   updatedAt: "2026-07-20T00:00:00Z",
-  repeat: "NONE",
-  tags: [],
   archived: false,
   ...overrides,
   planningState: overrides.planningState ?? "SCHEDULED",
@@ -25,7 +23,7 @@ const todo = (id: string, overrides: Partial<Todo> = {}): Todo => ({
 });
 
 describe("overdue Todo selection", () => {
-  it("includes only active, incomplete, non-repeating scheduled Todos before planner today", () => {
+  it("includes active incomplete scheduled Todos before planner today", () => {
     const result = getOverdueIncompleteTodos(
       [
         todo("eligible"),
@@ -33,13 +31,13 @@ describe("overdue Todo selection", () => {
         todo("future", { date: "2026-07-29" }),
         todo("completed", { completed: true }),
         todo("archived", { archived: true }),
-        todo("repeat", { repeat: "DAILY" }),
+        todo("legacy-repeat", { repeat: "DAILY" }),
         todo("inbox", { planningState: "INBOX" }),
       ],
       "2026-07-28",
     );
 
-    expect(result.map(({ id }) => id)).toEqual(["eligible"]);
+    expect(result.map(({ id }) => id)).toEqual(["eligible", "legacy-repeat"]);
   });
 
   it("selects only the newest Todo by default within the same duplicate key", () => {
@@ -52,17 +50,17 @@ describe("overdue Todo selection", () => {
 });
 
 describe("duplicate Todo candidates", () => {
-  it("groups normalized titles only when category and repeat key match", () => {
+  it("groups normalized titles when category matches", () => {
     const groups = getDuplicateTodoGroups([
       todo("first", { title: "  READ BOOK ", categoryId: "reading" }),
       todo("second", { title: "read book", categoryId: "reading", date: "2026-07-21" }),
       todo("other-category", { title: "read book", categoryId: "work" }),
-      todo("repeating", { title: "read book", categoryId: "reading", repeat: "WEEKLY" }),
+      todo("legacy-repeat", { title: "read book", categoryId: "reading", repeat: "WEEKLY" }),
       todo("archived", { title: "read book", categoryId: "reading", archived: true }),
     ]);
 
     expect(groups).toHaveLength(1);
-    expect(groups[0].todos.map(({ id }) => id)).toEqual(["second", "first"]);
+    expect(groups[0].todos.map(({ id }) => id)).toEqual(["second", "legacy-repeat", "first"]);
   });
 });
 
