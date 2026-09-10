@@ -23,7 +23,7 @@ export async function runPlannerAutomations(
 
   if (settings.carryOverEnabled) {
     const result = await env.DB.prepare(
-      "UPDATE todos SET date = ?, planning_state = 'SCHEDULED', updated_at = ? WHERE user_id = ? AND archived = 0 AND completed = 0 AND repeat = 'NONE' AND planning_state = 'SCHEDULED' AND date < ?",
+      "UPDATE todos SET date = ?, planning_state = 'SCHEDULED', updated_at = ? WHERE user_id = ? AND archived = 0 AND completed = 0 AND planning_state = 'SCHEDULED' AND date < ?",
     ).bind(plannerDate, now, userId, plannerDate).run();
     carriedOver = result.meta.changes || 0;
   }
