@@ -73,10 +73,9 @@ app.post("/api/auth/login", async (c) => {
   }
 
   const input = loginSchema.parse(await c.req.json());
-  const validPassword = constantTimeTextEqual(input.username, c.env.AUTH_USERNAME)
-    ? await verifyPassword(input.password, c.env.AUTH_PASSWORD_HASH)
-    : false;
-  if (!validPassword) return c.json({ message: "사용자명 또는 비밀번호가 올바르지 않습니다." }, 401);
+  const validPassword = await verifyPassword(input.password, c.env.AUTH_PASSWORD_HASH);
+  const validUsername = constantTimeTextEqual(input.username, c.env.AUTH_USERNAME);
+  if (!validUsername || !validPassword) return c.json({ message: "사용자명 또는 비밀번호가 올바르지 않습니다." }, 401);
 
   setSessionCookie(c, await createSessionToken(c.env.SESSION_SECRET, c.env.AUTH_PASSWORD_HASH));
   return c.json({ authenticated: true, username: c.env.AUTH_USERNAME });
