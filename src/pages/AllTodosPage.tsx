@@ -11,7 +11,6 @@ import { GroupedTodoList } from "../components/todo/GroupedTodoList";
 type AllTodosPageProps = {
   allTodos: Todo[];
   filterTodos: (filters: TodoFilters) => Todo[];
-  tagOptions: string[];
   categories?: Category[];
   projects: Project[];
   duplicateTodoIds: ReadonlySet<string>;
@@ -28,7 +27,7 @@ type AllTodosPageProps = {
 };
 
 export function AllTodosPage({
-  allTodos, filterTodos, tagOptions, categories = [], projects, duplicateTodoIds, onToggle, onDelete, onDeleteMany, onBulkUpdate,
+  allTodos, filterTodos, categories = [], projects, duplicateTodoIds, onToggle, onDelete, onDeleteMany, onBulkUpdate,
   onUpdate, onUnarchive, onAddTodo, onAddCategory, onUpdateCategory, onDeleteCategory,
 }: AllTodosPageProps) {
   const [filters, setFilters] = useState<TodoFilters>(defaultFilters);
@@ -125,7 +124,7 @@ export function AllTodosPage({
       </section>
 
       <div className="sticky top-[60px] z-20 -mx-1 rounded-lg border border-ink-800/60 bg-ink-950/90 px-1 py-1.5 backdrop-blur-xl">
-        <TodoFilter filters={filters} onChange={setFilters} tagOptions={tagOptions} categories={categories} />
+        <TodoFilter filters={filters} onChange={setFilters} categories={categories} />
       </div>
 
       {selectionMode ? (
