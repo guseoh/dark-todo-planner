@@ -13,7 +13,6 @@ import {
 } from "./auth";
 import { backupV9ExportMiddleware, backupV9ImportMiddleware } from "./backupMiddleware";
 import { learningBackupExportMiddleware, learningBackupImportMiddleware } from "./learningBackupMiddleware";
-import { runNotionLearningSync } from "./notionLearningSync";
 import { todoReferenceTrashRestoreMiddleware } from "./referenceLinkMiddleware";
 import { runDiscordIncompleteTodoReminder } from "./reminders/incompleteTodoReminder";
 import { runDueTodoReminders } from "./reminders/todoReminder";
@@ -23,6 +22,7 @@ import { contentRoutes } from "./routes/content";
 import { learningRoutes } from "./routes/learning";
 import { libraryRoutes } from "./routes/library";
 import { offlineTodoRoutes } from "./routes/offlineTodos";
+import { projectDeleteRoutes } from "./routes/projectDelete";
 import { projectDuplicateRoutes } from "./routes/projectDuplicate";
 import { projectRoutes } from "./routes/projects";
 import { referenceLinkRoutes } from "./routes/referenceLinks";
@@ -48,7 +48,6 @@ import type { Bindings, Variables } from "./types";
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 const loginSchema = z.object({ username: z.string().min(1).max(256), password: z.string().min(1).max(1024) });
 const PUBLIC_API_PATHS = new Set(["/api/health", "/api/auth/login", "/api/auth/logout", "/api/auth/session"]);
-const NOTION_SYNC_CRONS = new Set(["15 15 * * *", "15 0 * * *", "15 1 * * *"]);
 const TODO_REMINDER_CRON = "*/5 * * * *";
 const isPublicApiPath = (path: string) => PUBLIC_API_PATHS.has(path) || path.startsWith("/api/auth/");
 
@@ -117,6 +116,7 @@ app.route("/api", todoRoutes);
 app.route("/api", todoBulkCopyRoutes);
 app.route("/api", offlineTodoRoutes);
 app.route("/api", projectRoutes);
+app.route("/api", projectDeleteRoutes);
 app.route("/api", projectDuplicateRoutes);
 app.route("/api", referenceLinkRoutes);
 app.route("/api", contentRoutes);
@@ -142,7 +142,6 @@ export default {
   fetch: (request: Request, env: Bindings, executionContext: ExecutionContext) => app.fetch(request, env, executionContext),
   scheduled: (controller: ScheduledController, env: Bindings, executionContext: ExecutionContext) => {
     const jobs: Promise<unknown>[] = [];
-    if (NOTION_SYNC_CRONS.has(controller.cron)) jobs.push(runNotionLearningSync(env, new Date(controller.scheduledTime)));
     if (controller.cron === "0 12 * * *") jobs.push(runDiscordIncompleteTodoReminder(env, new Date(controller.scheduledTime)));
     if (controller.cron === TODO_REMINDER_CRON) jobs.push(runDueTodoReminders(env, new Date(controller.scheduledTime)));
     if (jobs.length) executionContext.waitUntil(Promise.allSettled(jobs).then(() => undefined));
