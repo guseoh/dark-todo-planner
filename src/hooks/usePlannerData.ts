@@ -149,6 +149,13 @@ export function usePlannerData() {
     await categoriesState.reorderCategories(ids);
   }, [categoriesState.reorderCategories]);
 
+  const deleteProject = useCallback(async (id: string) => {
+    const deleted = await projectsState.deleteProject(id);
+    if (!deleted) return false;
+    await Promise.all([todosState.loadTodos(), memosState.loadMemos()]);
+    return true;
+  }, [memosState.loadMemos, projectsState.deleteProject, todosState.loadTodos]);
+
   const duplicateProject = useCallback(async (id: string, input: { name: string; mode: ProjectDuplicateMode }) => {
     const project = await projectsState.duplicateProject(id, input);
     if (project) await todosState.loadTodos();
@@ -232,6 +239,7 @@ export function usePlannerData() {
     undoDeleteMemo: memosState.undoDeleteMemo,
     addProject: projectsState.addProject,
     updateProject: projectsState.updateProject,
+    deleteProject,
     duplicateProject,
     archiveProject: projectsState.archiveProject,
     unarchiveProject: projectsState.unarchiveProject,
