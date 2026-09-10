@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, like, max, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { drizzle } from "drizzle-orm/d1";
-import { categories, milestones, projects, tags, todoTags, todos } from "../db/schema";
+import { categories, milestones, projects, todos } from "../db/schema";
 import { serializeCategory, serializeTodos } from "../serializers";
 import type { Bindings, Variables } from "../types";
 import { newId, normalizeIcon, nowIso, optional, pagination } from "../utils";
@@ -56,20 +56,6 @@ const bulkUpdateTodos = async (
     }
   }
   if (statements.length) await db.batch(statements);
-};
-
-const syncTags = async (db: ReturnType<typeof drizzle>, userId: string, todoId: string, names: string[]) => {
-  await db.delete(todoTags).where(eq(todoTags.todoId, todoId));
-  const now = nowIso();
-  for (const name of names) {
-    let [tag] = await db.select().from(tags).where(and(eq(tags.userId, userId), eq(tags.name, name))).limit(1);
-    if (!tag) {
-      tag = { id: newId(), userId, name, createdAt: now, updatedAt: now };
-      await db.insert(tags).values(tag).onConflictDoNothing();
-      [tag] = await db.select().from(tags).where(and(eq(tags.userId, userId), eq(tags.name, name))).limit(1);
-    }
-    await db.insert(todoTags).values({ todoId, tagId: tag.id }).onConflictDoNothing();
-  }
 };
 
 const validatePlanningLinks = async (
@@ -153,7 +139,6 @@ todoRoutes.get("/todos", async (c) => {
     filters.push(or(
       like(todos.title, pattern), like(todos.memo, pattern),
       sql`EXISTS (SELECT 1 FROM categories AS search_category WHERE search_category.id = ${todos.categoryId} AND search_category.name LIKE ${pattern})`,
-      sql`EXISTS (SELECT 1 FROM todo_tags AS search_todo_tag INNER JOIN tags AS search_tag ON search_tag.id = search_todo_tag.tag_id WHERE search_todo_tag.todo_id = ${todos.id} AND search_tag.name LIKE ${pattern})`,
     )!);
   }
   const rows = await db.select().from(todos).where(and(...filters)).orderBy(asc(todos.order), desc(todos.createdAt), asc(todos.id)).limit(page.limit).offset(page.offset);
@@ -168,11 +153,11 @@ todoRoutes.post("/todos", async (c) => {
   const completed = input.completed || input.workflowStatus === "DONE";
   const row = {
     id: newId(), userId, categoryId: input.categoryId || null, projectId: input.projectId || null, milestoneId: input.milestoneId || null, parentTodoId: input.parentTodoId || null,
-    title: input.title, memo: optional(input.memo), date: input.date, dueDate: optional(input.dueDate), startTime: optional(input.startTime), endTime: optional(input.endTime), estimateMinutes: input.estimateMinutes ?? null,
+    title: input.title, memo: optional(input.memo), date: input.date, dueDate: optional(input.dueDate), startTime: optional(input.startTime), endTime: optional(input.endTime), estimateMinutes: null,
     planningState: input.planningState, workflowStatus: completed ? "DONE" as const : input.workflowStatus, priority: input.priority, completed,
-    repeat: input.repeat, archived: input.archived || false, archivedAt: input.archived ? now : null, order: input.order ?? (maximum.value ?? -1) + 1, createdAt: now, updatedAt: now,
+    repeat: "NONE" as const, archived: input.archived || false, archivedAt: input.archived ? now : null, order: input.order ?? (maximum.value ?? -1) + 1, createdAt: now, updatedAt: now,
   };
-  await db.insert(todos).values(row); await syncTags(db, userId, row.id, input.tags); return c.json({ todo: (await serializeTodos(db, [row]))[0] }, 201);
+  await db.insert(todos).values(row); return c.json({ todo: (await serializeTodos(db, [row]))[0] }, 201);
 });
 
 todoRoutes.post("/todos/bulk-delete", async (c) => {
@@ -210,12 +195,12 @@ todoRoutes.put("/todos/:id", async (c) => {
   const workflowStatus = completed ? "DONE" as const : input.workflowStatus === "DONE" ? "TODO" as const : input.workflowStatus;
   await db.update(todos).set({
     categoryId: input.categoryId || null, projectId: input.projectId || null, milestoneId: input.milestoneId || null, parentTodoId: input.parentTodoId || null,
-    title: input.title, memo: optional(input.memo), date: input.date, dueDate: optional(input.dueDate), startTime: optional(input.startTime), endTime: optional(input.endTime), estimateMinutes: input.estimateMinutes ?? null,
-    planningState: input.planningState, workflowStatus, priority: input.priority, completed, repeat: input.repeat,
+    title: input.title, memo: optional(input.memo), date: input.date, dueDate: optional(input.dueDate), startTime: optional(input.startTime), endTime: optional(input.endTime), estimateMinutes: null,
+    planningState: input.planningState, workflowStatus, priority: input.priority, completed, repeat: "NONE",
     archived: input.archived ?? existing.archived, archivedAt: input.archived === true && !existing.archived ? nowIso() : input.archived === false ? null : existing.archivedAt,
     order: input.order ?? existing.order, updatedAt: nowIso(),
   }).where(eq(todos.id, id));
-  await syncTags(db, userId, id, input.tags); const [row] = await db.select().from(todos).where(eq(todos.id, id)); return c.json({ todo: (await serializeTodos(db, [row]))[0] });
+  const [row] = await db.select().from(todos).where(eq(todos.id, id)); return c.json({ todo: (await serializeTodos(db, [row]))[0] });
 });
 todoRoutes.delete("/todos/:id", async (c) => { const db = drizzle(c.env.DB); await db.delete(todos).where(and(eq(todos.id, c.req.param("id")), eq(todos.userId, c.get("userId")))); return c.json({ ok: true }); });
 
