@@ -15,7 +15,6 @@ type RoutineItemRow = {
   itemId: string | null;
   title: string | null;
   priority: "LOW" | "MEDIUM" | "HIGH" | null;
-  estimateMinutes: number | null;
   projectId: string | null;
   categoryId: string | null;
   sortOrder: number | null;
@@ -26,7 +25,7 @@ const listRoutines = async (db: D1Database, userId: string) => {
     SELECT r.id AS routineId, r.name AS routineName, r.description AS routineDescription,
       r.created_at AS routineCreatedAt, r.updated_at AS routineUpdatedAt,
       (SELECT MAX(rr.target_date) FROM routine_runs rr WHERE rr.routine_id = r.id) AS lastRunDate,
-      i.id AS itemId, i.title, i.priority, i.estimate_minutes AS estimateMinutes,
+      i.id AS itemId, i.title, i.priority,
       i.project_id AS projectId, i.category_id AS categoryId, i.sort_order AS sortOrder
     FROM routine_templates r
     LEFT JOIN routine_template_items i ON i.routine_id = r.id
@@ -48,7 +47,6 @@ const listRoutines = async (db: D1Database, userId: string) => {
       id: row.itemId,
       title: row.title,
       priority: row.priority,
-      estimateMinutes: row.estimateMinutes,
       projectId: row.projectId,
       categoryId: row.categoryId,
       order: row.sortOrder ?? routine.items.length,
@@ -88,9 +86,9 @@ routineRoutes.post("/routines", async (c) => {
   await c.env.DB.batch([
     c.env.DB.prepare("INSERT INTO routine_templates (id, user_id, name, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)").bind(id, userId, input.name, input.description?.trim() || null, now, now),
     ...input.items.map((item, index) => c.env.DB.prepare(`
-      INSERT INTO routine_template_items (id, routine_id, title, priority, estimate_minutes, project_id, category_id, sort_order, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(newId(), id, item.title, item.priority, item.estimateMinutes ?? null, normalizedId(item.projectId), normalizedId(item.categoryId), index, now, now)),
+      INSERT INTO routine_template_items (id, routine_id, title, priority, project_id, category_id, sort_order, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(newId(), id, item.title, item.priority, normalizedId(item.projectId), normalizedId(item.categoryId), index, now, now)),
   ]);
   return c.json({ routines: await listRoutines(c.env.DB, userId) }, 201);
 });
@@ -106,9 +104,9 @@ routineRoutes.put("/routines/:id", async (c) => {
     c.env.DB.prepare("UPDATE routine_templates SET name = ?, description = ?, updated_at = ? WHERE id = ? AND user_id = ?").bind(input.name, input.description?.trim() || null, now, id, userId),
     c.env.DB.prepare("DELETE FROM routine_template_items WHERE routine_id = ?").bind(id),
     ...input.items.map((item, index) => c.env.DB.prepare(`
-      INSERT INTO routine_template_items (id, routine_id, title, priority, estimate_minutes, project_id, category_id, sort_order, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(newId(), id, item.title, item.priority, item.estimateMinutes ?? null, normalizedId(item.projectId), normalizedId(item.categoryId), index, now, now)),
+      INSERT INTO routine_template_items (id, routine_id, title, priority, project_id, category_id, sort_order, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(newId(), id, item.title, item.priority, normalizedId(item.projectId), normalizedId(item.categoryId), index, now, now)),
   ]);
   return c.json({ routines: await listRoutines(c.env.DB, userId) });
 });
@@ -129,9 +127,9 @@ routineRoutes.post("/routines/:id/run", async (c) => {
   const existing = await c.env.DB.prepare("SELECT id FROM routine_runs WHERE routine_id = ? AND target_date = ? LIMIT 1").bind(id, targetDate).first<{ id: string }>();
   if (existing) return c.json({ message: "이 루틴은 해당 날짜에 이미 생성했습니다." }, 409);
   const items = await c.env.DB.prepare(`
-    SELECT title, priority, estimate_minutes AS estimateMinutes, project_id AS projectId, category_id AS categoryId
+    SELECT title, priority, project_id AS projectId, category_id AS categoryId
     FROM routine_template_items WHERE routine_id = ? ORDER BY sort_order ASC, created_at ASC
-  `).bind(id).all<{ title: string; priority: "LOW" | "MEDIUM" | "HIGH"; estimateMinutes: number | null; projectId: string | null; categoryId: string | null }>();
+  `).bind(id).all<{ title: string; priority: "LOW" | "MEDIUM" | "HIGH"; projectId: string | null; categoryId: string | null }>();
   if (!items.results.length) return c.json({ message: "루틴에 생성할 항목이 없습니다." }, 409);
   const maximum = await c.env.DB.prepare("SELECT COALESCE(MAX(sort_order), -1) AS value FROM todos WHERE user_id = ?").bind(userId).first<{ value: number }>();
   const now = nowIso();
@@ -142,10 +140,10 @@ routineRoutes.post("/routines/:id/run", async (c) => {
       ...items.results.map((item, index) => c.env.DB.prepare(`
         INSERT INTO todos (
           id, user_id, category_id, project_id, milestone_id, parent_todo_id, title, memo, reference_url, reference_label,
-          date, due_date, start_time, end_time, estimate_minutes, planning_state, workflow_status, priority, completed, repeat,
+          date, due_date, start_time, end_time, planning_state, workflow_status, priority, completed,
           archived, archived_at, sort_order, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, NULL, NULL, ?, NULL, NULL, NULL, ?, NULL, NULL, NULL, ?, 'SCHEDULED', 'TODO', ?, 0, 'NONE', 0, NULL, ?, ?, ?)
-      `).bind(newId(), userId, item.categoryId, item.projectId, item.title, targetDate, item.estimateMinutes, item.priority, (maximum?.value ?? -1) + index + 1, now, now)),
+        ) VALUES (?, ?, ?, ?, NULL, NULL, ?, NULL, NULL, NULL, ?, NULL, NULL, NULL, 'SCHEDULED', 'TODO', ?, 0, 0, NULL, ?, ?, ?)
+      `).bind(newId(), userId, item.categoryId, item.projectId, item.title, targetDate, item.priority, (maximum?.value ?? -1) + index + 1, now, now)),
     ]);
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
