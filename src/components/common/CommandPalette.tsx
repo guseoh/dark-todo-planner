@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { BookOpen, Calendar, CalendarCheck, CalendarRange, ClipboardList, FileText, FolderKanban, ListTodo, Plus, Search, Settings, StickyNote, Trash2 } from "lucide-react";
+import { Calendar, CalendarCheck, CalendarRange, ClipboardList, FileText, FolderKanban, ListTodo, Plus, Search, Settings, StickyNote, Trash2 } from "lucide-react";
 import type { Memo } from "../../types/memo";
 import type { Project } from "../../types/project";
 import type { Todo } from "../../types/todo";
@@ -27,7 +27,6 @@ type Result = {
 const navigation: Result[] = [
   { id: "quick-add", label: "빠른 Todo 추가", detail: "Ctrl+Shift+K", action: "quick-add", kind: "명령" },
   { id: "nav-today", label: "오늘", detail: "오늘 실행할 Todo", view: "today", kind: "이동" },
-  { id: "nav-learning", label: "학습", detail: "데일리 문제와 읽을 기술 글", view: "learning", kind: "이동" },
   { id: "nav-week", label: "주간", detail: "이번 주 Todo 보기", view: "week", kind: "이동" },
   { id: "nav-month", label: "월간", detail: "월간 Calendar 보기", view: "month", kind: "이동" },
   { id: "nav-projects", label: "프로젝트", detail: "프로젝트와 Kanban", view: "projects", kind: "이동" },
@@ -43,7 +42,6 @@ const resultIcon = (result: Result) => {
   if (result.kind === "Todo") return ListTodo;
   if (result.kind === "메모") return StickyNote;
   if (result.kind === "프로젝트") return FolderKanban;
-  if (result.view === "learning") return BookOpen;
   if (result.view === "scratchpad") return FileText;
   if (result.view === "week") return CalendarRange;
   if (result.view === "month") return Calendar;

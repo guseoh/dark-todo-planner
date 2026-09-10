@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, CopyPlus, MoveRight } from "lucide-react";
+import { ChevronDown, ChevronRight, CopyPlus, MoveRight, Trash2 } from "lucide-react";
 import { formatKoreanDate } from "../../lib/date";
 import {
   getDuplicateTodoIds,
@@ -15,13 +15,16 @@ type OverdueTodoImportModalProps = {
     selectedIds: ReadonlySet<string>,
     mode: OverdueTodoImportMode,
   ) => Promise<OverdueTodoImportResult>;
+  onDeleteMany: (ids: string[]) => Promise<boolean> | boolean;
   onClose: () => void;
 };
 
-export function OverdueTodoImportModal({ todos, onImport, onClose }: OverdueTodoImportModalProps) {
+export function OverdueTodoImportModal({ todos, onImport, onDeleteMany, onClose }: OverdueTodoImportModalProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [submitting, setSubmitting] = useState(false);
+  const [deletingDate, setDeletingDate] = useState<string | null>(null);
   const [result, setResult] = useState<OverdueTodoImportResult | null>(null);
+  const [deleteError, setDeleteError] = useState("");
   const duplicateTodoIds = useMemo(() => getDuplicateTodoIds(todos), [todos]);
   const groupedTodos = useMemo(() => {
     const groups = new Map<string, Todo[]>();
@@ -39,10 +42,12 @@ export function OverdueTodoImportModal({ todos, onImport, onClose }: OverdueTodo
   const [expandedDates, setExpandedDates] = useState<Set<string>>(
     () => new Set(groupedTodos.slice(0, 2).map(([date]) => date)),
   );
+  const busy = submitting || deletingDate !== null;
 
   const toggleTodo = (id: string) => {
-    if (submitting) return;
+    if (busy) return;
     setResult(null);
+    setDeleteError("");
     setSelectedIds((current) => {
       const next = new Set(current);
       if (next.has(id)) next.delete(id);
@@ -52,7 +57,7 @@ export function OverdueTodoImportModal({ todos, onImport, onClose }: OverdueTodo
   };
 
   const toggleDate = (date: string) => {
-    if (submitting) return;
+    if (busy) return;
     setExpandedDates((current) => {
       const next = new Set(current);
       if (next.has(date)) next.delete(date);
@@ -61,15 +66,60 @@ export function OverdueTodoImportModal({ todos, onImport, onClose }: OverdueTodo
     });
   };
 
-  const selectAll = () => {
-    if (submitting) return;
+  const toggleDateSelection = (dateTodos: Todo[]) => {
+    if (busy) return;
     setResult(null);
+    setDeleteError("");
+    setSelectedIds((current) => {
+      const ids = dateTodos.map((todo) => todo.id);
+      const allSelected = ids.every((id) => current.has(id));
+      const next = new Set(current);
+      ids.forEach((id) => {
+        if (allSelected) next.delete(id);
+        else next.add(id);
+      });
+      return next;
+    });
+  };
+
+  const deleteDateTodos = async (date: string, dateTodos: Todo[]) => {
+    if (busy || !dateTodos.length) return;
+    const label = formatKoreanDate(date, "M월 d일 EEEE");
+    if (!window.confirm(`${label}의 Todo ${dateTodos.length}개를 휴지통으로 이동할까요?`)) return;
+
+    setDeletingDate(date);
+    setResult(null);
+    setDeleteError("");
+    const ids = dateTodos.map((todo) => todo.id);
+    try {
+      const deleted = await Promise.resolve(onDeleteMany(ids));
+      if (!deleted) {
+        setDeleteError(`${label} Todo를 삭제하지 못했습니다.`);
+        return;
+      }
+      setSelectedIds((current) => {
+        const next = new Set(current);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : `${label} Todo를 삭제하지 못했습니다.`);
+    } finally {
+      setDeletingDate(null);
+    }
+  };
+
+  const selectAll = () => {
+    if (busy) return;
+    setResult(null);
+    setDeleteError("");
     setSelectedIds(new Set(todos.map((todo) => todo.id)));
   };
 
   const selectExpanded = () => {
-    if (submitting) return;
+    if (busy) return;
     setResult(null);
+    setDeleteError("");
     setSelectedIds(
       new Set(
         groupedTodos
@@ -80,15 +130,17 @@ export function OverdueTodoImportModal({ todos, onImport, onClose }: OverdueTodo
   };
 
   const clearSelection = () => {
-    if (submitting) return;
+    if (busy) return;
     setResult(null);
+    setDeleteError("");
     setSelectedIds(new Set());
   };
 
   const runImport = async (mode: OverdueTodoImportMode) => {
-    if (!selectedIds.size || submitting) return;
+    if (!selectedIds.size || busy) return;
     setSubmitting(true);
     setResult(null);
+    setDeleteError("");
     try {
       setResult(await onImport(selectedIds, mode));
       setSelectedIds(new Set());
@@ -112,9 +164,9 @@ export function OverdueTodoImportModal({ todos, onImport, onClose }: OverdueTodo
   return (
     <Modal
       title="미처리 Todo 가져오기"
-      description="필요한 Todo만 직접 선택하세요. 이동은 기존 일정을 오늘로 옮기고, 복사는 원래 일정을 유지합니다."
+      description="필요한 날짜나 Todo만 선택하세요. 이동은 기존 일정을 오늘로 옮기고, 복사는 원래 일정을 유지합니다."
       onClose={() => {
-        if (!submitting) onClose();
+        if (!busy) onClose();
       }}
       size="lg"
     >
@@ -124,17 +176,17 @@ export function OverdueTodoImportModal({ todos, onImport, onClose }: OverdueTodo
             <div>
               <p className="text-sm font-bold text-ink-100">{selectedIds.size}개 선택됨</p>
               <p className="mt-0.5 text-[11px] leading-5 text-ink-500">
-                중복 후보는 표시만 하며 자동 선택하지 않습니다. 여러 중복 항목을 선택하면 최신 항목부터 처리합니다.
+                날짜를 펼치면 그 날짜 전체를 한 번에 선택하거나 휴지통으로 이동할 수 있습니다.
               </p>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              <button type="button" className="btn-secondary px-2.5 text-xs" onClick={selectAll} disabled={!todos.length || submitting}>
+              <button type="button" className="btn-secondary px-2.5 text-xs" onClick={selectAll} disabled={!todos.length || busy}>
                 전체 선택
               </button>
-              <button type="button" className="btn-secondary px-2.5 text-xs" onClick={selectExpanded} disabled={!expandedDates.size || submitting}>
+              <button type="button" className="btn-secondary px-2.5 text-xs" onClick={selectExpanded} disabled={!expandedDates.size || busy}>
                 펼친 날짜 선택
               </button>
-              <button type="button" className="btn-secondary px-2.5 text-xs" onClick={clearSelection} disabled={!selectedIds.size || submitting}>
+              <button type="button" className="btn-secondary px-2.5 text-xs" onClick={clearSelection} disabled={!selectedIds.size || busy}>
                 전체 해제
               </button>
             </div>
@@ -144,7 +196,7 @@ export function OverdueTodoImportModal({ todos, onImport, onClose }: OverdueTodo
               type="button"
               className="rounded-md px-2 py-1 text-xs font-semibold text-ink-400 transition hover:bg-ink-800 hover:text-ink-100"
               onClick={() => setExpandedDates(new Set(groupedTodos.map(([date]) => date)))}
-              disabled={!groupedTodos.length || submitting}
+              disabled={!groupedTodos.length || busy}
             >
               모두 펼치기
             </button>
@@ -152,7 +204,7 @@ export function OverdueTodoImportModal({ todos, onImport, onClose }: OverdueTodo
               type="button"
               className="rounded-md px-2 py-1 text-xs font-semibold text-ink-400 transition hover:bg-ink-800 hover:text-ink-100"
               onClick={() => setExpandedDates(new Set())}
-              disabled={!expandedDates.size || submitting}
+              disabled={!expandedDates.size || busy}
             >
               모두 접기
             </button>
@@ -164,26 +216,52 @@ export function OverdueTodoImportModal({ todos, onImport, onClose }: OverdueTodo
           {groupedTodos.map(([date, dateTodos]) => {
             const expanded = expandedDates.has(date);
             const selectedCount = dateTodos.filter((todo) => selectedIds.has(todo.id)).length;
+            const wholeDateSelected = selectedCount === dateTodos.length && dateTodos.length > 0;
             return (
               <section key={date} className="overflow-hidden rounded-md border border-ink-700/55 bg-ink-900/45" aria-labelledby={`overdue-${date}`}>
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition hover:bg-ink-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500/35"
-                  onClick={() => toggleDate(date)}
-                  aria-expanded={expanded}
-                  aria-controls={`overdue-list-${date}`}
-                >
-                  {expanded ? <ChevronDown size={16} className="shrink-0 text-ink-400" /> : <ChevronRight size={16} className="shrink-0 text-ink-500" />}
-                  <span id={`overdue-${date}`} className="min-w-0 flex-1 text-sm font-bold text-ink-200">
-                    {formatKoreanDate(date, "M월 d일 EEEE")}
-                  </span>
-                  <span className="shrink-0 text-xs text-ink-500">{dateTodos.length}개</span>
-                  {selectedCount ? (
-                    <span className="shrink-0 rounded-full border border-accent-500/35 bg-accent-500/10 px-2 py-0.5 text-[10px] font-bold text-accent-200">
-                      {selectedCount}개 선택
+                <div className="flex items-center gap-1 px-1.5 py-1.5">
+                  <button
+                    type="button"
+                    className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 text-left transition hover:bg-ink-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500/35"
+                    onClick={() => toggleDate(date)}
+                    aria-expanded={expanded}
+                    aria-controls={`overdue-list-${date}`}
+                    disabled={busy}
+                  >
+                    {expanded ? <ChevronDown size={16} className="shrink-0 text-ink-400" /> : <ChevronRight size={16} className="shrink-0 text-ink-500" />}
+                    <span id={`overdue-${date}`} className="min-w-0 flex-1 text-sm font-bold text-ink-200">
+                      {formatKoreanDate(date, "M월 d일 EEEE")}
                     </span>
+                    <span className="shrink-0 text-xs text-ink-500">{dateTodos.length}개</span>
+                    {selectedCount ? (
+                      <span className="shrink-0 rounded-full border border-accent-500/35 bg-accent-500/10 px-2 py-0.5 text-[10px] font-bold text-accent-200">
+                        {selectedCount}개 선택
+                      </span>
+                    ) : null}
+                  </button>
+                  {expanded ? (
+                    <>
+                      <button
+                        type="button"
+                        className="btn-secondary min-h-8 shrink-0 px-2 py-1 text-[11px]"
+                        onClick={() => toggleDateSelection(dateTodos)}
+                        disabled={busy}
+                      >
+                        {wholeDateSelected ? "날짜 선택 해제" : "날짜 전체 선택"}
+                      </button>
+                      <button
+                        type="button"
+                        className="icon-btn h-8 w-8 shrink-0 rounded-md hover:text-red-200"
+                        onClick={() => void deleteDateTodos(date, dateTodos)}
+                        disabled={busy}
+                        aria-label={`${formatKoreanDate(date, "M월 d일")} Todo 전체 삭제`}
+                        title="이 날짜 Todo 전체 삭제"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </>
                   ) : null}
-                </button>
+                </div>
 
                 {expanded ? (
                   <div id={`overdue-list-${date}`} className="space-y-1.5 border-t border-ink-700/45 p-2">
@@ -203,7 +281,7 @@ export function OverdueTodoImportModal({ todos, onImport, onClose }: OverdueTodo
                             className="mt-0.5 h-4 w-4 shrink-0 accent-accent-500"
                             checked={checked}
                             onChange={() => toggleTodo(todo.id)}
-                            disabled={submitting}
+                            disabled={busy}
                           />
                           <span className="min-w-0 flex-1">
                             <span className="flex flex-wrap items-center gap-1.5">
@@ -229,6 +307,7 @@ export function OverdueTodoImportModal({ todos, onImport, onClose }: OverdueTodo
           })}
         </div>
 
+        {deleteError ? <p role="alert" className="rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-red-100">{deleteError}</p> : null}
         {resultMessage ? (
           <p
             role="status"
@@ -243,14 +322,14 @@ export function OverdueTodoImportModal({ todos, onImport, onClose }: OverdueTodo
         ) : null}
 
         <div className="flex flex-col-reverse gap-2 border-t border-ink-700/55 pt-3 sm:flex-row sm:justify-end">
-          <button type="button" className="btn-secondary justify-center" onClick={onClose} disabled={submitting}>
+          <button type="button" className="btn-secondary justify-center" onClick={onClose} disabled={busy}>
             닫기
           </button>
           <button
             type="button"
             className="btn-secondary justify-center"
             onClick={() => runImport("copy")}
-            disabled={!selectedIds.size || submitting}
+            disabled={!selectedIds.size || busy}
           >
             <CopyPlus size={16} />
             선택 {selectedIds.size}개 복사
@@ -259,7 +338,7 @@ export function OverdueTodoImportModal({ todos, onImport, onClose }: OverdueTodo
             type="button"
             className="btn-primary justify-center"
             onClick={() => runImport("move")}
-            disabled={!selectedIds.size || submitting}
+            disabled={!selectedIds.size || busy}
           >
             <MoveRight size={16} />
             {submitting ? "처리 중..." : `선택 ${selectedIds.size}개 이동`}
