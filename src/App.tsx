@@ -137,7 +137,6 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     const tomorrow = toDateKey(addDays(parseDateKey(todayKey()), 1));
     let failed = 0;
     for (const todo of todayOpenTodos) {
-      if (todo.repeat !== "NONE") continue;
       const decision = decisions[todo.id] || "KEEP";
       if (decision === "KEEP") continue;
       const updated = decision === "TOMORROW"
@@ -177,7 +176,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
         {showCommandPalette ? <CommandPalette onClose={() => setShowCommandPalette(false)} onNavigate={changeView} onQuickAdd={openQuickAdd} todos={planner.allTodos} memos={planner.memos} projects={planner.projects} /> : null}
 
         {showQuickAdd ? (
-          <Modal title="빠른 Todo 추가" description="Ctrl+Shift+K · 내일 · !high · #태그 · 45m · due:2026-08-20 같은 빠른 문법을 사용할 수 있습니다." onClose={() => setShowQuickAdd(false)}>
+          <Modal title="빠른 Todo 추가" description="Ctrl+Shift+K · 내일 · !high · @프로젝트 · +카테고리 · due:2026-08-20 같은 빠른 문법을 사용할 수 있습니다." onClose={() => setShowQuickAdd(false)}>
             <TodoForm compact submitLabel="Todo 추가" categories={planner.categories} projects={planner.activeProjects} onAdd={(input) => { void planner.addTodo(input).then((created) => { if (created) setShowQuickAdd(false); }); }} />
           </Modal>
         ) : null}
