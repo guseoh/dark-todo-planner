@@ -10,7 +10,7 @@ import {
   shouldQueueTodoMutation,
   type QueuedTodoMutation,
 } from "../lib/offlineTodoQueue";
-import { calculateRate, getAllTags, priorityRank, todoOccursOnDate } from "../lib/todo";
+import { calculateRate, priorityRank, todoOccursOnDate } from "../lib/todo";
 import {
   dedupeTodosById,
   getDuplicateTodoIds,
@@ -27,9 +27,7 @@ export const defaultFilters: TodoFilters = {
   query: "",
   status: "ALL",
   priority: "ALL",
-  tag: "",
   categoryId: "",
-  repeat: "ALL",
   archived: "ACTIVE",
   duplicatesOnly: false,
   date: "",
@@ -79,15 +77,12 @@ const createOptimisticTodo = (id: string, input: TodoInput): Todo => {
     memo: input.memo,
     date: input.date || todayKey(),
     dueDate: input.dueDate,
-    estimateMinutes: input.estimateMinutes,
     planningState,
     workflowStatus,
     priority: input.priority || "MEDIUM",
     completed: workflowStatus === "DONE",
     createdAt: now,
     updatedAt: now,
-    repeat: input.repeat || "NONE",
-    tags: input.tags || [],
     archived: false,
   };
 };
@@ -162,7 +157,6 @@ export function useTodos() {
   const todos = useMemo(() => allTodos.filter((todo) => !todo.archived), [allTodos]);
   const archivedTodos = useMemo(() => allTodos.filter((todo) => todo.archived), [allTodos]);
   const inboxTodos = useMemo(() => todos.filter((todo) => todo.planningState === "INBOX"), [todos]);
-  const tagOptions = useMemo(() => getAllTags(allTodos), [allTodos]);
   const duplicateTodoIds = useMemo(() => getDuplicateTodoIds(allTodos), [allTodos]);
 
   const addTodo = useCallback(async (input: TodoInput) => {
@@ -375,7 +369,7 @@ export function useTodos() {
       overdueTodos: getOverdueIncompleteTodos(), selectedIds, todayTodos: getTodosByDate(today), mode,
       copyTodo: async (todo) => Boolean(await addTodo({
         title: todo.title, memo: todo.memo, categoryId: todo.categoryId, projectId: todo.projectId, milestoneId: todo.milestoneId,
-        date: today, dueDate: todo.dueDate, estimateMinutes: todo.estimateMinutes, planningState: "SCHEDULED", priority: todo.priority, repeat: todo.repeat, tags: todo.tags,
+        date: today, dueDate: todo.dueDate, planningState: "SCHEDULED", priority: todo.priority,
       })),
       moveTodo: async (todo) => Boolean(await updateTodo(todo.id, { date: today, planningState: "SCHEDULED" })),
     });
@@ -389,14 +383,12 @@ export function useTodos() {
   const filterTodos = useCallback((filters: TodoFilters) => {
     let result = filters.archived === "ARCHIVED" ? archivedTodos : filters.archived === "ALL" ? allTodos : todos;
     const keyword = filters.query.trim().toLowerCase();
-    if (keyword) result = result.filter((todo) => `${todo.title} ${todo.memo || ""} ${(todo.tags || []).join(" ")} ${todo.category?.name || ""}`.toLowerCase().includes(keyword));
+    if (keyword) result = result.filter((todo) => `${todo.title} ${todo.memo || ""} ${todo.category?.name || ""}`.toLowerCase().includes(keyword));
     if (filters.status === "ACTIVE") result = result.filter((todo) => !todo.completed);
     if (filters.status === "COMPLETED") result = result.filter((todo) => todo.completed);
     if (filters.priority !== "ALL") result = result.filter((todo) => todo.priority === filters.priority);
-    if (filters.tag) result = result.filter((todo) => todo.tags.includes(filters.tag));
     if (filters.categoryId === "uncategorized") result = result.filter((todo) => !todo.categoryId);
     else if (filters.categoryId) result = result.filter((todo) => todo.categoryId === filters.categoryId);
-    if (filters.repeat !== "ALL") result = result.filter((todo) => todo.repeat === filters.repeat);
     if (filters.duplicatesOnly) result = result.filter((todo) => duplicateTodoIds.has(todo.id));
     if (filters.date) result = result.filter((todo) => todoOccursOnDate(todo, filters.date));
     return [...result].sort((a, b) => {
@@ -417,7 +409,7 @@ export function useTodos() {
   }, [archivedTodos.length, getMonthTodos, getTodayTodos, getWeekTodos, inboxTodos.length, todos]);
 
   return {
-    allTodos, todos, archivedTodos, inboxTodos, tagOptions, duplicateTodoIds, stats, loading, saving, error, pendingDelete,
+    allTodos, todos, archivedTodos, inboxTodos, duplicateTodoIds, stats, loading, saving, error, pendingDelete,
     loadTodos, addTodo, updateTodo, deleteTodo, undoDeleteTodo, deleteTodos, bulkUpdateTodos, toggleTodo, archiveTodo, unarchiveTodo,
     syncCategory, removeCategoryFromTodos, getTodosByDate, getTodayTodos, getOverdueIncompleteTodos, getWeekTodos, getMonthTodos, filterTodos, bringOverdueTodosToToday,
   };
