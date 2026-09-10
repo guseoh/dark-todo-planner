@@ -10,7 +10,7 @@ const csvCell = (value: unknown) => {
 
 export const buildTodoCsv = (todos: Todo[], projects: Project[]) => {
   const projectMap = new Map(projects.map((project) => [project.id, project.name]));
-  const header = ["id", "title", "memo", "date", "dueDate", "priority", "planningState", "workflowStatus", "completed", "archived", "project", "category", "estimateMinutes", "repeat", "tags"];
+  const header = ["id", "title", "memo", "date", "dueDate", "priority", "planningState", "workflowStatus", "completed", "archived", "project", "category"];
   const rows = todos.map((todo) => [
     todo.id,
     todo.title,
@@ -24,9 +24,6 @@ export const buildTodoCsv = (todos: Todo[], projects: Project[]) => {
     todo.archived,
     todo.projectId ? projectMap.get(todo.projectId) || todo.projectId : "",
     todo.category?.name || "",
-    todo.estimateMinutes || "",
-    todo.repeat,
-    (todo.tags || []).join(" "),
   ]);
   return [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");
 };
@@ -36,7 +33,6 @@ const todoDetail = (todo: Todo) => {
   const bits = [`실행 ${todo.date}`];
   if (todo.dueDate) bits.push(`마감 ${todo.dueDate}`);
   bits.push(todo.priority, todo.planningState);
-  if (todo.estimateMinutes) bits.push(`예상 ${todo.estimateMinutes}분`);
   return `${checkbox(todo)} — ${bits.join(" · ")}`;
 };
 
