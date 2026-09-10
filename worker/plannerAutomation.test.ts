@@ -26,12 +26,11 @@ const database = (changes: number[]) => {
 };
 
 describe("planner automations", () => {
-  it("carries only prior scheduled non-repeating Todos and sweeps completed Todos when enabled", async () => {
+  it("carries prior scheduled Todos and sweeps completed Todos when enabled", async () => {
     const { DB, calls } = database([2, 3]);
     const result = await runPlannerAutomations({ DB }, "single-user", "2026-08-16", { carryOverEnabled: true, autoArchiveCompleted: true });
 
     expect(result).toMatchObject({ plannerDate: "2026-08-16", carriedOver: 2, autoArchived: 3 });
-    expect(calls[0].sql).toContain("repeat = 'NONE'");
     expect(calls[0].sql).toContain("planning_state = 'SCHEDULED'");
     expect(calls[0].sql).toContain("date < ?");
     expect(calls[0].bindings.at(-1)).toBe("2026-08-16");

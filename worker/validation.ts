@@ -4,10 +4,10 @@ export const tagsSchema = z.array(z.string()).optional().default([]).transform((
 export const todoInputSchema = z.object({
   categoryId: z.string().nullable().optional(), projectId: z.string().nullable().optional(), milestoneId: z.string().nullable().optional(), parentTodoId: z.string().nullable().optional(),
   title: z.string().trim().min(1), memo: z.string().optional().nullable(), date: z.string().min(1), dueDate: z.string().optional().nullable(),
-  startTime: z.string().optional().nullable(), endTime: z.string().optional().nullable(), estimateMinutes: z.coerce.number().int().min(1).max(24 * 60).optional().nullable(),
+  startTime: z.string().optional().nullable(), endTime: z.string().optional().nullable(),
   planningState: z.enum(["INBOX", "SCHEDULED", "SOMEDAY", "WAITING"]).default("SCHEDULED"), workflowStatus: z.enum(["TODO", "IN_PROGRESS", "BLOCKED", "DONE"]).default("TODO"),
   priority: z.enum(["LOW", "MEDIUM", "HIGH"]).default("MEDIUM"), completed: z.boolean().optional(),
-  repeat: z.enum(["NONE", "DAILY", "WEEKLY", "MONTHLY", "WEEKDAY", "WEEKEND"]).default("NONE"), archived: z.boolean().optional(), order: z.number().int().optional(), tags: tagsSchema,
+  archived: z.boolean().optional(), order: z.number().int().optional(),
 });
 export const bulkTodoUpdateSchema = z.object({
   ids: z.array(z.string()).max(4000),

@@ -17,8 +17,8 @@ export type DuplicateTodoGroup = {
 
 const normalizeTitle = (title: string) => title.trim().toLocaleLowerCase("ko");
 
-export const getTodoDuplicateKey = (todo: Pick<Todo, "title" | "categoryId" | "repeat">) =>
-  `${normalizeTitle(todo.title)}::${todo.categoryId || ""}::${todo.repeat}`;
+export const getTodoDuplicateKey = (todo: Pick<Todo, "title" | "categoryId">) =>
+  `${normalizeTitle(todo.title)}::${todo.categoryId || ""}`;
 
 export function dedupeTodosById(todos: Todo[]): Todo[] {
   const seen = new Set<string>();
@@ -36,7 +36,6 @@ export function getOverdueIncompleteTodos(todos: Todo[], plannerToday: string): 
         !todo.archived &&
         !todo.completed &&
         (todo.planningState || "SCHEDULED") === "SCHEDULED" &&
-        todo.repeat === "NONE" &&
         todo.date < plannerToday,
     )
     .sort((a, b) => a.date.localeCompare(b.date) || b.createdAt.localeCompare(a.createdAt));
@@ -45,7 +44,7 @@ export function getOverdueIncompleteTodos(todos: Todo[], plannerToday: string): 
 export function getDuplicateTodoGroups(todos: Todo[]): DuplicateTodoGroup[] {
   const groups = new Map<string, Todo[]>();
   todos
-    .filter((todo) => !todo.archived && todo.repeat === "NONE")
+    .filter((todo) => !todo.archived)
     .forEach((todo) => {
       const key = getTodoDuplicateKey(todo);
       groups.set(key, [...(groups.get(key) || []), todo]);

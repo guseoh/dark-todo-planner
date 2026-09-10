@@ -84,7 +84,6 @@ function ProjectKanbanCard({ project, todo, parent, childCount, milestone, miles
           <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] text-ink-400">
             {milestone ? <span className="rounded border border-accent-500/25 bg-accent-500/[0.06] px-1.5 py-0.5 text-accent-200">{milestone.title}</span> : null}
             {childCount ? <span className="rounded border border-accent-500/25 bg-accent-500/[0.06] px-1.5 py-0.5 text-accent-200">하위 {childCount}</span> : null}
-            {todo.estimateMinutes ? <span className="rounded border border-ink-800/70 bg-ink-900/60 px-1.5 py-0.5">{todo.estimateMinutes}분</span> : null}
             {todo.dueDate ? <span className={`rounded border px-1.5 py-0.5 ${overdue ? "border-danger/30 bg-danger/[0.07] text-red-100" : dueSoon ? "border-warning/30 bg-warning/[0.07] text-amber-100" : "border-ink-800/70 bg-ink-900/60"}`}>마감 {todo.dueDate}</span> : null}
           </div>
         </div>

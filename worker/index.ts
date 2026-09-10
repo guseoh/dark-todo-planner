@@ -12,21 +12,16 @@ import {
   verifySessionToken,
 } from "./auth";
 import { backupV9ExportMiddleware, backupV9ImportMiddleware } from "./backupMiddleware";
-import { learningBackupExportMiddleware, learningBackupImportMiddleware } from "./learningBackupMiddleware";
 import { todoReferenceTrashRestoreMiddleware } from "./referenceLinkMiddleware";
 import { runDiscordIncompleteTodoReminder } from "./reminders/incompleteTodoReminder";
-import { runDueTodoReminders } from "./reminders/todoReminder";
 import { backupRoutes } from "./routes/backup";
 import { calendarRoutes } from "./routes/calendar";
 import { contentRoutes } from "./routes/content";
-import { learningRoutes } from "./routes/learning";
 import { libraryRoutes } from "./routes/library";
 import { offlineTodoRoutes } from "./routes/offlineTodos";
-import { projectDeleteRoutes } from "./routes/projectDelete";
 import { projectDuplicateRoutes } from "./routes/projectDuplicate";
 import { projectRoutes } from "./routes/projects";
 import { referenceLinkRoutes } from "./routes/referenceLinks";
-import { reminderRoutes } from "./routes/reminders";
 import { routineRoutes } from "./routes/routines";
 import { scratchpadRoutes } from "./routes/scratchpad";
 import { settingsRoutes } from "./routes/settings";
@@ -48,7 +43,6 @@ import type { Bindings, Variables } from "./types";
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 const loginSchema = z.object({ username: z.string().min(1).max(256), password: z.string().min(1).max(1024) });
 const PUBLIC_API_PATHS = new Set(["/api/health", "/api/auth/login", "/api/auth/logout", "/api/auth/session"]);
-const TODO_REMINDER_CRON = "*/5 * * * *";
 const isPublicApiPath = (path: string) => PUBLIC_API_PATHS.has(path) || path.startsWith("/api/auth/");
 
 app.use("*", securityHeaders);
@@ -104,9 +98,6 @@ app.get("/api/auth/session", async (c) => {
 app.use("/api/backup/export", step4BackupExportMiddleware);
 app.use("/api/backup/import", step4BackupImportMiddleware);
 app.use("/api/migrate/local-storage", step4BackupImportMiddleware);
-app.use("/api/backup/export", learningBackupExportMiddleware);
-app.use("/api/backup/import", learningBackupImportMiddleware);
-app.use("/api/migrate/local-storage", learningBackupImportMiddleware);
 app.use("/api/backup/export", backupV9ExportMiddleware);
 app.use("/api/backup/import", backupV9ImportMiddleware);
 app.use("/api/migrate/local-storage", backupV9ImportMiddleware);
@@ -116,14 +107,11 @@ app.route("/api", todoRoutes);
 app.route("/api", todoBulkCopyRoutes);
 app.route("/api", offlineTodoRoutes);
 app.route("/api", projectRoutes);
-app.route("/api", projectDeleteRoutes);
 app.route("/api", projectDuplicateRoutes);
 app.route("/api", referenceLinkRoutes);
 app.route("/api", contentRoutes);
-app.route("/api", learningRoutes);
 app.route("/api", calendarRoutes);
 app.route("/api", settingsRoutes);
-app.route("/api", reminderRoutes);
 app.route("/api", routineRoutes);
 app.route("/api", scratchpadRoutes);
 app.route("/api", trashRoutes);
@@ -141,9 +129,6 @@ app.onError((error, c) => {
 export default {
   fetch: (request: Request, env: Bindings, executionContext: ExecutionContext) => app.fetch(request, env, executionContext),
   scheduled: (controller: ScheduledController, env: Bindings, executionContext: ExecutionContext) => {
-    const jobs: Promise<unknown>[] = [];
-    if (controller.cron === "0 12 * * *") jobs.push(runDiscordIncompleteTodoReminder(env, new Date(controller.scheduledTime)));
-    if (controller.cron === TODO_REMINDER_CRON) jobs.push(runDueTodoReminders(env, new Date(controller.scheduledTime)));
-    if (jobs.length) executionContext.waitUntil(Promise.allSettled(jobs).then(() => undefined));
+    if (controller.cron === "0 12 * * *") executionContext.waitUntil(runDiscordIncompleteTodoReminder(env, new Date(controller.scheduledTime)).then(() => undefined));
   },
 } satisfies ExportedHandler<Bindings>;

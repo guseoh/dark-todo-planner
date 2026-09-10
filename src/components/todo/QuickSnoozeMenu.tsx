@@ -36,7 +36,7 @@ export function QuickSnoozeMenu({ todo }: { todo: Todo }) {
     };
   }, [open]);
 
-  if (!quickActions || todo.completed || todo.archived || todo.repeat !== "NONE") return null;
+  if (!quickActions || todo.completed || todo.archived) return null;
 
   const apply = async (target: TodoSnoozeTarget) => {
     setSaving(true);

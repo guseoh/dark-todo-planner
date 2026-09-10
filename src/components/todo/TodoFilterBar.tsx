@@ -8,14 +8,13 @@ import { TodoSearchInput } from "./TodoSearchInput";
 type TodoFilterBarProps = {
   filters: TodoFilters;
   onChange: (filters: TodoFilters) => void;
-  tagOptions?: string[];
   categories?: Category[];
 };
 
 const filterButtonClassName =
   "inline-flex h-8 items-center justify-center whitespace-nowrap rounded-md border px-2.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/35";
 
-export function TodoFilterBar({ filters, onChange, tagOptions = [], categories = [] }: TodoFilterBarProps) {
+export function TodoFilterBar({ filters, onChange, categories = [] }: TodoFilterBarProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const statusFilters: Array<{ label: string; value: TodoStatusFilter }> = [
     { label: "전체", value: "ALL" },
@@ -76,12 +75,6 @@ export function TodoFilterBar({ filters, onChange, tagOptions = [], categories =
           <input className="field h-9 min-h-9 w-full py-1 sm:w-40" type="date" value={filters.date} onChange={(event) => onChange({ ...filters, date: event.target.value })} aria-label="날짜 필터" />
           <select className="field h-9 min-h-9 w-full py-1 sm:w-44" value={filters.categoryId} onChange={(event) => onChange({ ...filters, categoryId: event.target.value })} aria-label="카테고리 필터">
             <option value="">모든 카테고리</option><option value="uncategorized">미분류</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-          </select>
-          <select className="field h-9 min-h-9 w-full py-1 sm:w-40" value={filters.tag} onChange={(event) => onChange({ ...filters, tag: event.target.value })} aria-label="태그 필터">
-            <option value="">모든 태그</option>{tagOptions.map((tag) => <option key={tag} value={tag}>#{tag}</option>)}
-          </select>
-          <select className="field h-9 min-h-9 w-full py-1 sm:w-40" value={filters.repeat} onChange={(event) => onChange({ ...filters, repeat: event.target.value as TodoFilters["repeat"] })} aria-label="반복 필터">
-            <option value="ALL">모든 반복</option><option value="NONE">반복 없음</option><option value="DAILY">매일</option><option value="WEEKLY">매주</option><option value="MONTHLY">매월</option><option value="WEEKDAY">평일</option><option value="WEEKEND">주말</option>
           </select>
           <select className="field h-9 min-h-9 w-full py-1 sm:w-40" value={filters.archived} onChange={(event) => onChange({ ...filters, archived: event.target.value as TodoFilters["archived"] })} aria-label="보관 필터">
             <option value="ACTIVE">보관 제외</option><option value="ARCHIVED">보관됨</option><option value="ALL">전체</option>

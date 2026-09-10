@@ -20,6 +20,7 @@ export type Todo = {
   dueDate?: string;
   startTime?: string;
   endTime?: string;
+  /** Legacy persisted value kept for backup/storage compatibility. Not exposed by the Todo editor. */
   estimateMinutes?: number;
   planningState: TodoPlanningState;
   workflowStatus: TodoWorkflowStatus;
@@ -27,8 +28,10 @@ export type Todo = {
   completed: boolean;
   createdAt: string;
   updatedAt: string;
-  repeat: TodoRepeat;
-  tags: string[];
+  /** Legacy persisted value kept for existing records. Missing values are treated as NONE. */
+  repeat?: TodoRepeat;
+  /** Legacy persisted values kept for existing records. Tag editing/filtering is no longer exposed. */
+  tags?: string[];
   archived: boolean;
   archivedAt?: string;
   order?: number;
@@ -44,11 +47,14 @@ export type TodoInput = {
   memo?: string;
   date?: string;
   dueDate?: string;
+  /** Compatibility-only field for legacy/internal callers. */
   estimateMinutes?: number;
   planningState?: TodoPlanningState;
   workflowStatus?: TodoWorkflowStatus;
   priority?: TodoPriority;
+  /** Compatibility-only field. New Todo flows use NONE. */
   repeat?: TodoRepeat;
+  /** Compatibility-only field. New Todo flows use an empty list. */
   tags?: string[];
 };
 
@@ -66,9 +72,7 @@ export type TodoFilters = {
   query: string;
   status: TodoStatusFilter;
   priority: TodoPriorityFilter;
-  tag: string;
   categoryId: string;
-  repeat: "ALL" | TodoRepeat;
   archived: "ACTIVE" | "ARCHIVED" | "ALL";
   duplicatesOnly: boolean;
   date: string;

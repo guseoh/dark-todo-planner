@@ -11,12 +11,6 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
   },
-  "ai": { "binding": "AI" },
-  "vars": {
-    "NOTION_CODE_READING_DATA_SOURCE_ID": "1cf805f3-6996-4da7-a1d4-c29408d7ead4",
-    "NOTION_TECH_BLOG_DATA_SOURCE_ID": "88f6d67b-9267-417a-b5be-477fb9dad1e8",
-    "AI_LEARNING_MODEL": "@cf/meta/llama-3.1-8b-instruct-fast"
-  },
   "d1_databases": [
     {
       "binding": "DB",
@@ -39,12 +33,6 @@
   "env": {
     "preview": {
       "name": "dark-todo-planner-preview",
-      "ai": { "binding": "AI" },
-      "vars": {
-        "NOTION_CODE_READING_DATA_SOURCE_ID": "1cf805f3-6996-4da7-a1d4-c29408d7ead4",
-        "NOTION_TECH_BLOG_DATA_SOURCE_ID": "88f6d67b-9267-417a-b5be-477fb9dad1e8",
-        "AI_LEARNING_MODEL": "@cf/meta/llama-3.1-8b-instruct-fast"
-      },
       "d1_databases": [
         {
           "binding": "DB",
@@ -67,14 +55,8 @@
     },
     "production": {
       "name": "dark-todo-planner",
-      "ai": { "binding": "AI" },
       "triggers": {
-        "crons": ["0 12 * * *", "*/5 * * * *"]
-      },
-      "vars": {
-        "NOTION_CODE_READING_DATA_SOURCE_ID": "1cf805f3-6996-4da7-a1d4-c29408d7ead4",
-        "NOTION_TECH_BLOG_DATA_SOURCE_ID": "88f6d67b-9267-417a-b5be-477fb9dad1e8",
-        "AI_LEARNING_MODEL": "@cf/meta/llama-3.1-8b-instruct-fast"
+        "crons": ["0 12 * * *"]
       },
       "d1_databases": [
         {

@@ -4,7 +4,7 @@ import { todayKey } from "../../lib/date";
 import { parseQuickTodoTitle } from "../../lib/quickAdd";
 import type { Category } from "../../types/category";
 import type { Project } from "../../types/project";
-import type { TodoInput, TodoPlanningState, TodoPriority, TodoRepeat } from "../../types/todo";
+import type { TodoInput, TodoPlanningState, TodoPriority } from "../../types/todo";
 import { TodoDetailFields } from "./TodoDetailFields";
 
 const UNSCHEDULED_DATE = "9999-12-31";
@@ -42,12 +42,9 @@ export function TodoForm({
   const [date, setDate] = useState(defaultDate || todayKey());
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<TodoPriority>("MEDIUM");
-  const [repeat, setRepeat] = useState<TodoRepeat>("NONE");
-  const [tags, setTags] = useState("");
   const [categoryId, setCategoryId] = useState(defaultCategoryId);
   const [projectId, setProjectId] = useState(defaultProjectId);
   const [planningState, setPlanningState] = useState<TodoPlanningState>(defaultPlanningState);
-  const [estimateMinutes, setEstimateMinutes] = useState("");
   const [showDetails, setShowDetails] = useState(!compact);
 
   useEffect(() => { setDate(defaultDate || todayKey()); }, [defaultDate]);
@@ -61,12 +58,9 @@ export function TodoForm({
     setDate(defaultDate || todayKey());
     setDueDate("");
     setPriority("MEDIUM");
-    setRepeat("NONE");
-    setTags("");
     setCategoryId(defaultCategoryId);
     setProjectId(defaultProjectId);
     setPlanningState(defaultPlanningState);
-    setEstimateMinutes("");
     if (compact) setShowDetails(false);
   };
 
@@ -83,10 +77,6 @@ export function TodoForm({
 
     const nextPlanningState = parsed.planningState ?? planningState;
     const nextDate = parsed.date || date || defaultDate || todayKey();
-    const mergedTags = Array.from(new Set([
-      ...tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-      ...parsed.tags,
-    ]));
 
     onAdd({
       title: parsed.title,
@@ -95,11 +85,8 @@ export function TodoForm({
       memo,
       date: nextPlanningState === "SCHEDULED" ? nextDate : UNSCHEDULED_DATE,
       dueDate: parsed.dueDate || dueDate || undefined,
-      estimateMinutes: parsed.estimateMinutes ?? (estimateMinutes ? Number(estimateMinutes) : undefined),
       planningState: nextPlanningState,
       priority: parsed.priority || priority,
-      repeat: parsed.repeat ?? repeat,
-      tags: mergedTags,
     });
     reset();
     window.requestAnimationFrame(() => titleInputRef.current?.focus());
@@ -117,16 +104,29 @@ export function TodoForm({
         ) : null}
         <div className="flex"><button type="submit" className="btn-primary"><Plus size={18} />{submitLabel}</button></div>
       </div>
-      {showSyntaxHint ? <p className="mt-1.5 px-1 text-[11px] text-ink-500">빠른 문법: 내일 · !high · @프로젝트 · +카테고리 · #태그 · 45m/1h · due:내일 · date:2026-08-20 · repeat:weekly · inbox/someday/waiting · 공백 이름은 @{"{"}프로젝트 이름{"}"} / +{"{"}카테고리 이름{"}"}</p> : null}
+      {showSyntaxHint ? <p className="mt-1.5 px-1 text-[11px] text-ink-500">빠른 문법: 내일 · !high · @프로젝트 · +카테고리 · due:내일 · date:2026-08-20 · inbox/someday/waiting · 공백 이름은 @{"{"}프로젝트 이름{"}"} / +{"{"}카테고리 이름{"}"}</p> : null}
       <button type="button" className="mt-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-ink-400 transition hover:bg-ink-900/70 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40" onClick={() => setShowDetails((value) => !value)} aria-expanded={showDetails}>
         <ChevronDown className={`transition ${showDetails ? "rotate-180" : ""}`} size={15} />상세 옵션
       </button>
       {showDetails ? (
         <TodoDetailFields
-          date={date} dueDate={dueDate} priority={priority} categoryId={categoryId} projectId={projectId} planningState={planningState} estimateMinutes={estimateMinutes}
-          repeat={repeat} tags={tags} memo={memo} categories={categories} projects={projects} showCategory={false}
-          onDateChange={setDate} onDueDateChange={setDueDate} onPriorityChange={setPriority} onCategoryChange={setCategoryId} onProjectChange={setProjectId}
-          onPlanningStateChange={setPlanningState} onEstimateMinutesChange={setEstimateMinutes} onRepeatChange={setRepeat} onTagsChange={setTags} onMemoChange={setMemo}
+          date={date}
+          dueDate={dueDate}
+          priority={priority}
+          categoryId={categoryId}
+          projectId={projectId}
+          planningState={planningState}
+          memo={memo}
+          categories={categories}
+          projects={projects}
+          showCategory={false}
+          onDateChange={setDate}
+          onDueDateChange={setDueDate}
+          onPriorityChange={setPriority}
+          onCategoryChange={setCategoryId}
+          onProjectChange={setProjectId}
+          onPlanningStateChange={setPlanningState}
+          onMemoChange={setMemo}
         />
       ) : null}
     </form>

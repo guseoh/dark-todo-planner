@@ -2,7 +2,7 @@ import { and, eq, max, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { Hono } from "hono";
 import { z } from "zod";
-import { categories, milestones, projects, tags, todoTags, todos } from "../db/schema";
+import { categories, milestones, projects, todos } from "../db/schema";
 import { serializeTodos } from "../serializers";
 import type { Bindings, Variables } from "../types";
 import { newId, nowIso, optional } from "../utils";
@@ -35,20 +35,6 @@ const validateLinks = async (
     if (input.projectId && parent.projectId && parent.projectId !== input.projectId) return "하위 Todo는 상위 Todo와 같은 프로젝트에 속해야 합니다.";
   }
   return "";
-};
-
-const syncTags = async (db: ReturnType<typeof drizzle>, userId: string, todoId: string, names: string[]) => {
-  await db.delete(todoTags).where(eq(todoTags.todoId, todoId));
-  const now = nowIso();
-  for (const name of names) {
-    let [tag] = await db.select().from(tags).where(and(eq(tags.userId, userId), eq(tags.name, name))).limit(1);
-    if (!tag) {
-      tag = { id: newId(), userId, name, createdAt: now, updatedAt: now };
-      await db.insert(tags).values(tag).onConflictDoNothing();
-      [tag] = await db.select().from(tags).where(and(eq(tags.userId, userId), eq(tags.name, name))).limit(1);
-    }
-    await db.insert(todoTags).values({ todoId, tagId: tag.id }).onConflictDoNothing();
-  }
 };
 
 offlineTodoRoutes.put("/offline/todos/:id", async (c) => {
@@ -87,12 +73,12 @@ offlineTodoRoutes.put("/offline/todos/:id", async (c) => {
     dueDate: optional(input.dueDate),
     startTime: optional(input.startTime),
     endTime: optional(input.endTime),
-    estimateMinutes: input.estimateMinutes ?? null,
+    estimateMinutes: null,
     planningState: input.planningState,
     workflowStatus: completed ? "DONE" as const : input.workflowStatus,
     priority: input.priority,
     completed,
-    repeat: input.repeat,
+    repeat: "NONE" as const,
     archived: input.archived || false,
     archivedAt: input.archived ? now : null,
     order: input.order ?? (maximum.value ?? -1) + 1,
@@ -100,6 +86,5 @@ offlineTodoRoutes.put("/offline/todos/:id", async (c) => {
     updatedAt: now,
   };
   await db.insert(todos).values(row);
-  await syncTags(db, userId, id, input.tags);
   return c.json({ todo: (await serializeTodos(db, [row]))[0] }, 201);
 });

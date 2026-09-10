@@ -1,40 +1,36 @@
 import { eq, inArray } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
-import { categories, memos, memoProjectLinks, memoTodoLinks, tags, todoTags, todos, topicLinks, topics } from "./db/schema";
+import { categories, memos, memoProjectLinks, memoTodoLinks, topicLinks, topics } from "./db/schema";
 import { parseJsonArray } from "./utils";
 
 export type Db = DrizzleD1Database;
 export const serializeCategory = (row: typeof categories.$inferSelect) => row;
-type TodoRow = Omit<typeof todos.$inferSelect, "referenceUrl" | "referenceLabel"> & { referenceUrl?: string | null; referenceLabel?: string | null };
+type TodoRow = Omit<typeof import("./db/schema").todos.$inferSelect, "referenceUrl" | "referenceLabel"> & { referenceUrl?: string | null; referenceLabel?: string | null };
 
 export async function serializeTodos(db: Db, rows: TodoRow[]) {
   if (!rows.length) return [];
-  const ids = rows.map((row) => row.id);
   const categoryIds = Array.from(new Set(rows.map((row) => row.categoryId).filter((id): id is string => !!id)));
-  const [categoryRows, tagRows] = await Promise.all([
-    categoryIds.length ? db.select().from(categories).where(inArray(categories.id, categoryIds)) : [],
-    db.select({ todoId: todoTags.todoId, name: tags.name }).from(todoTags).innerJoin(tags, eq(todoTags.tagId, tags.id)).where(inArray(todoTags.todoId, ids)),
-  ]);
+  const categoryRows = categoryIds.length ? await db.select().from(categories).where(inArray(categories.id, categoryIds)) : [];
   const categoryMap = new Map(categoryRows.map((row) => [row.id, serializeCategory(row)]));
-  const tagMap = new Map<string, string[]>();
-  tagRows.forEach(({ todoId, name }) => tagMap.set(todoId, [...(tagMap.get(todoId) || []), name]));
-  return rows.map((row) => ({
-    ...row,
-    categoryId: row.categoryId || undefined,
-    projectId: row.projectId || undefined,
-    milestoneId: row.milestoneId || undefined,
-    parentTodoId: row.parentTodoId || undefined,
-    memo: row.memo || undefined,
-    referenceUrl: row.referenceUrl || undefined,
-    referenceLabel: row.referenceLabel || undefined,
-    dueDate: row.dueDate || undefined,
-    startTime: row.startTime || undefined,
-    endTime: row.endTime || undefined,
-    estimateMinutes: row.estimateMinutes || undefined,
-    archivedAt: row.archivedAt || undefined,
-    tags: tagMap.get(row.id) || [],
-    category: row.categoryId ? categoryMap.get(row.categoryId) : undefined,
-  }));
+  return rows.map((row) => {
+    const { estimateMinutes: _estimateMinutes, repeat: _repeat, ...todo } = row;
+    void _estimateMinutes; void _repeat;
+    return {
+      ...todo,
+      categoryId: row.categoryId || undefined,
+      projectId: row.projectId || undefined,
+      milestoneId: row.milestoneId || undefined,
+      parentTodoId: row.parentTodoId || undefined,
+      memo: row.memo || undefined,
+      referenceUrl: row.referenceUrl || undefined,
+      referenceLabel: row.referenceLabel || undefined,
+      dueDate: row.dueDate || undefined,
+      startTime: row.startTime || undefined,
+      endTime: row.endTime || undefined,
+      archivedAt: row.archivedAt || undefined,
+      category: row.categoryId ? categoryMap.get(row.categoryId) : undefined,
+    };
+  });
 }
 
 export const serializeReflection = (row: { sectionsJson: string; content: string | null } & Record<string, unknown>) => ({

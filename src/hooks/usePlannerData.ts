@@ -185,7 +185,6 @@ export function usePlannerData() {
     allTodos: todosState.allTodos,
     archivedTodos: todosState.archivedTodos,
     inboxTodos: todosState.inboxTodos,
-    tagOptions: todosState.tagOptions,
     duplicateTodoIds: todosState.duplicateTodoIds,
     goals: goalsState.goals,
     memos: memosState.memos,

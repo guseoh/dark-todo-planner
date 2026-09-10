@@ -160,13 +160,10 @@ export function PlanningPage({
   const [templatePriority, setTemplatePriority] = useState<TodoPriority>("MEDIUM");
   const [templatePlanningState, setTemplatePlanningState] = useState<TodoPlanningState>("SCHEDULED");
   const [templateProjectId, setTemplateProjectId] = useState("");
-  const [templateEstimate, setTemplateEstimate] = useState("");
-  const [templateTags, setTemplateTags] = useState("");
 
   const createTemplate = async (event: FormEvent) => {
     event.preventDefault();
     if (!templateName.trim() || !templateTitle.trim()) return;
-    const estimateMinutes = Number(templateEstimate);
     const saved = await onAddTaskTemplate({
       name: templateName.trim(),
       todo: {
@@ -176,12 +173,10 @@ export function PlanningPage({
         planningState: templatePlanningState,
         workflowStatus: "TODO",
         projectId: templateProjectId || undefined,
-        estimateMinutes: Number.isFinite(estimateMinutes) && estimateMinutes > 0 ? Math.round(estimateMinutes) : undefined,
-        tags: templateTags.split(",").map((tag) => tag.trim().replace(/^#/, "")).filter(Boolean),
       },
     });
     if (saved) {
-      setTemplateName(""); setTemplateTitle(""); setTemplateMemo(""); setTemplateEstimate(""); setTemplateTags("");
+      setTemplateName(""); setTemplateTitle(""); setTemplateMemo("");
       setMessage("Todo 템플릿을 저장했습니다.");
     }
   };
@@ -320,15 +315,13 @@ export function PlanningPage({
               <select className="field" value={templatePriority} onChange={(event) => setTemplatePriority(event.target.value as TodoPriority)}><option value="HIGH">높음</option><option value="MEDIUM">보통</option><option value="LOW">낮음</option></select>
               <select className="field" value={templatePlanningState} onChange={(event) => setTemplatePlanningState(event.target.value as TodoPlanningState)}><option value="SCHEDULED">Scheduled</option><option value="INBOX">Inbox</option><option value="WAITING">Waiting</option><option value="SOMEDAY">Someday</option></select>
               <select className="field" value={templateProjectId} onChange={(event) => setTemplateProjectId(event.target.value)}><option value="">프로젝트 없음</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select>
-              <input className="field" type="number" min="1" max="1440" value={templateEstimate} onChange={(event) => setTemplateEstimate(event.target.value)} placeholder="예상 시간(분)" />
             </div>
-            <input className="field" value={templateTags} onChange={(event) => setTemplateTags(event.target.value)} placeholder="태그, 쉼표로 구분" />
             <div className="flex justify-end"><button type="submit" className="btn-primary"><Plus size={16} />템플릿 저장</button></div>
           </form>
           <section className="app-card p-4">
             <h3 className="font-bold text-ink-100">저장된 템플릿</h3>
             <div className="mt-3 space-y-2">
-              {taskTemplates.map((template) => <div key={template.id} className="rounded-lg border border-ink-800/80 bg-ink-950/25 p-3"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="font-semibold text-ink-100">{template.name}</p><p className="mt-1 truncate text-sm text-ink-300">{template.todo.title}</p><p className="mt-1 text-xs text-ink-500">{priorityLabels[template.todo.priority || "MEDIUM"]} · {planningLabels[template.todo.planningState || "SCHEDULED"]}{template.todo.estimateMinutes ? ` · ${template.todo.estimateMinutes}분` : ""}</p></div><button type="button" className="icon-btn h-9 w-9 rounded-md" aria-label={`${template.name} 삭제`} onClick={() => void onDeleteTaskTemplate(template.id)}><Trash2 size={14} /></button></div><button type="button" className="btn-secondary mt-3 min-h-9 px-3 py-1 text-xs" onClick={() => void useTemplate(template)}>오늘 Todo 만들기</button></div>)}
+              {taskTemplates.map((template) => <div key={template.id} className="rounded-lg border border-ink-800/80 bg-ink-950/25 p-3"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="font-semibold text-ink-100">{template.name}</p><p className="mt-1 truncate text-sm text-ink-300">{template.todo.title}</p><p className="mt-1 text-xs text-ink-500">{priorityLabels[template.todo.priority || "MEDIUM"]} · {planningLabels[template.todo.planningState || "SCHEDULED"]}</p></div><button type="button" className="icon-btn h-9 w-9 rounded-md" aria-label={`${template.name} 삭제`} onClick={() => void onDeleteTaskTemplate(template.id)}><Trash2 size={14} /></button></div><button type="button" className="btn-secondary mt-3 min-h-9 px-3 py-1 text-xs" onClick={() => void useTemplate(template)}>오늘 Todo 만들기</button></div>)}
               {!taskTemplates.length ? <EmptyState title="저장된 템플릿이 없습니다." description="반복해서 만드는 Todo의 기본값을 템플릿으로 저장해보세요." /> : null}
             </div>
           </section>

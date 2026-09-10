@@ -12,8 +12,6 @@ const todo: Todo = {
   workflowStatus: "TODO",
   priority: "HIGH",
   completed: false,
-  repeat: "NONE",
-  tags: ["공부", "JPA"],
   archived: false,
   createdAt: "2026-08-16T00:00:00.000Z",
   updatedAt: "2026-08-16T00:00:00.000Z",
@@ -24,7 +22,9 @@ describe("planner export", () => {
     const csv = buildTodoCsv([todo], []);
     expect(csv).toContain('"CSV, 제목"');
     expect(csv).toContain('"첫 줄\n둘째 ""줄"""');
-    expect(csv).toContain("공부 JPA");
+    expect(csv).not.toContain("estimateMinutes");
+    expect(csv).not.toContain("repeat");
+    expect(csv).not.toContain("tags");
   });
 
   it("exports projectless and planning queue sections to Markdown", () => {

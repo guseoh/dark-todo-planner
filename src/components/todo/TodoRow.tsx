@@ -1,6 +1,6 @@
 import { Archive, CalendarDays, CheckCircle2, ExternalLink, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { formatKoreanDate, getDdayLabel, todayKey } from "../../lib/date";
-import { isDueSoon, isOverdueByDeadline, repeatLabel } from "../../lib/todo";
+import { isDueSoon, isOverdueByDeadline } from "../../lib/todo";
 import type { Todo } from "../../types/todo";
 import { PriorityBadge } from "./PriorityBadge";
 import { QuickSnoozeMenu } from "./QuickSnoozeMenu";
@@ -69,7 +69,6 @@ export function TodoRow({
             {!(hideMediumPriority && todo.priority === "MEDIUM") ? <PriorityBadge priority={todo.priority} compact /> : null}
             {showCategoryBadge ? <span className="rounded-full border border-ink-700/65 bg-ink-900/65 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-ink-400">{todo.category?.name || "미분류"}</span> : null}
             {todo.planningState !== "SCHEDULED" ? <span className="rounded-full border border-ink-700/65 bg-ink-900/65 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-ink-300">{planningLabel[todo.planningState]}</span> : null}
-            {todo.repeat !== "NONE" ? <span className="rounded-full border border-accent-500/25 bg-accent-500/[0.07] px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-accent-200">{repeatLabel[todo.repeat]}</span> : null}
             {todo.archived ? <span className="rounded-full border border-ink-600 bg-ink-700/35 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-ink-300">보관됨</span> : null}
             {duplicateCandidate ? <span className="rounded-full border border-amber-400/30 bg-amber-400/[0.07] px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-amber-100">중복 후보</span> : null}
           </div>
@@ -78,10 +77,8 @@ export function TodoRow({
             {projectName ? <span className="font-semibold text-ink-400">{projectName}</span> : null}
             {showCategoryMeta ? <span>{todo.category?.name || "미분류"}</span> : null}
             {showDate && todo.planningState === "SCHEDULED" ? <span className="inline-flex items-center gap-1"><CalendarDays size={12} />{formatKoreanDate(todo.date, "M월 d일 E")}</span> : null}
-            {todo.estimateMinutes ? <span>예상 {todo.estimateMinutes}분</span> : null}
             {todo.dueDate ? <span className={`rounded-full border px-1.5 py-0.5 font-semibold ${overdue ? "border-danger/35 bg-danger/[0.07] text-red-100" : dueSoon ? "border-warning/35 bg-warning/[0.07] text-amber-100" : "border-ink-700/65 text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {getDdayLabel(todo.dueDate)}</span> : null}
             {todo.referenceUrl ? <span className="inline-flex items-center gap-1 font-semibold text-accent-200"><ExternalLink size={11} />{todo.referenceLabel || "관련 링크"}</span> : null}
-            {todo.tags.map((tag) => <span key={tag}>#{tag}</span>)}
           </div>
         </button>
 

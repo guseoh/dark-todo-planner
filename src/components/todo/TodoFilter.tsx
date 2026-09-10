@@ -5,7 +5,6 @@ import { TodoFilterBar } from "./TodoFilterBar";
 type TodoFilterProps = {
   filters: TodoFilters;
   onChange: (filters: TodoFilters) => void;
-  tagOptions?: string[];
   categories?: Category[];
 };
 
