@@ -62,7 +62,7 @@ export function CommandPalette({ onClose, onNavigate, onQuickAdd, todos, memos, 
       if (`${item.label} ${item.detail}`.toLocaleLowerCase("ko").includes(keyword)) matches.push(item);
     }
     for (const todo of todos) {
-      const haystack = `${todo.title} ${todo.memo || ""} ${(todo.tags || []).join(" ")} ${todo.category?.name || ""}`.toLocaleLowerCase("ko");
+      const haystack = `${todo.title} ${todo.memo || ""} ${todo.category?.name || ""}`.toLocaleLowerCase("ko");
       if (haystack.includes(keyword)) matches.push({ id: `todo-${todo.id}`, label: todo.title, detail: todo.dueDate ? `마감 ${todo.dueDate}` : todo.date, view: "all", kind: "Todo" });
     }
     for (const memo of memos) {
