@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { addDays } from "date-fns";
-import { BarChart3, Clock3, Flame, ListChecks, RefreshCw, TimerReset } from "lucide-react";
-import { EstimateAccuracyPanel } from "../components/insights/EstimateAccuracyPanel";
+import { BarChart3, Flame, ListChecks, RefreshCw, TimerReset } from "lucide-react";
 import { ProgressBar } from "../components/common/ProgressBar";
 import { api } from "../lib/api/client";
 import { formatKoreanDate, parseDateKey, todayKey, toDateKey } from "../lib/date";
@@ -99,10 +98,9 @@ export function InsightsPage({ todos, projects }: InsightsPageProps) {
         </div>
       ) : null}
 
-      <section className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4" aria-label="기간 요약">
+      <section className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3" aria-label="기간 요약">
         <MetricCard icon={<BarChart3 size={14} />} label={`${periodDays}일 완료율`} value={summary.periodTodoTotal ? `${summary.completionRate}%` : "—"} detail={summary.periodTodoTotal ? `완료 ${summary.periodTodoCompleted} / ${summary.periodTodoTotal}` : "기간에 계획된 Todo가 없습니다."} />
         <MetricCard icon={<ListChecks size={14} />} label="현재 밀린 Todo" value={`${summary.overdueTotal}개`} detail="오늘 이전 실행일의 현재 미완료 Todo" />
-        <MetricCard icon={<Clock3 size={14} />} label={`${periodDays}일 예상 작업량`} value={formatInsightMinutes(summary.estimatedMinutes)} detail={`예상 시간 입력 ${summary.estimatedTodoCount} / ${summary.periodTodoTotal}개 Todo`} />
         <MetricCard icon={<Flame size={14} />} label={`${periodDays}일 실제 집중`} value={formatInsightMinutes(summary.focusMinutes)} detail={`완료한 집중 세션 ${summary.focusSessionCount}회`} />
       </section>
 
@@ -131,7 +129,6 @@ export function InsightsPage({ todos, projects }: InsightsPageProps) {
                   <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-ink-500">
                     <span>완료율 {project.completionRate}%</span>
                     {project.overdue ? <span className="font-semibold text-amber-200">밀림 {project.overdue}개</span> : <span>밀림 없음</span>}
-                    {project.remainingEstimateMinutes ? <span>남은 예상 {formatInsightMinutes(project.remainingEstimateMinutes)}</span> : null}
                   </div>
                 </article>
               ))}
@@ -157,8 +154,6 @@ export function InsightsPage({ todos, projects }: InsightsPageProps) {
           </div>
         </section>
       </div>
-
-      <EstimateAccuracyPanel accuracy={summary.estimateAccuracy} />
 
       <section className="rounded-lg border border-ink-700/60 bg-ink-900/45 p-3.5">
         <div className="mb-3">
