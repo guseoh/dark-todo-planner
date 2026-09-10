@@ -146,6 +146,23 @@ export function useProjects() {
     }
   }, []);
 
+  const deleteProject = useCallback(async (id: string) => {
+    setSaving(true);
+    try {
+      await api(`/api/projects/${id}`, { method: "DELETE" });
+      setProjects((current) => current.filter((project) => project.id !== id));
+      setMilestones((current) => current.filter((milestone) => milestone.projectId !== id));
+      setDecisions((current) => current.filter((decision) => decision.projectId !== id));
+      setError("");
+      return true;
+    } catch (err) {
+      setError(getMessage(err));
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }, []);
+
   const addMilestone = useCallback(async (input: MilestoneInput) => {
     setSaving(true);
     try {
@@ -278,6 +295,7 @@ export function useProjects() {
     loadProjects,
     addProject,
     updateProject,
+    deleteProject,
     duplicateProject,
     archiveProject: (id: string) => setArchived(id, true),
     unarchiveProject: (id: string) => setArchived(id, false),
