@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { FolderKanban, Link2, ListPlus, Pencil, Pin, PinOff, Plus, Save, Search, Trash2, X } from "lucide-react";
 import { EmptyState } from "../components/common/EmptyState";
 import { Modal } from "../components/common/Modal";
@@ -66,6 +66,8 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, todos, projects
   const [linkQuery, setLinkQuery] = useState("");
   const [error, setError] = useState("");
   const [draftSavedAt, setDraftSavedAt] = useState(initialDraft?.savedAt || 0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const normalizedLinkQuery = linkQuery.trim().toLocaleLowerCase("ko-KR");
   const visibleTodos = todos.filter((todo) => !todo.archived && (!normalizedLinkQuery || todo.title.toLocaleLowerCase("ko-KR").includes(normalizedLinkQuery)));
   const visibleProjects = projects.filter((project) => !normalizedLinkQuery || project.name.toLocaleLowerCase("ko-KR").includes(normalizedLinkQuery));
@@ -85,8 +87,13 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, todos, projects
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (submittingRef.current) return;
+
     const contentValue = content.trim();
     if (!contentValue) { setError("메모 내용을 입력해주세요."); return; }
+
+    submittingRef.current = true;
+    setIsSubmitting(true);
     try {
       const saved = await onSubmit({ title: title.trim() || undefined, content: contentValue, color, pinned });
       if (!saved) { setError("메모를 저장하지 못했습니다."); return; }
@@ -99,6 +106,9 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, todos, projects
       onCancel?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "메모를 저장하지 못했습니다.");
+    } finally {
+      submittingRef.current = false;
+      setIsSubmitting(false);
     }
   };
 
@@ -150,8 +160,8 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, todos, projects
         {draftSavedAt ? <p className="text-[10px] text-ink-500" title="브라우저 로컬 초안입니다. 저장 버튼을 누르면 서버에 반영됩니다.">초안 저장 · {new Date(draftSavedAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</p> : null}
       </div>
       <div className="flex flex-wrap justify-end gap-2 border-t border-ink-700/60 pt-3">
-        {onCancel ? <button type="button" className="btn-secondary" onClick={onCancel}><X size={15} />취소</button> : null}
-        <button type="submit" className="btn-primary">{initial ? <Save size={15} /> : <Plus size={15} />}{submitLabel}</button>
+        {onCancel ? <button type="button" className="btn-secondary" onClick={onCancel} disabled={isSubmitting}><X size={15} />취소</button> : null}
+        <button type="submit" className="btn-primary" disabled={isSubmitting} aria-busy={isSubmitting}>{initial ? <Save size={15} /> : <Plus size={15} />}{isSubmitting ? "저장 중..." : submitLabel}</button>
       </div>
     </form>
   );
