@@ -19,6 +19,7 @@ export function useMemos() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [pendingDelete, setPendingDelete] = useState<PendingMemoDelete | null>(null);
+  const addMemoRequestRef = useRef<Promise<Memo> | null>(null);
   const deleteTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const deletedSnapshotsRef = useRef(new Map<string, Memo>());
 
@@ -39,20 +40,28 @@ export function useMemos() {
     }
   }, []);
 
-  const addMemo = useCallback(async (input: MemoInput) => {
+  const addMemo = useCallback((input: MemoInput) => {
+    if (addMemoRequestRef.current) return addMemoRequestRef.current;
+
     setSaving(true);
-    try {
-      const result = await api<{ memo: Memo }>("/api/memos", { method: "POST", ...jsonBody(input) });
-      const memo = normalizeMemo(result.memo);
-      setMemos((current) => sortMemos([memo, ...current]));
-      setError("");
-      return memo;
-    } catch (err) {
-      setError(getMessage(err));
-      throw err;
-    } finally {
-      setSaving(false);
-    }
+    const request = (async () => {
+      try {
+        const result = await api<{ memo: Memo }>("/api/memos", { method: "POST", ...jsonBody(input) });
+        const memo = normalizeMemo(result.memo);
+        setMemos((current) => sortMemos([memo, ...current]));
+        setError("");
+        return memo;
+      } catch (err) {
+        setError(getMessage(err));
+        throw err;
+      } finally {
+        setSaving(false);
+        addMemoRequestRef.current = null;
+      }
+    })();
+
+    addMemoRequestRef.current = request;
+    return request;
   }, []);
 
   const updateMemo = useCallback(async (id: string, input: MemoInput) => {
