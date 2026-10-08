@@ -45,7 +45,7 @@ jobs:
           fi
           node --input-type=module -e 'import { parseD1BackupKey } from "./scripts/d1-backup-crypto.mjs"; parseD1BackupKey(process.env.D1_BACKUP_KEY_B64);'
       - name: Verify authenticated encryption implementation
-        run: node --test scripts/d1-backup-crypto.test.mjs
+        run: node --test scripts/d1-backup-crypto.check.mjs
 
       - name: Export Production D1 (read-only)
         env:
