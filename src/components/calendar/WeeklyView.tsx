@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarCheck2, ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { CalendarCheck2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus } from "lucide-react";
+import { addWeeks } from "date-fns";
 import { calculateRate, formatCompletionRate } from "../../lib/todo";
-import { formatKoreanDate, getWeekDays, toDateKey, todayKey } from "../../lib/date";
+import { formatKoreanDate, getWeekDays, parseDateKey, toDateKey, todayKey } from "../../lib/date";
 import type { Todo, TodoInput } from "../../types/todo";
 import type { Category } from "../../types/category";
 import type { Goal } from "../../types/goal";
@@ -11,16 +12,15 @@ import { TodoEditModal } from "../todo/TodoEditModal";
 import { TodoRow } from "../todo/TodoRow";
 
 type WeeklyViewProps = {
-  todos: Todo[];
   getTodosByDate: (date: string) => Todo[];
   onAdd: (todo: TodoInput) => Promise<Todo | undefined> | Todo | undefined;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
-  onAddGoal: (input: Partial<Goal> & { title: string }) => void;
-  onUpdateGoal: (id: string, updates: Partial<Omit<Goal, "id" | "createdAt">>) => void;
-  onToggleGoal: (id: string) => void;
-  onDeleteGoal: (id: string) => void;
+  onAddGoal: (input: Partial<Goal> & { title: string }) => Promise<Goal | undefined>;
+  onUpdateGoal: (id: string, updates: Partial<Omit<Goal, "id" | "createdAt">>) => Promise<Goal | undefined>;
+  onToggleGoal: (id: string) => Promise<boolean>;
+  onDeleteGoal: (id: string) => Promise<boolean>;
   categories?: Category[];
   goals?: Goal[];
 };
@@ -32,7 +32,6 @@ const dayLabelTone = (index: number) => {
 };
 
 export function WeeklyView({
-  todos,
   getTodosByDate,
   onAdd,
   onToggle,
@@ -45,21 +44,36 @@ export function WeeklyView({
   categories = [],
   goals = [],
 }: WeeklyViewProps) {
-  const weekDays = useMemo(() => getWeekDays(), []);
-  const weekDateKeys = useMemo(() => weekDays.map(toDateKey), [weekDays]);
+  // The 03:00 planner-day rollover triggers a rerender in App; derive visible
+  // dates from the current planner day rather than freezing them at mount.
   const today = todayKey();
+  const [weekOffset, setWeekOffset] = useState(0);
+  const weekDays = useMemo(
+    () => getWeekDays(addWeeks(parseDateKey(today), weekOffset)),
+    [today, weekOffset],
+  );
+  const weekDateKeys = useMemo(() => weekDays.map(toDateKey), [weekDays]);
   const weekStart = weekDateKeys[0];
   const weekEnd = weekDateKeys[6];
-  const [selectedDate, setSelectedDate] = useState(() => {
-    if (weekDateKeys.includes(today)) return today;
-    return weekDateKeys.find((date) => getTodosByDate(date).length > 0) || weekStart;
-  });
+  const [selectedDate, setSelectedDate] = useState(today);
+  const weekTodos = useMemo(() => weekDateKeys.flatMap((date) => getTodosByDate(date)), [weekDateKeys, getTodosByDate]);
+
+  const moveWeek = (delta: number) => {
+    const offset = weekOffset + delta;
+    const dates = getWeekDays(addWeeks(parseDateKey(today), offset));
+    setWeekOffset(offset);
+    setSelectedDate(offset === 0 ? today : toDateKey(dates[0]));
+  };
+  const backToThisWeek = () => {
+    setWeekOffset(0);
+    setSelectedDate(today);
+  };
   const [addingDate, setAddingDate] = useState<string | null>(null);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
 
-  const weekRate = calculateRate(todos);
-  const weekActiveCount = todos.filter((todo) => !todo.completed).length;
+  const weekRate = calculateRate(weekTodos);
+  const weekActiveCount = weekTodos.filter((todo) => !todo.completed).length;
   const weeklyGoals = goals.filter(
     (goal) =>
       goal.type === "WEEKLY" &&
@@ -87,6 +101,10 @@ export function WeeklyView({
   });
 
   useEffect(() => {
+    if (!weekDateKeys.includes(selectedDate)) setSelectedDate(weekOffset === 0 ? today : weekStart);
+  }, [selectedDate, today, weekDateKeys, weekOffset, weekStart]);
+
+  useEffect(() => {
     setAddingDate(null);
     setShowCompleted(false);
   }, [selectedDate]);
@@ -95,25 +113,31 @@ export function WeeklyView({
     <div className="space-y-4">
       <section className="app-card px-3.5 py-3" aria-labelledby="week-summary-title">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-[11px] font-semibold text-ink-500">이번 주</p>
-            <h3 id="week-summary-title" className="mt-0.5 text-base font-bold text-ink-100">
-              {formatKoreanDate(weekStart, "M.d")} ~ {formatKoreanDate(weekEnd, "M.d")}
-            </h3>
+          <div className="flex flex-wrap items-center gap-3">
+            <div>
+              <p className="text-xs font-semibold text-ink-400">{weekOffset === 0 ? "이번 주" : "선택한 주"}</p>
+              <h3 id="week-summary-title" className="mt-0.5 text-base font-bold text-ink-100">
+                {formatKoreanDate(weekStart, "M.d")} ~ {formatKoreanDate(weekEnd, "M.d")}
+              </h3>
+            </div>
+            <div className="flex items-center gap-1" aria-label="주간 이동">
+              <button type="button" className="icon-btn min-h-9 min-w-9" onClick={() => moveWeek(-1)} aria-label="이전 주" title="이전 주"><ChevronLeft size={17} /></button>
+              <button type="button" className="icon-btn min-h-9 min-w-9" onClick={() => moveWeek(1)} aria-label="다음 주" title="다음 주"><ChevronRight size={17} /></button>
+              {weekOffset !== 0 ? <button type="button" className="btn-secondary min-h-9 px-2 text-xs" onClick={backToThisWeek}>이번 주</button> : null}
+            </div>
           </div>
           <dl className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs">
-            <div className="flex items-center gap-1.5"><dt className="text-ink-500">Todo</dt><dd className="font-bold text-ink-100">{todos.length}</dd></div>
+            <div className="flex items-center gap-1.5"><dt className="text-ink-500">Todo</dt><dd className="font-bold text-ink-100">{weekTodos.length}</dd></div>
             <div className="flex items-center gap-1.5"><dt className="text-ink-500">미완료</dt><dd className="font-bold text-ink-100">{weekActiveCount}</dd></div>
-            <div className="flex items-center gap-1.5"><dt className="text-ink-500">완료율</dt><dd className="font-bold text-accent-300">{formatCompletionRate(todos.length, weekRate)}</dd></div>
+            <div className="flex items-center gap-1.5"><dt className="text-ink-500">완료율</dt><dd className="font-bold text-accent-300">{formatCompletionRate(weekTodos.length, weekRate)}</dd></div>
             <div className="flex items-center gap-1.5"><dt className="text-ink-500">주간 목표</dt><dd className="font-bold text-ink-300">{completedWeeklyGoals}/{weeklyGoals.length}</dd></div>
           </dl>
         </div>
       </section>
 
-      <div className="mx-auto w-full max-w-[960px]">
+      <div className="w-full">
         <GoalChecklist
-          title="이번 주 목표"
-          subtitle={`Todo 일정과 분리된 주간 단위 목표 · ${formatKoreanDate(weekStart, "yyyy.MM.dd")} ~ ${formatKoreanDate(weekEnd, "yyyy.MM.dd")}`}
+          title={weekOffset === 0 ? "이번 주 목표" : "선택한 주 목표"}
           goals={weeklyGoals}
           type="WEEKLY"
           addDefaults={{ weekStartDate: weekStart, weekEndDate: weekEnd, dueDate: weekEnd }}
