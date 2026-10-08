@@ -34,8 +34,17 @@ export function BackupRestoreCard({ onRestored }: { onRestored: () => Promise<vo
       } finally {
         window.setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
-      setSafetyBackupDownloaded(true);
-      setMessage("전체 JSON 백업 다운로드를 요청했습니다. 실제 파일이 저장됐는지 확인해주세요.");
+      // Always allow downloading the raw export for safekeeping, but never
+      // represent a malformed snapshot as safe to use for replacement.
+      try {
+        validateRestorableBackup(data);
+        setSafetyBackupDownloaded(true);
+        setMessage("JSON 백업 다운로드를 요청했습니다. 파일이 실제 저장됐는지 확인해주세요.");
+      } catch (validationError) {
+        setError(validationError instanceof Error
+          ? `JSON 파일은 다운로드했지만 이 파일로 전체 복원할 수 없습니다: ${validationError.message}. D1 SQL 백업을 사용하세요.`
+          : "JSON 내보내기 검증에 실패했습니다. D1 SQL 백업을 사용하세요.");
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "백업 생성에 실패했습니다.");
     } finally {
