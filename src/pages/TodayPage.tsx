@@ -135,9 +135,13 @@ export function TodayPage({
   const lockInlineCategory = activeCategoryId !== "all";
 
   useEffect(() => {
+    if (!hasTodayTodos && activeCategoryId !== "all") {
+      setActiveCategoryId("all");
+      return;
+    }
     if (activeCategoryId === "all" || activeCategoryId === "uncategorized") return;
     if (!categories.some((category) => category.id === activeCategoryId)) setActiveCategoryId("all");
-  }, [activeCategoryId, categories]);
+  }, [activeCategoryId, categories, hasTodayTodos]);
 
   useEffect(() => {
     setShowCompleted(false);
@@ -239,40 +243,40 @@ export function TodayPage({
         </section>
       ) : null}
 
-      <section className="space-y-3" aria-labelledby="today-todo-list-title">
+      <section className="space-y-3" aria-label="오늘 Todo">
         {hasTodayTodos ? (
           <div className="sticky top-[60px] z-20 -mx-1 rounded-lg border border-ink-800/60 bg-ink-950/90 px-1 py-1.5 backdrop-blur-xl">
-          <div className="flex items-center gap-2">
-            <div className="min-w-0 flex-1 overflow-x-auto pb-0.5">
-              <div className="flex w-max gap-1.5 pr-2" aria-label="오늘 Todo 카테고리 필터">
-                <button type="button" className={`${categoryButtonClass} ${activeCategoryId === "all" ? activeCategoryButtonClass : idleCategoryButtonClass}`} onClick={() => setActiveCategoryId("all")}>
-                  전체 <span className="opacity-75">{todayTodos.length}</span>
-                </button>
-                {visibleCategories.map((category) => (
-                  <button key={category.id} type="button" className={`${categoryButtonClass} ${activeCategoryId === category.id ? activeCategoryButtonClass : idleCategoryButtonClass}`} onClick={() => setActiveCategoryId(category.id)} title={category.description || category.name}>
-                    <IconRenderer
-                      icon={category.icon}
-                      color={category.color || "#0b72d7"}
-                      name={category.name}
-                      className={category.icon ? "h-5 w-5 border-0 bg-transparent" : "h-2 w-2"}
-                      iconClassName="h-3.5 w-3.5"
-                      fallback="dot"
-                    />
-                    {category.name}
-                    <span className="opacity-75">{categoryCounts.get(category.id) || 0}</span>
+            <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1 overflow-x-auto pb-0.5">
+                <div className="flex w-max gap-1.5 pr-2" aria-label="오늘 Todo 카테고리 필터">
+                  <button type="button" className={`${categoryButtonClass} ${activeCategoryId === "all" ? activeCategoryButtonClass : idleCategoryButtonClass}`} onClick={() => setActiveCategoryId("all")}>
+                    전체 <span className="opacity-75">{todayTodos.length}</span>
                   </button>
-                ))}
-                {uncategorizedCount > 0 ? (
-                  <button type="button" className={`${categoryButtonClass} ${activeCategoryId === "uncategorized" ? activeCategoryButtonClass : idleCategoryButtonClass}`} onClick={() => setActiveCategoryId("uncategorized")}>
-                    미분류 <span className="opacity-75">{uncategorizedCount}</span>
-                  </button>
-                ) : null}
+                  {visibleCategories.map((category) => (
+                    <button key={category.id} type="button" className={`${categoryButtonClass} ${activeCategoryId === category.id ? activeCategoryButtonClass : idleCategoryButtonClass}`} onClick={() => setActiveCategoryId(category.id)} title={category.description || category.name}>
+                      <IconRenderer
+                        icon={category.icon}
+                        color={category.color || "#0b72d7"}
+                        name={category.name}
+                        className={category.icon ? "h-5 w-5 border-0 bg-transparent" : "h-2 w-2"}
+                        iconClassName="h-3.5 w-3.5"
+                        fallback="dot"
+                      />
+                      {category.name}
+                      <span className="opacity-75">{categoryCounts.get(category.id) || 0}</span>
+                    </button>
+                  ))}
+                  {uncategorizedCount > 0 ? (
+                    <button type="button" className={`${categoryButtonClass} ${activeCategoryId === "uncategorized" ? activeCategoryButtonClass : idleCategoryButtonClass}`} onClick={() => setActiveCategoryId("uncategorized")}>
+                      미분류 <span className="opacity-75">{uncategorizedCount}</span>
+                    </button>
+                  ) : null}
+                </div>
               </div>
+              <button type="button" className="icon-btn h-9 w-9 shrink-0" onClick={() => setShowCategoryManager(true)} title="카테고리 관리" aria-label="카테고리 관리">
+                <Settings2 size={15} />
+              </button>
             </div>
-            <button type="button" className="icon-btn h-9 w-9 shrink-0" onClick={() => setShowCategoryManager(true)} title="카테고리 관리" aria-label="카테고리 관리">
-              <Settings2 size={15} />
-            </button>
-          </div>
           </div>
         ) : (
           <div className="flex justify-end">
