@@ -42,10 +42,50 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --omit=dev
 
+  smoke-local-api:
+    name: Local Worker + D1 API smoke
+    needs: test-build-audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build assets
+        run: npm run build
+
+      - name: Initialize isolated local D1
+        run: npm run db:migrate:local
+
+      - name: Generate ephemeral smoke credentials
+        run: node scripts/prepare-smoke-auth.mjs
+
+      - name: Start local Worker
+        run: |
+          npx wrangler dev --local --port 8787 > /tmp/dtp-local-smoke.log 2>&1 &
+          echo $! > /tmp/dtp-local-smoke.pid
+
+      - name: Exercise authenticated CRUD and recovery
+        run: node scripts/smoke-local-api.mjs
+
+      - name: Report Worker startup errors if failed
+        if: failure()
+        run: |
+          echo "Local Worker error diagnostics (last 80 lines):"
+          tail -n 80 /tmp/dtp-local-smoke.log || true
+
   deploy-production:
     name: Deploy production
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    needs: test-build-audit
+    needs: [test-build-audit, smoke-local-api]
     runs-on: ubuntu-latest
     environment:
       name: production
