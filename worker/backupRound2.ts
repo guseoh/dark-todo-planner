@@ -58,9 +58,20 @@ export async function suspendAutoArchive(env: Bindings, userId: string): Promise
 }
 export async function restoreSuspendedAutoArchive(env: Bindings, userId: string, previous: boolean | null) { if (previous) await env.DB.prepare("UPDATE planner_settings SET auto_archive_completed = 1 WHERE user_id = ?").bind(userId).run(); }
 
-export async function restoreRound2Backup(env: Bindings, userId: string, input: unknown) {
+export async function restoreRound2Backup(
+  env: Bindings,
+  userId: string,
+  input: unknown,
+  pending?: D1PreparedStatement[],
+) {
   const { data } = normalizeBackupPayload(input); const now = nowIso();
-  const [todoIds, categoryIds, projectIds, milestoneIds] = await Promise.all([ids(env, "todos", userId), ids(env, "categories", userId), ids(env, "projects", userId), ids(env, "milestones", userId)]);
+  // Pending restore is planned BEFORE the core rows exist in D1.
+  // Use the validated backup's IDs rather than stale current DB references.
+  const referenceIds = (key: "todos" | "categories" | "projects" | "milestones") =>
+    new Set((data[key] || []).map((item) => String(item.id)));
+  const [todoIds, categoryIds, projectIds, milestoneIds] = pending
+    ? [referenceIds("todos"), referenceIds("categories"), referenceIds("projects"), referenceIds("milestones")]
+    : await Promise.all([ids(env, "todos", userId), ids(env, "categories", userId), ids(env, "projects", userId), ids(env, "milestones", userId)]);
   const imported = { dailyPlans: 0, weeklyReviews: 0, savedViews: 0, taskTemplates: 0, focusSessions: 0, timerSettings: 0, timeBlocks: 0, plannerSettings: 0, todoTrash: 0 };
   const warnings: string[] = [];
   const statements: D1PreparedStatement[] = [
@@ -110,8 +121,12 @@ export async function restoreRound2Backup(env: Bindings, userId: string, input: 
   for (const item of data.todoTrash || []) { const originalTodoId = string(item.originalTodoId); if (!item.id || !originalTodoId || !item.title || !item.deletedAt || trashKeys.has(originalTodoId)) continue; trashKeys.add(originalTodoId); trashRows.push([String(item.id), userId, originalTodoId, String(item.title), JSON.stringify(object(item.payload)), String(item.deletedAt)]); imported.todoTrash++; }
   addBulkInsert(statements, env, "todo_trash", ["id", "user_id", "original_todo_id", "title", "payload_json", "deleted_at"], trashRows);
 
-  if (statements.length > MAX_STATEMENTS) throw new Error(`v${BACKUP_VERSION} 확장 데이터 복원에 필요한 쿼리 ${statements.length}개가 안전 한도 ${MAX_STATEMENTS}개를 초과합니다.`);
-  await env.DB.batch(statements); return { imported, warnings };
+  if (pending) pending.push(...statements);
+  else {
+    if (statements.length > MAX_STATEMENTS) throw new Error(`v${BACKUP_VERSION} 확장 데이터 복원에 필요한 쿼리 ${statements.length}개가 안전 한도 ${MAX_STATEMENTS}개를 초과합니다.`);
+    await env.DB.batch(statements);
+  }
+  return { imported, warnings };
 }
 
 export const mergeRound2Backup = (base: Item, round2: Awaited<ReturnType<typeof exportRound2Backup>>) => ({ ...base, version: BACKUP_VERSION, ...round2 });

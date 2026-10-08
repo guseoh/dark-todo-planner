@@ -12,6 +12,7 @@ import {
   verifySessionToken,
 } from "./auth";
 import { backupV9ExportMiddleware, backupV9ImportMiddleware } from "./backupMiddleware";
+import { atomicBackupRoutes } from "./atomicBackupImport";
 import { requireSafeFullBackupImport } from "./backupRestoreGuard";
 import { todoReferenceTrashRestoreMiddleware } from "./referenceLinkMiddleware";
 import { runDiscordIncompleteTodoReminder } from "./reminders/incompleteTodoReminder";
@@ -99,10 +100,8 @@ app.get("/api/auth/session", async (c) => {
 // Full JSON replacement is blocked before any middleware can mutate D1.
 app.use("/api/backup/import", requireSafeFullBackupImport);
 app.use("/api/backup/export", step4BackupExportMiddleware);
-app.use("/api/backup/import", step4BackupImportMiddleware);
 app.use("/api/migrate/local-storage", step4BackupImportMiddleware);
 app.use("/api/backup/export", backupV9ExportMiddleware);
-app.use("/api/backup/import", backupV9ImportMiddleware);
 app.use("/api/migrate/local-storage", backupV9ImportMiddleware);
 
 app.route("/api", todoCompletionRoutes);
@@ -119,6 +118,7 @@ app.route("/api", routineRoutes);
 app.route("/api", scratchpadRoutes);
 app.route("/api", trashRoutes);
 app.route("/api", libraryRoutes);
+app.route("/api", atomicBackupRoutes);
 app.route("/api", backupRoutes);
 
 app.notFound((c) => c.req.path.startsWith("/api/") ? c.json({ message: "API 경로를 찾을 수 없습니다." }, 404) : c.env.ASSETS.fetch(c.req.raw));
