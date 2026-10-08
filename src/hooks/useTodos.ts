@@ -5,12 +5,14 @@ import { api, apiAllPages, jsonBody } from "../lib/api/client";
 import { getMonthGrid, getPlannerToday, getWeekDays, todayKey, toDateKey } from "../lib/date";
 import {
   flushTodoMutationQueue,
+  listTodoMutations,
   OFFLINE_TODO_SYNC_REQUEST,
   queueTodoMutation,
   shouldQueueTodoMutation,
   type QueuedTodoMutation,
 } from "../lib/offlineTodoQueue";
 import { calculateRate, priorityRank, todoOccursOnDate } from "../lib/todo";
+import { replayQueuedTodoMutations } from "../lib/offlineTodoOverlay";
 import {
   dedupeTodosById,
   getDuplicateTodoIds,
@@ -119,9 +121,12 @@ export function useTodos() {
           planningState: todo.planningState || "SCHEDULED",
           workflowStatus: todo.workflowStatus || (todo.completed ? "DONE" : "TODO"),
         }));
-      setAllTodos(loaded);
+      // The network snapshot can lag behind IndexedDB mutations awaiting replay.
+      // Keep pending and FAILED edits visible rather than overwriting them with stale server state.
+      const visible = replayQueuedTodoMutations(loaded, await listTodoMutations());
+      setAllTodos(visible);
       setError("");
-      return loaded;
+      return visible;
     } catch (err) {
       setError(getMessage(err));
       throw err;
