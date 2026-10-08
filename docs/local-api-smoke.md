@@ -6,6 +6,6 @@ CI에서는 Production에 데이터를 쓰지 않습니다. `Local Worker + D1 A
 
 - `scripts/prepare-smoke-auth.mjs`: CI에서 일회용 계정·비밀번호·세션 Secret을 생성합니다. Production 인증 정보는 사용하지 않습니다.
 - `scripts/smoke-local-api.mjs`: loopback IP/호스트 이외의 URL을 거부합니다. Production/Preview를 대상으로는 실행할 수 없습니다.
-- `deploy-production` 잡은 **타입·단위 테스트/빌드 + 로컬 Worker·D1 API smoke 양쪽이 통과해야** 시작합니다.
+- `deploy-production` 잡은 **타입·단위 테스트/백업 암호화 검증/빌드 + 로컬 Worker·D1 API smoke 양쪽이 통과해야** 시작합니다.
 - 이 검증은 **HTTP API를 통한 통합/E2E 스모크**입니다. 로그인된 React 화면을 실제 Chromium에서 클릭하는 브라우저 E2E를 대체한다고 주장하지 않습니다.
 - 정상화 및 D1 Time Travel 복구 훈련은 [D1 백업·복구 Runbook](runbook/d1-backup-restore.md)의 Preview 전용 절차에 따릅니다.

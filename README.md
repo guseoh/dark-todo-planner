@@ -25,6 +25,7 @@
 - **Discord:** Production에서 한국 시간 매일 오후 9시, 설정에 따라 미완료·마감 Todo의 일괄 리마인더를 전송합니다. 웹훅 Secret이 구성된 경우에만 발송합니다.
 - **Calendar:** ICS 파일 내보내기를 지원합니다. 외부 캘린더와의 양방향 동기화는 지원하지 않습니다.
 - **Cloudflare:** Workers와 D1에 저장하고 GitHub Actions로 Production을 배포합니다.
+- **D1 백업:** 키 설정 후 월요일 오전 3시(한국 시간) 주간 Production SQL export를 AES-256-GCM으로 암호화해 GitHub Actions 산출물로 30일간 보관합니다. 복원은 자동 실행하지 않습니다.
 
 **현재 미지원:** 개별 Todo의 특정 시각·5분 주기 알림, Notion 자동 동기화, Workers AI 학습 가이드, Planning/Focus/Insights 화면. 일부 코드·스키마는 향후 검토와 백업 호환성을 위해 남아 있으며 현재 앱에서 접근할 수 없습니다.
 
@@ -65,6 +66,6 @@ npm run build
 npm audit --omit=dev
 ```
 
-PR에서는 타입 검사·테스트·빌드·의존성 감사를 진행합니다. **`main`에 push 또는 PR 병합하면** GitHub Actions가 위 검증 통과 후 **Production D1 migration → Worker 배포 → /api/health 확인**을 자동으로 수행합니다. Preview 브라우저 테스트는 현재 필수 CI 단계가 아닙니다.
+PR에서는 타입 검사·단위 테스트·백업 암호화 검증·빌드·의존성 감사와 **로컬 Worker/D1 HTTP 스모크 테스트**를 진행합니다. **`main`에 push 또는 PR 병합하면** 모두 통과한 뒤 **Production D1 migration → Worker 배포 → /api/health 확인**을 자동으로 수행합니다. Chromium 브라우저 E2E와 Preview 복원 훈련은 현재 필수 CI 단계가 아닙니다.
 
 실제 운영 절차와 데이터 복구 주의사항은 [배포·롤백 Runbook](docs/runbook/deploy-rollback.md) 및 [D1 백업 Runbook](docs/runbook/d1-backup-restore.md)을 참고하세요.

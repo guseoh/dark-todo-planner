@@ -4,6 +4,40 @@
 
 > **경고:** Time Travel restore는 대상 데이터베이스를 제자리에서 덮어쓰고 진행 중인 쿼리와 트랜잭션을 취소합니다. 복구 훈련은 Preview에서만 수행합니다. Production에는 export만 수행하고 npm script나 CI에서 restore를 실행하지 않습니다.
 
+## 암호화된 주간 Production D1 백업
+
+[Encrypted Production D1 Backup](../../.github/workflows/d1-backup.yml)은 매주 **월요일 오전 3시(한국 시간)** 및 수동 `workflow_dispatch`로 실행됩니다. `wrangler d1 export --remote`를 통해 **읽기 전용** SQL export를 만들고, AES-256-GCM으로 인증 암호화한 뒤 평문 SQL 파일을 CI 실행 환경에서 삭제합니다. **GitHub Actions에는 `.d1enc` 암호문만 업로드**하며, 산출물 보존 기간은 30일입니다.
+
+### 반드시 필요한 Secret
+
+기존 Cloudflare API Token과 Account ID 외에 GitHub의 `production` Environment Secret **`D1_BACKUP_KEY_B64`**가 필요합니다. 이 값은 CSPRNG로 생성한 랜덤 **32바이트 키를 Base64**로 인코딩한 값이어야 하며 GitHub Secret 설정과 별도로 오프라인 보관해야 합니다. 채팅이나 저장소에는 절대 붙여넣지 않습니다.
+
+Windows PowerShell 5에서도 다음 명령으로 생성할 수 있습니다.
+
+```powershell
+$bytes = New-Object byte[] 32
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+try { $rng.GetBytes($bytes) } finally { $rng.Dispose() }
+[Convert]::ToBase64String($bytes)
+```
+
+이 키를 `Settings → Environments → production → Environment secrets`에 등록하고, 출력값 자체는 안전한 별도 저장소에 보관하세요. **키가 없거나 잘못된 경우 자동 백업이 실패하며, 백업 완료로 표시하지 않습니다.** 키를 잃으면 기존 백업을 복호화할 수 없습니다.
+
+### 백업 다운로드와 검증
+
+GitHub Actions에서 성공한 `Encrypted Production D1 Backup` 실행의 `production-d1-encrypted-...` 아티팩트를 다운로드합니다. ZIP에서 `.sql.d1enc` 파일을 꺼낸 뒤 별도의 안전한 환경에서 복호화합니다.
+
+```bash
+# D1_BACKUP_KEY_B64를 터미널 환경변수에 비밀로 입력한 후 실행
+node scripts/d1-backup-crypt.mjs decrypt path/to/backup.sql.d1enc path/to/recovered.sql
+```
+
+복호화는 AES-GCM 인증 태그가 맞지 않으면 오류가 발생합니다. **이 파일을 Production에 직접 적용하지 마세요.** 아래의 'SQL export에서 새 D1 복원' 절차처럼 **새 검증용 D1**에서 테이블·데이터를 확인하고, 기존 Production 백업을 따로 확보한 상태에서만 복구 계획을 세웁니다.
+
+GitHub 아티팩트 30일 만료 이전에 보관 정책에 맞는 **별도의 접근 제어된 저장소**로 암호문을 복사해야 장기 백업이 됩니다. 백업의 실행·암호화·업로드 성공은 실제 DB 복원의 성공을 뜻하지 않습니다. Preview 복원 훈련은 수동으로 별도 확인해야 합니다.
+
+
+
 ## 사전 조건
 
 - Cloudflare 인증이 된 계정 또는 D1 권한이 있는 API 토큰을 사용합니다.
