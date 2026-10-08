@@ -66,6 +66,6 @@ npm run build
 npm audit --omit=dev
 ```
 
-PR에서는 타입 검사·단위 테스트·백업 암호화 검증·빌드·의존성 감사와 **로컬 Worker/D1 HTTP 스모크 테스트**를 진행합니다. **`main`에 push 또는 PR 병합하면** 모두 통과한 뒤 **Production D1 migration → Worker 배포 → /api/health 확인**을 자동으로 수행합니다. Chromium 브라우저 E2E와 Preview 복원 훈련은 현재 필수 CI 단계가 아닙니다.
+PR에서는 타입 검사·단위 테스트·백업 암호화 검증·빌드·의존성 감사와 **로컬 Worker/D1 HTTP 스모크와 Chromium 브라우저 E2E**를 진행합니다. **`main`에 push 또는 PR 병합하면** 모두 통과한 뒤 **Production D1 migration → Worker 배포 → /api/health 확인**을 자동으로 수행합니다. Preview 원격 환경에서의 복원 훈련은 현재 필수 CI 단계가 아닙니다.
 
 실제 운영 절차와 데이터 복구 주의사항은 [배포·롤백 Runbook](docs/runbook/deploy-rollback.md) 및 [D1 백업 Runbook](docs/runbook/d1-backup-restore.md)을 참고하세요.

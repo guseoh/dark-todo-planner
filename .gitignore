@@ -1,4 +1,5 @@
 node_modules
+.ci-browser-runner/
 backups/
 dist
 .wrangler
