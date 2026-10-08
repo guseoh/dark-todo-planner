@@ -134,7 +134,7 @@ async function buildBackup(env: Bindings, userId: string) {
   };
 }
 
-async function importBackup(env: Bindings, userId: string, input: unknown) {
+async function importBackup(env: Bindings, userId: string, input: unknown, pending?: D1PreparedStatement[]) {
   const { data, warnings } = normalizeBackupPayload(input);
   const now = nowIso();
   const imported = Object.fromEntries(KEYS.map((key) => [key, 0])) as Record<(typeof KEYS)[number], number>;
@@ -292,9 +292,19 @@ async function importBackup(env: Bindings, userId: string, input: unknown) {
   addBulkInsert(env, statements, "reflections", ["id", "user_id", "date", "type", "sections_json", "content", "created_at", "updated_at"], reflectionRows);
   addBulkInsert(env, statements, "goals", ["id", "user_id", "title", "description", "type", "target_date", "week_start_date", "week_end_date", "month", "due_date", "progress", "completed", "created_at", "updated_at"], goalRows);
 
-  if (statements.length > MAX_D1_QUERIES_PER_INVOCATION) throw new BackupError(`백업 데이터가 너무 커서 안전하게 가져올 수 없습니다. 필요한 쿼리 ${statements.length}개가 D1 요청 한도 ${MAX_D1_QUERIES_PER_INVOCATION}개를 초과합니다. 데이터를 나누거나 불필요한 항목을 정리한 뒤 다시 시도하세요.`);
-  await env.DB.batch(statements);
+  if (pending) pending.push(...statements);
+  else {
+    if (statements.length > MAX_D1_QUERIES_PER_INVOCATION) throw new BackupError(`백업 데이터가 너무 커서 안전하게 가져올 수 없습니다. 필요한 쿼리 ${statements.length}개가 D1 요청 한도 ${MAX_D1_QUERIES_PER_INVOCATION}개를 초과합니다. 데이터를 나누거나 불필요한 항목을 정리한 뒤 다시 시도하세요.`);
+    await env.DB.batch(statements);
+  }
   return { version: data.version ?? "legacy", latestVersion: BACKUP_VERSION, supportedVersions: [...SUPPORTED_BACKUP_VERSIONS], warnings, imported };
+}
+
+/** Builds, but NEVER executes, statements for the all-or-nothing v13 import. */
+export async function planCoreBackupImport(env: Bindings, userId: string, input: unknown) {
+  const statements: D1PreparedStatement[] = [];
+  const result = await importBackup(env, userId, input, statements);
+  return { statements, result };
 }
 
 export const backupRoutes = new Hono<{ Bindings: Bindings; Variables: Variables }>();

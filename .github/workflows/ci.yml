@@ -75,6 +75,10 @@ jobs:
       - name: Initialize isolated local D1
         run: npm run db:migrate:local
 
+      - name: Install local-only failure trigger for transactional rollback test
+        run: |
+          npx wrangler d1 execute DB --local --command "CREATE TRIGGER atomic_restore_ci_failure BEFORE INSERT ON routine_templates WHEN NEW.name = '__ATOMIC_RESTORE_FAIL__' BEGIN SELECT RAISE(ABORT, 'intentional restore failure'); END"
+
       - name: Generate ephemeral smoke credentials
         run: node scripts/prepare-smoke-auth.mjs
 
