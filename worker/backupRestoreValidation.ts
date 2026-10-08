@@ -44,7 +44,7 @@ const populated = (x: unknown): x is string => typeof x === "string" && x.trim()
 const backupError = (message: string): never => { throw new BackupFormatError(message); };
 
 export function validateFullRestoreBackup(value: unknown): Record<string, unknown> {
-  if (!isRecord(value)) backupError("전체 JSON 백업 객체가 아닙니다.");
+  if (!isRecord(value)) throw new BackupFormatError("전체 JSON 백업 객체가 아닙니다.");
   if (value.version !== BACKUP_VERSION) backupError(`전체 복원은 v${BACKUP_VERSION} 백업만 지원합니다. 레거시 자료는 별도의 이전 절차를 사용하세요.`);
   if (!populated(value.exportedAt) || !Number.isFinite(Date.parse(value.exportedAt))) backupError("올바른 백업 생성 시간이 없습니다.");
 
@@ -54,7 +54,7 @@ export function validateFullRestoreBackup(value: unknown): Record<string, unknow
     const seen = new Set<string>();
     for (let i = 0; i < list.length; i++) {
       const item: unknown = list[i];
-      if (!isRecord(item)) backupError(`${key}[${i}]가 데이터 객체가 아닙니다.`);
+      if (!isRecord(item)) throw new BackupFormatError(`${key}[${i}]가 데이터 객체가 아닙니다.`);
       for (const field of required[key] || []) {
         if (!populated(item[field])) backupError(`${key}[${i}].${field}가 비어 있어 복원 시 누락될 수 있습니다.`);
       }
