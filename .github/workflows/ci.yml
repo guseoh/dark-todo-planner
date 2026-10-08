@@ -46,9 +46,10 @@ jobs:
         run: npm audit --omit=dev
 
   smoke-local-api:
-    name: Local Worker + D1 API smoke
+    name: Local Worker + D1 + browser smoke
     needs: test-build-audit
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -61,6 +62,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Install pinned Playwright driver for CI only
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.56.1
 
       - name: Build assets
         run: npm run build
@@ -78,6 +82,18 @@ jobs:
 
       - name: Exercise authenticated CRUD and recovery
         run: node scripts/smoke-local-api.mjs
+
+      - name: Exercise Chromium browser UI and offline reconnect
+        run: node scripts/smoke-browser.mjs
+
+      - name: Upload local-only browser failure screenshot
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-browser-smoke-failure
+          path: test-artifacts/browser-smoke-failure.png
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Report Worker startup errors if failed
         if: failure()
