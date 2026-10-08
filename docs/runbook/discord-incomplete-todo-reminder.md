@@ -47,4 +47,4 @@ npm run build
 npm audit --omit=dev
 ```
 
-로컬 scheduled 호출을 검증할 때만 Wrangler의 `--test-scheduled` 개발 모드를 사용합니다. Production 또는 Preview 배포와 원격 D1 migration은 별도 승인된 운영 절차에서만 수행합니다.
+로컬 scheduled 호출을 검증할 때만 Wrangler의 `--test-scheduled` 개발 모드를 사용합니다. 현재 `main` push 시 GitHub Actions가 검증 통과 후 **Production D1 migration과 Worker 배포를 자동 실행**합니다. Preview 복구 실습·브라우저 검증은 별도 수동 절차이며, 운영 변경 전 [배포 Runbook](deploy-rollback.md)을 확인하세요.
