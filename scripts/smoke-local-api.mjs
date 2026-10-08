@@ -57,6 +57,18 @@ try {
   const repeated = expectStatus(await request(`/api/offline/todos/${id}`, "PUT", input), 200, "Duplicate UUID create replay");
   assert.equal(repeated.todo.id, id);
 
+  // Destructive import must reject incomplete v13 JSON before touching any row.
+  const exportData = expectStatus(await request("/api/backup/export"), 200, "Export full local JSON");
+  assert.equal(exportData.version, 13);
+  assert.ok(Array.isArray(exportData.goals) && Array.isArray(exportData.routineRuns));
+  const beforeRejectedImport = expectStatus(await request(`/api/todos/${id}`), 200, "Read Todo before rejected import").todo;
+  const invalidExport = { ...exportData };
+  delete invalidExport.goals;
+  expectStatus(await request("/api/backup/import", "POST", invalidExport), 400, "Reject incomplete version 13 backup");
+  expectStatus(await request("/api/backup/import", "POST", { ...exportData, todos: [{ id }] }), 400, "Reject invalid Todo record");
+  expectStatus(await request("/api/backup/import", "POST", { ...exportData, version: 12 }), 400, "Reject legacy replacement");
+  assert.equal(expectStatus(await request(`/api/todos/${id}`), 200, "Verify failed import did not change D1").todo.title, beforeRejectedImport.title);
+
   const update = { ...input, title: "Edited local Todo", referenceUrl: "https://example.com/reference", referenceLabel: "Reference" };
   const updated = expectStatus(await request(`/api/todos/${id}`, "PUT", update), 200, "Todo and reference link update");
   assert.equal(updated.todo.title, update.title);
@@ -75,7 +87,14 @@ try {
   const restored = expectStatus(await request(`/api/trash/todos/${moved.trashId}/restore`, "POST"), 200, "Restore Todo");
   assert.equal(restored.todoId, id);
   assert.equal(expectStatus(await request(`/api/todos/${id}`), 200, "Restored Todo").todo.title, update.title);
-  console.log("LOCAL E2E PASS: health, auth, idempotent create, update, completion, trash preview and restore.");
+  // Only the disposable local D1 can execute a valid destructive restore test.
+  const validExport = expectStatus(await request("/api/backup/export"), 200, "Export local pre-restore snapshot");
+  const imported = expectStatus(await request("/api/backup/import", "POST", validExport), 200, "Restore locally exported backup");
+  assert.equal(imported.ok, true);
+  const restoredAfterImport = expectStatus(await request(`/api/todos/${id}`), 200, "Verify real local JSON round trip").todo;
+  assert.equal(restoredAfterImport.title, update.title);
+  assert.equal(restoredAfterImport.referenceUrl, update.referenceUrl);
+  console.log("LOCAL E2E PASS: health, auth, UUID CRUD, trash restore, rejected import unchanged, successful local JSON round trip.");
 } finally {
   if (created) {
     // Only loopback URLs can reach this cleanup path.

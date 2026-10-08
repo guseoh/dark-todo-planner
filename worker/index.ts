@@ -12,6 +12,7 @@ import {
   verifySessionToken,
 } from "./auth";
 import { backupV9ExportMiddleware, backupV9ImportMiddleware } from "./backupMiddleware";
+import { requireSafeFullBackupImport } from "./backupRestoreGuard";
 import { todoReferenceTrashRestoreMiddleware } from "./referenceLinkMiddleware";
 import { runDiscordIncompleteTodoReminder } from "./reminders/incompleteTodoReminder";
 import { backupRoutes } from "./routes/backup";
@@ -95,6 +96,8 @@ app.get("/api/auth/session", async (c) => {
   return c.json(authenticated ? { authenticated: true, username: c.env.AUTH_USERNAME } : { authenticated: false }, authenticated ? 200 : 401);
 });
 
+// Full JSON replacement is blocked before any middleware can mutate D1.
+app.use("/api/backup/import", requireSafeFullBackupImport);
 app.use("/api/backup/export", step4BackupExportMiddleware);
 app.use("/api/backup/import", step4BackupImportMiddleware);
 app.use("/api/migrate/local-storage", step4BackupImportMiddleware);

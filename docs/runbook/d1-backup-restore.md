@@ -4,6 +4,16 @@
 
 > **경고:** Time Travel restore는 대상 데이터베이스를 제자리에서 덮어쓰고 진행 중인 쿼리와 트랜잭션을 취소합니다. 복구 훈련은 Preview에서만 수행합니다. Production에는 export만 수행하고 npm script나 CI에서 restore를 실행하지 않습니다.
 
+## 앱 내 JSON 전체 복원의 제한과 안전 검사
+
+**2026-10-08 이후 전체 JSON 복원은 v13 내보내기 파일만 허용**합니다. 화면과 Worker가 동일한 복원 전 검사기를 사용해 실제 export에 포함되는 **25개 컬렉션**, 낙서장, 항목 필수 필드, 중복 및 핵심 연결 정보를 확인합니다. 하나라도 빠지거나 불완전하면 **DB를 수정하기 전에 400으로 거절**합니다. 기존 `/api/migrate/local-storage`는 별도의 레거시 이전 경로이므로 전체 복원 정책이 적용되지 않습니다.
+
+단, **JSON 전체 복원은 여러 D1.batch 호출로 이루어진 여러 단계 처리이며 단일 원자적 트랜잭션이 아닙니다.** 입력 형식 검증이 통과하더라도 용량 제한·DB 오류·동시 수정 등으로 중간 실패 시 일부만 교체될 수 있습니다. 따라서 Production에서 실제 복원을 하기 전에는 **SQL/D1 백업을 별도로 확보**하고 Preview 또는 일회성 로컬 D1에서 동일 백업으로 복원 훈련을 마쳐야 합니다. 성공 응답을 받더라도 Todo·프로젝트·메모·Routine 등 핵심 데이터를 다시 확인하세요.
+
+`learningItems`, `todoReminders`, `todoDependencies`는 과거 백업 스키마에 이름만 존재하며 현재 JSON export/import가 완전하게 왕복시키는 범위에 포함되지 않습니다. 이 배열에 항목이 있다면 JSON 복원을 거절합니다. 특히 현재 DB에 개별 Todo 알림이 있거나 학습 항목이 Todo에 연결되어 있으면, Todo 교체 시 연동이 손상될 수 있어 409로 복원을 거절합니다. **앱 JSON 파일만으로 모든 D1 테이블을 복구할 수 있다고 판단하지 마세요.**
+
+로컬 CI는 버전·배열이 누락된 백업 거절 후 Todo가 그대로 남는지 검사하고, 일회성 D1에만 정상 export→import→조회 테스트를 수행합니다. Preview 원격 DB를 실제로 초기화하거나 복원하는 테스트는 별도 승인 절차에서만 진행합니다.
+
 ## 암호화된 주간 Production D1 백업
 
 [Encrypted Production D1 Backup](../../.github/workflows/d1-backup.yml)은 매주 **월요일 오전 3시(한국 시간)** 및 수동 `workflow_dispatch`로 실행됩니다. `wrangler d1 export --remote`를 통해 **읽기 전용** SQL export를 만들고, AES-256-GCM으로 인증 암호화한 뒤 평문 SQL 파일을 CI 실행 환경에서 삭제합니다. **GitHub Actions에는 `.d1enc` 암호문만 업로드**하며, 산출물 보존 기간은 30일입니다.
