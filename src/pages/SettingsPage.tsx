@@ -91,7 +91,7 @@ export function SettingsPage({
           <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs font-semibold text-ink-500">사용 모드</dt><dd className="mt-1 text-sm font-bold text-ink-100">단일 사용자</dd></div>
           <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs font-semibold text-ink-500">저장소</dt><dd className="mt-1 text-sm font-bold text-ink-100">Cloudflare D1</dd></div>
           <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs font-semibold text-ink-500">하루 시작 시각</dt><dd className="mt-1 text-sm font-bold text-ink-100">오전 3시</dd></div>
-          <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs font-semibold text-ink-500">Discord Todo 알림</dt><dd className="mt-1 text-sm font-bold text-ink-100">일괄 오후 9시 · 개별 5분 주기</dd><p className="mt-1 text-xs text-ink-400">Todo 수정 화면에서 개별 알림 시각을 예약할 수 있습니다.</p></div>
+          <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs font-semibold text-ink-500">Discord Todo 알림</dt><dd className="mt-1 text-sm font-bold text-ink-100">매일 오후 9시 일괄 알림</dd><p className="mt-1 text-xs text-ink-400">현재 개별 시각 예약 알림은 지원하지 않습니다.</p></div>
         </dl>
       </section>
 
@@ -115,7 +115,7 @@ export function SettingsPage({
 
       <section className="app-card p-4 sm:p-5" aria-labelledby="reminder-settings-title">
         <div className="flex items-center gap-2"><BellRing size={18} className="text-accent-300" /><h3 id="reminder-settings-title" className="text-base font-bold text-ink-100">Discord 리마인더</h3></div>
-        <p className="mt-1 text-xs text-ink-400">아래 조건은 오후 9시 일괄 알림에 사용됩니다. Todo별 알림은 Todo 수정 화면에서 따로 예약합니다.</p>
+        <p className="mt-1 text-xs text-ink-400">아래 조건은 매일 오후 9시(한국 시간) 일괄 알림에 사용됩니다.</p>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <label className={optionCardClass(draft.reminderTodayEnabled)}><input type="checkbox" className="mt-1 h-4 w-4 accent-accent-500" checked={draft.reminderTodayEnabled} onChange={(event) => setDraft((current) => ({ ...current, reminderTodayEnabled: event.target.checked }))} /><span><span className="block text-sm font-bold text-ink-100">오늘 미완료 Todo</span><span className="mt-1 block text-xs text-ink-400">기존 오후 9시 알림 기준입니다.</span></span></label>
           <label className={optionCardClass(draft.reminderOverdueEnabled)}><input type="checkbox" className="mt-1 h-4 w-4 accent-accent-500" checked={draft.reminderOverdueEnabled} onChange={(event) => setDraft((current) => ({ ...current, reminderOverdueEnabled: event.target.checked }))} /><span><span className="block text-sm font-bold text-ink-100">마감 초과 Todo</span><span className="mt-1 block text-xs text-ink-400">due date가 지난 미완료 Todo를 함께 알립니다.</span></span></label>
