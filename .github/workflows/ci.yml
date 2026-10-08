@@ -63,8 +63,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install pinned Playwright driver for CI only
-        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.56.1
+      - name: Install isolated pinned Playwright driver for CI only
+        run: |
+          mkdir -p .ci-browser-runner
+          printf '{"name":"dtp-ci-browser-runner","private":true}\n' > .ci-browser-runner/package.json
+          npm install --prefix .ci-browser-runner --no-audit --no-fund --ignore-scripts --save-exact playwright@1.56.1
 
       - name: Build assets
         run: npm run build

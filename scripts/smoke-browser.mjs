@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { createRequire } from "node:module";
+import { resolve } from "node:path";
 import { mkdir } from "node:fs/promises";
 import { setTimeout as sleep } from "node:timers/promises";
-import { chromium } from "playwright";
+// Install Playwright in an isolated CI folder to avoid npm changing the app dependency tree.
+const requireDriver = createRequire(resolve(".ci-browser-runner/package.json"));
+const { chromium } = requireDriver("playwright");
 
 const base = new URL(process.env.SMOKE_BASE_URL || "http://127.0.0.1:8787");
 if (!["127.0.0.1", "localhost", "::1", "[::1]"].includes(base.hostname) || !["http:", "https:"].includes(base.protocol)) {
