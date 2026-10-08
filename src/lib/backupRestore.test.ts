@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FULL_RESTORE_COLLECTIONS } from "../../worker/backupRestoreValidation";
+import { FULL_RESTORE_COLLECTIONS } from "./backupRestore";
 import { validateRestorableBackup } from "./backupRestore";
 
 const full = {
