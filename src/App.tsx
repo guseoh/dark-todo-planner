@@ -35,6 +35,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
   const [showDayClose, setShowDayClose] = useState(false);
   const [pendingTodoUndo, setPendingTodoUndo] = useState<PendingTodoUndo | null>(null);
   const todoUndoTimerRef = useRef<number | null>(null);
+  const lastPlannerDayRef = useRef(getPlannerToday());
   const planner = usePlannerData();
 
   useEffect(() => {
@@ -58,6 +59,26 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     if (!viewsRequiringDeferredData.has(activeView)) return;
     void planner.ensureDeferredData().catch(() => undefined);
   }, [activeView, planner.ensureDeferredData]);
+
+  // A tab can remain open across the 03:00 planner-day boundary.
+  // Refresh views and stats on the next minute or when the tab becomes visible.
+  useEffect(() => {
+    const refreshIfDayChanged = () => {
+      if (document.visibilityState === "hidden") return;
+      const nextDay = getPlannerToday();
+      if (nextDay === lastPlannerDayRef.current) return;
+      lastPlannerDayRef.current = nextDay;
+      void planner.loadAll().catch(() => undefined);
+    };
+    const interval = window.setInterval(refreshIfDayChanged, 60_000);
+    document.addEventListener("visibilitychange", refreshIfDayChanged);
+    window.addEventListener("focus", refreshIfDayChanged);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshIfDayChanged);
+      window.removeEventListener("focus", refreshIfDayChanged);
+    };
+  }, [planner.loadAll]);
 
   useEffect(() => () => {
     if (todoUndoTimerRef.current !== null) window.clearTimeout(todoUndoTimerRef.current);
