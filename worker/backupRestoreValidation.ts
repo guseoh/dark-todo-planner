@@ -50,7 +50,7 @@ export function validateFullRestoreBackup(value: unknown): Record<string, unknow
 
   for (const key of FULL_RESTORE_COLLECTIONS) {
     const list = value[key];
-    if (!Array.isArray(list)) backupError(`필수 백업 목록 ${key}가 없거나 배열이 아닙니다. 기존 데이터를 보호하기 위해 복원을 중단합니다.`);
+    if (!Array.isArray(list)) throw new BackupFormatError(`필수 백업 목록 ${key}가 없거나 배열이 아닙니다. 기존 데이터를 보호하기 위해 복원을 중단합니다.`);
     const seen = new Set<string>();
     for (let i = 0; i < list.length; i++) {
       const item: unknown = list[i];
