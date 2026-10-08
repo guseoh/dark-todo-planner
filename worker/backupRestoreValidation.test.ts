@@ -31,6 +31,8 @@ describe("destructive JSON import preflight", () => {
     expect(() => validateFullRestoreBackup({ ...complete(), memoTodoLinks: [{ memoId: "orphan", todoId: "missing" }] })).toThrow(/memoId/);
     expect(() => validateFullRestoreBackup({ ...complete(), todos: [{ id: "t1", title: "Todo", date: "2026-10-08", projectId: "missing" }] })).toThrow(/projectId/);
     expect(() => validateFullRestoreBackup({ ...complete(), taskTemplates: [{ id: "template", name: "a" }] })).toThrow(/템플릿/);
+    expect(() => validateFullRestoreBackup({ ...complete(), timeBlocks: [{ id: "block", title: "Block", date: "2026-10-08", startTime: "10:00", endTime: "10:30", todoId: "missing" }] })).toThrow(/todoId/);
+    expect(() => validateFullRestoreBackup({ ...complete(), routineTemplates: [{ id: "rt", name: "routine" }], routineTemplateItems: [{ id: "ri", routineId: "rt", title: "step", projectId: "missing" }] })).toThrow(/projectId/);
   });
   it("rejects unsupported data that a full JSON restore would discard", () => {
     expect(() => validateFullRestoreBackup({ ...complete(), learningItems: [{ id: "li" }] })).toThrow(/learningItems/);

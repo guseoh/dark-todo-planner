@@ -105,6 +105,24 @@ export function validateFullRestoreBackup(value: unknown): Record<string, unknow
   }
   for (const [index, item] of (value.taskTemplates as Array<Record<string, unknown>>).entries()) {
     if (!isRecord(item.todo) || !populated(item.todo.title)) backupError(`taskTemplates[${index}]의 Todo 템플릿 내용이 유효하지 않습니다.`);
+    const todo = item.todo as Record<string, unknown>;
+    for (const [field, allowed] of [["categoryId", categories], ["projectId", projects], ["milestoneId", milestones], ["parentTodoId", todos]] as const) {
+      if (todo[field] && !allowed.has(todo[field])) backupError(`taskTemplates[${index}].todo.${field} 참조가 없습니다.`);
+    }
+  }
+  for (const key of ["focusSessions", "timeBlocks"] as const) {
+    for (const [index, item] of (value[key] as Array<Record<string, unknown>>).entries()) {
+      if (item.todoId && !todos.has(item.todoId)) backupError(`${key}[${index}].todoId 참조가 없습니다.`);
+    }
+  }
+  for (const [index, item] of (value.routineTemplateItems as Array<Record<string, unknown>>).entries()) {
+    if (item.projectId && !projects.has(item.projectId)) backupError(`routineTemplateItems[${index}].projectId 참조가 없습니다.`);
+    if (item.categoryId && !categories.has(item.categoryId)) backupError(`routineTemplateItems[${index}].categoryId 참조가 없습니다.`);
+  }
+  for (const [index, item] of (value.dailyPlans as Array<Record<string, unknown>>).entries()) {
+    if (item.topTodoIds !== undefined && (!Array.isArray(item.topTodoIds) || item.topTodoIds.some((id: unknown) => !todos.has(id)))) {
+      backupError(`dailyPlans[${index}].topTodoIds 참조가 올바르지 않습니다.`);
+    }
   }
   return value;
 }
