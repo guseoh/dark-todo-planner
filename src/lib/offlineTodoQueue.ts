@@ -67,9 +67,14 @@ const withStore = async <T>(mode: IDBTransactionMode, run: (store: IDBObjectStor
   try {
     return await new Promise<T>((resolve, reject) => {
       const transaction = db.transaction(STORE_NAME, mode);
+      let response: T;
       const request = run(transaction.objectStore(STORE_NAME));
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = () => { response = request.result; };
       request.onerror = () => reject(request.error || new Error("오프라인 저장소 요청에 실패했습니다."));
+      // IDBRequest success does not mean the write transaction was committed.
+      // Do not acknowledge a queued mutation until its IndexedDB transaction completes.
+      transaction.oncomplete = () => resolve(response);
+      transaction.onerror = () => reject(transaction.error || new Error("오프라인 저장소 트랜잭션에 실패했습니다."));
       transaction.onabort = () => reject(transaction.error || new Error("오프라인 저장소 작업이 중단되었습니다."));
     });
   } finally {
