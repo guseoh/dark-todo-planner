@@ -7,7 +7,7 @@ const record = (value: unknown): Record<string, unknown> | null =>
 const stringIds = (value: unknown) =>
   Array.isArray(value) ? value.filter((id): id is string => typeof id === "string") : [];
 
-const pathId = (path: string) => path.split("/").filter(Boolean).at(-1) || "";
+const pathId = (path: string) => path.split("/").filter(Boolean).slice(-1)[0] || "";
 
 const isPlanningState = (value: unknown): value is TodoPlanningState =>
   value === "INBOX" || value === "SCHEDULED" || value === "SOMEDAY" || value === "WAITING";
@@ -56,7 +56,7 @@ export function replayQueuedTodoMutations(serverTodos: readonly Todo[], queued: 
     }
 
     if (mutation.kind === "TRASH") {
-      byId.delete(mutation.path.split("/").at(-2) || "");
+      byId.delete(mutation.path.split("/").slice(-2)[0] || "");
       continue;
     }
     if (mutation.kind === "BULK_TRASH") {
@@ -82,7 +82,7 @@ export function replayQueuedTodoMutations(serverTodos: readonly Todo[], queued: 
     }
 
     if (mutation.kind !== "UPDATE" || !body) continue;
-    const id = mutation.path.includes("/completion") ? mutation.path.split("/").at(-2) || "" : pathId(mutation.path);
+    const id = mutation.path.includes("/completion") ? mutation.path.split("/").slice(-2)[0] || "" : pathId(mutation.path);
     const todo = byId.get(id);
     if (!todo) continue;
     if (mutation.path.endsWith("/completion")) {
