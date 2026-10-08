@@ -11,6 +11,7 @@ type PlannerData = ReturnType<typeof import("../../hooks/usePlannerData").usePla
 type ToggleTodo = PlannerData["toggleTodo"];
 type UpdateTodo = PlannerData["updateTodo"];
 
+const InboxPage = lazy(() => import("../../pages/InboxPage").then((module) => ({ default: module.InboxPage })));
 const WeekPage = lazy(() => import("../../pages/WeekPage").then((module) => ({ default: module.WeekPage })));
 const MonthPage = lazy(() => import("../../pages/MonthPage").then((module) => ({ default: module.MonthPage })));
 const ProjectPage = lazy(() => import("../../pages/ProjectPage").then((module) => ({ default: module.ProjectPage })));
@@ -90,6 +91,9 @@ export function AppContent({ activeView, planner, onToggleTodo, onUpdateTodo }: 
     case "today":
       content = <TodayPage todayTodos={planner.getTodayTodos()} stats={planner.stats} onAdd={planner.addTodo} onToggle={toggleTodo} onDelete={planner.deleteTodo} onDeleteMany={planner.deleteTodos} onUpdate={updateTodo} categories={planner.categories} projects={planner.projects} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} onReorderCategories={planner.reorderCategories} overdueTodos={planner.getOverdueIncompleteTodos()} onBringOverdueTodos={bringOverdueTodosToToday} />;
       break;
+    case "inbox":
+      content = <InboxPage todos={planner.inboxTodos} categories={planner.categories} projects={planner.activeProjects} onAdd={planner.addTodo} onUpdate={updateTodo} onDelete={planner.deleteTodo} />;
+      break;
     case "week":
       content = <WeekPage weekTodos={planner.getWeekTodos()} getTodosByDate={planner.getTodosByDate} onAdd={planner.addTodo} onToggle={toggleTodo} onDelete={planner.deleteTodo} onUpdate={updateTodo} onAddGoal={planner.addGoal} onUpdateGoal={planner.updateGoal} onToggleGoal={planner.toggleGoal} onDeleteGoal={planner.deleteGoal} categories={planner.categories} goals={planner.goals} />;
       break;
@@ -114,6 +118,10 @@ export function AppContent({ activeView, planner, onToggleTodo, onUpdateTodo }: 
     case "settings":
       content = <div className="space-y-4"><SettingsPage stats={planner.stats} categories={planner.categories} projects={planner.projects} goals={planner.goals} memos={planner.memos} plannerSettings={planner.plannerSettings} onSavePlannerSettings={planner.savePlannerSettings} onTodosCreated={planner.loadAll} apiStatus={planner.connectionError ? "offline" : "online"} /><ExportPanel todos={planner.allTodos} projects={planner.projects} goals={planner.goals} memos={planner.memos} /></div>;
       break;
+    default: {
+      const unreachable: never = activeView;
+      throw new Error(`지원하지 않는 화면: ${unreachable}`);
+    }
   }
 
   return <Suspense fallback={<LoadingState />}>{content}</Suspense>;
