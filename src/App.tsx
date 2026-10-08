@@ -100,6 +100,11 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     setActiveView(view);
   };
 
+  const clearOpenedSearchTarget = useCallback((kind: "메모" | "프로젝트") => {
+    if (kind === "메모") setSearchMemoId(null);
+    else setSearchProjectId(null);
+  }, []);
+
   const openSearchResult = (kind: "Todo" | "메모" | "프로젝트", id: string) => {
     setSearchTodoId(kind === "Todo" ? id : null);
     setSearchMemoId(kind === "메모" ? id : null);
@@ -205,7 +210,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
                     </button>
                   </div>
                 ) : null}
-                <AppContent activeView={activeView} planner={planner} onToggleTodo={toggleTodoWithUndo} onUpdateTodo={updateTodoWithUndo} focusedMemoId={searchMemoId} focusedProjectId={searchProjectId} />
+                <AppContent activeView={activeView} planner={planner} onToggleTodo={toggleTodoWithUndo} onUpdateTodo={updateTodoWithUndo} focusedMemoId={searchMemoId} focusedProjectId={searchProjectId} onFocusedItemOpened={clearOpenedSearchTarget} />
               </>
             ) : null}
           </main>

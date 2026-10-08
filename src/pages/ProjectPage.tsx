@@ -31,6 +31,7 @@ const isHttpUrl = (value: string) => {
 
 type ProjectPageProps = {
   focusedProjectId?: string | null;
+  onSearchTargetOpened?: () => void;
   projects: Project[];
   milestones: Milestone[];
   decisions: ProjectDecision[];
@@ -54,6 +55,7 @@ type ProjectPageProps = {
 
 export function ProjectPage({
   focusedProjectId,
+  onSearchTargetOpened,
   projects,
   milestones,
   decisions,
@@ -107,7 +109,8 @@ export function ProjectPage({
     if (!project) return;
     setShowArchived(project.archived);
     setSelectedId(project.id);
-  }, [focusedProjectId, projects]);
+    onSearchTargetOpened?.();
+  }, [focusedProjectId, projects, onSearchTargetOpened]);
 
   useEffect(() => {
     setEditingProject(false);
