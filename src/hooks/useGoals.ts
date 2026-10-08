@@ -71,8 +71,10 @@ export function useGoals() {
       const result = await api<{ goal: Goal }>(`/api/goals/${id}/toggle`, { method: "PATCH" });
       setGoals((current) => current.map((goal) => (goal.id === id ? result.goal : goal)));
       setError("");
+      return true;
     } catch (err) {
       setError(getMessage(err));
+      return false;
     }
   }, []);
 
@@ -81,8 +83,10 @@ export function useGoals() {
       await api(`/api/goals/${id}`, { method: "DELETE" });
       setGoals((current) => current.filter((goal) => goal.id !== id));
       setError("");
+      return true;
     } catch (err) {
       setError(getMessage(err));
+      return false;
     }
   }, []);
 
