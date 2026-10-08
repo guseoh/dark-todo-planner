@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, History, Settings2 } from "lucide-react";
+import { ChevronDown, History, Settings2, Star, StarOff } from "lucide-react";
 import { IconRenderer } from "../components/common/IconRenderer";
 import { ProgressBar } from "../components/common/ProgressBar";
 import { TodayCategoryManager } from "../components/today/TodayCategoryManager";
@@ -47,6 +47,15 @@ type CategoryFilter = "all" | "uncategorized" | string;
 const categoryButtonClass = "inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-md border px-2.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/35";
 const activeCategoryButtonClass = "border-accent-500/40 bg-accent-500/[0.08] text-accent-200";
 const idleCategoryButtonClass = "border-ink-700/60 bg-ink-900/60 text-ink-400 hover:border-ink-600 hover:bg-ink-800/70 hover:text-ink-100";
+const FOCUS_STORAGE_PREFIX = "dark-todo-planner:focus:";
+const readFocusIds = (date: string): string[] => {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(FOCUS_STORAGE_PREFIX + date) || "[]");
+    return Array.isArray(value) ? Array.from(new Set(value.filter((id): id is string => typeof id === "string"))).slice(0, 3) : [];
+  } catch {
+    return [];
+  }
+};
 
 export function TodayPage({
   todayTodos,
@@ -68,10 +77,13 @@ export function TodayPage({
   const [showOverdueImport, setShowOverdueImport] = useState(false);
   const [activeCategoryId, setActiveCategoryId] = useState<CategoryFilter>("all");
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
-  const [showCompleted, setShowCompleted] = useState(true);
+  const [showCompleted, setShowCompleted] = useState(false);
+  const [focusIds, setFocusIds] = useState<string[]>(() => readFocusIds(todayKey()));
   const [showCategoryManager, setShowCategoryManager] = useState(false);
 
   const today = todayKey();
+  const focusedTodos = useMemo(() => focusIds.map((id) => todayTodos.find((todo) => todo.id === id)).filter((todo): todo is Todo => Boolean(todo && !todo.completed && !todo.archived)), [focusIds, todayTodos]);
+  const focusSet = useMemo(() => new Set(focusedTodos.map((todo) => todo.id)), [focusedTodos]);
   const oldestOverdueDate = overdueTodos[0]?.date;
   const sortedCategories = useMemo(
     () => [...categories].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, "ko")),
@@ -102,6 +114,7 @@ export function TodayPage({
 
   const activeTodos = useMemo(() => visibleTodos.filter((todo) => !todo.completed), [visibleTodos]);
   const completedTodos = useMemo(() => visibleTodos.filter((todo) => todo.completed), [visibleTodos]);
+  const remainingTodos = useMemo(() => activeTodos.filter((todo) => !focusSet.has(todo.id)), [activeTodos, focusSet]);
   const highPriorityCount = useMemo(
     () => todayTodos.filter((todo) => !todo.completed && todo.priority === "HIGH").length,
     [todayTodos],
@@ -125,17 +138,27 @@ export function TodayPage({
   }, [activeCategoryId, categories]);
 
   useEffect(() => {
-    setShowCompleted(true);
+    setShowCompleted(false);
   }, [activeCategoryId]);
+
+  useEffect(() => {
+    setFocusIds(readFocusIds(today));
+  }, [today]);
+
+  const toggleFocus = (id: string) => {
+    setFocusIds((current) => {
+      const valid = current.filter((candidate) => todayTodos.some((todo) => todo.id === candidate && !todo.completed && !todo.archived));
+      const next = valid.includes(id) ? valid.filter((candidate) => candidate !== id) : valid.length < 3 ? [...valid, id] : valid;
+      try { localStorage.setItem(FOCUS_STORAGE_PREFIX + today, JSON.stringify(next)); } catch { /* storage might be blocked */ }
+      return next;
+    });
+  };
 
   const renderTodo = (todo: Todo) => (
     <TodoRow
       key={todo.id}
       todo={todo}
-      onToggle={(id) => {
-        if (!todo.completed) setShowCompleted(true);
-        onToggle(id);
-      }}
+      onToggle={onToggle}
       onDelete={onDelete}
       onEdit={setEditingTodo}
       showDate={false}
@@ -194,6 +217,19 @@ export function TodayPage({
         </section>
       ) : null}
 
+      <section className="app-card space-y-2 p-3" aria-labelledby="today-focus-title">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 id="today-focus-title" className="inline-flex items-center gap-2 text-sm font-bold text-ink-100"><Star size={15} className="text-amber-200" />오늘의 핵심 작업</h3>
+          <span className="text-xs text-ink-500">{focusedTodos.length} / 3개 선택</span>
+        </div>
+        {focusedTodos.length ? focusedTodos.map((todo) => (
+          <div key={todo.id} className="flex items-center gap-2">
+            <button type="button" className="icon-btn h-9 w-9 shrink-0 text-amber-200" onClick={() => toggleFocus(todo.id)} title="핵심 작업에서 제외" aria-label={`${todo.title} 핵심 작업에서 제외`}><StarOff size={16} /></button>
+            <div className="min-w-0 flex-1">{renderTodo(todo)}</div>
+          </div>
+        )) : <p className="text-xs text-ink-500">아래 미완료 Todo의 별 아이콘을 눌러 중요한 작업을 최대 3개 고정하세요.</p>}
+      </section>
+
       <section className="space-y-3" aria-labelledby="today-todo-list-title">
         <div className="sticky top-[60px] z-20 -mx-1 rounded-lg border border-ink-800/60 bg-ink-950/90 px-1 py-1.5 backdrop-blur-xl">
           <div className="flex items-center gap-2">
@@ -246,14 +282,19 @@ export function TodayPage({
             <h3 id="today-todo-list-title" className="text-sm font-bold text-ink-100">{activeCategoryName} 할 일</h3>
             <p className="mt-0.5 text-[11px] text-ink-500">미완료 Todo를 먼저 보여주고 완료한 항목은 아래에서 취소선으로 바로 확인합니다.</p>
           </div>
-          <span className="shrink-0 text-xs font-semibold text-ink-400">미완료 {activeTodos.length}</span>
+          <span className="shrink-0 text-xs font-semibold text-ink-400">목록 {remainingTodos.length}개 · 전체 미완료 {activeTodos.length}개</span>
         </div>
 
-        {activeTodos.length ? (
-          <div className="space-y-1.5">{activeTodos.map(renderTodo)}</div>
+        {remainingTodos.length ? (
+          <div className="space-y-1.5">{remainingTodos.map((todo) => (
+            <div key={todo.id} className="flex items-center gap-2">
+              <button type="button" className="icon-btn h-9 w-9 shrink-0 text-ink-500 hover:text-amber-200" onClick={() => toggleFocus(todo.id)} disabled={focusedTodos.length >= 3} title={focusedTodos.length >= 3 ? "핵심 작업은 최대 3개까지 지정할 수 있습니다." : "핵심 작업으로 고정"} aria-label={`${todo.title} 핵심 작업으로 고정`}><Star size={16} /></button>
+              <div className="min-w-0 flex-1">{renderTodo(todo)}</div>
+            </div>
+          ))}</div>
         ) : (
           <div className="rounded-md border border-dashed border-ink-700/55 px-4 py-7 text-center">
-            <p className="text-sm font-semibold text-ink-400">미완료 Todo가 없습니다.</p>
+            <p className="text-sm font-semibold text-ink-400">{activeTodos.length ? "핵심 작업에 모두 표시되어 있습니다." : "미완료 Todo가 없습니다."}</p>
             <p className="mt-1 text-[11px] text-ink-600">바로 위 입력창에서 Todo를 추가하거나 다른 카테고리를 선택해보세요.</p>
           </div>
         )}

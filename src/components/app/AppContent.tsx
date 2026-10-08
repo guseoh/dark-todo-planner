@@ -29,9 +29,11 @@ type AppContentProps = {
   planner: PlannerData;
   onToggleTodo?: ToggleTodo;
   onUpdateTodo?: UpdateTodo;
+  focusedMemoId?: string | null;
+  focusedProjectId?: string | null;
 };
 
-export function AppContent({ activeView, planner, onToggleTodo, onUpdateTodo }: AppContentProps) {
+export function AppContent({ activeView, planner, onToggleTodo, onUpdateTodo, focusedMemoId, focusedProjectId }: AppContentProps) {
   const toggleTodo = onToggleTodo ?? planner.toggleTodo;
   const updateTodo = onUpdateTodo ?? planner.updateTodo;
 
@@ -101,13 +103,13 @@ export function AppContent({ activeView, planner, onToggleTodo, onUpdateTodo }: 
       content = <MonthPage todos={planner.todos} getTodosByDate={planner.getTodosByDate} onAdd={planner.addTodo} onToggle={toggleTodo} onDelete={planner.deleteTodo} onUpdate={updateTodo} categories={planner.categories} goals={planner.goals} onAddGoal={planner.addGoal} onToggleGoal={planner.toggleGoal} onDeleteGoal={planner.deleteGoal} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} />;
       break;
     case "projects":
-      content = <ProjectPage projects={planner.projects} milestones={planner.milestones} decisions={planner.projectDecisions} todos={planner.todos} categories={planner.categories} onAddProject={planner.addProject} onUpdateProject={planner.updateProject} onDeleteProject={planner.deleteProject} onDuplicateProject={planner.duplicateProject} onArchiveProject={planner.archiveProject} onUnarchiveProject={planner.unarchiveProject} onAddMilestone={planner.addMilestone} onUpdateMilestone={planner.updateMilestone} onDeleteMilestone={planner.deleteMilestone} onAddDecision={planner.addProjectDecision} onDeleteDecision={planner.deleteProjectDecision} onAddTodo={planner.addTodo} onUpdateTodo={updateTodo} onToggleTodo={toggleTodo} />;
+      content = <ProjectPage focusedProjectId={focusedProjectId} projects={planner.projects} milestones={planner.milestones} decisions={planner.projectDecisions} todos={planner.todos} categories={planner.categories} onAddProject={planner.addProject} onUpdateProject={planner.updateProject} onDeleteProject={planner.deleteProject} onDuplicateProject={planner.duplicateProject} onArchiveProject={planner.archiveProject} onUnarchiveProject={planner.unarchiveProject} onAddMilestone={planner.addMilestone} onUpdateMilestone={planner.updateMilestone} onDeleteMilestone={planner.deleteMilestone} onAddDecision={planner.addProjectDecision} onDeleteDecision={planner.deleteProjectDecision} onAddTodo={planner.addTodo} onUpdateTodo={updateTodo} onToggleTodo={toggleTodo} />;
       break;
     case "all":
       content = <AllTodosPage allTodos={planner.allTodos} filterTodos={planner.filterTodos} categories={planner.categories} projects={planner.projects} duplicateTodoIds={planner.duplicateTodoIds} onToggle={toggleTodo} onDelete={planner.deleteTodo} onDeleteMany={planner.deleteTodos} onBulkUpdate={planner.bulkUpdateTodos} onUpdate={updateTodo} onUnarchive={planner.unarchiveTodo} onAddTodo={planner.addTodo} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} />;
       break;
     case "memo":
-      content = <MemoPage memos={planner.memos} todos={planner.allTodos} projects={planner.projects} onAdd={planner.addMemo} onUpdate={planner.updateMemo} onUpdateLinks={planner.updateMemoLinks} onDelete={planner.deleteMemo} onTogglePin={planner.toggleMemoPin} onAddTodo={planner.addTodo} />;
+      content = <MemoPage focusedMemoId={focusedMemoId} memos={planner.memos} todos={planner.allTodos} projects={planner.projects} onAdd={planner.addMemo} onUpdate={planner.updateMemo} onUpdateLinks={planner.updateMemoLinks} onDelete={planner.deleteMemo} onTogglePin={planner.toggleMemoPin} onAddTodo={planner.addTodo} />;
       break;
     case "scratchpad":
       content = <ScratchpadPage />;

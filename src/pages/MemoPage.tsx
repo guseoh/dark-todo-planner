@@ -205,10 +205,11 @@ function MemoCard({ memo, onDelete, onTogglePin, onEdit, onCreateTodo, onCreateC
   );
 }
 
-export function MemoPage({ memos, todos, projects, onAdd, onUpdate, onUpdateLinks, onDelete, onTogglePin, onAddTodo }: {
+export function MemoPage({ memos, todos, projects, focusedMemoId, onAdd, onUpdate, onUpdateLinks, onDelete, onTogglePin, onAddTodo }: {
   memos: Memo[];
   todos: Todo[];
   projects: Project[];
+  focusedMemoId?: string | null;
   onAdd: (input: MemoInput) => Memo | undefined | Promise<Memo | undefined>;
   onUpdate: (id: string, input: MemoInput) => Memo | undefined | Promise<Memo | undefined>;
   onUpdateLinks: (id: string, input: MemoLinksInput) => unknown | Promise<unknown>;
@@ -219,6 +220,11 @@ export function MemoPage({ memos, todos, projects, onAdd, onUpdate, onUpdateLink
   const [creating, setCreating] = useState(false);
   const [editingMemo, setEditingMemo] = useState<Memo | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  useEffect(() => {
+    if (!focusedMemoId) return;
+    const memo = memos.find((item) => item.id === focusedMemoId);
+    if (memo) setEditingMemo(memo);
+  }, [focusedMemoId, memos]);
   const [conversionMessage, setConversionMessage] = useState("");
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase("ko-KR");
   const filteredMemos = normalizedQuery ? memos.filter((memo) => `${memo.title || ""}\n${memo.content}`.toLocaleLowerCase("ko-KR").includes(normalizedQuery)) : memos;

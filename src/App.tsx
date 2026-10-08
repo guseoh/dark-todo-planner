@@ -5,6 +5,7 @@ import { AppContent, viewsRequiringDeferredData } from "./components/app/AppCont
 import { CommandPalette } from "./components/common/CommandPalette";
 import { ErrorBanner, ErrorState, LoadingState } from "./components/common/LoadingState";
 import { Modal } from "./components/common/Modal";
+import { TodoEditModal } from "./components/todo/TodoEditModal";
 import { Header } from "./components/layout/Header";
 import { Sidebar, type AppView } from "./components/layout/Sidebar";
 import { DayCloseModal, type DayCloseDecision } from "./components/today/DayCloseModal";
@@ -12,7 +13,7 @@ import { TodoDeleteNoticeModal } from "./components/todo/TodoDeleteNoticeModal";
 import { TodoForm } from "./components/todo/TodoForm";
 import { TodoQuickActionsProvider, type TodoSnoozeTarget } from "./components/todo/TodoQuickActionsContext";
 import { usePlannerData } from "./hooks/usePlannerData";
-import { parseDateKey, todayKey, toDateKey } from "./lib/date";
+import { getPlannerToday, parseDateKey, todayKey, toDateKey } from "./lib/date";
 import type { Todo } from "./types/todo";
 
 const TODO_UNDO_MS = 6000;
@@ -28,9 +29,13 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
   const [activeView, setActiveView] = useState<AppView>("today");
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [searchTodoId, setSearchTodoId] = useState<string | null>(null);
+  const [searchMemoId, setSearchMemoId] = useState<string | null>(null);
+  const [searchProjectId, setSearchProjectId] = useState<string | null>(null);
   const [showDayClose, setShowDayClose] = useState(false);
   const [pendingTodoUndo, setPendingTodoUndo] = useState<PendingTodoUndo | null>(null);
   const todoUndoTimerRef = useRef<number | null>(null);
+  const lastPlannerDayRef = useRef(getPlannerToday());
   const planner = usePlannerData();
 
   useEffect(() => {
@@ -55,6 +60,26 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     void planner.ensureDeferredData().catch(() => undefined);
   }, [activeView, planner.ensureDeferredData]);
 
+  // A tab can remain open across the 03:00 planner-day boundary.
+  // Refresh views and stats on the next minute or when the tab becomes visible.
+  useEffect(() => {
+    const refreshIfDayChanged = () => {
+      if (document.visibilityState === "hidden") return;
+      const nextDay = getPlannerToday();
+      if (nextDay === lastPlannerDayRef.current) return;
+      lastPlannerDayRef.current = nextDay;
+      void planner.loadAll().catch(() => undefined);
+    };
+    const interval = window.setInterval(refreshIfDayChanged, 60_000);
+    document.addEventListener("visibilitychange", refreshIfDayChanged);
+    window.addEventListener("focus", refreshIfDayChanged);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshIfDayChanged);
+      window.removeEventListener("focus", refreshIfDayChanged);
+    };
+  }, [planner.loadAll]);
+
   useEffect(() => () => {
     if (todoUndoTimerRef.current !== null) window.clearTimeout(todoUndoTimerRef.current);
   }, []);
@@ -68,7 +93,19 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     }, TODO_UNDO_MS);
   }, []);
 
-  const changeView = (view: AppView) => setActiveView(view);
+  const changeView = (view: AppView) => {
+    setSearchMemoId(null);
+    setSearchProjectId(null);
+    setSearchTodoId(null);
+    setActiveView(view);
+  };
+
+  const openSearchResult = (kind: "Todo" | "메모" | "프로젝트", id: string) => {
+    setSearchTodoId(kind === "Todo" ? id : null);
+    setSearchMemoId(kind === "메모" ? id : null);
+    setSearchProjectId(kind === "프로젝트" ? id : null);
+    setActiveView(kind === "Todo" ? "all" : kind === "메모" ? "memo" : "projects");
+  };
 
   const openQuickAdd = () => {
     setShowCommandPalette(false);
@@ -132,6 +169,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
   };
 
   const todayOpenTodos = planner.getTodayTodos().filter((todo) => !todo.completed && !todo.archived);
+  const searchTodo = searchTodoId ? planner.allTodos.find((todo) => todo.id === searchTodoId) || null : null;
 
   const applyDayClose = async (decisions: Record<string, DayCloseDecision>) => {
     const tomorrow = toDateKey(addDays(parseDateKey(todayKey()), 1));
@@ -167,19 +205,21 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
                     </button>
                   </div>
                 ) : null}
-                <AppContent activeView={activeView} planner={planner} onToggleTodo={toggleTodoWithUndo} onUpdateTodo={updateTodoWithUndo} />
+                <AppContent activeView={activeView} planner={planner} onToggleTodo={toggleTodoWithUndo} onUpdateTodo={updateTodoWithUndo} focusedMemoId={searchMemoId} focusedProjectId={searchProjectId} />
               </>
             ) : null}
           </main>
         </div>
 
-        {showCommandPalette ? <CommandPalette onClose={() => setShowCommandPalette(false)} onNavigate={changeView} onQuickAdd={openQuickAdd} todos={planner.allTodos} memos={planner.memos} projects={planner.projects} /> : null}
+        {showCommandPalette ? <CommandPalette onClose={() => setShowCommandPalette(false)} onNavigate={changeView} onQuickAdd={openQuickAdd} onOpenItem={openSearchResult} todos={planner.allTodos} memos={planner.memos} projects={planner.projects} /> : null}
 
         {showQuickAdd ? (
           <Modal title="빠른 Todo 추가" description="Ctrl+Shift+K · 내일 · !high · @프로젝트 · +카테고리 · due:2026-08-20 같은 빠른 문법을 사용할 수 있습니다." onClose={() => setShowQuickAdd(false)}>
             <TodoForm compact submitLabel="Todo 추가" categories={planner.categories} projects={planner.activeProjects} onAdd={async (input) => { const created = await planner.addTodo(input); if (created) setShowQuickAdd(false); return created; }} />
           </Modal>
         ) : null}
+
+        {searchTodo ? <TodoEditModal todo={searchTodo} categories={planner.categories} projects={planner.activeProjects} onClose={() => setSearchTodoId(null)} onSave={updateTodoWithUndo} /> : null}
 
         {showDayClose ? <DayCloseModal todos={todayOpenTodos} onClose={() => setShowDayClose(false)} onApply={applyDayClose} /> : null}
         {planner.pendingTodoDelete ? <TodoDeleteNoticeModal pending={planner.pendingTodoDelete} onUndo={planner.undoDeleteTodo} /> : null}

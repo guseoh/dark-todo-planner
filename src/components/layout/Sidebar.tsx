@@ -1,4 +1,4 @@
-import { Calendar, CalendarCheck, CalendarRange, ClipboardList, FileText, FolderKanban, Inbox, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Trash2 } from "lucide-react";
+import { Calendar, CalendarCheck, CalendarRange, ClipboardList, FileText, FolderKanban, Inbox, Menu, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 export const appViewIds = ["today", "inbox", "week", "month", "projects", "all", "memo", "scratchpad", "trash", "settings"] as const;
@@ -19,7 +19,13 @@ export const navGroups: Array<{ label: string; items: NavItem[] }> = [
 ];
 
 export const settingsItem: NavItem = { id: "settings", label: "설정", icon: Settings };
-const navItems = [...navGroups.flatMap((group) => group.items), settingsItem];
+const mobilePrimaryItems = [
+  navGroups[0].items[0], // Today
+  navGroups[1].items[3], // All Todo
+  navGroups[1].items[2], // Projects
+  navGroups[0].items[1], // Inbox
+];
+const mobileMoreItems = [...navGroups[1].items.slice(0, 2), ...navGroups[2].items, settingsItem];
 const SIDEBAR_MODE_KEY = "dark-todo-planner:sidebar-mode";
 const LEGACY_SIDEBAR_COLLAPSED_KEY = "dark-todo-planner:sidebar-collapsed";
 const HOVER_OPEN_DELAY_MS = 110;
@@ -35,7 +41,8 @@ const readInitialMode = (): SidebarMode => {
 export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
   const [mode, setMode] = useState<SidebarMode>(readInitialMode);
   const [hoverExpanded, setHoverExpanded] = useState(false);
-  const activeMobileItemRef = useRef<HTMLButtonElement | null>(null);
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const hoverOpenTimerRef = useRef<number | null>(null);
   const hoverCloseTimerRef = useRef<number | null>(null);
   const collapsed = mode === "collapsed";
@@ -60,10 +67,22 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
 
   useEffect(() => { localStorage.setItem(SIDEBAR_MODE_KEY, mode); if (mode === "expanded") setHoverExpanded(false); }, [mode]);
   useEffect(() => () => clearHoverTimers(), []);
+  useEffect(() => { setMobileMenuOpen(false); }, [activeView]);
   useEffect(() => {
-    if (!window.matchMedia("(max-width: 1023px)").matches) return;
-    activeMobileItemRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-  }, [activeView]);
+    if (!mobileMenuOpen) return;
+    const closeIfOutside = (event: PointerEvent) => {
+      if (!mobileMenuRef.current?.contains(event.target as Node)) setMobileMenuOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", closeIfOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeIfOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [mobileMenuOpen]);
 
   const renderDesktopItem = (item: NavItem) => {
     const Icon = item.icon;
@@ -118,17 +137,44 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
         </nav>
       </aside>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-700/70 bg-ink-950/96 px-2 py-1.5 backdrop-blur-xl lg:hidden">
-        <div className="relative">
-          <div className="flex gap-1 overflow-x-auto pb-1">
-            {navItems.map((item) => {
-              const Icon = item.icon; const active = activeView === item.id;
-              return <button key={item.id} ref={active ? activeMobileItemRef : null} type="button" onClick={() => onChangeView(item.id)} aria-current={active ? "page" : undefined}
-                className={`flex min-h-12 min-w-16 flex-col items-center justify-center gap-1 rounded-md px-2 text-[10px] font-semibold transition ${active ? "bg-ink-800 text-ink-100" : "text-ink-500 hover:bg-ink-800 hover:text-ink-100"}`}><Icon size={17} /><span className="truncate">{item.label}</span></button>;
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-700/70 bg-ink-950/96 px-2 py-1.5 backdrop-blur-xl lg:hidden" aria-label="모바일 탐색">
+        <div className="relative" ref={mobileMenuRef}>
+          {mobileMenuOpen ? (
+            <div id="mobile-more-menu" className="absolute bottom-full right-0 mb-3 w-[min(21rem,calc(100vw-1rem))] rounded-xl border border-ink-700 bg-ink-900 p-2 shadow-2xl">
+              <div className="flex items-center justify-between gap-2 border-b border-ink-700/70 px-2 pb-2">
+                <span className="text-xs font-bold text-ink-300">다른 화면</span>
+                <button type="button" className="rounded-md px-2 py-1 text-xs text-ink-400 hover:bg-ink-800" onClick={() => setMobileMenuOpen(false)}>닫기</button>
+              </div>
+              <div className="grid grid-cols-2 gap-1 pt-2">
+                {mobileMoreItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = item.id === activeView;
+                  return <button key={item.id} type="button" aria-current={active ? "page" : undefined}
+                    onClick={() => { setMobileMenuOpen(false); onChangeView(item.id); }}
+                    className={`flex min-h-11 items-center gap-2 rounded-lg px-3 text-left text-xs font-semibold transition ${active ? "bg-ink-800 text-accent-200" : "text-ink-300 hover:bg-ink-800"}`}>
+                    <Icon size={17} className="shrink-0" /><span className="truncate">{item.label}</span>
+                  </button>;
+                })}
+              </div>
+              <button type="button" className="mt-2 flex min-h-11 w-full items-center gap-2 rounded-lg border-t border-ink-700/70 px-3 text-xs font-semibold text-ink-300 hover:bg-ink-800" onClick={() => { setMobileMenuOpen(false); onSearch(); }}>
+                <Search size={17} />검색 및 명령 (Ctrl+K)
+              </button>
+            </div>
+          ) : null}
+          <div className="grid grid-cols-5 gap-1">
+            {mobilePrimaryItems.map((item) => {
+              const Icon = item.icon;
+              const active = activeView === item.id;
+              return <button key={item.id} type="button" onClick={() => { setMobileMenuOpen(false); onChangeView(item.id); }} aria-current={active ? "page" : undefined}
+                className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 text-[10px] font-semibold transition ${active ? "bg-ink-800 text-ink-100" : "text-ink-500 hover:bg-ink-800 hover:text-ink-100"}`}>
+                <Icon size={18} /><span className="max-w-full truncate">{item.label}</span>
+              </button>;
             })}
+            <button type="button" aria-expanded={mobileMenuOpen} aria-controls="mobile-more-menu" onClick={() => setMobileMenuOpen((v) => !v)}
+              className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 text-[10px] font-semibold transition ${mobileMenuOpen || mobileMoreItems.some((item) => item.id === activeView) ? "bg-ink-800 text-ink-100" : "text-ink-500 hover:bg-ink-800 hover:text-ink-100"}`}>
+              <Menu size={18} /><span>더보기</span>
+            </button>
           </div>
-          <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 w-5 bg-gradient-to-r from-ink-950 to-transparent" />
-          <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-5 bg-gradient-to-l from-ink-950 to-transparent" />
         </div>
       </nav>
     </>
