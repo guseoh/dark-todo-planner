@@ -32,7 +32,7 @@ export function InboxPage({ todos, categories, projects, onAdd, onUpdate, onDele
       <TodoForm compact submitLabel="Inbox에 저장" categories={categories} projects={projects} defaultPlanningState="INBOX" defaultDate={UNSCHEDULED_DATE} onAdd={onAdd} />
 
       <section className="app-card p-4">
-        <div className="mb-3 flex items-center justify-between"><h3 className="font-bold text-ink-100">미분류 작업</h3><span className="rounded-full bg-ink-950/70 px-2 py-0.5 text-xs text-ink-400">{inboxTodos.length}개</span></div>
+        <div className="mb-3 flex items-center justify-between"><h3 className="font-bold text-ink-100">Inbox 작업</h3><span className="rounded-full bg-ink-950/70 px-2 py-0.5 text-xs text-ink-400">{inboxTodos.length}개</span></div>
         <div className="space-y-2">
           {inboxTodos.map((todo) => (
             <article key={todo.id} className="rounded-xl border border-ink-700/70 bg-ink-950/40 p-3">

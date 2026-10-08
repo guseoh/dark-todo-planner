@@ -1,7 +1,8 @@
-import { Calendar, CalendarCheck, CalendarRange, ClipboardList, FileText, FolderKanban, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Trash2 } from "lucide-react";
+import { Calendar, CalendarCheck, CalendarRange, ClipboardList, FileText, FolderKanban, Inbox, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-export type AppView = "today" | "week" | "month" | "projects" | "all" | "memo" | "scratchpad" | "trash" | "settings";
+export const appViewIds = ["today", "inbox", "week", "month", "projects", "all", "memo", "scratchpad", "trash", "settings"] as const;
+export type AppView = (typeof appViewIds)[number];
 
 type SidebarProps = {
   activeView: AppView;
@@ -11,13 +12,13 @@ type SidebarProps = {
 type NavItem = { id: AppView; label: string; icon: typeof CalendarCheck };
 type SidebarMode = "expanded" | "collapsed";
 
-const navGroups: Array<{ label: string; items: NavItem[] }> = [
-  { label: "실행", items: [{ id: "today", label: "오늘", icon: CalendarCheck }] },
+export const navGroups: Array<{ label: string; items: NavItem[] }> = [
+  { label: "실행", items: [{ id: "today", label: "오늘", icon: CalendarCheck }, { id: "inbox", label: "Inbox", icon: Inbox }] },
   { label: "보기", items: [{ id: "week", label: "주간", icon: CalendarRange }, { id: "month", label: "월간", icon: Calendar }, { id: "projects", label: "프로젝트", icon: FolderKanban }, { id: "all", label: "전체 Todo", icon: ClipboardList }] },
   { label: "관리", items: [{ id: "memo", label: "메모", icon: StickyNote }, { id: "scratchpad", label: "낙서장", icon: FileText }, { id: "trash", label: "휴지통", icon: Trash2 }] },
 ];
 
-const settingsItem: NavItem = { id: "settings", label: "설정", icon: Settings };
+export const settingsItem: NavItem = { id: "settings", label: "설정", icon: Settings };
 const navItems = [...navGroups.flatMap((group) => group.items), settingsItem];
 const SIDEBAR_MODE_KEY = "dark-todo-planner:sidebar-mode";
 const LEGACY_SIDEBAR_COLLAPSED_KEY = "dark-todo-planner:sidebar-collapsed";
