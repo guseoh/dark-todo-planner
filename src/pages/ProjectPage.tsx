@@ -30,6 +30,7 @@ const isHttpUrl = (value: string) => {
 };
 
 type ProjectPageProps = {
+  focusedProjectId?: string | null;
   projects: Project[];
   milestones: Milestone[];
   decisions: ProjectDecision[];
@@ -52,6 +53,7 @@ type ProjectPageProps = {
 };
 
 export function ProjectPage({
+  focusedProjectId,
   projects,
   milestones,
   decisions,
@@ -98,6 +100,14 @@ export function ProjectPage({
     const candidates = showArchived ? archivedProjects : activeProjects;
     if (!candidates.some((project) => project.id === selectedId)) setSelectedId(candidates[0]?.id || "");
   }, [activeProjects, archivedProjects, selectedId, showArchived]);
+
+  useEffect(() => {
+    if (!focusedProjectId) return;
+    const project = projects.find((item) => item.id === focusedProjectId);
+    if (!project) return;
+    setShowArchived(project.archived);
+    setSelectedId(project.id);
+  }, [focusedProjectId, projects]);
 
   useEffect(() => {
     setEditingProject(false);

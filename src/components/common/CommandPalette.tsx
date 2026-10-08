@@ -10,6 +10,7 @@ type CommandPaletteProps = {
   onClose: () => void;
   onNavigate: (view: AppView) => void;
   onQuickAdd: () => void;
+  onOpenItem: (kind: "Todo" | "메모" | "프로젝트", id: string) => void;
   todos: Todo[];
   memos: Memo[];
   projects: Project[];
@@ -20,6 +21,7 @@ type Result = {
   label: string;
   detail: string;
   view?: AppView;
+  targetId?: string;
   action?: "quick-add";
   kind: "이동" | "Todo" | "메모" | "프로젝트" | "명령";
 };
@@ -53,7 +55,7 @@ const resultIcon = (result: Result) => {
   return CalendarCheck;
 };
 
-export function CommandPalette({ onClose, onNavigate, onQuickAdd, todos, memos, projects }: CommandPaletteProps) {
+export function CommandPalette({ onClose, onNavigate, onQuickAdd, onOpenItem, todos, memos, projects }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const results = useMemo(() => {
     const keyword = query.trim().toLocaleLowerCase("ko");
@@ -65,14 +67,14 @@ export function CommandPalette({ onClose, onNavigate, onQuickAdd, todos, memos, 
     }
     for (const todo of todos) {
       const haystack = `${todo.title} ${todo.memo || ""} ${todo.category?.name || ""}`.toLocaleLowerCase("ko");
-      if (haystack.includes(keyword)) matches.push({ id: `todo-${todo.id}`, label: todo.title, detail: todo.dueDate ? `마감 ${todo.dueDate}` : todo.date, view: "all", kind: "Todo" });
+      if (haystack.includes(keyword)) matches.push({ id: `todo-${todo.id}`, label: todo.title, detail: todo.dueDate ? `마감 ${todo.dueDate}` : todo.date, view: "all", targetId: todo.id, kind: "Todo" });
     }
     for (const memo of memos) {
       const title = memo.title?.trim() || memo.content.split("\n").find((line) => line.trim())?.trim() || "제목 없는 메모";
-      if (`${title} ${memo.content}`.toLocaleLowerCase("ko").includes(keyword)) matches.push({ id: `memo-${memo.id}`, label: title, detail: "메모에서 열기", view: "memo", kind: "메모" });
+      if (`${title} ${memo.content}`.toLocaleLowerCase("ko").includes(keyword)) matches.push({ id: `memo-${memo.id}`, label: title, detail: "메모에서 열기", view: "memo", targetId: memo.id, kind: "메모" });
     }
     for (const project of projects) {
-      if (`${project.name} ${project.description || ""}`.toLocaleLowerCase("ko").includes(keyword)) matches.push({ id: `project-${project.id}`, label: project.name, detail: project.archived ? "보관된 프로젝트" : "프로젝트에서 열기", view: "projects", kind: "프로젝트" });
+      if (`${project.name} ${project.description || ""}`.toLocaleLowerCase("ko").includes(keyword)) matches.push({ id: `project-${project.id}`, label: project.name, detail: project.archived ? "보관된 프로젝트" : "프로젝트에서 열기", view: "projects", targetId: project.id, kind: "프로젝트" });
     }
     return matches.slice(0, 16);
   }, [memos, projects, query, todos]);
@@ -81,6 +83,10 @@ export function CommandPalette({ onClose, onNavigate, onQuickAdd, todos, memos, 
     onClose();
     if (result.action === "quick-add") {
       onQuickAdd();
+      return;
+    }
+    if (result.targetId && (result.kind === "Todo" || result.kind === "메모" || result.kind === "프로젝트")) {
+      onOpenItem(result.kind, result.targetId);
       return;
     }
     if (result.view) onNavigate(result.view);
