@@ -36,6 +36,9 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Backup cryptography regression tests
+        run: node --test scripts/d1-backup-crypto.check.mjs
+
       - name: Build and Wrangler dry-run
         run: npm run build
 
