@@ -405,7 +405,7 @@ export function ProjectPage({
                   {projectMilestones.map((milestone) => <option key={milestone.id} value={milestone.id}>{milestone.title}</option>)}
                 </select>
               </div>
-              <TodoForm compact submitLabel="프로젝트 Todo 추가" categories={categories} projects={activeProjects} defaultProjectId={selected.id} onAdd={(input) => { void addProjectTodo(input); }} />
+              <TodoForm compact submitLabel="프로젝트 Todo 추가" categories={categories} projects={activeProjects} defaultProjectId={selected.id} onAdd={addProjectTodo} />
             </div>
           ) : null}
 

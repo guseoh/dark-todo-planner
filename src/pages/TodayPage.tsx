@@ -24,7 +24,7 @@ type TodayPageProps = {
     weekTotal: number;
     weekRate: number;
   };
-  onAdd: (todo: TodoInput) => void;
+  onAdd: (todo: TodoInput) => Promise<Todo | undefined> | Todo | undefined;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onDeleteMany: (ids: string[]) => Promise<boolean> | boolean;

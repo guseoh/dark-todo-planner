@@ -154,6 +154,7 @@ todoRoutes.post("/todos", async (c) => {
   const row = {
     id: newId(), userId, categoryId: input.categoryId || null, projectId: input.projectId || null, milestoneId: input.milestoneId || null, parentTodoId: input.parentTodoId || null,
     title: input.title, memo: optional(input.memo), date: input.date, dueDate: optional(input.dueDate), startTime: optional(input.startTime), endTime: optional(input.endTime), estimateMinutes: null,
+    referenceUrl: optional(input.referenceUrl), referenceLabel: input.referenceUrl ? optional(input.referenceLabel) : null,
     planningState: input.planningState, workflowStatus: completed ? "DONE" as const : input.workflowStatus, priority: input.priority, completed,
     repeat: "NONE" as const, archived: input.archived || false, archivedAt: input.archived ? now : null, order: input.order ?? (maximum.value ?? -1) + 1, createdAt: now, updatedAt: now,
   };
@@ -196,6 +197,7 @@ todoRoutes.put("/todos/:id", async (c) => {
   await db.update(todos).set({
     categoryId: input.categoryId || null, projectId: input.projectId || null, milestoneId: input.milestoneId || null, parentTodoId: input.parentTodoId || null,
     title: input.title, memo: optional(input.memo), date: input.date, dueDate: optional(input.dueDate), startTime: optional(input.startTime), endTime: optional(input.endTime), estimateMinutes: null,
+    referenceUrl: optional(input.referenceUrl), referenceLabel: input.referenceUrl ? optional(input.referenceLabel) : null,
     planningState: input.planningState, workflowStatus, priority: input.priority, completed, repeat: "NONE",
     archived: input.archived ?? existing.archived, archivedAt: input.archived === true && !existing.archived ? nowIso() : input.archived === false ? null : existing.archivedAt,
     order: input.order ?? existing.order, updatedAt: nowIso(),

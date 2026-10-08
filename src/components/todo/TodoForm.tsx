@@ -4,13 +4,13 @@ import { todayKey } from "../../lib/date";
 import { parseQuickTodoTitle } from "../../lib/quickAdd";
 import type { Category } from "../../types/category";
 import type { Project } from "../../types/project";
-import type { TodoInput, TodoPlanningState, TodoPriority } from "../../types/todo";
+import type { Todo, TodoInput, TodoPlanningState, TodoPriority } from "../../types/todo";
 import { TodoDetailFields } from "./TodoDetailFields";
 
 const UNSCHEDULED_DATE = "9999-12-31";
 
 type TodoFormProps = {
-  onAdd: (todo: TodoInput) => void;
+  onAdd: (todo: TodoInput) => Promise<Todo | undefined> | Todo | undefined;
   defaultDate?: string;
   compact?: boolean;
   submitLabel?: string;
@@ -46,6 +46,8 @@ export function TodoForm({
   const [projectId, setProjectId] = useState(defaultProjectId);
   const [planningState, setPlanningState] = useState<TodoPlanningState>(defaultPlanningState);
   const [showDetails, setShowDetails] = useState(!compact);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => { setDate(defaultDate || todayKey()); }, [defaultDate]);
   useEffect(() => { setCategoryId(defaultCategoryId); }, [defaultCategoryId]);
@@ -64,8 +66,9 @@ export function TodoForm({
     if (compact) setShowDetails(false);
   };
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    if (saving) return;
     const parsed = parseQuickTodoTitle(title, todayKey(), {
       categories: lockCategory ? [] : categories,
       projects,
@@ -78,7 +81,7 @@ export function TodoForm({
     const nextPlanningState = parsed.planningState ?? planningState;
     const nextDate = parsed.date || date || defaultDate || todayKey();
 
-    onAdd({
+    const input: TodoInput = {
       title: parsed.title,
       categoryId: lockCategory ? (categoryId || undefined) : ((parsed.categoryId ?? categoryId) || undefined),
       projectId: (parsed.projectId ?? projectId) || undefined,
@@ -87,9 +90,22 @@ export function TodoForm({
       dueDate: parsed.dueDate || dueDate || undefined,
       planningState: nextPlanningState,
       priority: parsed.priority || priority,
-    });
-    reset();
-    window.requestAnimationFrame(() => titleInputRef.current?.focus());
+    };
+    setSaving(true);
+    setSaveError("");
+    try {
+      const created = await onAdd(input);
+      if (!created) {
+        setSaveError("Todo 저장에 실패했습니다. 작성 중인 내용은 유지됩니다.");
+        return;
+      }
+      reset();
+      window.requestAnimationFrame(() => titleInputRef.current?.focus());
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Todo 저장 중 오류가 발생했습니다.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -102,8 +118,9 @@ export function TodoForm({
             {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
           </select>
         ) : null}
-        <div className="flex"><button type="submit" className="btn-primary"><Plus size={18} />{submitLabel}</button></div>
+        <div className="flex"><button type="submit" className="btn-primary" disabled={saving}><Plus size={18} />{saving ? "저장 중..." : submitLabel}</button></div>
       </div>
+      {saveError ? <p role="alert" className="mt-2 text-xs font-semibold text-red-200">{saveError}</p> : null}
       {showSyntaxHint ? <p className="mt-1.5 px-1 text-[11px] text-ink-500">빠른 문법: 내일 · !high · @프로젝트 · +카테고리 · due:내일 · date:2026-08-20 · inbox/someday/waiting · 공백 이름은 @{"{"}프로젝트 이름{"}"} / +{"{"}카테고리 이름{"}"}</p> : null}
       <button type="button" className="mt-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-ink-400 transition hover:bg-ink-900/70 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40" onClick={() => setShowDetails((value) => !value)} aria-expanded={showDetails}>
         <ChevronDown className={`transition ${showDetails ? "rotate-180" : ""}`} size={15} />상세 옵션

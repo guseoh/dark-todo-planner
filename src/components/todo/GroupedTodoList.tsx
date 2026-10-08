@@ -36,7 +36,7 @@ type GroupedTodoListProps = {
   todos: Todo[];
   categories: Category[];
   duplicateTodoIds?: ReadonlySet<string>;
-  onAddTodo: (todo: TodoInput) => void | Promise<void>;
+  onAddTodo: (todo: TodoInput) => Promise<Todo | undefined> | Todo | undefined;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;

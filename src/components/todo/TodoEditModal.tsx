@@ -1,8 +1,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import { addDays } from "date-fns";
 import { ExternalLink } from "lucide-react";
-import { api, jsonBody } from "../../lib/api/client";
 import { parseDateKey, todayKey, toDateKey } from "../../lib/date";
+import { resolveTodoScheduledDate } from "../../lib/todoScheduledDate";
 import type { Category } from "../../types/category";
 import type { Project } from "../../types/project";
 import type { Todo, TodoPlanningState, TodoPriority, TodoWorkflowStatus } from "../../types/todo";
@@ -71,25 +71,23 @@ export function TodoEditModal({ todo, categories = [], projects = [], onClose, o
     setSaving(true);
     setReferenceError("");
     try {
-      await api(`/api/todos/${todo.id}/reference-link`, {
-        method: "PUT",
-        ...jsonBody({
-          url: referenceUrl.trim() || null,
-          label: referenceLabel.trim() || null,
-        }),
-      });
-      await Promise.resolve(onSave(todo.id, {
+      const saved = await Promise.resolve(onSave(todo.id, {
         title: title.trim(),
         categoryId: categoryId || undefined,
         projectId: projectId || undefined,
-        date: planningState === "SCHEDULED" ? (date || todo.date || todayKey()) : UNSCHEDULED_DATE,
+        date: planningState === "SCHEDULED" ? resolveTodoScheduledDate(date, todo.date, todayKey()) : UNSCHEDULED_DATE,
         dueDate: dueDate || undefined,
         priority,
         completed,
         planningState,
         workflowStatus: completed ? "DONE" : workflowStatus,
-        updatedAt: new Date().toISOString(),
+        referenceUrl: referenceUrl.trim() || undefined,
+        referenceLabel: referenceUrl.trim() ? (referenceLabel.trim() || undefined) : undefined,
       }));
+      if (!saved) {
+        setReferenceError("Todo 저장에 실패했습니다. 입력 내용을 유지했으니 다시 시도해주세요.");
+        return;
+      }
       onClose();
     } catch (error) {
       setReferenceError(error instanceof Error ? error.message : "관련 링크를 저장하지 못했습니다.");
