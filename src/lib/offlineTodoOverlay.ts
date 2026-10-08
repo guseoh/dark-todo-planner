@@ -1,4 +1,4 @@
-import type { Todo, TodoBulkAction, TodoPlanningState, TodoPriority, TodoWorkflowStatus } from "../types/todo";
+import type { Todo, TodoPlanningState, TodoPriority, TodoWorkflowStatus } from "../types/todo";
 import type { QueuedTodoMutation } from "./offlineTodoQueue";
 
 const record = (value: unknown): Record<string, unknown> | null =>
