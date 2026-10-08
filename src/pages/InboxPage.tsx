@@ -12,7 +12,7 @@ export function InboxPage({ todos, categories, projects, onAdd, onUpdate, onDele
   todos: Todo[];
   categories: Category[];
   projects: Project[];
-  onAdd: (input: TodoInput) => void;
+  onAdd: (input: TodoInput) => Promise<Todo | undefined> | Todo | undefined;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
   onDelete: (id: string) => void;
 }) {

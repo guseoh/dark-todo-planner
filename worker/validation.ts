@@ -1,10 +1,15 @@
 import { z } from "zod";
 
 export const tagsSchema = z.array(z.string()).optional().default([]).transform((values) => Array.from(new Set(values.map((value) => value.trim().replace(/^#/, "")).filter(Boolean))));
+const optionalHttpUrl = z.string().trim().max(2048).url().refine((value) => {
+  try { return ["http:", "https:"].includes(new URL(value).protocol); } catch { return false; }
+}, "http 또는 https 링크만 사용할 수 있습니다.").nullable().optional();
+
 export const todoInputSchema = z.object({
   categoryId: z.string().nullable().optional(), projectId: z.string().nullable().optional(), milestoneId: z.string().nullable().optional(), parentTodoId: z.string().nullable().optional(),
   title: z.string().trim().min(1), memo: z.string().optional().nullable(), date: z.string().min(1), dueDate: z.string().optional().nullable(),
   startTime: z.string().optional().nullable(), endTime: z.string().optional().nullable(),
+  referenceUrl: optionalHttpUrl, referenceLabel: z.string().trim().max(80).optional().nullable(),
   planningState: z.enum(["INBOX", "SCHEDULED", "SOMEDAY", "WAITING"]).default("SCHEDULED"), workflowStatus: z.enum(["TODO", "IN_PROGRESS", "BLOCKED", "DONE"]).default("TODO"),
   priority: z.enum(["LOW", "MEDIUM", "HIGH"]).default("MEDIUM"), completed: z.boolean().optional(),
   archived: z.boolean().optional(), order: z.number().int().optional(),

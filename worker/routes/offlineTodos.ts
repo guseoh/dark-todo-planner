@@ -69,6 +69,8 @@ offlineTodoRoutes.put("/offline/todos/:id", async (c) => {
     parentTodoId: input.parentTodoId || null,
     title: input.title,
     memo: optional(input.memo),
+    referenceUrl: optional(input.referenceUrl),
+    referenceLabel: input.referenceUrl ? optional(input.referenceLabel) : null,
     date: input.date,
     dueDate: optional(input.dueDate),
     startTime: optional(input.startTime),
