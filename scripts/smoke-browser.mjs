@@ -87,7 +87,66 @@ try {
   await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
   await page.getByText(offlineTitle, { exact: true }).first().waitFor();
 
-  console.log("BROWSER E2E PASS: login, mobile navigation, settings backup, create, search/edit, offline queue reconnect and reload.");
+  // Weekly goals are a primary editing flow. Assert that failed network writes
+  // do not clear the draft or dismiss the edit input, then retry successfully.
+  await nav.getByRole("button", { name: "더보기" }).click();
+  await nav.getByRole("button", { name: "주간", exact: true }).click();
+  await page.getByRole("heading", { name: "주간", exact: true }).waitFor();
+  const weeklySummary = page.locator('section[aria-labelledby="week-summary-title"]');
+  const goalCard = page.getByRole("region", { name: "이번 주 목표" });
+  await goalCard.waitFor();
+  const widths = await page.evaluate(() => {
+    const summary = document.querySelector('section[aria-labelledby="week-summary-title"]');
+    const goals = document.querySelector('section[aria-label="이번 주 목표"]');
+    if (!summary || !goals) throw new Error("Weekly summary and goals not found.");
+    return { summary: summary.getBoundingClientRect(), goals: goals.getBoundingClientRect() };
+  });
+  assert.ok(Math.abs(widths.summary.width - widths.goals.width) < 2, "Weekly goal card should align with the summary width.");
+
+  const currentWeek = await page.locator("#week-summary-title").innerText();
+  await page.getByRole("button", { name: "이전 주" }).click();
+  assert.notEqual(await page.locator("#week-summary-title").innerText(), currentWeek, "Previous week must change the date range.");
+  await page.getByRole("button", { name: "이번 주", exact: true }).click();
+  assert.equal(await page.locator("#week-summary-title").innerText(), currentWeek, "This week button must restore the visible date range.");
+
+  const goalTitle = `Weekly E2E ${randomUUID().slice(0, 8)}`;
+  const goalDraft = goalCard.getByRole("textbox", { name: "이번 주에 끝낼 핵심 목표" });
+  await goalDraft.fill(goalTitle);
+  let failAddOnce = true;
+  await page.route("**/api/goals", async (route) => {
+    if (route.request().method() === "POST" && failAddOnce) {
+      failAddOnce = false;
+      await route.fulfill({ status: 503, contentType: "application/json", body: '{"message":"test failure"}' });
+    } else await route.continue();
+  });
+  await goalCard.getByRole("button", { name: "추가", exact: true }).click();
+  await goalCard.getByRole("alert").waitFor();
+  assert.equal(await goalDraft.inputValue(), goalTitle, "Creation failure must preserve weekly goal draft.");
+  await goalCard.getByRole("button", { name: "추가", exact: true }).click();
+  await goalCard.getByText(goalTitle, { exact: true }).waitFor();
+  assert.equal(await goalDraft.inputValue(), "", "Successful save clears weekly goal draft.");
+  await page.unroute("**/api/goals");
+
+  await goalCard.getByRole("button", { name: `${goalTitle} 수정` }).click();
+  const editedGoalTitle = goalTitle + " edited";
+  const editGoal = goalCard.getByRole("textbox", { name: "목표 제목 수정" });
+  await editGoal.fill(editedGoalTitle);
+  let failEditOnce = true;
+  await page.route("**/api/goals/*", async (route) => {
+    if (route.request().method() === "PUT" && failEditOnce) {
+      failEditOnce = false;
+      await route.fulfill({ status: 503, contentType: "application/json", body: '{"message":"test failure"}' });
+    } else await route.continue();
+  });
+  await goalCard.getByRole("button", { name: "목표 수정 저장" }).click();
+  await goalCard.getByRole("alert").waitFor();
+  assert.equal(await editGoal.inputValue(), editedGoalTitle, "Update failure must keep edit mode and text.");
+  await goalCard.getByRole("button", { name: "목표 수정 저장" }).click();
+  await goalCard.getByText(editedGoalTitle, { exact: true }).waitFor();
+  await editGoal.waitFor({ state: "hidden" });
+  await page.unroute("**/api/goals/*");
+
+  console.log("BROWSER E2E PASS: login, navigation, todo/offline, week navigation, aligned goal card and goal retry after API failure.");
 } catch (error) {
   failed = true;
   await mkdir("test-artifacts", { recursive: true });
