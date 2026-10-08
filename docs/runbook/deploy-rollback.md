@@ -1,47 +1,34 @@
 # Worker 배포 및 롤백 Runbook
 
-개인용 Todo Planner의 Preview·Production 수동 배포와 Worker 코드 롤백 절차입니다. 배포와 롤백은 자동화하지 않으며, 대상 환경을 확인한 뒤 소유자가 직접 실행합니다.
+현재 배포는 **GitHub Actions의 자동 Production 배포**가 기본입니다. `main` push(또는 PR 병합) 및 수동 `workflow_dispatch` 실행 시 검증을 통과하면 Production D1 migration을 적용하고 Worker를 배포합니다. 이 문서의 직접 `wrangler` 명령은 수동 Preview 검증·장애 대응용입니다.
 
-## 배포 전 확인
+## 자동 Production 배포
 
-`main`을 최신화하고 아래 검증이 모두 성공한 커밋만 배포합니다.
+[CI 워크플로](../../.github/workflows/ci.yml)의 실제 순서는 다음과 같습니다.
+
+1. PR에서 `npm ci`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --omit=dev`를 실행합니다. PR은 **Production 배포를 하지 않습니다**.
+2. `main` push 또는 `workflow_dispatch`에서는 검사 성공 뒤 `Deploy production` 잡이 실행됩니다.
+3. Cloudflare API Token/Account ID Secret을 확인하고 `npm run db:migrate:production`으로 Production D1 migration을 적용합니다.
+4. `npm run deploy:production`으로 Worker를 배포하고 [Production health](https://dark-todo-planner.guseoh.workers.dev/api/health) HTTP 200을 확인합니다.
+
+**주의:** 현재 자동화에는 로그인 후 CRUD 브라우저 E2E와 Preview 승인이 필수 게이트로 연결돼 있지 않습니다. PR 검증 통과만으로 사용자 데이터 복원이나 로그인·동작 확인까지 보증하지 않습니다. Migration을 추가하거나 파괴적 기능을 변경할 때는 병합 전에 별도 Preview 검증 및 백업을 수행하세요.
+
+## 로컬 검증 및 수동 Preview
 
 ```bash
-git switch main
-git pull --ff-only origin main
 npm ci
 npm run typecheck
 npm test
 npm run build
 npm audit --omit=dev
-```
-
-## Preview 배포
-
-1. 기존 npm script로 Preview에 배포합니다.
-
-```bash
 npm run deploy:preview
 ```
 
-2. [Preview health endpoint](https://dark-todo-planner-preview.guseoh.workers.dev/api/health)가 HTTP 200과 다음 응답을 반환하는지 확인합니다.
+Preview가 필요할 때만 [Preview health](https://dark-todo-planner-preview.guseoh.workers.dev/api/health)에서 `{"status":"ok","database":"connected"}` 응답을 확인하고, Preview 계정으로 임시 Todo의 생성·수정·완료·휴지통 이동·복원을 검사합니다. Preview 환경과 Production은 별도 D1을 사용합니다.
 
-```json
-{ "status": "ok", "database": "connected" }
-```
+## 수동 Production 배포 (예외)
 
-3. Preview에 로그인한 뒤 임시 Todo를 생성하고, 수정하고, 완료 상태를 전환하고, 삭제해 핵심 CRUD를 확인합니다.
-4. 확인에 실패하면 Production을 배포하지 말고 원인을 먼저 해결합니다.
-
-## Production 배포
-
-Preview 확인을 통과한 같은 `main` 커밋만 기존 npm script로 Production에 배포합니다.
-
-```bash
-npm run deploy:production
-```
-
-배포 후 [Production health endpoint](https://dark-todo-planner.guseoh.workers.dev/api/health)의 HTTP 200과 D1 연결 응답을 확인합니다. 이어서 Production에 로그인하고, 식별하기 쉬운 임시 Todo로 생성·수정·완료 전환·삭제를 확인합니다.
+CI가 아닌 수동 배포가 필요하면 배포할 커밋, Cloudflare 환경, 보관한 D1 백업을 확인하세요. `main`을 최신화하고 **CI 성공 커밋**인지를 재검증한 뒤 `npm run db:migrate:production`, `npm run deploy:production`을 차례대로 실행합니다. 이후 Production health와 로그인·주요 CRUD를 확인합니다. GitHub Actions가 이미 같은 커밋을 배포한 경우 불필요한 중복 배포를 피하세요.
 
 ## Worker 롤백
 

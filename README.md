@@ -1,41 +1,43 @@
 # Dark Todo Planner
 
-개인적으로 사용할 Todo 관리 도구가 필요해서 만든 웹 앱입니다.
+개인용 작업·프로젝트 관리 웹 앱입니다. **현재 제공하는 기능**과 **코드만 남아 있는 기능**은 구분합니다.
 
-오늘·주간·월간 Todo, 프로젝트와 메모, 학습 기록과 알림을 한 곳에서 관리합니다.
+- **Frontend:** React 18 + Vite
+- **API:** Hono + Cloudflare Workers
+- **Database:** Cloudflare D1
+- **Production:** https://dark-todo-planner.guseoh.workers.dev/
 
-- Frontend: React + Vite
-- API: Hono + Cloudflare Workers
-- Database: Cloudflare D1
+## 현재 사용 가능한 기능
 
-## 현재 기능
+- **오늘 / Inbox:** 오늘의 Todo 관리, 미완료 작업 가져오기, 일정이 없는 Todo 수집 후 오늘·내일·Someday·Waiting으로 이동
+- **주간 / 월간:** 날짜별 Todo 및 목표 확인·수정
+- **프로젝트:** 프로젝트별 Todo, 마일스톤, 결정 기록, Kanban 상태 이동
+- **전체 Todo:** 검색, 카테고리·상태·우선순위 필터, 다중 선택 및 일괄 변경
+- **메모 / 낙서장:** 메모와 Todo·프로젝트 연결, 별도 낙서장 자동 저장
+- **휴지통:** Todo 이동, 복원 미리보기, 복원·영구 삭제
+- **설정:** Routine Bundle, 운영·Discord 알림 설정, PWA 설치, ICS/CSV/Markdown 내보내기, 전체 JSON 백업·복원
+- **오프라인 변경 큐:** IndexedDB에 일부 Todo 변경을 보관한 뒤 온라인 복구 시 동기화합니다. 전체 화면의 오프라인 사용을 지원하는 것은 아닙니다.
 
-- Today / Week / Month / Project 기반 Todo 관리
-- Project Kanban Drag & Drop 상태 관리
-- 전체 Todo 검색·필터·일괄 변경, 미처리 Todo 가져오기
-- Scratchpad, Memo, 휴지통, Backup / Restore
-- Routine Bundle, Discord Todo 리마인더, Calendar ICS 내보내기
-- Todo 변경 IndexedDB 오프라인 큐
-- Learning: Notion 문제·기술 블로그 동기화 + Workers AI 학습 가이드
+### 실제 동작하는 외부 연동
 
-## 외부 연동
+- **Discord:** Production에서 한국 시간 매일 오후 9시, 설정에 따라 미완료·마감 Todo의 일괄 리마인더를 전송합니다. 웹훅 Secret이 구성된 경우에만 발송합니다.
+- **Calendar:** ICS 파일 내보내기를 지원합니다. 외부 캘린더와의 양방향 동기화는 지원하지 않습니다.
+- **Cloudflare:** Workers와 D1에 저장하고 GitHub Actions로 Production을 배포합니다.
 
-- Notion: 데일리 코드 읽기와 기술 블로그를 Learning으로 Pull 동기화
-- Discord: 미완료 Todo 및 개별 Todo 리마인더
-- Cloudflare Workers AI: Learning 항목의 핵심 포인트·확인 질문·적용 질문 생성
+**현재 미지원:** 개별 Todo의 특정 시각·5분 주기 알림, Notion 자동 동기화, Workers AI 학습 가이드, Planning/Focus/Insights 화면. 일부 코드·스키마는 향후 검토와 백업 호환성을 위해 남아 있으며 현재 앱에서 접근할 수 없습니다.
+
+기능별 **화면 진입·API 등록 여부·보존 정책**은 [기능 범위 및 상태](docs/feature-scope.md)를 참고하세요.
 
 ## 로컬 실행
 
 Node.js 22 이상이 필요합니다.
 
 ```bash
-npm install
+npm ci
 npm run auth:hash
 ```
 
-`npm run auth:hash`에서 사용할 비밀번호를 입력하면 scrypt 해시가 출력됩니다.
-
-저장소 루트에 커밋하지 않는 `.dev.vars` 파일을 만들고 로그인 정보를 설정합니다.
+`npm run auth:hash`에서 사용할 비밀번호를 입력하면 scrypt 해시가 출력됩니다. 저장소 루트에 Git으로 추적하지 않는 `.dev.vars`를 만듭니다.
 
 ```dotenv
 AUTH_USERNAME=your-username
@@ -50,4 +52,17 @@ npm run db:migrate:local
 npm run dev
 ```
 
-Wrangler가 표시한 로컬 주소에서 설정한 계정으로 로그인하면 됩니다.
+Wrangler가 표시하는 로컬 주소에서 로그인할 수 있습니다.
+
+## 검증·배포
+
+```bash
+npm run typecheck
+npm test
+npm run build
+npm audit --omit=dev
+```
+
+PR에서는 타입 검사·테스트·빌드·의존성 감사를 진행합니다. **`main`에 push 또는 PR 병합하면** GitHub Actions가 위 검증 통과 후 **Production D1 migration → Worker 배포 → /api/health 확인**을 자동으로 수행합니다. Preview 브라우저 테스트는 현재 필수 CI 단계가 아닙니다.
+
+실제 운영 절차와 데이터 복구 주의사항은 [배포·롤백 Runbook](docs/runbook/deploy-rollback.md) 및 [D1 백업 Runbook](docs/runbook/d1-backup-restore.md)을 참고하세요.
