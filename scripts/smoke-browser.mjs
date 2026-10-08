@@ -57,6 +57,14 @@ try {
   await page.getByText("전체 데이터 백업·복원").first().waitFor();
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
 
+  // Empty Today state should prioritize a single helpful message and the add form
+  // rather than multiple zero-statistics cards.
+  await page.getByRole("heading", { name: "오늘은 아직 등록된 Todo가 없습니다." }).waitFor();
+  assert.equal(await page.getByRole("heading", { name: "오늘의 핵심 작업" }).count(), 0, "Do not render empty focus card.");
+  assert.equal(await page.getByText("미완료 Todo가 없습니다.", { exact: true }).count(), 0, "Do not repeat zero-state placeholders.");
+  assert.equal(await page.getByRole("button", { name: "카테고리 관리" }).count(), 1, "Keep category management discoverable even when Today is empty.");
+  assert.equal(await page.locator('section[aria-label="오늘 Todo"]').count(), 1, "Todo entry must remain available while empty.");
+
   const title = `Browser Todo ${randomUUID().slice(0, 8)}`;
   const edited = title + " edited";
   const quickInput = page.locator('input[data-quick-todo-input="true"]');
@@ -64,6 +72,14 @@ try {
   await page.getByRole("button", { name: "추가", exact: true }).click();
   await page.getByText(title, { exact: true }).first().waitFor();
   assert.ok(await findServerTodo(title), "Todo create should persist to local D1.");
+  await page.getByRole("heading", { name: "오늘 진행" }).waitFor();
+  await page.getByText("중요한 Todo는 별표를 눌러 상단에 모아 둘 수 있습니다.", { exact: false }).waitFor();
+  await page.getByRole("button", { name: `${title} 핵심 작업으로 고정` }).click();
+  await page.getByRole("heading", { name: "오늘의 핵심 작업" }).waitFor();
+  assert.equal(await page.getByRole("button", { name: `${title} 핵심 작업으로 고정` }).count(), 0, "Pinned Todo must not appear twice.");
+  await page.getByRole("button", { name: `${title} 핵심 작업에서 제외` }).click();
+  assert.equal(await page.getByRole("heading", { name: "오늘의 핵심 작업" }).count(), 0, "Focus card should collapse after removing the last pinned Todo.");
+  await page.getByRole("button", { name: `${title} 핵심 작업으로 고정` }).waitFor();
 
   await page.keyboard.press("Control+k");
   const search = page.getByRole("dialog", { name: "검색 및 명령" });
@@ -146,7 +162,7 @@ try {
   await editGoal.waitFor({ state: "hidden" });
   await page.unroute("**/api/goals/*");
 
-  console.log("BROWSER E2E PASS: login, navigation, todo/offline, week navigation, aligned goal card and goal retry after API failure.");
+  console.log("BROWSER E2E PASS: Today empty state, focus collapse/restore, todo/offline, week navigation, goal retry.");
 } catch (error) {
   failed = true;
   await mkdir("test-artifacts", { recursive: true });
