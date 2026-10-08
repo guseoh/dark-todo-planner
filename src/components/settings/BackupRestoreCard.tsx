@@ -110,7 +110,7 @@ export function BackupRestoreCard({ onRestored }: { onRestored: () => Promise<vo
         <div className="space-y-3 rounded-lg border border-warning/35 bg-warning/[0.04] p-3">
           <p className="text-sm font-semibold text-ink-100">백업 v{preview.version} · {new Date(preview.exportedAt).toLocaleString("ko-KR")}</p>
           <p className="text-xs text-ink-300">Todo {preview.counts.todos}개 · 카테고리 {preview.counts.categories}개 · 프로젝트 {preview.counts.projects}개 · 메모 {preview.counts.memos}개</p>
-          <p className="text-xs leading-5 text-amber-200">주의: 복원은 병합이 아니라 현재 서버 데이터를 대체합니다. 필수 목록 {preview.collectionCount}개 및 항목 참조를 검사했지만, 복원은 여러 DB 단계로 실행되어 중간 실패 시 일부만 반영될 수 있습니다. 최신 D1 SQL 백업과 JSON 백업을 별도로 확보하세요.</p>
+          <p className="text-xs leading-5 text-amber-200">주의: 복원은 병합이 아니라 현재 서버 데이터를 대체합니다. 필수 목록 {preview.collectionCount}개를 검사하며, 서버에서는 모든 복원 SQL을 단일 트랜잭션으로 적용하거나 전체 롤백합니다. 50문장 한도 초과 및 JSON 미지원 데이터는 복원할 수 없습니다. 최신 D1 SQL 백업과 JSON 백업을 별도로 확보하세요.</p>
           <label className="block text-xs font-semibold text-ink-300">복원을 진행하려면 아래에 복원을 입력하세요.
             <input className="field mt-2" autoComplete="off" value={confirmedText} onChange={(event) => setConfirmedText(event.target.value)} placeholder="복원" disabled={busy} />
           </label>

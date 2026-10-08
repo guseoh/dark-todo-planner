@@ -94,7 +94,27 @@ try {
   const restoredAfterImport = expectStatus(await request(`/api/todos/${id}`), 200, "Verify real local JSON round trip").todo;
   assert.equal(restoredAfterImport.title, update.title);
   assert.equal(restoredAfterImport.referenceUrl, update.referenceUrl);
-  console.log("LOCAL E2E PASS: health, auth, UUID CRUD, trash restore, rejected import unchanged, successful local JSON round trip.");
+
+  // Force a database error in the LATE routine phase of an otherwise valid
+  // v13 restore. Every prior Todo/extension write must be rolled back too.
+  const beforeAtomicFailure = expectStatus(await request("/api/backup/export"), 200, "Backup before induced D1 error");
+  const modifiedTitle = "THIS MUST NEVER COMMIT";
+  const doomed = {
+    ...beforeAtomicFailure,
+    todos: beforeAtomicFailure.todos.map((todo) => todo.id === id ? { ...todo, title: modifiedTitle } : todo),
+    routineTemplates: [
+      ...beforeAtomicFailure.routineTemplates,
+      { id: randomUUID(), name: "__ATOMIC_RESTORE_FAIL__", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    ],
+  };
+  expectStatus(await request("/api/backup/import", "POST", doomed), 500, "Late SQL error rolls back entire JSON import");
+  const afterAtomicFailure = expectStatus(await request(`/api/todos/${id}`), 200, "Read Todo after failed transaction").todo;
+  assert.equal(afterAtomicFailure.title, update.title, "Earlier core writes must be rolled back after late routine insert failure");
+  assert.equal(afterAtomicFailure.referenceUrl, update.referenceUrl);
+  const afterBackup = expectStatus(await request("/api/backup/export"), 200, "Backup after induced rollback");
+  assert.deepEqual(afterBackup.routineTemplates, beforeAtomicFailure.routineTemplates, "Late routine phase must leave no partially changed routines");
+
+  console.log("LOCAL E2E PASS: health, auth, UUID CRUD, trash restore, atomic rollback after late D1 failure, successful local JSON round trip.");
 } finally {
   if (created) {
     // Only loopback URLs can reach this cleanup path.
