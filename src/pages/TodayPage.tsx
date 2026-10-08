@@ -115,6 +115,8 @@ export function TodayPage({
   const activeTodos = useMemo(() => visibleTodos.filter((todo) => !todo.completed), [visibleTodos]);
   const completedTodos = useMemo(() => visibleTodos.filter((todo) => todo.completed), [visibleTodos]);
   const remainingTodos = useMemo(() => activeTodos.filter((todo) => !focusSet.has(todo.id)), [activeTodos, focusSet]);
+  const hasTodayTodos = todayTodos.length > 0;
+  const hasIncompleteTodos = todayTodos.some((todo) => !todo.completed);
   const highPriorityCount = useMemo(
     () => todayTodos.filter((todo) => !todo.completed && todo.priority === "HIGH").length,
     [todayTodos],
@@ -174,42 +176,47 @@ export function TodayPage({
       <section className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-ink-100">오늘</h2>
-          <p className="mt-1 text-sm text-ink-500">{formatKoreanDate(today, "M월 d일 EEEE")}</p>
+          <p className="mt-1 text-sm text-ink-400">{formatKoreanDate(today, "M월 d일 EEEE")}</p>
         </div>
-        <span className="rounded-full border border-ink-700/55 bg-ink-900/60 px-2.5 py-1 text-[11px] font-semibold text-ink-500" title="Todo Planner의 하루는 오전 3시에 바뀝니다.">
+        <span className="rounded-full border border-ink-700/55 bg-ink-900/60 px-2.5 py-1 text-xs font-semibold text-ink-400" title="Todo Planner의 하루는 오전 3시에 바뀝니다.">
           03:00 기준
         </span>
       </section>
 
-      <section className="app-card px-3.5 py-3" aria-labelledby="today-summary-title">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
+      {hasTodayTodos ? (
+        <section className="app-card px-3.5 py-3" aria-labelledby="today-summary-title">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
               <h3 id="today-summary-title" className="text-sm font-bold text-ink-100">오늘 진행</h3>
-              <p className="text-sm font-semibold text-ink-300">{stats.todayCompleted} / {stats.todayTotal} 완료</p>
-              <span className="text-xs font-bold text-accent-300" aria-label={stats.todayTotal ? `오늘 완료율 ${stats.todayRate}%` : "오늘 완료율 계산 대상 없음"}>
-                {formatCompletionRate(stats.todayTotal, stats.todayRate)}
-              </span>
+              <p className="text-sm font-semibold text-ink-200">{stats.todayCompleted} / {stats.todayTotal} 완료</p>
+              <span className="text-xs font-bold text-accent-300" aria-label={`오늘 완료율 ${stats.todayRate}%`}>{formatCompletionRate(stats.todayTotal, stats.todayRate)}</span>
             </div>
-            <p className="mt-1 text-[11px] text-ink-500">해야 할 일과 마감 신호만 빠르게 확인합니다.</p>
+            <dl className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs">
+              <div className="flex items-center gap-1.5"><dt className="text-ink-400">미완료</dt><dd className="font-bold text-ink-100">{stats.todayActive}</dd></div>
+              {highPriorityCount ? <div className="flex items-center gap-1.5"><dt className="text-ink-400">HIGH</dt><dd className="font-bold text-red-100">{highPriorityCount}</dd></div> : null}
+              {deadlineAttentionCount ? <div className="flex items-center gap-1.5"><dt className="text-ink-400">마감 주의</dt><dd className="font-bold text-amber-100">{deadlineAttentionCount}</dd></div> : null}
+              {stats.weekTotal ? <div className="flex items-center gap-1.5"><dt className="text-ink-400">이번 주</dt><dd className="font-bold text-ink-200">{formatCompletionRate(stats.weekTotal, stats.weekRate)}</dd></div> : null}
+            </dl>
           </div>
-          <dl className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs">
-            <div className="flex items-center gap-1.5"><dt className="text-ink-500">미완료</dt><dd className="font-bold text-ink-100">{stats.todayActive}</dd></div>
-            <div className="flex items-center gap-1.5"><dt className="text-ink-500">HIGH</dt><dd className="font-bold text-red-100">{highPriorityCount}</dd></div>
-            <div className="flex items-center gap-1.5"><dt className="text-ink-500">마감 주의</dt><dd className="font-bold text-amber-100">{deadlineAttentionCount}</dd></div>
-            <div className="flex items-center gap-1.5"><dt className="text-ink-500">이번 주</dt><dd className="font-bold text-ink-300">{formatCompletionRate(stats.weekTotal, stats.weekRate)}</dd></div>
-          </dl>
-        </div>
-        <div className="mt-2.5">
-          <ProgressBar value={stats.todayRate} label="오늘 진행률" empty={stats.todayTotal === 0} />
-        </div>
-      </section>
+          <div className="mt-2.5"><ProgressBar value={stats.todayRate} label="오늘 진행률" /></div>
+        </section>
+      ) : (
+        <section className="rounded-lg border border-ink-700/65 bg-ink-900/40 px-3.5 py-3" aria-labelledby="today-summary-title">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <div>
+              <h3 id="today-summary-title" className="text-sm font-bold text-ink-100">오늘은 아직 등록된 Todo가 없습니다.</h3>
+              <p className="mt-1 text-xs text-ink-400">아래 입력창에서 첫 번째 할 일을 추가해 보세요.</p>
+            </div>
+            {stats.weekTotal ? <p className="text-xs text-ink-400">이번 주 완료율 <span className="font-semibold text-ink-200">{formatCompletionRate(stats.weekTotal, stats.weekRate)}</span></p> : null}
+          </div>
+        </section>
+      )}
 
       {overdueTodos.length > 0 ? (
         <section className="flex flex-col gap-2 rounded-md border border-warning/20 bg-warning/[0.035] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <p className="text-sm font-semibold text-ink-200">지난 일정 {overdueTodos.length}개가 남아 있습니다.</p>
-            <p className="mt-0.5 text-[11px] text-ink-500">가장 오래된 일정 {oldestOverdueDate ? formatKoreanDate(oldestOverdueDate, "M월 d일") : "-"}</p>
+            <p className="mt-0.5 text-xs text-ink-400">가장 오래된 일정 {oldestOverdueDate ? formatKoreanDate(oldestOverdueDate, "M월 d일") : "-"}</p>
           </div>
           <button type="button" className="btn-secondary shrink-0 px-2.5 text-xs" onClick={() => setShowOverdueImport(true)}>
             <History size={14} />가져오기
@@ -217,21 +224,24 @@ export function TodayPage({
         </section>
       ) : null}
 
-      <section className="app-card space-y-2 p-3" aria-labelledby="today-focus-title">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 id="today-focus-title" className="inline-flex items-center gap-2 text-sm font-bold text-ink-100"><Star size={15} className="text-amber-200" />오늘의 핵심 작업</h3>
-          <span className="text-xs text-ink-500">{focusedTodos.length} / 3개 선택</span>
-        </div>
-        {focusedTodos.length ? focusedTodos.map((todo) => (
-          <div key={todo.id} className="flex items-center gap-2">
-            <button type="button" className="icon-btn h-9 w-9 shrink-0 text-amber-200" onClick={() => toggleFocus(todo.id)} title="핵심 작업에서 제외" aria-label={`${todo.title} 핵심 작업에서 제외`}><StarOff size={16} /></button>
-            <div className="min-w-0 flex-1">{renderTodo(todo)}</div>
+      {focusedTodos.length ? (
+        <section className="app-card space-y-2 p-3" aria-labelledby="today-focus-title">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 id="today-focus-title" className="inline-flex items-center gap-2 text-sm font-bold text-ink-100"><Star size={15} className="text-amber-200" />오늘의 핵심 작업</h3>
+            <span className="text-xs text-ink-400">{focusedTodos.length} / 3개 선택</span>
           </div>
-        )) : <p className="text-xs text-ink-500">아래 미완료 Todo의 별 아이콘을 눌러 중요한 작업을 최대 3개 고정하세요.</p>}
-      </section>
+          {focusedTodos.map((todo) => (
+            <div key={todo.id} className="flex items-center gap-2">
+              <button type="button" className="icon-btn h-9 w-9 shrink-0 text-amber-200" onClick={() => toggleFocus(todo.id)} title="핵심 작업에서 제외" aria-label={`${todo.title} 핵심 작업에서 제외`}><StarOff size={16} /></button>
+              <div className="min-w-0 flex-1">{renderTodo(todo)}</div>
+            </div>
+          ))}
+        </section>
+      ) : null}
 
       <section className="space-y-3" aria-labelledby="today-todo-list-title">
-        <div className="sticky top-[60px] z-20 -mx-1 rounded-lg border border-ink-800/60 bg-ink-950/90 px-1 py-1.5 backdrop-blur-xl">
+        {hasTodayTodos ? (
+          <div className="sticky top-[60px] z-20 -mx-1 rounded-lg border border-ink-800/60 bg-ink-950/90 px-1 py-1.5 backdrop-blur-xl">
           <div className="flex items-center gap-2">
             <div className="min-w-0 flex-1 overflow-x-auto pb-0.5">
               <div className="flex w-max gap-1.5 pr-2" aria-label="오늘 Todo 카테고리 필터">
@@ -263,7 +273,15 @@ export function TodayPage({
               <Settings2 size={15} />
             </button>
           </div>
-        </div>
+          </div>
+        ) : (
+          <div className="flex justify-end">
+            <button type="button" className="inline-flex min-h-9 items-center gap-2 rounded-md px-2.5 text-xs font-semibold text-ink-300 hover:bg-ink-800/60 hover:text-ink-100"
+              onClick={() => setShowCategoryManager(true)}>
+              <Settings2 size={15} />카테고리 관리
+            </button>
+          </div>
+        )}
 
         <TodoForm
           onAdd={onAdd}
@@ -277,27 +295,34 @@ export function TodayPage({
           showSyntaxHint={false}
         />
 
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <h3 id="today-todo-list-title" className="text-sm font-bold text-ink-100">{activeCategoryName} 할 일</h3>
-            <p className="mt-0.5 text-[11px] text-ink-500">미완료 Todo를 먼저 보여주고 완료한 항목은 아래에서 취소선으로 바로 확인합니다.</p>
-          </div>
-          <span className="shrink-0 text-xs font-semibold text-ink-400">목록 {remainingTodos.length}개 · 전체 미완료 {activeTodos.length}개</span>
-        </div>
+        {hasIncompleteTodos && !focusedTodos.length ? (
+          <p className="flex items-center gap-2 text-xs text-ink-400">
+            <Star size={14} className="shrink-0 text-amber-200" />
+            중요한 Todo는 별표를 눌러 상단에 모아 둘 수 있습니다. 최대 3개까지 선택하세요.
+          </p>
+        ) : null}
 
-        {remainingTodos.length ? (
-          <div className="space-y-1.5">{remainingTodos.map((todo) => (
-            <div key={todo.id} className="flex items-center gap-2">
-              <button type="button" className="icon-btn h-9 w-9 shrink-0 text-ink-500 hover:text-amber-200" onClick={() => toggleFocus(todo.id)} disabled={focusedTodos.length >= 3} title={focusedTodos.length >= 3 ? "핵심 작업은 최대 3개까지 지정할 수 있습니다." : "핵심 작업으로 고정"} aria-label={`${todo.title} 핵심 작업으로 고정`}><Star size={16} /></button>
-              <div className="min-w-0 flex-1">{renderTodo(todo)}</div>
+        {hasTodayTodos ? (
+          <>
+            <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-1">
+              <h3 id="today-todo-list-title" className="text-sm font-bold text-ink-100">{activeCategoryName} 할 일</h3>
+              <span className="text-xs font-semibold text-ink-400">미완료 {activeTodos.length}개 · 완료 {completedTodos.length}개</span>
             </div>
-          ))}</div>
-        ) : (
-          <div className="rounded-md border border-dashed border-ink-700/55 px-4 py-7 text-center">
-            <p className="text-sm font-semibold text-ink-400">{activeTodos.length ? "핵심 작업에 모두 표시되어 있습니다." : "미완료 Todo가 없습니다."}</p>
-            <p className="mt-1 text-[11px] text-ink-600">바로 위 입력창에서 Todo를 추가하거나 다른 카테고리를 선택해보세요.</p>
-          </div>
-        )}
+
+            {remainingTodos.length ? (
+              <div className="space-y-1.5">{remainingTodos.map((todo) => (
+                <div key={todo.id} className="flex items-center gap-2">
+                  <button type="button" className="icon-btn h-9 w-9 shrink-0 text-ink-400 hover:text-amber-200" onClick={() => toggleFocus(todo.id)} disabled={focusedTodos.length >= 3} title={focusedTodos.length >= 3 ? "핵심 작업은 최대 3개까지 지정할 수 있습니다." : "핵심 작업으로 고정"} aria-label={`${todo.title} 핵심 작업으로 고정`}><Star size={16} /></button>
+                  <div className="min-w-0 flex-1">{renderTodo(todo)}</div>
+                </div>
+              ))}</div>
+            ) : activeTodos.length ? (
+              <p className="py-2 text-xs text-ink-400">미완료 Todo는 상단 핵심 작업에 모두 표시되어 있습니다.</p>
+            ) : (
+              <p className="py-2 text-sm text-ink-300">{activeCategoryId === "all" && !stats.todayActive ? "오늘의 할 일을 모두 완료했습니다." : "선택한 카테고리에 미완료 Todo가 없습니다."}</p>
+            )}
+          </>
+        ) : null}
 
         {completedTodos.length ? (
           <div className="border-t border-ink-800 pt-2">
