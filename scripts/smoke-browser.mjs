@@ -23,9 +23,15 @@ page.setDefaultTimeout(20000);
 let failed = false;
 
 const findServerTodo = async (title) => {
-  const response = await page.request.get(new URL("/api/todos?archived=all&limit=100", base).toString());
-  assert.equal(response.status(), 200, "Browser session must authenticate API calls");
-  return (await response.json()).todos?.find((todo) => todo.title === title);
+  // Browser UI treats loopback as a secure context. Playwright's Node APIRequest
+  // cookie jar may not send the browser's Secure session cookie over HTTP.
+  // Fetch in the actual page context instead, using the browser cookie policy.
+  const result = await page.evaluate(async () => {
+    const response = await fetch("/api/todos?archived=all&limit=100", { credentials: "same-origin" });
+    return { status: response.status, payload: await response.json() };
+  });
+  assert.equal(result.status, 200, "Authenticated browser fetch should reach local D1");
+  return result.payload.todos?.find((todo) => todo.title === title);
 };
 
 const waitForServerTodo = async (title) => {
