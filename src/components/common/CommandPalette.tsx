@@ -57,6 +57,7 @@ const resultIcon = (result: Result) => {
 
 export function CommandPalette({ onClose, onNavigate, onQuickAdd, onOpenItem, todos, memos, projects }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
   const results = useMemo(() => {
     const keyword = query.trim().toLocaleLowerCase("ko");
     if (!keyword) return navigation;
@@ -97,13 +98,24 @@ export function CommandPalette({ onClose, onNavigate, onQuickAdd, onOpenItem, to
       <div className="space-y-3">
         <label className="relative block">
           <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" size={17} />
-          <input data-modal-initial-focus className="field pl-10" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="검색하거나 실행할 명령 입력" />
+          <input data-modal-initial-focus className="field pl-10" value={query}
+            onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown") { event.preventDefault(); setActiveIndex((index) => results.length ? (index + 1) % results.length : 0); }
+              if (event.key === "ArrowUp") { event.preventDefault(); setActiveIndex((index) => results.length ? (index - 1 + results.length) % results.length : 0); }
+              if (event.key === "Enter" && results.length) { event.preventDefault(); run(results[Math.min(activeIndex, results.length - 1)]); }
+            }}
+            aria-describedby="command-keyboard-help"
+            placeholder="검색하거나 실행할 명령 입력" />
         </label>
+        <p id="command-keyboard-help" className="text-xs text-ink-400">↑ ↓ 이동 · Enter 열기 · Esc 닫기</p>
         <div className="max-h-[min(60vh,32rem)] space-y-1 overflow-y-auto pr-1">
-          {results.length ? results.map((result) => {
+          {results.length ? results.map((result, index) => {
             const Icon = resultIcon(result);
             return (
-              <button key={result.id} type="button" onClick={() => run(result)} className="flex w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left transition hover:border-ink-700 hover:bg-ink-900">
+              <button key={result.id} type="button" onClick={() => run(result)} onMouseEnter={() => setActiveIndex(index)}
+                aria-current={index === activeIndex ? "true" : undefined}
+                className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition ${index === activeIndex ? "border-accent-500/60 bg-ink-800" : "border-transparent hover:border-ink-700 hover:bg-ink-900"}`>
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-ink-950 text-ink-400"><Icon size={16} /></span>
                 <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-ink-100">{result.label}</span><span className="mt-0.5 block truncate text-xs text-ink-400">{result.detail}</span></span>
                 <span className="shrink-0 rounded-full border border-ink-700 px-2 py-0.5 text-xs font-semibold text-ink-300">{result.kind}</span>
