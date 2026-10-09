@@ -30,11 +30,12 @@ export function ProgressBar({ value, label, empty = false, emptyLabel = "등록�
           <span>{normalized}%</span>
         </div>
       ) : null}
-      <div className="h-1.5 overflow-hidden rounded-full bg-ink-950">
+      <div className="h-1.5 overflow-hidden rounded-full bg-ink-800">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-accent-500 to-accent-400 transition-all"
+          className={`h-full rounded-full transition-all ${normalized === 100 ? "bg-success" : "bg-accent-300"}`}
           style={{ width: `${normalized}%` }}
           role="progressbar"
+          aria-label={label || "완료율"}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={normalized}

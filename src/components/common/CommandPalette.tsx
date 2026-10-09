@@ -29,7 +29,7 @@ type Result = {
 export const navigation: Result[] = [
   { id: "quick-add", label: "빠른 Todo 추가", detail: "Ctrl+Shift+K", action: "quick-add", kind: "명령" },
   { id: "nav-today", label: "오늘", detail: "오늘 실행할 Todo", view: "today", kind: "이동" },
-  { id: "nav-inbox", label: "Inbox", detail: "분류 전 수집한 Todo", view: "inbox", kind: "이동" },
+  { id: "nav-inbox", label: "받은함", detail: "분류 전 수집한 Todo", view: "inbox", kind: "이동" },
   { id: "nav-week", label: "주간", detail: "이번 주 Todo 보기", view: "week", kind: "이동" },
   { id: "nav-month", label: "월간", detail: "월간 Calendar 보기", view: "month", kind: "이동" },
   { id: "nav-projects", label: "프로젝트", detail: "프로젝트와 Kanban", view: "projects", kind: "이동" },

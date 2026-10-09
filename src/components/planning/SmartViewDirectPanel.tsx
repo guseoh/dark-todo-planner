@@ -1,9 +1,10 @@
 import { ClipboardList, Sparkles } from "lucide-react";
 import { builtInSmartViews, filterTodosBySavedView } from "../../lib/planning";
 import { todayKey } from "../../lib/date";
+import { planningStateLabels } from "../../lib/todoLabels";
 import type { Todo } from "../../types/todo";
 
-const planningLabel = { INBOX: "Inbox", SCHEDULED: "Scheduled", SOMEDAY: "Someday", WAITING: "Waiting" } as const;
+const planningLabel = planningStateLabels;
 const priorityLabel = { LOW: "낮음", MEDIUM: "보통", HIGH: "높음" } as const;
 
 export function SmartViewDirectPanel({

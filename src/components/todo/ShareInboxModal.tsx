@@ -47,9 +47,9 @@ export function ShareInboxModal({ draft, onClose, onSave }: ShareInboxModalProps
         referenceUrl: normalizedReferenceUrl,
         referenceLabel: normalizedReferenceUrl ? referenceLabel.trim().slice(0, 80) : "",
       });
-      if (!result.ok) setError(result.message || "Inbox에 저장하지 못했습니다.");
+      if (!result.ok) setError(result.message || "받은함에 저장하지 못했습니다.");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Inbox에 저장하지 못했습니다.");
+      setError(cause instanceof Error ? cause.message : "받은함에 저장하지 못했습니다.");
     } finally {
       setSaving(false);
     }
@@ -57,15 +57,15 @@ export function ShareInboxModal({ draft, onClose, onSave }: ShareInboxModalProps
 
   return (
     <Modal
-      title="Inbox에 공유 내용 추가"
+      title="받은함에 공유 내용 추가"
       description="공유받은 내용을 확인한 뒤 저장합니다. 저장 전에는 Todo가 생성되지 않습니다."
       onClose={saving ? () => undefined : onClose}
       size="lg"
     >
       <form className="space-y-4" onSubmit={submit}>
         <div className="rounded-lg border border-accent-500/20 bg-accent-500/[0.05] px-3 py-2.5 text-sm text-ink-300">
-          <div className="flex items-center gap-2 font-semibold text-accent-100"><Inbox size={15} />Inbox로 수집</div>
-          <p className="mt-1 text-xs text-ink-500">일정은 지정하지 않습니다. 나중에 Inbox에서 날짜·프로젝트·우선순위를 정리할 수 있습니다.</p>
+          <div className="flex items-center gap-2 font-semibold text-accent-100"><Inbox size={15} />받은함으로 수집</div>
+          <p className="mt-1 text-xs text-ink-500">일정은 지정하지 않습니다. 나중에 받은함에서 날짜·프로젝트·우선순위를 정리할 수 있습니다.</p>
         </div>
 
         <label className="block space-y-1 text-sm font-semibold text-ink-300">
@@ -129,7 +129,7 @@ export function ShareInboxModal({ draft, onClose, onSave }: ShareInboxModalProps
         <div className="flex flex-col-reverse gap-2 border-t border-ink-700/60 pt-4 sm:flex-row sm:justify-end">
           <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>취소</button>
           <button type="submit" className="btn-primary" disabled={!title.trim() || saving || invalidReferenceUrl}>
-            <Inbox size={16} />{saving ? "저장 중..." : "Inbox에 저장"}
+            <Inbox size={16} />{saving ? "저장 중..." : "받은함에 저장"}
           </button>
         </div>
       </form>

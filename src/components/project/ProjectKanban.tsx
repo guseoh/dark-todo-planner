@@ -4,7 +4,7 @@ import { ChevronDown, ChevronRight, GripVertical, LayoutGrid, List, Pencil, Plus
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { todayKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../../lib/todo";
-import { workflowStatusLabels } from "../../lib/todoLabels";
+import { workflowStatusClassNames, workflowStatusLabels } from "../../lib/todoLabels";
 import type { Category } from "../../types/category";
 import type { Milestone, Project } from "../../types/project";
 import type { Todo, TodoInput, TodoWorkflowStatus } from "../../types/todo";
@@ -75,7 +75,7 @@ function KanbanColumn({ status, label, count, wipLimit, onWipLimitChange, collap
   return (
     <section ref={setNodeRef} className={`app-card min-h-[18rem] w-[17rem] shrink-0 p-3 transition sm:w-auto ${isOver ? "border-accent-500/55 bg-accent-500/[0.05]" : ""}`}>
       <div className="mb-3 flex items-center justify-between gap-2">
-        {onToggleCollapse ? <button type="button" className="inline-flex min-h-8 items-center gap-1 rounded px-1 text-sm font-bold text-ink-100 hover:bg-ink-800/60" onClick={onToggleCollapse} aria-expanded={!collapsed}>{collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}{label}</button> : <h4 className="text-sm font-bold text-ink-100">{label}</h4>}
+        {onToggleCollapse ? <button type="button" className={`inline-flex min-h-8 items-center gap-1 rounded-md border px-2 text-sm font-bold ${workflowStatusClassNames[status]}`} onClick={onToggleCollapse} aria-expanded={!collapsed}>{collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}{label}</button> : <h4 className={`rounded-md border px-2 py-1 text-sm font-bold ${workflowStatusClassNames[status]}`}>{label}</h4>}
         <div className="flex items-center gap-1.5">
           <label className="flex items-center gap-1 text-[10px] text-ink-500" title="0으로 설정하면 작업 수 제한이 없습니다.">
             <span>WIP</span>
@@ -128,7 +128,7 @@ function ProjectKanbanCard({ project, todo, parent, childCount, milestone, miles
   };
 
   return (
-    <article ref={setNodeRef} style={{ transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.55 : 1 }} className="rounded-lg border border-ink-800/80 bg-ink-950/35 p-3 shadow-sm transition hover:border-ink-700">
+    <article ref={setNodeRef} style={{ transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.55 : 1 }} className="rounded-lg border border-ink-700/60 bg-ink-850 p-3 shadow-sm transition hover:border-ink-600">
       <div className="flex items-start gap-2">
         <button type="button" onClick={() => onToggleTodo(todo.id)} className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border ${todo.completed ? "border-success bg-success" : "border-ink-600"}`} aria-label="완료 토글" />
         <div className="min-w-0 flex-1">

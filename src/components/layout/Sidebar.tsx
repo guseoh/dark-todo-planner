@@ -13,7 +13,7 @@ type NavItem = { id: AppView; label: string; icon: typeof CalendarCheck };
 type SidebarMode = "expanded" | "collapsed";
 
 export const navGroups: Array<{ label: string; items: NavItem[] }> = [
-  { label: "실행", items: [{ id: "today", label: "오늘", icon: CalendarCheck }, { id: "inbox", label: "Inbox", icon: Inbox }] },
+  { label: "실행", items: [{ id: "today", label: "오늘", icon: CalendarCheck }, { id: "inbox", label: "받은함", icon: Inbox }] },
   { label: "보기", items: [{ id: "week", label: "주간", icon: CalendarRange }, { id: "month", label: "월간", icon: Calendar }, { id: "projects", label: "프로젝트", icon: FolderKanban }, { id: "all", label: "전체 Todo", icon: ClipboardList }] },
   { label: "관리", items: [{ id: "memo", label: "메모", icon: StickyNote }, { id: "scratchpad", label: "낙서장", icon: FileText }, { id: "trash", label: "휴지통", icon: Trash2 }] },
 ];
@@ -89,8 +89,8 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
     const active = activeView === item.id;
     return (
       <button key={item.id} type="button" onClick={() => onChangeView(item.id)} aria-label={item.label} aria-current={active ? "page" : undefined} title={collapsed && !hoverExpanded ? item.label : undefined}
-        className={`relative flex min-h-10 w-full items-center rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${active ? "bg-ink-800 text-ink-100" : "text-ink-400 hover:bg-ink-800/75 hover:text-ink-100"} ${showExpandedContent ? "gap-3 px-3 text-left" : "justify-center px-2"}`}>
-        {active ? <span aria-hidden="true" className="absolute bottom-2 left-0 top-2 w-0.5 rounded-full bg-accent-500" /> : null}
+        className={`relative flex min-h-10 w-full items-center rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${active ? "bg-accent-500/15 text-accent-200" : "text-ink-400 hover:bg-ink-800/75 hover:text-ink-100"} ${showExpandedContent ? "gap-3 px-3 text-left" : "justify-center px-2"}`}>
+        {active ? <span aria-hidden="true" className="absolute bottom-2 left-0 top-2 w-0.5 rounded-full bg-accent-300" /> : null}
         <Icon size={17} className="shrink-0" />
         {showExpandedContent ? <span className="truncate">{item.label}</span> : null}
       </button>
@@ -100,7 +100,7 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
   return (
     <>
       <aside className={`sticky top-14 z-20 hidden h-[calc(100vh-3.5rem)] shrink-0 self-start transition-[width] duration-150 ease-out lg:block ${showExpandedContent ? "w-[16.25rem]" : "w-[4.25rem]"}`} data-sidebar-mode={mode} data-sidebar-hover-expanded={hoverExpanded ? "true" : "false"}>
-        <nav className="flex h-full min-h-0 w-full flex-col border-r border-ink-700/65 bg-ink-900 px-2 py-2.5" onMouseEnter={openHoverPanel} onMouseLeave={closeHoverPanel} onFocusCapture={openHoverPanel} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) closeHoverPanel(); }}>
+        <nav className="flex h-full min-h-0 w-full flex-col border-r border-ink-700/50 bg-[var(--sidebar-bg)] px-2 py-2.5" onMouseEnter={openHoverPanel} onMouseLeave={closeHoverPanel} onFocusCapture={openHoverPanel} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) closeHoverPanel(); }}>
           <button type="button" onClick={() => onChangeView("today")} aria-label="Todo Planner 홈" title={collapsed && !hoverExpanded ? "Todo Planner" : undefined}
             className={`mb-2 flex min-h-10 shrink-0 items-center rounded-lg text-left transition-colors hover:bg-ink-800/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${showExpandedContent ? "gap-2.5 px-2.5" : "justify-center px-2"}`}>
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent-500 text-white"><CalendarCheck size={18} /></span>

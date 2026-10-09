@@ -185,7 +185,7 @@ export function WeeklyView({
                 <div className="mt-2 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px]">
                   <span className={active ? "font-bold text-amber-100" : "text-ink-600"}>미완료 {active}</span>
                   <span className="text-ink-500">완료 {completed}</span>
-                  {high ? <span className="font-bold text-red-100">HIGH {high}</span> : null}
+                  {high ? <span className="font-bold text-red-100">높은 우선순위 {high}</span> : null}
                 </div>
               </button>
             );

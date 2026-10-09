@@ -1,7 +1,7 @@
 import { Archive, CalendarDays, CheckCircle2, ExternalLink, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { formatKoreanDate, getDdayLabel, todayKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../../lib/todo";
-import { planningStateLabels } from "../../lib/todoLabels";
+import { planningStateLabels, workflowStatusClassNames, workflowStatusLabels } from "../../lib/todoLabels";
 import type { Todo } from "../../types/todo";
 import { PriorityBadge } from "./PriorityBadge";
 import { QuickSnoozeMenu } from "./QuickSnoozeMenu";
@@ -52,7 +52,7 @@ export function TodoRow({
   const openOrSelect = () => selectionMode ? onSelect?.(todo.id) : onEdit(todo);
 
   return (
-    <article className={`group rounded-md border px-2 py-1.5 transition sm:px-2.5 ${selected && selectionMode ? "border-accent-500/45 bg-accent-500/[0.07]" : "border-ink-800/75 bg-ink-950/20 hover:border-ink-700/90 hover:bg-ink-900/55"} ${todo.completed ? "opacity-65" : ""}`}>
+    <article className={`group rounded-lg border px-2 py-2 transition sm:px-2.5 ${selected && selectionMode ? "border-accent-300/45 bg-accent-500/15" : "border-ink-700/50 bg-ink-850/70 hover:border-ink-600/70 hover:bg-ink-800/70"}`}>
       <div className="flex min-w-0 items-center gap-1.5">
         {selectionMode ? (
           <label className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md transition hover:bg-ink-800" title={selected ? "선택 해제" : "선택"}>
@@ -68,13 +68,14 @@ export function TodoRow({
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
             <h4 className={`min-w-0 break-words text-sm font-semibold leading-5 text-ink-100 ${todo.completed ? "text-ink-500 line-through" : ""}`}>{todo.title}</h4>
             {!(hideMediumPriority && todo.priority === "MEDIUM") ? <PriorityBadge priority={todo.priority} compact /> : null}
+            {!todo.completed && (todo.workflowStatus === "IN_PROGRESS" || todo.workflowStatus === "BLOCKED") ? <span className={`rounded-full border px-1.5 py-0.5 text-[11px] font-semibold leading-4 ${workflowStatusClassNames[todo.workflowStatus]}`}>{workflowStatusLabels[todo.workflowStatus]}</span> : null}
             {showCategoryBadge ? <span className="rounded-full border border-ink-700/65 bg-ink-900/65 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-ink-400">{todo.category?.name || "미분류"}</span> : null}
             {todo.planningState !== "SCHEDULED" ? <span className="rounded-full border border-ink-700/65 bg-ink-900/65 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-ink-300">{planningLabel[todo.planningState]}</span> : null}
             {todo.archived ? <span className="rounded-full border border-ink-600 bg-ink-700/35 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-ink-300">보관됨</span> : null}
             {duplicateCandidate ? <span className="rounded-full border border-amber-400/30 bg-amber-400/[0.07] px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-amber-100">중복 후보</span> : null}
           </div>
-          {todo.memo ? <p className="mt-0.5 line-clamp-1 whitespace-pre-wrap text-[11px] text-ink-500">{todo.memo}</p> : null}
-          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] text-ink-500">
+          {todo.memo ? <p className="mt-1 line-clamp-1 whitespace-pre-wrap text-xs text-ink-400">{todo.memo}</p> : null}
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-ink-500">
             {projectName ? <span className="font-semibold text-ink-400">{projectName}</span> : null}
             {showCategoryMeta ? <span>{todo.category?.name || "미분류"}</span> : null}
             {showDate && todo.planningState === "SCHEDULED" ? <span className="inline-flex items-center gap-1"><CalendarDays size={12} />{formatKoreanDate(todo.date, "M월 d일 E")}</span> : null}
@@ -84,7 +85,7 @@ export function TodoRow({
         </button>
 
         {!selectionMode ? (
-          <div className="flex shrink-0 flex-wrap justify-end gap-1 opacity-100 sm:opacity-55 sm:transition sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+          <div className="flex shrink-0 flex-wrap justify-end gap-1 opacity-100 sm:opacity-75 sm:transition sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
             <QuickSnoozeMenu todo={todo} />
             {todo.referenceUrl ? <a href={todo.referenceUrl} target="_blank" rel="noreferrer" className="icon-btn h-8 w-8" aria-label={`"${todo.title}" 관련 링크 열기`} title={todo.referenceLabel || "관련 링크 열기"}><ExternalLink size={13} /></a> : null}
             {todo.archived && onUnarchive ? <button type="button" className="icon-btn h-8 w-8" onClick={() => onUnarchive(todo.id)} aria-label={`"${todo.title}" 보관 해제`}><RotateCcw size={13} /></button> : null}

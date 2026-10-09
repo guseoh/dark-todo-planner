@@ -69,7 +69,7 @@ export function QuickSnoozeMenu({ todo }: { todo: Todo }) {
           <button type="button" role="menuitem" className={itemClass} disabled={saving} onClick={() => void apply({ type: "DATE", date: dates.tomorrow })}>내일 <span className="float-right font-normal text-ink-600">{dates.tomorrow.slice(5)}</span></button>
           <button type="button" role="menuitem" className={itemClass} disabled={saving} onClick={() => void apply({ type: "DATE", date: dates.inThreeDays })}>3일 뒤 <span className="float-right font-normal text-ink-600">{dates.inThreeDays.slice(5)}</span></button>
           <button type="button" role="menuitem" className={itemClass} disabled={saving} onClick={() => void apply({ type: "DATE", date: dates.nextMonday })}>다음 주 월요일 <span className="float-right font-normal text-ink-600">{dates.nextMonday.slice(5)}</span></button>
-          <button type="button" role="menuitem" className={itemClass} disabled={saving} onClick={() => void apply({ type: "SOMEDAY" })}>Someday로 보내기</button>
+          <button type="button" role="menuitem" className={itemClass} disabled={saving} onClick={() => void apply({ type: "SOMEDAY" })}>언젠가로 보내기</button>
           <div className="my-1 border-t border-ink-700/70" />
           <label className="block px-2 py-1 text-[10px] font-semibold text-ink-500">날짜 선택</label>
           <div className="flex gap-1.5 px-1 pb-1">

@@ -5,29 +5,29 @@
 :root {
   color-scheme: dark;
 
-  --app-bg: #15191d;
-  --sidebar-bg: #121519;
-  --surface-1: #1a1f24;
-  --surface-2: #22282e;
-  --surface-3: #2a3138;
-  --surface-hover: #343d46;
+  --app-bg: #10151d;
+  --sidebar-bg: #0c1119;
+  --surface-1: #192330;
+  --surface-2: #202c3d;
+  --surface-3: #29384b;
+  --surface-hover: #34465c;
 
-  --border-subtle: #333b44;
-  --border-default: #46515c;
-  --border-strong: #5d6975;
+  --border-subtle: #344255;
+  --border-default: #44546a;
+  --border-strong: #8d9db3;
 
-  --text-primary: #f0f2f4;
-  --text-secondary: #c9d0d6;
-  --text-muted: #9ca7b2;
-  --text-disabled: #87929d;
+  --text-primary: #f3f6fc;
+  --text-secondary: #ced9e7;
+  --text-muted: #a3b2c7;
+  --text-disabled: #8d9db3;
 
-  --accent: #0b72d7;
-  --accent-hover: #0968c7;
-  --accent-soft: rgba(11, 114, 215, 0.14);
+  --accent: #2563eb;
+  --accent-hover: #3070df;
+  --accent-soft: rgba(37, 99, 235, 0.14);
 
-  --success: #46a758;
-  --warning: #c99b36;
-  --danger: #d45b5b;
+  --success: #5cceac;
+  --warning: #e7b95d;
+  --danger: #f08088;
 
   --shadow-elevated: 0 12px 32px rgba(0, 0, 0, 0.3);
 
@@ -79,7 +79,7 @@ button:disabled {
 }
 
 ::selection {
-  background: rgba(11, 114, 215, 0.42);
+  background: rgba(37, 99, 235, 0.42);
   color: var(--text-primary);
 }
 
@@ -104,11 +104,11 @@ button:disabled {
 
 @layer components {
   .app-card {
-    @apply rounded-lg border border-ink-700/70 bg-ink-900 shadow-none;
+    @apply rounded-xl border border-ink-700/60 bg-ink-900 shadow-soft;
   }
 
   .field {
-    @apply min-h-9 w-full rounded-md border border-ink-700/80 bg-ink-950/85 px-3 py-1.5 text-sm text-ink-100 outline-none transition placeholder:text-ink-500 hover:border-ink-600 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25;
+    @apply min-h-9 w-full rounded-md border border-ink-700 bg-ink-950 px-3 py-1.5 text-sm text-ink-100 outline-none transition placeholder:text-ink-500 hover:border-ink-600 focus:border-accent-300 focus:ring-2 focus:ring-accent-500/30;
   }
 
   .btn {

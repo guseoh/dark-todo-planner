@@ -1,6 +1,7 @@
 import { Archive, CalendarDays, CheckCircle2, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { formatKoreanDate, getDdayLabel, todayKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../../lib/todo";
+import { planningStateLabels } from "../../lib/todoLabels";
 import type { Todo } from "../../types/todo";
 import { MarkdownPreview } from "../editor/MarkdownPreview";
 import { PriorityBadge } from "./PriorityBadge";
@@ -15,7 +16,7 @@ type TodoItemProps = {
   showDate?: boolean;
 };
 
-const planningLabel = { INBOX: "Inbox", SCHEDULED: "일정", SOMEDAY: "Someday", WAITING: "Waiting" } as const;
+const planningLabel = planningStateLabels;
 
 export function TodoItem({ todo, onToggle, onDelete, onEdit, onArchive, onUnarchive, showDate = true }: TodoItemProps) {
   const handleDelete = () => {

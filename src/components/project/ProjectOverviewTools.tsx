@@ -189,7 +189,7 @@ export function ProjectOverviewTools({ project, todos, milestones, onUpdateTodo,
             <label className="text-xs font-semibold text-ink-400">새 프로젝트 이름<input className="field mt-1.5" value={duplicateName} onChange={(event) => setDuplicateName(event.target.value)} maxLength={120} /></label>
             <label className="text-xs font-semibold text-ink-400">복제 범위<select className="field mt-1.5" value={duplicateMode} onChange={(event) => setDuplicateMode(event.target.value as ProjectDuplicateMode)}><option value="STRUCTURE">구조만 복제</option><option value="WITH_TODOS">Todo까지 복제</option></select></label>
             <button type="button" className="btn-primary min-h-10" onClick={() => void duplicate()} disabled={!duplicateName.trim() || duplicating}>{duplicating ? "복제 중..." : "새 프로젝트 만들기"}</button>
-            <p className="text-[11px] text-ink-500 lg:col-span-3">구조 복제는 설명·색상·자료 링크·마일스톤을 복사합니다. Todo 포함 복제는 활성 Todo의 기본 정보와 구조를 복사하고 일정과 완료 상태는 초기화해 Inbox에 넣습니다.</p>
+            <p className="text-[11px] text-ink-500 lg:col-span-3">구조 복제는 설명·색상·자료 링크·마일스톤을 복사합니다. Todo 포함 복제는 활성 Todo의 기본 정보와 구조를 복사하고 일정과 완료 상태는 초기화해 받은함에 넣습니다.</p>
             {duplicateError ? <p className="text-xs font-semibold text-red-200 lg:col-span-3" role="alert">{duplicateError}</p> : null}
           </div>
         ) : null}

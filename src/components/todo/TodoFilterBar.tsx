@@ -75,9 +75,9 @@ export function TodoFilterBar({ filters, onChange, categories = [], projects = [
 
   const priorityFilters: Array<{ label: string; value: TodoPriorityFilter }> = [
     { label: "우선순위 전체", value: "ALL" },
-    { label: "HIGH", value: "HIGH" },
-    { label: "MEDIUM", value: "MEDIUM" },
-    { label: "LOW", value: "LOW" },
+    { label: "높음", value: "HIGH" },
+    { label: "보통", value: "MEDIUM" },
+    { label: "낮음", value: "LOW" },
   ];
 
   const buttonTone = (active: boolean) =>
