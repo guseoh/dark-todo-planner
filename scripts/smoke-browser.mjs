@@ -54,7 +54,24 @@ try {
   await nav.getByRole("button", { name: "더보기" }).click();
   await nav.getByRole("button", { name: "설정" }).click();
   await page.getByRole("heading", { name: "앱 정보", exact: true }).waitFor();
+  await page.getByRole("tab", { name: "자동화 · 알림" }).click();
+  await page.getByRole("heading", { name: "Discord 리마인더" }).waitFor();
+  await page.getByRole("tab", { name: "데이터 · 백업" }).click();
   await page.getByText("전체 데이터 백업·복원").first().waitFor();
+  await nav.getByRole("button", { name: "오늘", exact: true }).click();
+
+  // Browser history, direct hash links and reloads should retain the active screen.
+  assert.equal(new URL(page.url()).hash, "#/today");
+  await nav.getByRole("button", { name: "더보기" }).click();
+  await nav.getByRole("button", { name: "주간", exact: true }).click();
+  assert.equal(new URL(page.url()).hash, "#/week");
+  await page.goBack();
+  await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
+  assert.equal(new URL(page.url()).hash, "#/today");
+  await page.goForward();
+  await page.getByRole("heading", { name: "주간", exact: true }).waitFor();
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "주간", exact: true }).waitFor();
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
 
   // Empty Today state should prioritize a single helpful message and the add form
@@ -162,7 +179,42 @@ try {
   await editGoal.waitFor({ state: "hidden" });
   await page.unroute("**/api/goals/*");
 
-  console.log("BROWSER E2E PASS: Today empty state, focus collapse/restore, todo/offline, week navigation, goal retry.");
+  // Project workspace should remain usable while its formerly crowded
+  // sections are hidden behind purpose-built tabs.
+  await nav.getByRole("button", { name: "프로젝트", exact: true }).click();
+  await page.getByRole("heading", { name: "프로젝트", exact: true }).waitFor();
+  await page.getByRole("button", { name: "프로젝트 추가" }).click();
+  const newProjectInput = page.getByPlaceholder("새 프로젝트 이름");
+  await newProjectInput.fill("UX Regression Project");
+  await newProjectInput.locator("xpath=..").getByRole("button", { name: "추가", exact: true }).click();
+  await page.getByRole("tab", { name: /작업·Kanban/ }).waitFor();
+  await page.getByRole("tab", { name: /마일스톤/ }).click();
+  await page.getByRole("heading", { name: "마일스톤" }).waitFor();
+  await page.getByRole("tab", { name: /결정 기록/ }).click();
+  await page.getByRole("tab", { name: /분석·관리/ }).click();
+  await page.getByRole("heading", { name: "프로젝트 상태" }).waitFor();
+  await page.getByRole("tab", { name: /작업·Kanban/ }).click();
+  const resourceDisclosure = page.locator("details").filter({ hasText: "자료 링크" }).first();
+  await resourceDisclosure.locator("summary").click();
+  assert.equal(await resourceDisclosure.evaluate((node) => node.open), true);
+
+  // Layout probes at common mobile, tablet and desktop breakpoints.
+  // Retain screenshots as review artifacts; geometry failure blocks deployment.
+  await mkdir("test-artifacts", { recursive: true });
+  for (const width of [320, 390, 768, 1280]) {
+    await page.setViewportSize({ width, height: 844 });
+    for (const view of ["today", "projects", "settings"]) {
+      await page.evaluate((next) => { window.location.hash = "#/" + next; }, view);
+      if (view === "today") await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
+      if (view === "projects") await page.getByRole("heading", { name: "프로젝트", exact: true }).waitFor();
+      if (view === "settings") await page.getByRole("heading", { name: "앱 정보", exact: true }).waitFor();
+      const geometry = await page.evaluate(() => ({ viewport: window.innerWidth, document: document.documentElement.scrollWidth }));
+      assert.ok(geometry.document <= geometry.viewport + 2, `Unexpected page overflow at ${width}px on ${view}: ${JSON.stringify(geometry)}`);
+      await page.screenshot({ path: `test-artifacts/layout-${width}-${view}.png`, fullPage: true });
+    }
+  }
+
+  console.log("BROWSER E2E PASS: Today, history, settings tabs, projects tabs, keyboard/search, and 12 responsive layout snapshots.");
 } catch (error) {
   failed = true;
   await mkdir("test-artifacts", { recursive: true });

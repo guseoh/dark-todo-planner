@@ -93,6 +93,15 @@ jobs:
       - name: Exercise Chromium browser UI and offline reconnect
         run: node scripts/smoke-browser.mjs
 
+      - name: Upload local responsive layout snapshots
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-responsive-layout-snapshots
+          path: test-artifacts/layout-*.png
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Upload local-only browser failure screenshot
         if: failure()
         uses: actions/upload-artifact@v4
