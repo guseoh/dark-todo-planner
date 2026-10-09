@@ -8,6 +8,7 @@ type ModalProps = {
   children: ReactNode;
   onClose: () => void;
   size?: "md" | "lg";
+  placement?: "center" | "right";
 };
 
 const focusableSelector = [
@@ -29,8 +30,9 @@ const isVisible = (element: HTMLElement) =>
 const getVisibleFocusableElements = (container: HTMLElement) =>
   Array.from(container.querySelectorAll<HTMLElement>(focusableSelector)).filter(isVisible);
 
-export function Modal({ title, description, children, onClose, size = "md" }: ModalProps) {
+export function Modal({ title, description, children, onClose, size = "md", placement = "center" }: ModalProps) {
   const sizeClass = size === "lg" ? "max-w-3xl" : "max-w-xl";
+  const sidePanel = placement === "right";
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const onCloseRef = useRef(onClose);
@@ -106,7 +108,7 @@ export function Modal({ title, description, children, onClose, size = "md" }: Mo
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-black/70 px-3 py-4 backdrop-blur-sm sm:px-4">
+    <div className={`fixed inset-0 z-[80] flex overflow-y-auto bg-black/70 backdrop-blur-sm ${sidePanel ? "justify-end" : "items-center justify-center px-3 py-4 sm:px-4"}`}>
       <div
         ref={dialogRef}
         role="dialog"
@@ -114,7 +116,7 @@ export function Modal({ title, description, children, onClose, size = "md" }: Mo
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
-        className={`flex max-h-[calc(100vh-2rem)] w-full ${sizeClass} flex-col overflow-hidden rounded-lg border border-ink-700/70 bg-ink-900 shadow-soft outline-none`}
+        className={`flex w-full flex-col overflow-hidden border border-ink-700/70 bg-ink-900 shadow-soft outline-none ${sidePanel ? "h-full max-h-full max-w-3xl rounded-l-xl rounded-r-none" : `max-h-[calc(100vh-2rem)] ${sizeClass} rounded-lg`}`}
       >
         <div className="flex shrink-0 items-start justify-between gap-4 border-b border-ink-700/60 px-4 py-3">
           <div className="min-w-0">

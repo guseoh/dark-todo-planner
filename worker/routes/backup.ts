@@ -199,7 +199,8 @@ async function importBackup(env: Bindings, userId: string, input: unknown, pendi
     const parentTodoId = item.parentTodoId && allTodoIds.has(String(item.parentTodoId)) && String(item.parentTodoId) !== id ? String(item.parentTodoId) : null;
     const completed = Boolean(item.completed);
     todoRows.push([
-      id, userId, categoryId, projectId, milestoneId, parentTodoId, String(item.title), optional(item.memo as string), String(item.date), optional(item.dueDate as string),
+      id, userId, categoryId, projectId, milestoneId, parentTodoId, String(item.title), optional(item.memo as string),
+      optional(item.blockReason as string), optional(item.unblockCondition as string), String(item.date), optional(item.dueDate as string),
       optional(item.startTime as string), optional(item.endTime as string), item.estimateMinutes ? Math.max(1, Number(item.estimateMinutes)) : null,
       enumValue(item.planningState, ["INBOX", "SCHEDULED", "SOMEDAY", "WAITING"], "SCHEDULED"),
       completed ? "DONE" : enumValue(item.workflowStatus, ["TODO", "IN_PROGRESS", "BLOCKED", "DONE"], "TODO"),
@@ -280,7 +281,7 @@ async function importBackup(env: Bindings, userId: string, input: unknown, pendi
   addBulkInsert(env, statements, "projects", ["id", "user_id", "name", "description", "status", "color", "icon", "start_date", "target_date", "resources_json", "archived", "archived_at", "sort_order", "created_at", "updated_at"], projectRows);
   addBulkInsert(env, statements, "project_decisions", ["id", "user_id", "project_id", "title", "decision", "rationale", "decided_at", "created_at", "updated_at"], projectDecisionRows);
   addBulkInsert(env, statements, "milestones", ["id", "user_id", "project_id", "title", "description", "target_date", "status", "sort_order", "created_at", "updated_at"], milestoneRows);
-  addBulkInsert(env, statements, "todos", ["id", "user_id", "category_id", "project_id", "milestone_id", "parent_todo_id", "title", "memo", "date", "due_date", "start_time", "end_time", "estimate_minutes", "planning_state", "workflow_status", "priority", "completed", "repeat", "archived", "archived_at", "sort_order", "created_at", "updated_at"], todoRows);
+  addBulkInsert(env, statements, "todos", ["id", "user_id", "category_id", "project_id", "milestone_id", "parent_todo_id", "title", "memo", "block_reason", "unblock_condition", "date", "due_date", "start_time", "end_time", "estimate_minutes", "planning_state", "workflow_status", "priority", "completed", "repeat", "archived", "archived_at", "sort_order", "created_at", "updated_at"], todoRows);
   addBulkInsert(env, statements, "tags", ["id", "user_id", "name", "created_at", "updated_at"], tagRows);
   addBulkInsert(env, statements, "todo_tags", ["todo_id", "tag_id"], todoTagRows);
   addBulkInsert(env, statements, "topics", ["id", "user_id", "title", "memo", "status", "tags_json", "icon", "created_at", "updated_at"], topicRows);

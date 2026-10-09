@@ -416,7 +416,9 @@ export function ProjectPage({
           {projectTab === "manage" ? <ProjectOverviewTools
             project={selected}
             todos={projectTodos}
+            milestones={projectMilestones}
             onUpdateTodo={onUpdateTodo}
+            onUpdateProject={onUpdateProject}
             onDuplicateProject={onDuplicateProject}
             onDuplicated={(project) => {
               setShowArchived(false);
@@ -425,19 +427,22 @@ export function ProjectPage({
           /> : null}
 
           {projectTab === "work" && !selected.archived ? (
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-                <div>
-                  <p className="text-xs font-semibold text-ink-300">새 Todo 마일스톤</p>
-                  <p className="mt-0.5 text-xs text-ink-400">같은 마일스톤에 작업을 연속 추가할 때 선택을 유지합니다.</p>
+            <details className="app-card p-3">
+              <summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 px-1 text-sm font-semibold text-ink-200 hover:text-ink-100"><Plus size={15} className="text-accent-300" />Todo 빠른 추가</summary>
+              <div className="mt-3 space-y-2 border-t border-ink-800/65 pt-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+                  <div>
+                    <p className="text-xs font-semibold text-ink-300">새 Todo 마일스톤</p>
+                    <p className="mt-0.5 text-xs text-ink-400">같은 마일스톤에 작업을 연속 추가할 때 선택을 유지합니다.</p>
+                  </div>
+                  <select className="field min-h-9 w-full py-1.5 text-xs sm:w-64" value={newTodoMilestoneId} onChange={(event) => setNewTodoMilestoneId(event.target.value)} aria-label="새 Todo 마일스톤">
+                    <option value="">마일스톤 없음</option>
+                    {projectMilestones.map((milestone) => <option key={milestone.id} value={milestone.id}>{milestone.title}</option>)}
+                  </select>
                 </div>
-                <select className="field min-h-9 w-full py-1.5 text-xs sm:w-64" value={newTodoMilestoneId} onChange={(event) => setNewTodoMilestoneId(event.target.value)} aria-label="새 Todo 마일스톤">
-                  <option value="">마일스톤 없음</option>
-                  {projectMilestones.map((milestone) => <option key={milestone.id} value={milestone.id}>{milestone.title}</option>)}
-                </select>
+                <TodoForm compact submitLabel="프로젝트 Todo 추가" categories={categories} projects={activeProjects} defaultProjectId={selected.id} onAdd={addProjectTodo} />
               </div>
-              <TodoForm compact submitLabel="프로젝트 Todo 추가" categories={categories} projects={activeProjects} defaultProjectId={selected.id} onAdd={addProjectTodo} />
-            </div>
+            </details>
           ) : null}
 
           {projectTab === "milestones" ? <section className="app-card p-4">

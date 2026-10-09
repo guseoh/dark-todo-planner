@@ -27,11 +27,11 @@ export const filterTodosBySavedView = (todos: Todo[], query: SavedViewQuery, tod
 };
 
 export const builtInSmartViews: Array<{ id: string; name: string; description: string; query: SavedViewQuery }> = [
-  { id: "inbox", name: "Inbox", description: "아직 계획하지 않은 Todo", query: { planningState: "INBOX" } },
+  { id: "inbox", name: "받은함", description: "아직 계획하지 않은 Todo", query: { planningState: "INBOX" } },
   { id: "overdue", name: "마감 초과", description: "마감일이 지난 미완료 Todo", query: { dueMode: "OVERDUE" } },
   { id: "due-soon", name: "3일 내 마감", description: "오늘부터 3일 안에 마감되는 Todo", query: { dueMode: "DUE_SOON" } },
   { id: "waiting", name: "대기 중", description: "외부 응답이나 조건을 기다리는 Todo", query: { planningState: "WAITING" } },
-  { id: "someday", name: "Someday", description: "당장은 실행하지 않을 Todo", query: { planningState: "SOMEDAY" } },
+  { id: "someday", name: "언젠가", description: "당장은 실행하지 않을 Todo", query: { planningState: "SOMEDAY" } },
   { id: "high", name: "높은 우선순위", description: "높은 우선순위 Todo", query: { priority: "HIGH", workflowStatus: "TODO" } },
   { id: "no-project", name: "프로젝트 없음", description: "아직 프로젝트에 연결되지 않은 Todo", query: { projectId: "NO_PROJECT" } },
 ];

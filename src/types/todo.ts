@@ -14,6 +14,8 @@ export type Todo = {
   parentTodoId?: string;
   title: string;
   memo?: string;
+  blockReason?: string;
+  unblockCondition?: string;
   referenceUrl?: string;
   referenceLabel?: string;
   date: string;
@@ -45,6 +47,8 @@ export type TodoInput = {
   milestoneId?: string;
   parentTodoId?: string;
   memo?: string;
+  blockReason?: string;
+  unblockCondition?: string;
   date?: string;
   dueDate?: string;
   /** Compatibility-only field for legacy/internal callers. */

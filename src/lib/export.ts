@@ -10,11 +10,13 @@ const csvCell = (value: unknown) => {
 
 export const buildTodoCsv = (todos: Todo[], projects: Project[]) => {
   const projectMap = new Map(projects.map((project) => [project.id, project.name]));
-  const header = ["id", "title", "memo", "date", "dueDate", "priority", "planningState", "workflowStatus", "completed", "archived", "project", "category"];
+  const header = ["id", "title", "memo", "blockReason", "unblockCondition", "date", "dueDate", "priority", "planningState", "workflowStatus", "completed", "archived", "project", "category"];
   const rows = todos.map((todo) => [
     todo.id,
     todo.title,
     todo.memo || "",
+    todo.blockReason || "",
+    todo.unblockCondition || "",
     todo.date,
     todo.dueDate || "",
     todo.priority,

@@ -22,6 +22,8 @@ export async function serializeTodos(db: Db, rows: TodoRow[]) {
       milestoneId: row.milestoneId || undefined,
       parentTodoId: row.parentTodoId || undefined,
       memo: row.memo || undefined,
+      blockReason: row.blockReason || undefined,
+      unblockCondition: row.unblockCondition || undefined,
       referenceUrl: row.referenceUrl || undefined,
       referenceLabel: row.referenceLabel || undefined,
       dueDate: row.dueDate || undefined,

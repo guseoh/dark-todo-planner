@@ -7,7 +7,9 @@ const optionalHttpUrl = z.string().trim().max(2048).url().refine((value) => {
 
 export const todoInputSchema = z.object({
   categoryId: z.string().nullable().optional(), projectId: z.string().nullable().optional(), milestoneId: z.string().nullable().optional(), parentTodoId: z.string().nullable().optional(),
-  title: z.string().trim().min(1), memo: z.string().optional().nullable(), date: z.string().min(1), dueDate: z.string().optional().nullable(),
+  title: z.string().trim().min(1), memo: z.string().optional().nullable(),
+  blockReason: z.string().trim().max(1000).optional().nullable(), unblockCondition: z.string().trim().max(1000).optional().nullable(),
+  date: z.string().min(1), dueDate: z.string().optional().nullable(),
   startTime: z.string().optional().nullable(), endTime: z.string().optional().nullable(),
   referenceUrl: optionalHttpUrl, referenceLabel: z.string().trim().max(80).optional().nullable(),
   planningState: z.enum(["INBOX", "SCHEDULED", "SOMEDAY", "WAITING"]).default("SCHEDULED"), workflowStatus: z.enum(["TODO", "IN_PROGRESS", "BLOCKED", "DONE"]).default("TODO"),

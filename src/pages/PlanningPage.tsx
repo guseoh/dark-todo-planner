@@ -3,6 +3,7 @@ import { BookmarkPlus, CalendarCheck2, CheckCircle2, ClipboardList, Plus, Save, 
 import { EmptyState } from "../components/common/EmptyState";
 import { getWeekRange, todayKey } from "../lib/date";
 import { builtInSmartViews, filterTodosBySavedView } from "../lib/planning";
+import { planningStateLabels } from "../lib/todoLabels";
 import type { DailyPlan, SavedView, SavedViewQuery, TaskTemplate, WeeklyReview } from "../types/planning";
 import type { Project } from "../types/project";
 import type { Todo, TodoInput, TodoPlanningState, TodoPriority } from "../types/todo";
@@ -16,12 +17,7 @@ const tabItems: Array<{ id: PlanningTab; label: string }> = [
   { id: "templates", label: "Todo 템플릿" },
 ];
 
-const planningLabels: Record<TodoPlanningState, string> = {
-  INBOX: "Inbox",
-  SCHEDULED: "Scheduled",
-  SOMEDAY: "Someday",
-  WAITING: "Waiting",
-};
+const planningLabels: Record<TodoPlanningState, string> = planningStateLabels;
 
 const priorityLabels: Record<TodoPriority, string> = { LOW: "낮음", MEDIUM: "보통", HIGH: "높음" };
 
@@ -313,7 +309,7 @@ export function PlanningPage({
             <textarea className="field min-h-24" value={templateMemo} onChange={(event) => setTemplateMemo(event.target.value)} placeholder="기본 메모" />
             <div className="grid gap-3 sm:grid-cols-2">
               <select className="field" value={templatePriority} onChange={(event) => setTemplatePriority(event.target.value as TodoPriority)}><option value="HIGH">높음</option><option value="MEDIUM">보통</option><option value="LOW">낮음</option></select>
-              <select className="field" value={templatePlanningState} onChange={(event) => setTemplatePlanningState(event.target.value as TodoPlanningState)}><option value="SCHEDULED">Scheduled</option><option value="INBOX">Inbox</option><option value="WAITING">Waiting</option><option value="SOMEDAY">Someday</option></select>
+              <select className="field" value={templatePlanningState} onChange={(event) => setTemplatePlanningState(event.target.value as TodoPlanningState)}>{(["SCHEDULED", "INBOX", "WAITING", "SOMEDAY"] as const).map((state) => <option key={state} value={state}>{planningLabels[state]}</option>)}</select>
               <select className="field" value={templateProjectId} onChange={(event) => setTemplateProjectId(event.target.value)}><option value="">프로젝트 없음</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select>
             </div>
             <div className="flex justify-end"><button type="submit" className="btn-primary"><Plus size={16} />템플릿 저장</button></div>

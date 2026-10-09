@@ -1,6 +1,7 @@
 import { Archive, CalendarDays, CheckCircle2, ExternalLink, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { formatKoreanDate, getDdayLabel, todayKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../../lib/todo";
+import { planningStateLabels } from "../../lib/todoLabels";
 import type { Todo } from "../../types/todo";
 import { PriorityBadge } from "./PriorityBadge";
 import { QuickSnoozeMenu } from "./QuickSnoozeMenu";
@@ -23,7 +24,7 @@ type TodoRowProps = {
   onSelect?: (id: string) => void;
 };
 
-const planningLabel = { INBOX: "Inbox", SCHEDULED: "일정", SOMEDAY: "Someday", WAITING: "Waiting" } as const;
+const planningLabel = planningStateLabels;
 
 export function TodoRow({
   todo,

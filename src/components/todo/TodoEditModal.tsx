@@ -25,12 +25,15 @@ type TodoEditModalProps = {
   projects?: Project[];
   onClose: () => void;
   onSave: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => unknown | Promise<unknown>;
+  presentation?: "modal" | "side-panel";
 };
 
-export function TodoEditModal({ todo, categories = [], projects = [], onClose, onSave }: TodoEditModalProps) {
+export function TodoEditModal({ todo, categories = [], projects = [], onClose, onSave, presentation = "modal" }: TodoEditModalProps) {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [blockReason, setBlockReason] = useState("");
+  const [unblockCondition, setUnblockCondition] = useState("");
   const [priority, setPriority] = useState<TodoPriority>("MEDIUM");
   const [completed, setCompleted] = useState(false);
   const [categoryId, setCategoryId] = useState("");
@@ -47,6 +50,8 @@ export function TodoEditModal({ todo, categories = [], projects = [], onClose, o
     setTitle(todo.title);
     setDate(todo.date === UNSCHEDULED_DATE ? "" : todo.date);
     setDueDate(todo.dueDate || "");
+    setBlockReason(todo.blockReason || "");
+    setUnblockCondition(todo.unblockCondition || "");
     setPriority(todo.priority);
     setCompleted(todo.completed);
     setCategoryId(todo.categoryId || "");
@@ -78,6 +83,8 @@ export function TodoEditModal({ todo, categories = [], projects = [], onClose, o
         projectId: projectId || undefined,
         date: planningState === "SCHEDULED" ? resolveTodoScheduledDate(date, todo.date, todayKey()) : UNSCHEDULED_DATE,
         dueDate: dueDate || undefined,
+        blockReason: blockReason.trim() || undefined,
+        unblockCondition: unblockCondition.trim() || undefined,
         priority,
         completed,
         planningState,
@@ -98,12 +105,18 @@ export function TodoEditModal({ todo, categories = [], projects = [], onClose, o
   };
 
   return (
-    <Modal title="Todo 수정" description="일정, 프로젝트, 상태처럼 실제로 자주 바꾸는 항목만 관리합니다." onClose={onClose} size="lg">
+    <Modal title="Todo 수정" description="일정, 프로젝트, 상태처럼 실제로 자주 바꾸는 항목만 관리합니다." onClose={onClose} size="lg" placement={presentation === "side-panel" ? "right" : "center"}>
       <form onSubmit={(event: FormEvent) => { event.preventDefault(); void saveTodo(); }}>
         <div className="grid gap-3 md:grid-cols-2">
           <label className="space-y-1 text-sm text-ink-400 md:col-span-2">제목<input className="field" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Todo 제목" data-modal-initial-focus /></label>
-          <label className="space-y-1 text-sm text-ink-400">보관 위치<select className="field" value={planningState} onChange={(event) => setPlanningState(event.target.value as TodoPlanningState)}><option value="SCHEDULED">일정</option><option value="INBOX">Inbox</option><option value="SOMEDAY">Someday</option><option value="WAITING">Waiting</option></select></label>
-          <label className="space-y-1 text-sm text-ink-400">작업 상태<select className="field" value={workflowStatus} onChange={(event) => setWorkflowStatus(event.target.value as TodoWorkflowStatus)} disabled={completed}><option value="TODO">Todo</option><option value="IN_PROGRESS">진행 중</option><option value="BLOCKED">Blocked</option><option value="DONE">완료</option></select></label>
+          <label className="space-y-1 text-sm text-ink-400">보관 위치<select className="field" value={planningState} onChange={(event) => setPlanningState(event.target.value as TodoPlanningState)}><option value="SCHEDULED">일정</option><option value="INBOX">받은함</option><option value="SOMEDAY">언젠가</option><option value="WAITING">대기</option></select></label>
+          <label className="space-y-1 text-sm text-ink-400">작업 상태<select className="field" value={workflowStatus} onChange={(event) => setWorkflowStatus(event.target.value as TodoWorkflowStatus)} disabled={completed}><option value="TODO">할 일</option><option value="IN_PROGRESS">진행 중</option><option value="BLOCKED">차단됨</option><option value="DONE">완료</option></select></label>
+          {workflowStatus === "BLOCKED" || blockReason || unblockCondition ? (
+            <div className="grid gap-3 rounded-lg border border-warning/25 bg-warning/[0.04] p-3 md:col-span-2 md:grid-cols-2">
+              <label className="space-y-1 text-sm text-ink-300">차단 사유<textarea className="field min-h-20 resize-y" value={blockReason} onChange={(event) => setBlockReason(event.target.value)} maxLength={1000} placeholder="무엇 때문에 이 작업을 진행할 수 없나요?" /></label>
+              <label className="space-y-1 text-sm text-ink-300">다시 진행할 조건<textarea className="field min-h-20 resize-y" value={unblockCondition} onChange={(event) => setUnblockCondition(event.target.value)} maxLength={1000} placeholder="어떤 일이 해결되면 다시 시작할 수 있나요?" /></label>
+            </div>
+          ) : null}
           {planningState === "SCHEDULED" ? <label className="space-y-1 text-sm text-ink-400">실행일<input className="field" type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label> : <div className="rounded-lg border border-ink-700/60 bg-ink-950/35 px-3 py-2 text-sm text-ink-500">일정으로 옮길 때 실행일을 지정합니다.</div>}
           <label className="space-y-1 text-sm text-ink-400">마감일<input className="field" type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></label>
           <div className="md:col-span-2">
@@ -112,7 +125,7 @@ export function TodoEditModal({ todo, categories = [], projects = [], onClose, o
               <button type="button" className="btn-secondary min-h-9 px-3 py-1 text-xs" onClick={() => moveToDayOffset(0)}>오늘</button>
               <button type="button" className="btn-secondary min-h-9 px-3 py-1 text-xs" onClick={() => moveToDayOffset(1)}>내일</button>
               <button type="button" className="btn-secondary min-h-9 px-3 py-1 text-xs" onClick={() => moveToDayOffset(7)}>+1주</button>
-              <button type="button" className="btn-secondary min-h-9 px-3 py-1 text-xs" onClick={() => { setPlanningState("SOMEDAY"); setDate(""); }}>Someday</button>
+              <button type="button" className="btn-secondary min-h-9 px-3 py-1 text-xs" onClick={() => { setPlanningState("SOMEDAY"); setDate(""); }}>언젠가</button>
             </div>
           </div>
           <label className="space-y-1 text-sm text-ink-400">카테고리<select className="field" value={categoryId} onChange={(event) => setCategoryId(event.target.value)}><option value="">미분류</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>

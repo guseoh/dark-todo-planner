@@ -74,6 +74,8 @@ export const todos = sqliteTable("todos", {
   parentTodoId: text("parent_todo_id"),
   title: text("title").notNull(),
   memo: text("memo"),
+  blockReason: text("block_reason"),
+  unblockCondition: text("unblock_condition"),
   referenceUrl: text("reference_url"),
   referenceLabel: text("reference_label"),
   date: text("date").notNull(),

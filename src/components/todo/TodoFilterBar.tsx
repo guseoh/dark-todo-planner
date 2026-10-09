@@ -4,6 +4,7 @@ import { defaultFilters } from "../../hooks/useTodos";
 import type { Category } from "../../types/category";
 import type { Project } from "../../types/project";
 import type { TodoFilters, TodoPriorityFilter, TodoStatusFilter, TodoWorkflowStatus } from "../../types/todo";
+import { workflowStatusLabels } from "../../lib/todoLabels";
 import { TodoSearchInput } from "./TodoSearchInput";
 
 type TodoFilterBarProps = {
@@ -149,7 +150,7 @@ export function TodoFilterBar({ filters, onChange, categories = [], projects = [
             <option value="">모든 프로젝트</option><option value="unassigned">프로젝트 미지정</option>{projects.filter((project) => !project.archived || project.id === filters.projectId).map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
           </select>
           <select className="field h-9 min-h-9 w-full py-1 sm:w-44" value={filters.workflowStatus} onChange={(event) => changeFilters({ ...filters, workflowStatus: event.target.value as "ALL" | TodoWorkflowStatus })} aria-label="작업 상태 필터">
-            <option value="ALL">모든 작업 상태</option><option value="TODO">Todo</option><option value="IN_PROGRESS">진행 중</option><option value="BLOCKED">Blocked</option><option value="DONE">완료</option>
+            <option value="ALL">모든 작업 상태</option>{(["TODO", "IN_PROGRESS", "BLOCKED", "DONE"] as const).map((status) => <option key={status} value={status}>{workflowStatusLabels[status]}</option>)}
           </select>
           <select className="field h-9 min-h-9 w-full py-1 sm:w-40" value={filters.archived} onChange={(event) => changeFilters({ ...filters, archived: event.target.value as TodoFilters["archived"] })} aria-label="보관 필터">
             <option value="ACTIVE">보관 제외</option><option value="ARCHIVED">보관됨</option><option value="ALL">전체</option>

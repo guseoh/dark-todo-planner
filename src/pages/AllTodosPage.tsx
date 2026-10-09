@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Activity, CalendarDays, Flag, FolderKanban, ListChecks, Settings2, Trash2, X } from "lucide-react";
 import { defaultFilters } from "../hooks/useTodos";
 import { todayKey } from "../lib/date";
+import { workflowStatusLabels } from "../lib/todoLabels";
 import type { Category } from "../types/category";
 import type { Project } from "../types/project";
 import type { Todo, TodoBulkAction, TodoFilters, TodoInput, TodoPriority, TodoWorkflowStatus } from "../types/todo";
@@ -146,13 +147,22 @@ export function AllTodosPage({
             <button type="button" className="btn-danger" onClick={() => void deleteIds([...selectedIds], "선택한 Todo")} disabled={!selectedIds.size || deleting || updating}>
               <Trash2 size={15} />{deleting ? "이동 중..." : `선택 ${selectedIds.size}개 삭제`}
             </button>
-            <button type="button" className="btn-secondary hover:border-danger/60 hover:text-red-100" onClick={() => void deleteIds(filteredTodos.map((todo) => todo.id), "현재 결과 Todo")} disabled={!filteredTodos.length || deleting || updating}>
-              <Trash2 size={15} />현재 결과 전체 삭제
-            </button>
-            <button type="button" className="btn-secondary hover:border-danger/60 hover:text-red-100" onClick={() => void deleteIds(allTodos.map((todo) => todo.id), "전체 Todo")} disabled={!allTodos.length || deleting || updating}>
-              <Trash2 size={15} />전체 Todo 삭제
-            </button>
           </div>
+
+          <details className="mt-3 rounded-md border border-danger/25 bg-danger/[0.025]">
+            <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-xs font-semibold text-red-200 hover:bg-danger/[0.06]">
+              <Trash2 size={14} />위험 작업 · 여러 Todo를 휴지통으로 이동
+            </summary>
+            <div className="flex flex-wrap items-center gap-2 border-t border-danger/20 px-3 py-3">
+              <p className="mr-auto text-xs text-ink-400">휴지통에서 복원할 수 있습니다. 실행 전에 대상 개수를 확인하세요.</p>
+              <button type="button" className="btn-secondary hover:border-danger/60 hover:text-red-100" onClick={() => void deleteIds(filteredTodos.map((todo) => todo.id), "현재 결과 Todo")} disabled={!filteredTodos.length || deleting || updating}>
+                현재 결과 {filteredTodos.length}개를 휴지통으로
+              </button>
+              <button type="button" className="btn-secondary hover:border-danger/60 hover:text-red-100" onClick={() => void deleteIds(allTodos.map((todo) => todo.id), "전체 Todo")} disabled={!allTodos.length || deleting || updating}>
+                전체 {allTodos.length}개를 휴지통으로
+              </button>
+            </div>
+          </details>
 
           <details className="mt-3 rounded-md border border-ink-700/55 bg-ink-950/25">
             <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm font-semibold text-ink-300 hover:bg-ink-800/45 hover:text-ink-100">
@@ -169,7 +179,7 @@ export function AllTodosPage({
               </label>
               <label className="space-y-1 text-xs font-semibold text-ink-400">
                 <span className="inline-flex items-center gap-1.5"><Activity size={13} />작업 상태</span>
-                <div className="flex gap-1.5"><select className="field" value={workflowValue} onChange={(event) => setWorkflowValue(event.target.value as TodoWorkflowStatus)}><option value="TODO">Todo</option><option value="IN_PROGRESS">진행 중</option><option value="BLOCKED">Blocked</option><option value="DONE">완료</option></select><button type="button" className="btn-secondary shrink-0 px-2.5" disabled={!selectedIds.size || updating || deleting} onClick={() => void applyBulkAction({ type: "WORKFLOW_STATUS", value: workflowValue }, "작업 상태")}>적용</button></div>
+                <div className="flex gap-1.5"><select className="field" value={workflowValue} onChange={(event) => setWorkflowValue(event.target.value as TodoWorkflowStatus)}>{(["TODO", "IN_PROGRESS", "BLOCKED", "DONE"] as const).map((status) => <option key={status} value={status}>{workflowStatusLabels[status]}</option>)}</select><button type="button" className="btn-secondary shrink-0 px-2.5" disabled={!selectedIds.size || updating || deleting} onClick={() => void applyBulkAction({ type: "WORKFLOW_STATUS", value: workflowValue }, "작업 상태")}>적용</button></div>
               </label>
               <label className="space-y-1 text-xs font-semibold text-ink-400">
                 <span className="inline-flex items-center gap-1.5"><Flag size={13} />우선순위</span>

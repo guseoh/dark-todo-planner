@@ -48,7 +48,7 @@ export function TodoDetailFields({
         <label className="space-y-1 text-xs font-semibold text-ink-400">
           보관 위치
           <select className="field h-10 min-h-10 py-1.5" value={planningState} onChange={(event) => onPlanningStateChange(event.target.value as TodoPlanningState)}>
-            <option value="SCHEDULED">일정</option><option value="INBOX">Inbox</option><option value="SOMEDAY">Someday</option><option value="WAITING">Waiting</option>
+            <option value="SCHEDULED">일정</option><option value="INBOX">받은함</option><option value="SOMEDAY">언젠가</option><option value="WAITING">대기</option>
           </select>
         </label>
         {planningState === "SCHEDULED" ? (

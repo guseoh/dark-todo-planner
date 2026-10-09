@@ -8,14 +8,14 @@ type Reminder = { remindAt: string; status: "PENDING" | "SENT" | "CANCELLED"; se
 type Workflow = { blockers: RelatedTodo[]; dependents: RelatedTodo[]; activity: Activity[]; reminder: Reminder | null; reminderDeliveryConfigured: boolean };
 
 const FIELD_LABELS: Record<string, string> = {
-  title: "제목", memo: "메모", referenceUrl: "관련 링크", referenceLabel: "링크 이름", date: "실행일", dueDate: "마감일",
+  title: "제목", memo: "메모", blockReason: "차단 사유", unblockCondition: "다시 진행할 조건", referenceUrl: "관련 링크", referenceLabel: "링크 이름", date: "실행일", dueDate: "마감일",
   startTime: "시작 시각", endTime: "종료 시각", estimateMinutes: "예상 시간", planningState: "보관 위치", workflowStatus: "작업 상태",
   priority: "우선순위", repeat: "반복", projectId: "프로젝트", milestoneId: "마일스톤", parentTodoId: "상위 작업",
   categoryId: "카테고리", completed: "완료", archived: "보관",
 };
 const STATE_LABELS: Record<string, string> = {
-  INBOX: "Inbox", SCHEDULED: "일정", SOMEDAY: "Someday", WAITING: "Waiting", TODO: "Todo",
-  IN_PROGRESS: "진행 중", BLOCKED: "Blocked", DONE: "완료", LOW: "낮음", MEDIUM: "보통", HIGH: "높음",
+  INBOX: "받은함", SCHEDULED: "일정", SOMEDAY: "언젠가", WAITING: "대기", TODO: "할 일",
+  IN_PROGRESS: "진행 중", BLOCKED: "차단됨", DONE: "완료", LOW: "낮음", MEDIUM: "보통", HIGH: "높음",
   NONE: "반복 없음", DAILY: "매일", WEEKLY: "매주", MONTHLY: "매월", WEEKDAY: "평일", WEEKEND: "주말",
 };
 const displayValue = (field: string, value: unknown) => {
