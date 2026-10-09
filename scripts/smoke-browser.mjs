@@ -100,8 +100,10 @@ try {
 
   await page.keyboard.press("Control+k");
   const search = page.getByRole("dialog", { name: "검색 및 명령" });
-  await search.getByPlaceholder("검색하거나 실행할 명령 입력").fill(title);
-  await search.getByRole("button", { name: new RegExp(title) }).click();
+  const commandInput = search.getByPlaceholder("검색하거나 실행할 명령 입력");
+  await commandInput.fill(title);
+  await commandInput.press("ArrowDown");
+  await commandInput.press("Enter");
   const edit = page.getByRole("dialog", { name: "Todo 수정" });
   await edit.getByPlaceholder("Todo 제목").fill(edited);
   await edit.getByRole("button", { name: "저장", exact: true }).click();
