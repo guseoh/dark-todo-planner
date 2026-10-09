@@ -20,7 +20,6 @@ const MemoPage = lazy(() => import("../../pages/MemoPage").then((module) => ({ d
 const ScratchpadPage = lazy(() => import("../../pages/ScratchpadPage").then((module) => ({ default: module.ScratchpadPage })));
 const TrashPage = lazy(() => import("../../pages/TrashPage").then((module) => ({ default: module.TrashPage })));
 const SettingsPage = lazy(() => import("../../pages/SettingsPage").then((module) => ({ default: module.SettingsPage })));
-const ExportPanel = lazy(() => import("../settings/ExportPanel").then((module) => ({ default: module.ExportPanel })));
 
 export const viewsRequiringDeferredData = new Set<AppView>(["week", "month", "projects", "memo", "settings"]);
 
@@ -119,7 +118,7 @@ export function AppContent({ activeView, planner, onToggleTodo, onUpdateTodo, fo
       content = <TrashPage onRestored={planner.loadAll} />;
       break;
     case "settings":
-      content = <div className="space-y-4"><SettingsPage stats={planner.stats} categories={planner.categories} projects={planner.projects} goals={planner.goals} memos={planner.memos} plannerSettings={planner.plannerSettings} onSavePlannerSettings={planner.savePlannerSettings} onTodosCreated={planner.loadAll} apiStatus={planner.connectionError ? "offline" : "online"} /><ExportPanel todos={planner.allTodos} projects={planner.projects} goals={planner.goals} memos={planner.memos} /></div>;
+      content = <SettingsPage stats={planner.stats} categories={planner.categories} projects={planner.projects} goals={planner.goals} memos={planner.memos} todos={planner.allTodos} plannerSettings={planner.plannerSettings} onSavePlannerSettings={planner.savePlannerSettings} onTodosCreated={planner.loadAll} apiStatus={planner.connectionError ? "offline" : "online"} />;
       break;
     default: {
       const unreachable: never = activeView;
