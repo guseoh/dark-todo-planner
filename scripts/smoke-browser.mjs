@@ -74,9 +74,9 @@ try {
   await page.getByRole("heading", { name: "주간", exact: true }).waitFor();
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
 
-  // Empty Today state should prioritize a single helpful message and the add form
-  // rather than multiple zero-statistics cards.
-  await page.getByRole("heading", { name: "오늘은 아직 등록된 Todo가 없습니다." }).waitFor();
+  // Empty Today keeps its summary and add form, with one actionable empty-list message.
+  await page.getByRole("heading", { name: "오늘 남은 할 일", exact: true }).waitFor();
+  await page.getByText("오늘 할 일을 정해 보세요.", { exact: true }).waitFor();
   assert.equal(await page.getByRole("heading", { name: "오늘의 핵심 작업" }).count(), 0, "Do not render empty focus card.");
   assert.equal(await page.getByText("미완료 Todo가 없습니다.", { exact: true }).count(), 0, "Do not repeat zero-state placeholders.");
   assert.equal(await page.getByRole("button", { name: "카테고리 관리" }).count(), 1, "Keep category management discoverable even when Today is empty.");
@@ -89,8 +89,8 @@ try {
   await page.getByRole("button", { name: "추가", exact: true }).click();
   await page.getByText(title, { exact: true }).first().waitFor();
   assert.ok(await findServerTodo(title), "Todo create should persist to local D1.");
-  await page.getByRole("heading", { name: "오늘 진행" }).waitFor();
-  await page.getByText("중요한 Todo는 별표를 눌러 상단에 모아 둘 수 있습니다.", { exact: false }).waitFor();
+  await page.getByRole("progressbar", { name: "오늘 완료율", exact: true }).waitFor();
+  await page.getByText("핵심 작업은 최대 3개", { exact: true }).waitFor();
   await page.getByRole("button", { name: `${title} 핵심 작업으로 고정` }).click();
   await page.getByRole("heading", { name: "오늘의 핵심 작업" }).waitFor();
   assert.equal(await page.getByRole("button", { name: `${title} 핵심 작업으로 고정` }).count(), 0, "Pinned Todo must not appear twice.");
