@@ -90,6 +90,7 @@ try {
   await page.getByText(title, { exact: true }).first().waitFor();
   assert.ok(await findServerTodo(title), "Todo create should persist to local D1.");
   await page.getByRole("progressbar", { name: "오늘 완료율", exact: true }).waitFor();
+  assert.equal(await page.getByRole("progressbar", { name: "오늘 완료율", exact: true }).getAttribute("aria-valuenow"), "0", "A newly added incomplete Todo must expose a visible 0% progress indicator.");
   await page.getByText("핵심 작업은 최대 3개", { exact: true }).waitFor();
   await page.getByRole("button", { name: `${title} 핵심 작업으로 고정` }).click();
   await page.getByRole("heading", { name: "오늘의 핵심 작업" }).waitFor();
