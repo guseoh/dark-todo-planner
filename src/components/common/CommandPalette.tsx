@@ -105,8 +105,8 @@ export function CommandPalette({ onClose, onNavigate, onQuickAdd, onOpenItem, to
             return (
               <button key={result.id} type="button" onClick={() => run(result)} className="flex w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left transition hover:border-ink-700 hover:bg-ink-900">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-ink-950 text-ink-400"><Icon size={16} /></span>
-                <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-ink-100">{result.label}</span><span className="mt-0.5 block truncate text-xs text-ink-500">{result.detail}</span></span>
-                <span className="shrink-0 rounded-full border border-ink-700 px-2 py-0.5 text-[10px] font-semibold text-ink-400">{result.kind}</span>
+                <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-ink-100">{result.label}</span><span className="mt-0.5 block truncate text-xs text-ink-400">{result.detail}</span></span>
+                <span className="shrink-0 rounded-full border border-ink-700 px-2 py-0.5 text-xs font-semibold text-ink-300">{result.kind}</span>
               </button>
             );
           }) : <p className="py-8 text-center text-sm text-ink-500">검색 결과가 없습니다.</p>}

@@ -14,6 +14,7 @@ import { TodoForm } from "./components/todo/TodoForm";
 import { TodoQuickActionsProvider, type TodoSnoozeTarget } from "./components/todo/TodoQuickActionsContext";
 import { usePlannerData } from "./hooks/usePlannerData";
 import { getPlannerToday, parseDateKey, todayKey, toDateKey } from "./lib/date";
+import { viewFromHash, viewHash } from "./lib/viewNavigation";
 import type { Todo } from "./types/todo";
 
 const TODO_UNDO_MS = 6000;
@@ -26,7 +27,7 @@ type PendingTodoUndo = {
 };
 
 function App({ onLogout }: { onLogout: () => Promise<void> }) {
-  const [activeView, setActiveView] = useState<AppView>("today");
+  const [activeView, setActiveView] = useState<AppView>(() => viewFromHash(window.location.hash));
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [searchTodoId, setSearchTodoId] = useState<string | null>(null);
@@ -37,6 +38,24 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
   const todoUndoTimerRef = useRef<number | null>(null);
   const lastPlannerDayRef = useRef(getPlannerToday());
   const planner = usePlannerData();
+
+  useEffect(() => {
+    // pushState doesn't emit popstate: clicks update state immediately, while
+    // Back/Forward or manually edited hashes restore the selected view.
+    const syncLocation = () => {
+      const next = viewFromHash(window.location.hash);
+      setSearchMemoId(null);
+      setSearchProjectId(null);
+      setSearchTodoId(null);
+      setActiveView(next);
+    };
+    window.addEventListener("popstate", syncLocation);
+    window.addEventListener("hashchange", syncLocation);
+    return () => {
+      window.removeEventListener("popstate", syncLocation);
+      window.removeEventListener("hashchange", syncLocation);
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -93,11 +112,18 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     }, TODO_UNDO_MS);
   }, []);
 
+  const navigateToView = (view: AppView) => {
+    if (window.location.hash !== viewHash(view)) {
+      window.history.pushState({ view }, "", viewHash(view));
+    }
+    setActiveView(view);
+  };
+
   const changeView = (view: AppView) => {
     setSearchMemoId(null);
     setSearchProjectId(null);
     setSearchTodoId(null);
-    setActiveView(view);
+    navigateToView(view);
   };
 
   const clearOpenedSearchTarget = useCallback((kind: "메모" | "프로젝트") => {
@@ -109,7 +135,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     setSearchTodoId(kind === "Todo" ? id : null);
     setSearchMemoId(kind === "메모" ? id : null);
     setSearchProjectId(kind === "프로젝트" ? id : null);
-    setActiveView(kind === "Todo" ? "all" : kind === "메모" ? "memo" : "projects");
+    navigateToView(kind === "Todo" ? "all" : kind === "메모" ? "memo" : "projects");
   };
 
   const openQuickAdd = () => {
