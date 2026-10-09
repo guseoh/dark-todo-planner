@@ -71,8 +71,10 @@ export type TodoSort = "NEWEST" | "OLDEST" | "PRIORITY" | "DATE_ASC";
 export type TodoFilters = {
   query: string;
   status: TodoStatusFilter;
+  workflowStatus: "ALL" | TodoWorkflowStatus;
   priority: TodoPriorityFilter;
   categoryId: string;
+  projectId: string;
   archived: "ACTIVE" | "ARCHIVED" | "ALL";
   duplicatesOnly: boolean;
   date: string;

@@ -30,7 +30,7 @@ export function AllTodosPage({
   allTodos, filterTodos, categories = [], projects, duplicateTodoIds, onToggle, onDelete, onDeleteMany, onBulkUpdate,
   onUpdate, onUnarchive, onAddTodo, onAddCategory, onUpdateCategory, onDeleteCategory,
 }: AllTodosPageProps) {
-  const [filters, setFilters] = useState<TodoFilters>(defaultFilters);
+  const [filters, setFilters] = useState<TodoFilters>(() => ({ ...defaultFilters, status: "ACTIVE" }));
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [deleting, setDeleting] = useState(false);
@@ -124,7 +124,7 @@ export function AllTodosPage({
       </section>
 
       <div className="sticky top-[60px] z-20 -mx-1 rounded-lg border border-ink-800/60 bg-ink-950/90 px-1 py-1.5 backdrop-blur-xl">
-        <TodoFilter filters={filters} onChange={setFilters} categories={categories} />
+        <TodoFilter filters={filters} onChange={setFilters} categories={categories} projects={projects} />
       </div>
 
       {selectionMode ? (
@@ -186,6 +186,7 @@ export function AllTodosPage({
       <GroupedTodoList
         todos={filteredTodos}
         categories={categories}
+        projects={projects}
         duplicateTodoIds={duplicateTodoIds}
         onAddTodo={onAddTodo}
         onToggle={onToggle}

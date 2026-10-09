@@ -314,7 +314,12 @@ export function ProjectPage({
                   <h3 className="text-xl font-bold text-ink-100">{selected.name}</h3>
                   <span className="rounded-full border border-ink-700 px-2 py-0.5 text-xs text-ink-300">{projectStatusLabel[selected.status]}</span>
                 </div>
-                <p className="mt-2 text-sm text-ink-400">{selected.description || "설명이 없습니다."}</p>
+                <details className="mt-2 group">
+                  <summary className="flex min-h-8 w-fit cursor-pointer items-center gap-2 rounded px-1 text-xs font-semibold text-ink-400 hover:bg-ink-800/65 hover:text-ink-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
+                    프로젝트 설명 <ChevronDown size={14} className="transition-transform group-open:rotate-180" />
+                  </summary>
+                  <p className="max-w-4xl px-1 pt-1 text-sm leading-6 text-ink-300">{selected.description || "설명이 없습니다."}</p>
+                </details>
                 <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-400">
                   <span>진행률 {progress}% ({completed}/{projectTodos.length})</span>
                   {selected.startDate ? <span>시작일 {selected.startDate}</span> : null}
@@ -495,7 +500,7 @@ export function ProjectPage({
           </section> : null}
 
           {projectTab === "decisions" ? <ProjectDecisionLog projectId={selected.id} archived={selected.archived} decisions={projectDecisions} onAdd={onAddDecision} onDelete={onDeleteDecision} /> : null}
-          {projectTab === "work" ? <ProjectKanban project={selected} todos={projectTodos} milestones={projectMilestones} onAddTodo={onAddTodo} onUpdateTodo={onUpdateTodo} onToggleTodo={onToggleTodo} /> : null}
+          {projectTab === "work" ? <ProjectKanban project={selected} todos={projectTodos} milestones={projectMilestones} categories={categories} projects={projects} onAddTodo={onAddTodo} onUpdateTodo={onUpdateTodo} onToggleTodo={onToggleTodo} /> : null}
         </div>
       ) : (
         <div className="app-card flex min-h-56 items-center justify-center p-6 text-center">

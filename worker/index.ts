@@ -15,7 +15,7 @@ import { backupV9ExportMiddleware, backupV9ImportMiddleware } from "./backupMidd
 import { atomicBackupRoutes } from "./atomicBackupImport";
 import { requireSafeFullBackupImport } from "./backupRestoreGuard";
 import { todoReferenceTrashRestoreMiddleware } from "./referenceLinkMiddleware";
-import { runDiscordIncompleteTodoReminder } from "./reminders/incompleteTodoReminder";
+import { runDiscordIncompleteTodoReminder, runDueTodoReminders } from "./reminders/incompleteTodoReminder";
 import { backupRoutes } from "./routes/backup";
 import { calendarRoutes } from "./routes/calendar";
 import { contentRoutes } from "./routes/content";
@@ -30,6 +30,7 @@ import { settingsRoutes } from "./routes/settings";
 import { todoBulkCopyRoutes } from "./routes/todoBulkCopy";
 import { todoCompletionRoutes } from "./routes/todoCompletion";
 import { todoRoutes } from "./routes/todos";
+import { todoWorkflowRoutes } from "./routes/todoWorkflow";
 import { trashRoutes } from "./routes/trash";
 import {
   clientIdentifier,
@@ -106,6 +107,7 @@ app.use("/api/migrate/local-storage", backupV9ImportMiddleware);
 
 app.route("/api", todoCompletionRoutes);
 app.route("/api", todoRoutes);
+app.route("/api", todoWorkflowRoutes);
 app.route("/api", todoBulkCopyRoutes);
 app.route("/api", offlineTodoRoutes);
 app.route("/api", projectRoutes);
@@ -133,5 +135,6 @@ export default {
   fetch: (request: Request, env: Bindings, executionContext: ExecutionContext) => app.fetch(request, env, executionContext),
   scheduled: (controller: ScheduledController, env: Bindings, executionContext: ExecutionContext) => {
     if (controller.cron === "0 12 * * *") executionContext.waitUntil(runDiscordIncompleteTodoReminder(env, new Date(controller.scheduledTime)).then(() => undefined));
+    if (controller.cron === "*/5 * * * *") executionContext.waitUntil(runDueTodoReminders(env, new Date(controller.scheduledTime)).then(() => undefined));
   },
 } satisfies ExportedHandler<Bindings>;

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import type { Category } from "../../types/category";
+import type { Project } from "../../types/project";
 import type { Todo, TodoInput } from "../../types/todo";
 import { CategoryHeader } from "../category/CategoryHeader";
 import { EmptyState } from "../common/EmptyState";
@@ -17,6 +18,7 @@ export type TodoGroup = {
 
 type CategoryTodoGroupProps = {
   group: TodoGroup;
+  projects?: Project[];
   duplicateTodoIds?: ReadonlySet<string>;
   collapsed: boolean;
   defaultDate?: string;
@@ -40,6 +42,7 @@ type CategoryTodoGroupProps = {
 
 export function CategoryTodoGroup({
   group,
+  projects = [],
   duplicateTodoIds = new Set<string>(),
   collapsed,
   defaultDate,
@@ -107,6 +110,7 @@ export function CategoryTodoGroup({
                   onUnarchive={onUnarchive}
                   showDate={showDate}
                   showCategoryBadge={false}
+                  projectName={todo.projectId ? projects.find((project) => project.id === todo.projectId)?.name : undefined}
                   selectionMode={selectionMode}
                   selected={selectedIds.has(todo.id)}
                   onSelect={onSelectTodo}

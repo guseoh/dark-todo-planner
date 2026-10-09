@@ -28,8 +28,10 @@ const BULK_TRASH_CHUNK_SIZE = 3;
 export const defaultFilters: TodoFilters = {
   query: "",
   status: "ALL",
+  workflowStatus: "ALL",
   priority: "ALL",
   categoryId: "",
+  projectId: "",
   archived: "ACTIVE",
   duplicatesOnly: false,
   date: "",
@@ -391,7 +393,10 @@ export function useTodos() {
     if (keyword) result = result.filter((todo) => `${todo.title} ${todo.memo || ""} ${todo.category?.name || ""}`.toLowerCase().includes(keyword));
     if (filters.status === "ACTIVE") result = result.filter((todo) => !todo.completed);
     if (filters.status === "COMPLETED") result = result.filter((todo) => todo.completed);
+    if (filters.workflowStatus !== "ALL") result = result.filter((todo) => (todo.workflowStatus || (todo.completed ? "DONE" : "TODO")) === filters.workflowStatus);
     if (filters.priority !== "ALL") result = result.filter((todo) => todo.priority === filters.priority);
+    if (filters.projectId === "unassigned") result = result.filter((todo) => !todo.projectId);
+    else if (filters.projectId) result = result.filter((todo) => todo.projectId === filters.projectId);
     if (filters.categoryId === "uncategorized") result = result.filter((todo) => !todo.categoryId);
     else if (filters.categoryId) result = result.filter((todo) => todo.categoryId === filters.categoryId);
     if (filters.duplicatesOnly) result = result.filter((todo) => duplicateTodoIds.has(todo.id));

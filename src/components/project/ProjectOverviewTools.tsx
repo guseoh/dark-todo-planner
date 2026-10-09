@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Activity, Copy, ListTodo } from "lucide-react";
+import { Activity, AlertCircle, Clock3, Copy, ListTodo } from "lucide-react";
+import { todayKey } from "../../lib/date";
+import { isOverdueByDeadline } from "../../lib/todo";
 import type { ProjectDuplicateMode } from "../../hooks/useProjects";
 import type { Project } from "../../types/project";
 import type { Todo } from "../../types/todo";
@@ -29,6 +31,10 @@ export function ProjectOverviewTools({ project, todos, onUpdateTodo, onDuplicate
   const incomplete = useMemo(() => todos.filter((todo) => !todo.completed), [todos]);
   const backlog = useMemo(() => incomplete.filter((todo) => todo.workflowStatus === "TODO").sort(sortBacklog), [incomplete]);
   const progress = todos.length ? Math.round(((todos.length - incomplete.length) / todos.length) * 100) : 0;
+  const today = todayKey();
+  const overdueCount = incomplete.filter((todo) => isOverdueByDeadline(todo, today)).length;
+  const blockedCount = incomplete.filter((todo) => todo.workflowStatus === "BLOCKED").length;
+  const staleCount = incomplete.filter((todo) => todo.workflowStatus === "IN_PROGRESS" && Number.isFinite(Date.parse(todo.updatedAt)) && Date.now() - Date.parse(todo.updatedAt) >= 7 * 24 * 60 * 60 * 1000).length;
 
   const [showDuplicate, setShowDuplicate] = useState(false);
   const [duplicateName, setDuplicateName] = useState(`${project.name} 복사본`);
@@ -69,9 +75,11 @@ export function ProjectOverviewTools({ project, todos, onUpdateTodo, onDuplicate
             <p className="mt-0.5 text-xs text-ink-500">진행률과 남은 작업만 간단히 확인합니다.</p>
           </div>
         </div>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
           <Metric label="진행률" value={`${progress}%`} detail={`${todos.length - incomplete.length}/${todos.length} 완료`} icon={<Activity size={15} />} />
           <Metric label="남은 Todo" value={`${incomplete.length}`} detail="미완료 작업" icon={<ListTodo size={15} />} />
+          <Metric label="마감 초과" value={`${overdueCount}`} detail="기한이 지난 미완료 작업" icon={<Clock3 size={15} />} />
+          <Metric label="진행 확인" value={`${blockedCount + staleCount}`} detail={`${blockedCount}개 막힘 · ${staleCount}개 7일 이상 정체`} icon={<AlertCircle size={15} />} />
         </div>
       </section>
 

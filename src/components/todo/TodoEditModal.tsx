@@ -7,6 +7,7 @@ import type { Category } from "../../types/category";
 import type { Project } from "../../types/project";
 import type { Todo, TodoPlanningState, TodoPriority, TodoWorkflowStatus } from "../../types/todo";
 import { Modal } from "../common/Modal";
+import { TodoWorkflowPanel } from "./TodoWorkflowPanel";
 
 const UNSCHEDULED_DATE = "9999-12-31";
 const safeHttpHref = (value: string) => {
@@ -130,6 +131,7 @@ export function TodoEditModal({ todo, categories = [], projects = [], onClose, o
           </div>
           <label className="flex min-h-11 items-center gap-3 rounded-lg bg-ink-950/45 px-3 text-sm text-ink-300 md:col-span-2"><input type="checkbox" checked={completed} onChange={(event) => setCompleted(event.target.checked)} className="h-4 w-4 accent-accent-500" />완료된 Todo로 표시</label>
         </div>
+        <TodoWorkflowPanel todo={todo} />
         <div className="mt-5 flex flex-col-reverse gap-2 border-t border-ink-700/60 pt-4 sm:flex-row sm:justify-end"><button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>취소</button><button type="submit" className="btn-primary" disabled={!title.trim() || saving}>{saving ? "저장 중..." : "저장"}</button></div>
       </form>
     </Modal>

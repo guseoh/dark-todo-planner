@@ -205,3 +205,39 @@ export async function runDiscordIncompleteTodoReminder(env: Bindings, now = new 
     send: env.DISCORD_WEBHOOK_URL ? createDiscordSender(env.DISCORD_WEBHOOK_URL) : async () => undefined,
   });
 }
+
+export async function runDueTodoReminders(env: Bindings, now = new Date()): Promise<{ sent: number; failed: number }> {
+  if (!env.DISCORD_WEBHOOK_URL) return { sent: 0, failed: 0 };
+  const nowIso = now.toISOString();
+  const staleClaimedAt = new Date(now.getTime() - 10 * 60 * 1000).toISOString();
+  const due = await env.DB.prepare(`SELECT r.id, r.todo_id AS todoId, t.title
+    FROM todo_reminders r JOIN todos t ON t.id = r.todo_id
+    WHERE r.user_id = ? AND r.status = 'PENDING' AND r.remind_at <= ?
+      AND t.completed = 0 AND t.archived = 0
+      AND (r.claim_token IS NULL OR r.claimed_at <= ?)
+    ORDER BY r.remind_at ASC LIMIT 25`).bind(USER_ID, nowIso, staleClaimedAt).all<{ id: string; todoId: string; title: string }>();
+  let sent = 0, failed = 0;
+  for (const reminder of due.results || []) {
+    const token = crypto.randomUUID();
+    const claim = await env.DB.prepare(`UPDATE todo_reminders SET claim_token = ?, claimed_at = ?, updated_at = ?
+      WHERE id = ? AND user_id = ? AND status = 'PENDING' AND remind_at <= ?
+        AND (claim_token IS NULL OR claimed_at <= ?)
+        AND EXISTS (SELECT 1 FROM todos WHERE id = todo_reminders.todo_id AND completed = 0 AND archived = 0)`)
+      .bind(token, nowIso, nowIso, reminder.id, USER_ID, nowIso, staleClaimedAt).run();
+    if (claim.meta.changes !== 1) continue;
+    try {
+      const payload = { content: `🔔 Todo 알림\n${sanitizeTitle(reminder.title) || "제목 없음"}`, allowed_mentions: { parse: [] } };
+      const response = await fetch(env.DISCORD_WEBHOOK_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      if (!response.ok) throw new Error("Discord notification failed.");
+      const updated = await env.DB.prepare(`UPDATE todo_reminders SET status = 'SENT', sent_at = ?, claim_token = NULL, claimed_at = NULL, updated_at = ?
+        WHERE id = ? AND status = 'PENDING' AND claim_token = ?`).bind(nowIso, nowIso, reminder.id, token).run();
+      if (updated.meta.changes === 1) sent++;
+    } catch {
+      failed++;
+      await env.DB.prepare(`UPDATE todo_reminders SET claim_token = NULL, claimed_at = NULL, updated_at = ?
+        WHERE id = ? AND status = 'PENDING' AND claim_token = ?`).bind(nowIso, reminder.id, token).run();
+      console.error("[todo-reminder] Delivery failed; the reminder was left pending for retry.");
+    }
+  }
+  return { sent, failed };
+}
