@@ -61,7 +61,7 @@ export function MonthlyCalendar({
         </button>
       </div>
 
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[10px] text-ink-500">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-ink-500">
         <p>날짜를 선택하면 오른쪽에서 Todo를 자세히 관리합니다.</p>
         <p className="font-medium" aria-label="일일 수행 상태 범례">O 완료 · X 미수행 · - 미설정</p>
       </div>
@@ -129,12 +129,12 @@ export function MonthlyCalendar({
                   <div className="flex min-w-0 items-center gap-1">
                     <span className={`shrink-0 text-xs font-bold sm:text-sm ${dateTone}`}>{formatKoreanDate(day, "d")}</span>
                     {today ? (
-                      <span className="hidden rounded-full border border-accent-500/35 bg-accent-500/12 px-1.5 py-0.5 text-[9px] font-bold text-accent-300 sm:inline-flex">
+                      <span className="hidden rounded-full border border-accent-500/35 bg-accent-500/12 px-1.5 py-0.5 text-[11px] font-bold text-accent-300 sm:inline-flex">
                         오늘
                       </span>
                     ) : null}
                   </div>
-                  <div className="mt-0.5 min-h-3 truncate text-[9px] font-semibold sm:text-[10px]">
+                  <div className="mt-0.5 min-h-3 truncate text-[11px] font-semibold sm:text-[11px]">
                     {holidayName ? <span className="text-red-300/65">{holidayName}</span> : null}
                   </div>
                 </div>
@@ -143,15 +143,15 @@ export function MonthlyCalendar({
                   {dayTodos.length ? (
                     <>
                       <div className="flex min-w-0 items-baseline justify-between gap-1">
-                        <span className="truncate text-[10px] font-bold text-ink-200 sm:text-[11px]">Todo {dayTodos.length}</span>
-                        <span className="hidden shrink-0 text-[9px] text-ink-500 sm:inline">미완료 {activeCount}</span>
+                        <span className="truncate text-[11px] font-bold text-ink-200 sm:text-[11px]">Todo {dayTodos.length}</span>
+                        <span className="hidden shrink-0 text-[11px] text-ink-500 sm:inline">미완료 {activeCount}</span>
                       </div>
-                      <p className="hidden truncate text-[9px] text-ink-600 sm:block">완료 {completedCount}{dayGoals.length ? ` · 목표 ${dayGoals.length}` : ""}</p>
+                      <p className="hidden truncate text-xs text-ink-500 sm:block">완료 {completedCount}{dayGoals.length ? ` · 목표 ${dayGoals.length}` : ""}</p>
                     </>
                   ) : dayGoals.length ? (
-                    <p className="truncate text-[9px] font-semibold text-amber-200/70 sm:text-[10px]">목표 {dayGoals.length}</p>
+                    <p className="truncate text-[11px] font-semibold text-amber-200/70 sm:text-[11px]">목표 {dayGoals.length}</p>
                   ) : (
-                    <p className="text-[9px] text-ink-700 sm:text-[10px]">Todo 없음</p>
+                    <p className="text-[11px] text-ink-700 sm:text-[11px]">Todo 없음</p>
                   )}
 
                   {categoryColors.length ? (
@@ -159,7 +159,7 @@ export function MonthlyCalendar({
                       {categoryColors.slice(0, 3).map((color) => (
                         <span key={color} className="h-1.5 w-1.5 rounded-full opacity-80" style={{ background: color }} />
                       ))}
-                      {categoryColors.length > 3 ? <span className="text-[9px] text-ink-600">+{categoryColors.length - 3}</span> : null}
+                      {categoryColors.length > 3 ? <span className="text-xs text-ink-500">+{categoryColors.length - 3}</span> : null}
                     </div>
                   ) : null}
                 </div>
@@ -167,7 +167,7 @@ export function MonthlyCalendar({
 
               <button
                 type="button"
-                className={`absolute right-1 top-1 z-20 inline-flex h-7 w-7 items-center justify-center rounded-md border text-[10px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 sm:right-1.5 sm:top-1.5 ${
+                className={`absolute right-1 top-1 z-20 inline-flex h-7 w-7 items-center justify-center rounded-md border text-[11px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 sm:right-1.5 sm:top-1.5 ${
                   dayStatus === "O"
                     ? "border-success/30 bg-success/[0.06] text-emerald-200/85 hover:border-success/55 hover:bg-success/10"
                     : dayStatus === "X"

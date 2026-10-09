@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BellRing, RefreshCw, Save } from "lucide-react";
 import { StatCard } from "../components/common/StatCard";
 import { CalendarExportCard } from "../components/settings/CalendarExportCard";
+import { ExportPanel } from "../components/settings/ExportPanel";
 import { BackupRestoreCard } from "../components/settings/BackupRestoreCard";
 import { PwaInstallCard } from "../components/settings/PwaInstallCard";
 import { RoutinePanel } from "../components/settings/RoutinePanel";
@@ -9,6 +10,7 @@ import type { Category } from "../types/category";
 import type { Goal } from "../types/goal";
 import type { Memo } from "../types/memo";
 import type { Project } from "../types/project";
+import type { Todo } from "../types/todo";
 import type { PlannerSettings, PlannerSettingsInput } from "../types/settings";
 
 type SettingsPageProps = {
@@ -17,6 +19,7 @@ type SettingsPageProps = {
   stats: { total: number; completedTotal: number; archivedTotal: number };
   goals: Goal[];
   memos: Memo[];
+  todos: Todo[];
   plannerSettings: PlannerSettings;
   onSavePlannerSettings: (input: PlannerSettingsInput) => Promise<PlannerSettings | undefined>;
   onTodosCreated: () => unknown | Promise<unknown>;
@@ -36,6 +39,7 @@ export function SettingsPage({
   stats,
   goals,
   memos,
+  todos,
   plannerSettings,
   onSavePlannerSettings,
   onTodosCreated,
@@ -50,6 +54,7 @@ export function SettingsPage({
     reminderDueSoonEnabled: false,
     reminderDueSoonDays: 3,
   });
+  const [section, setSection] = useState<"overview" | "automation" | "data">("overview");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -65,11 +70,16 @@ export function SettingsPage({
   }, [plannerSettings]);
 
   const save = async () => {
+    if (saving) return;
     setSaving(true);
-    const result = await onSavePlannerSettings(draft);
-    setSaving(false);
-    setMessage(result ? "운영 설정을 저장했습니다." : "운영 설정을 저장하지 못했습니다.");
-    window.setTimeout(() => setMessage(""), 3000);
+    try {
+      const result = await onSavePlannerSettings(draft);
+      setMessage(result ? "운영 설정을 저장했습니다." : "운영 설정을 저장하지 못했습니다.");
+    } catch {
+      setMessage("운영 설정을 저장하지 못했습니다. 입력값을 유지했으니 다시 시도해 주세요.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -79,8 +89,23 @@ export function SettingsPage({
         <p className="mt-2 text-sm text-ink-400">앱 연결 상태, 설치, 자동화와 알림 기준, 저장된 데이터 현황을 관리합니다.</p>
       </section>
 
-      {message ? <div className="rounded-lg border border-ink-700/70 bg-ink-900/75 px-3 py-2 text-sm font-semibold text-ink-200" aria-live="polite">{message}</div> : null}
+      <nav className="flex flex-wrap gap-2 rounded-lg border border-ink-700/70 bg-ink-900/55 p-1.5" aria-label="설정 항목" role="tablist">
+        {([
+          { id: "overview", label: "앱 및 연결 정보" },
+          { id: "automation", label: "자동화 · 알림" },
+          { id: "data", label: "데이터 · 백업" },
+        ] as const).map((item) => (
+          <button key={item.id} type="button" role="tab" aria-selected={section === item.id}
+            onClick={() => setSection(item.id)}
+            className={`min-h-10 flex-1 rounded-md px-3 text-xs font-bold transition sm:flex-initial sm:text-sm ${section === item.id ? "bg-ink-700 text-ink-100" : "text-ink-400 hover:bg-ink-800 hover:text-ink-100"}`}>
+            {item.label}
+          </button>
+        ))}
+      </nav>
+      {message ? <div className="rounded-lg border border-ink-700/70 bg-ink-900/75 px-3 py-2 text-sm font-semibold text-ink-200" role="status" aria-live="polite">{message}</div> : null}
 
+      {section === "overview" ? (
+      <>
       <section className="app-card p-4 sm:p-5" aria-labelledby="operation-info-title">
         <div className="flex flex-col gap-3 border-b border-ink-700 pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div><h3 id="operation-info-title" className="text-base font-bold text-ink-100">운영 정보</h3><p className="mt-1 text-xs text-ink-400">개인 플래너의 고정 운영 기준입니다.</p></div>
@@ -97,9 +122,11 @@ export function SettingsPage({
       </section>
 
       <PwaInstallCard />
-      <CalendarExportCard />
-      <BackupRestoreCard onRestored={async () => { await onTodosCreated(); }} />
+      </>
+      ) : null}
 
+      {section === "automation" ? (
+      <>
       <section className="app-card p-4 sm:p-5" aria-labelledby="automation-settings-title">
         <div className="flex items-center gap-2"><RefreshCw size={18} className="text-accent-300" /><h3 id="automation-settings-title" className="text-base font-bold text-ink-100">Todo 자동화</h3></div>
         <p className="mt-1 text-xs text-ink-400">기본값은 꺼짐입니다. 필요한 자동화만 직접 켤 수 있습니다.</p>
@@ -128,6 +155,14 @@ export function SettingsPage({
       </section>
 
       <RoutinePanel categories={categories} projects={projects} onTodosCreated={onTodosCreated} />
+      </>
+      ) : null}
+
+      {section === "data" ? (
+      <>
+      <CalendarExportCard />
+      <BackupRestoreCard onRestored={async () => { await onTodosCreated(); }} />
+      <ExportPanel todos={todos} projects={projects} goals={goals} memos={memos} />
 
       <section aria-labelledby="data-summary-title">
         <h3 id="data-summary-title" className="mb-3 text-base font-bold text-ink-100">저장된 데이터</h3>
@@ -138,6 +173,8 @@ export function SettingsPage({
           <StatCard title="목표" value={goals.length} />
         </div>
       </section>
+      </>
+      ) : null}
     </div>
   );
 }

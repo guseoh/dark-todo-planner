@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Archive, ArchiveRestore, CheckCircle2, CircleDot, ExternalLink, FolderKanban, Link2, PauseCircle, Pencil, Plus, Save, Target, Trash2, X } from "lucide-react";
+import { Archive, ArchiveRestore, CheckCircle2, ChevronDown, CircleDot, ExternalLink, FolderKanban, Link2, PauseCircle, Pencil, Plus, Save, Target, Trash2, X } from "lucide-react";
 import { ProjectDecisionLog } from "../components/project/ProjectDecisionLog";
 import { ProjectKanban } from "../components/project/ProjectKanban";
 import { ProjectOverviewTools } from "../components/project/ProjectOverviewTools";
@@ -79,6 +79,7 @@ export function ProjectPage({
   const activeProjects = useMemo(() => projects.filter((project) => !project.archived), [projects]);
   const archivedProjects = useMemo(() => projects.filter((project) => project.archived), [projects]);
   const [showArchived, setShowArchived] = useState(false);
+  const [projectTab, setProjectTab] = useState<"work" | "milestones" | "decisions" | "manage">("work");
   const visibleProjects = showArchived ? archivedProjects : activeProjects;
   const [selectedId, setSelectedId] = useState("");
   const [showCreateProject, setShowCreateProject] = useState(false);
@@ -113,6 +114,7 @@ export function ProjectPage({
   }, [focusedProjectId, projects, onSearchTargetOpened]);
 
   useEffect(() => {
+    setProjectTab("work");
     setEditingProject(false);
     setResourceLabel("");
     setResourceUrl("");
@@ -295,7 +297,7 @@ export function ProjectPage({
               >
                 <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: project.color || "#0b72d7" }} />
                 <span className="min-w-0 flex-1 truncate">{project.name}</span>
-                <span className="shrink-0 text-[10px] text-ink-500">{projectStatusLabel[project.status]}</span>
+                <span className="shrink-0 text-xs text-ink-400">{projectStatusLabel[project.status]}</span>
               </button>
             ))}
           </div>
@@ -360,15 +362,11 @@ export function ProjectPage({
               <div className="h-full rounded-full bg-accent-500 transition-all" style={{ width: `${progress}%` }} />
             </div>
 
-            <div className="mt-4 border-t border-ink-800/80 pt-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Link2 size={16} className="text-accent-300" />
-                  <h4 className="text-sm font-bold text-ink-100">자료 링크</h4>
-                  <span className="text-[11px] text-ink-500">GitHub · 배포 · 문서</span>
-                </div>
-                <span className="text-[11px] text-ink-500">{(selected.resources || []).length}/12</span>
-              </div>
+            <details className="mt-4 border-t border-ink-800/80 pt-3" key={selected.id}>
+              <summary className="flex min-h-10 cursor-pointer list-none flex-wrap items-center justify-between gap-2 rounded-md px-1 text-sm font-bold text-ink-200 hover:bg-ink-800/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
+                <span className="flex items-center gap-2"><Link2 size={16} className="text-accent-300" />자료 링크 <span className="text-xs font-medium text-ink-400">{(selected.resources || []).length}/12</span></span>
+                <span className="flex items-center gap-1 text-xs font-medium text-ink-400">GitHub · 배포 · 문서 <ChevronDown size={15} /></span>
+              </summary>
 
               {(selected.resources || []).length ? (
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -392,10 +390,25 @@ export function ProjectPage({
                   {resourceError ? <p className="text-xs font-semibold text-red-200 lg:col-span-3">{resourceError}</p> : null}
                 </form>
               ) : null}
-            </div>
+            </details>
           </section>
 
-          <ProjectOverviewTools
+          <nav className="flex flex-wrap gap-1.5 rounded-lg border border-ink-700/75 bg-ink-900/50 p-1.5" aria-label="프로젝트 세부 화면" role="tablist">
+            {([
+              { id: "work", label: "작업·Kanban", count: projectTodos.length },
+              { id: "milestones", label: "마일스톤", count: projectMilestones.length },
+              { id: "decisions", label: "결정 기록", count: projectDecisions.length },
+              { id: "manage", label: "분석·관리", count: null },
+            ] as const).map((tab) => (
+              <button type="button" role="tab" key={tab.id} aria-selected={projectTab === tab.id}
+                onClick={() => setProjectTab(tab.id)}
+                className={`min-h-10 rounded-md px-3 text-xs font-semibold transition sm:text-sm ${projectTab === tab.id ? "bg-ink-700 text-ink-100" : "text-ink-400 hover:bg-ink-800 hover:text-ink-100"}`}>
+                {tab.label}{tab.count !== null ? <span className="ml-1.5 text-xs opacity-80">{tab.count}</span> : null}
+              </button>
+            ))}
+          </nav>
+
+          {projectTab === "manage" ? <ProjectOverviewTools
             project={selected}
             todos={projectTodos}
             onUpdateTodo={onUpdateTodo}
@@ -404,14 +417,14 @@ export function ProjectPage({
               setShowArchived(false);
               setSelectedId(project.id);
             }}
-          />
+          /> : null}
 
-          {!selected.archived ? (
+          {projectTab === "work" && !selected.archived ? (
             <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2 px-1">
                 <div>
                   <p className="text-xs font-semibold text-ink-300">새 Todo 마일스톤</p>
-                  <p className="mt-0.5 text-[11px] text-ink-500">같은 마일스톤에 작업을 연속 추가할 때 선택을 유지합니다.</p>
+                  <p className="mt-0.5 text-xs text-ink-400">같은 마일스톤에 작업을 연속 추가할 때 선택을 유지합니다.</p>
                 </div>
                 <select className="field min-h-9 w-full py-1.5 text-xs sm:w-64" value={newTodoMilestoneId} onChange={(event) => setNewTodoMilestoneId(event.target.value)} aria-label="새 Todo 마일스톤">
                   <option value="">마일스톤 없음</option>
@@ -422,10 +435,10 @@ export function ProjectPage({
             </div>
           ) : null}
 
-          <section className="app-card p-4">
+          {projectTab === "milestones" ? <section className="app-card p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2"><Target size={17} className="text-accent-300" /><h3 className="font-bold text-ink-100">마일스톤</h3></div>
-              {projectTodos.length ? <span className="text-[11px] text-ink-500">미지정 Todo {unassignedMilestoneTodos}개</span> : null}
+              {projectTodos.length ? <span className="text-xs text-ink-400">미지정 Todo {unassignedMilestoneTodos}개</span> : null}
             </div>
 
             {!selected.archived ? (
@@ -452,7 +465,7 @@ export function ProjectPage({
                           <p className={`min-w-0 truncate text-sm font-semibold ${milestone.status === "DONE" ? "text-ink-500 line-through" : "text-ink-100"}`}>{milestone.title}</p>
                           <span className="text-[11px] font-semibold text-ink-400">{milestoneCompleted}/{milestoneTodos.length} · {milestoneProgress}%</span>
                         </div>
-                        <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-ink-500">
+                        <div className="mt-1 flex flex-wrap gap-2 text-xs text-ink-400">
                           {milestone.targetDate ? <span>목표일 {milestone.targetDate}</span> : null}
                           <span>Todo {milestoneTodos.length}개</span>
                         </div>
@@ -470,7 +483,7 @@ export function ProjectPage({
                           <div key={todo.id} className="flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1 text-xs hover:bg-ink-900/45">
                             <button type="button" onClick={() => onToggleTodo(todo.id)} className={`h-3.5 w-3.5 shrink-0 rounded-full border ${todo.completed ? "border-success bg-success" : "border-ink-600"}`} aria-label={`${todo.title} 완료 토글`} />
                             <span className={`min-w-0 flex-1 truncate ${todo.completed ? "text-ink-500 line-through" : "text-ink-300"}`}>{todo.title}</span>
-                            <span className="shrink-0 text-[10px] text-ink-600">{todo.workflowStatus}</span>
+                            <span className="shrink-0 text-xs text-ink-400">{todo.workflowStatus}</span>
                           </div>
                         ))}
                       </div>
@@ -479,10 +492,10 @@ export function ProjectPage({
                 );
               }) : <p className="py-4 text-center text-sm text-ink-500">아직 마일스톤이 없습니다.</p>}
             </div>
-          </section>
+          </section> : null}
 
-          <ProjectDecisionLog projectId={selected.id} archived={selected.archived} decisions={projectDecisions} onAdd={onAddDecision} onDelete={onDeleteDecision} />
-          <ProjectKanban project={selected} todos={projectTodos} milestones={projectMilestones} onAddTodo={onAddTodo} onUpdateTodo={onUpdateTodo} onToggleTodo={onToggleTodo} />
+          {projectTab === "decisions" ? <ProjectDecisionLog projectId={selected.id} archived={selected.archived} decisions={projectDecisions} onAdd={onAddDecision} onDelete={onDeleteDecision} /> : null}
+          {projectTab === "work" ? <ProjectKanban project={selected} todos={projectTodos} milestones={projectMilestones} onAddTodo={onAddTodo} onUpdateTodo={onUpdateTodo} onToggleTodo={onToggleTodo} /> : null}
         </div>
       ) : (
         <div className="app-card flex min-h-56 items-center justify-center p-6 text-center">

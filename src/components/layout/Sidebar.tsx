@@ -104,20 +104,20 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
           <button type="button" onClick={() => onChangeView("today")} aria-label="Todo Planner 홈" title={collapsed && !hoverExpanded ? "Todo Planner" : undefined}
             className={`mb-2 flex min-h-10 shrink-0 items-center rounded-lg text-left transition-colors hover:bg-ink-800/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${showExpandedContent ? "gap-2.5 px-2.5" : "justify-center px-2"}`}>
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent-500 text-white"><CalendarCheck size={18} /></span>
-            {showExpandedContent ? <span className="min-w-0"><span className="block truncate text-sm font-bold text-ink-100">Todo Planner</span><span className="block truncate text-[10px] text-ink-500">개인 작업 관리</span></span> : null}
+            {showExpandedContent ? <span className="min-w-0"><span className="block truncate text-sm font-bold text-ink-100">Todo Planner</span><span className="block truncate text-xs text-ink-500">개인 작업 관리</span></span> : null}
           </button>
 
           <button type="button" onClick={onSearch} aria-label="빠른 검색 및 명령" title={collapsed && !hoverExpanded ? "빠른 검색 (Ctrl+K)" : undefined}
             className={`mb-3 flex min-h-10 shrink-0 w-full items-center rounded-lg border border-ink-700/80 bg-ink-950/75 text-sm text-ink-400 transition-colors hover:border-ink-600 hover:bg-ink-800/80 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${showExpandedContent ? "gap-2.5 px-3 text-left" : "justify-center px-2"}`}>
             <Search size={17} className="shrink-0" />
-            {showExpandedContent ? <><span className="min-w-0 flex-1 truncate">빠른 검색...</span><kbd className="shrink-0 rounded-md border border-ink-700 bg-ink-900 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-ink-500">Ctrl K</kbd></> : null}
+            {showExpandedContent ? <><span className="min-w-0 flex-1 truncate">빠른 검색...</span><kbd className="shrink-0 rounded-md border border-ink-700 bg-ink-900 px-1.5 py-0.5 text-xs font-semibold leading-4 text-ink-500">Ctrl K</kbd></> : null}
           </button>
 
           <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-0.5">
             <div className="space-y-3">
               {navGroups.map((group, index) => (
                 <section key={group.label} className={!showExpandedContent && index > 0 ? "border-t border-ink-700/60 pt-3" : ""}>
-                  {showExpandedContent ? <p className="mb-1.5 px-3 text-[11px] font-medium text-ink-500">{group.label}</p> : null}
+                  {showExpandedContent ? <p className="mb-1.5 px-3 text-xs font-medium text-ink-500">{group.label}</p> : null}
                   <div className="space-y-1">{group.items.map(renderDesktopItem)}</div>
                 </section>
               ))}
@@ -166,12 +166,12 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
               const Icon = item.icon;
               const active = activeView === item.id;
               return <button key={item.id} type="button" onClick={() => { setMobileMenuOpen(false); onChangeView(item.id); }} aria-current={active ? "page" : undefined}
-                className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 text-[10px] font-semibold transition ${active ? "bg-ink-800 text-ink-100" : "text-ink-500 hover:bg-ink-800 hover:text-ink-100"}`}>
+                className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 text-xs font-semibold transition ${active ? "bg-ink-800 text-ink-100" : "text-ink-500 hover:bg-ink-800 hover:text-ink-100"}`}>
                 <Icon size={18} /><span className="max-w-full truncate">{item.label}</span>
               </button>;
             })}
             <button type="button" aria-expanded={mobileMenuOpen} aria-controls="mobile-more-menu" onClick={() => setMobileMenuOpen((v) => !v)}
-              className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 text-[10px] font-semibold transition ${mobileMenuOpen || mobileMoreItems.some((item) => item.id === activeView) ? "bg-ink-800 text-ink-100" : "text-ink-500 hover:bg-ink-800 hover:text-ink-100"}`}>
+              className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 text-xs font-semibold transition ${mobileMenuOpen || mobileMoreItems.some((item) => item.id === activeView) ? "bg-ink-800 text-ink-100" : "text-ink-500 hover:bg-ink-800 hover:text-ink-100"}`}>
               <Menu size={18} /><span>더보기</span>
             </button>
           </div>
