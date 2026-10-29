@@ -10,8 +10,8 @@ import type { Project } from "../types/project";
 import type { Todo, TodoInput } from "../types/todo";
 
 const memoColors = [
-  { label: "슬레이트", value: "#1e293b", className: "border-slate-500/30 bg-slate-500/[0.07]" },
-  { label: "인디고", value: "#3730a3", className: "border-indigo-400/30 bg-indigo-500/[0.07]" },
+  { label: "차콜", value: "#25292d", className: "border-zinc-400/25 bg-zinc-400/[0.04]" },
+  { label: "세이지", value: "#3f594b", className: "border-emerald-300/25 bg-emerald-300/[0.05]" },
   { label: "에메랄드", value: "#065f46", className: "border-emerald-400/30 bg-emerald-500/[0.07]" },
   { label: "앰버", value: "#92400e", className: "border-amber-400/30 bg-amber-500/[0.07]" },
   { label: "로즈", value: "#9f1239", className: "border-rose-400/30 bg-rose-500/[0.07]" },
