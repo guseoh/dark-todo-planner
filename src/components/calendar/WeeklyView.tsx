@@ -26,7 +26,7 @@ type WeeklyViewProps = {
 };
 
 const dayLabelTone = (index: number) => {
-  if (index === 5) return "text-sky-400/65";
+  if (index === 5) return "text-ink-400";
   if (index === 6) return "text-red-400/65";
   return "text-ink-300";
 };
