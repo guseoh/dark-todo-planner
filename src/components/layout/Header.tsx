@@ -11,11 +11,11 @@ type HeaderProps = {
 
 export function Header({ storageStatus = "server", onLogout, onQuickAdd, onSearch }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-40 border-b border-ink-700/55 bg-ink-950/94 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-ink-700/55 bg-ink-950/94 backdrop-blur-md">
       <div className="flex h-14 w-full items-center justify-between gap-3 px-4 sm:px-5 lg:px-6">
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="flex items-center gap-2.5 lg:hidden">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent-500 text-white">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent-500 text-ink-950">
               <CalendarCheck2 size={18} />
             </div>
             <h1 className="hidden truncate text-base font-bold text-ink-100 sm:block">Todo Planner</h1>
