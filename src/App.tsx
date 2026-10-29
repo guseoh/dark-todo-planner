@@ -14,7 +14,7 @@ import { TodoForm } from "./components/todo/TodoForm";
 import { TodoQuickActionsProvider, type TodoSnoozeTarget } from "./components/todo/TodoQuickActionsContext";
 import { usePlannerData } from "./hooks/usePlannerData";
 import { getPlannerToday, parseDateKey, todayKey, toDateKey } from "./lib/date";
-import { viewFromHash, viewHash } from "./lib/viewNavigation";
+import { calendarModeFromHash, viewFromHash, viewHash, type CalendarMode } from "./lib/viewNavigation";
 import type { Todo } from "./types/todo";
 
 const TODO_UNDO_MS = 6000;
@@ -28,6 +28,7 @@ type PendingTodoUndo = {
 
 function App({ onLogout }: { onLogout: () => Promise<void> }) {
   const [activeView, setActiveView] = useState<AppView>(() => viewFromHash(window.location.hash));
+  const [calendarMode, setCalendarMode] = useState<CalendarMode>(() => calendarModeFromHash(window.location.hash));
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [searchTodoId, setSearchTodoId] = useState<string | null>(null);
@@ -48,6 +49,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
       setSearchProjectId(null);
       setSearchTodoId(null);
       setActiveView(next);
+      setCalendarMode(calendarModeFromHash(window.location.hash));
     };
     window.addEventListener("popstate", syncLocation);
     window.addEventListener("hashchange", syncLocation);
@@ -112,12 +114,16 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     }, TODO_UNDO_MS);
   }, []);
 
-  const navigateToView = (view: AppView) => {
-    if (window.location.hash !== viewHash(view)) {
-      window.history.pushState({ view }, "", viewHash(view));
+  const navigateToView = (view: AppView, mode: CalendarMode = "month") => {
+    const target = viewHash(view, mode);
+    if (window.location.hash !== target) {
+      window.history.pushState({ view, mode }, "", target);
     }
     setActiveView(view);
+    if (view === "calendar") setCalendarMode(mode);
   };
+
+  const changeCalendarMode = (mode: CalendarMode) => navigateToView("calendar", mode);
 
   const changeView = (view: AppView) => {
     setSearchMemoId(null);
@@ -236,7 +242,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
                     </button>
                   </div>
                 ) : null}
-                <AppContent activeView={activeView} planner={planner} onToggleTodo={toggleTodoWithUndo} onUpdateTodo={updateTodoWithUndo} focusedMemoId={searchMemoId} focusedProjectId={searchProjectId} onFocusedItemOpened={clearOpenedSearchTarget} />
+                <AppContent activeView={activeView} calendarMode={calendarMode} onCalendarModeChange={changeCalendarMode} planner={planner} onToggleTodo={toggleTodoWithUndo} onUpdateTodo={updateTodoWithUndo} focusedMemoId={searchMemoId} focusedProjectId={searchProjectId} onFocusedItemOpened={clearOpenedSearchTarget} />
               </>
             ) : null}
           </main>

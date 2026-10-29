@@ -4,6 +4,7 @@ import type { Goal } from "../types/goal";
 import { MonthlyView } from "../components/calendar/MonthlyView";
 
 type MonthPageProps = {
+  embedded?: boolean;
   todos: Todo[];
   getTodosByDate: (date: string) => Todo[];
   onAdd: (todo: TodoInput) => Promise<Todo | undefined> | Todo | undefined;
@@ -21,6 +22,7 @@ type MonthPageProps = {
 };
 
 export function MonthPage({
+  embedded = false,
   todos,
   getTodosByDate,
   onAdd,
@@ -38,10 +40,12 @@ export function MonthPage({
 }: MonthPageProps) {
   return (
     <div className="space-y-4">
-      <section>
-        <h2 className="text-2xl font-bold text-ink-100">월간 보기</h2>
-        <p className="mt-1 text-sm text-ink-500">한 달의 Todo 분포와 수행 상태를 보고, 선택한 날짜의 상세 Todo는 옆 패널에서 관리합니다.</p>
-      </section>
+      {!embedded ? (
+        <section>
+          <h2 className="text-2xl font-bold text-ink-100">월간 보기</h2>
+          <p className="mt-1 text-sm text-ink-500">한 달의 Todo 분포와 수행 상태를 보고, 선택한 날짜의 상세 Todo는 옆 패널에서 관리합니다.</p>
+        </section>
+      ) : null}
       <MonthlyView
         todos={todos}
         getTodosByDate={getTodosByDate}

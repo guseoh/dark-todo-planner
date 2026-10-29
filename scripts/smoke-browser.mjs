@@ -62,16 +62,35 @@ try {
 
   // Browser history, direct hash links and reloads should retain the active screen.
   assert.equal(new URL(page.url()).hash, "#/today");
-  await nav.getByRole("button", { name: "더보기" }).click();
-  await nav.getByRole("button", { name: "주간", exact: true }).click();
-  assert.equal(new URL(page.url()).hash, "#/week");
+  await nav.getByRole("button", { name: "캘린더", exact: true }).click();
+  await page.getByRole("heading", { name: "캘린더", exact: true }).waitFor();
+  assert.equal(new URL(page.url()).hash, "#/calendar/month");
+  assert.equal(await page.getByRole("tab", { name: "월간", exact: true }).getAttribute("aria-selected"), "true");
+  await page.getByRole("tab", { name: "주간", exact: true }).click();
+  assert.equal(new URL(page.url()).hash, "#/calendar/week");
+  await page.goBack();
+  await page.getByRole("tab", { name: "월간", exact: true }).waitFor();
+  assert.equal(new URL(page.url()).hash, "#/calendar/month");
+  assert.equal(await page.getByRole("tab", { name: "월간", exact: true }).getAttribute("aria-selected"), "true");
   await page.goBack();
   await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
   assert.equal(new URL(page.url()).hash, "#/today");
   await page.goForward();
-  await page.getByRole("heading", { name: "주간", exact: true }).waitFor();
+  await page.goForward();
+  await page.getByRole("heading", { name: "캘린더", exact: true }).waitFor();
+  assert.equal(new URL(page.url()).hash, "#/calendar/week");
+  assert.equal(await page.getByRole("tab", { name: "주간", exact: true }).getAttribute("aria-selected"), "true");
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "주간", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "캘린더", exact: true }).waitFor();
+  assert.equal(await page.getByRole("tab", { name: "주간", exact: true }).getAttribute("aria-selected"), "true");
+
+  // Old bookmarks still open the matching calendar mode after an upgrade.
+  await page.evaluate(() => { window.location.hash = "#/month"; });
+  await page.getByRole("tab", { name: "월간", exact: true }).waitFor();
+  assert.equal(await page.getByRole("tab", { name: "월간", exact: true }).getAttribute("aria-selected"), "true");
+  await page.evaluate(() => { window.location.hash = "#/week"; });
+  await page.getByRole("tab", { name: "주간", exact: true }).waitFor();
+  assert.equal(await page.getByRole("tab", { name: "주간", exact: true }).getAttribute("aria-selected"), "true");
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
 
   // Empty Today keeps its summary and add form, with one actionable empty-list message.
@@ -125,9 +144,9 @@ try {
 
   // Weekly goals are a primary editing flow. Assert that failed network writes
   // do not clear the draft or dismiss the edit input, then retry successfully.
-  await nav.getByRole("button", { name: "더보기" }).click();
-  await nav.getByRole("button", { name: "주간", exact: true }).click();
-  await page.getByRole("heading", { name: "주간", exact: true }).waitFor();
+  await nav.getByRole("button", { name: "캘린더", exact: true }).click();
+  await page.getByRole("tab", { name: "주간", exact: true }).click();
+  await page.getByRole("heading", { name: "캘린더", exact: true }).waitFor();
   const weeklySummary = page.locator('section[aria-labelledby="week-summary-title"]');
   const goalCard = page.getByRole("region", { name: "이번 주 목표" });
   await goalCard.waitFor();
@@ -206,9 +225,10 @@ try {
   await mkdir("test-artifacts", { recursive: true });
   for (const width of [320, 390, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });
-    for (const view of ["today", "projects", "settings"]) {
+    for (const view of ["today", "calendar", "projects", "settings"]) {
       await page.evaluate((next) => { window.location.hash = "#/" + next; }, view);
       if (view === "today") await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
+      if (view === "calendar") await page.getByRole("heading", { name: "캘린더", exact: true }).waitFor();
       if (view === "projects") await page.getByRole("heading", { name: "프로젝트", exact: true }).waitFor();
       if (view === "settings") await page.getByRole("heading", { name: "앱 정보", exact: true }).waitFor();
       const geometry = await page.evaluate(() => ({ viewport: window.innerWidth, document: document.documentElement.scrollWidth }));
@@ -217,7 +237,7 @@ try {
     }
   }
 
-  console.log("BROWSER E2E PASS: Today, history, settings tabs, projects tabs, keyboard/search, and 12 responsive layout snapshots.");
+  console.log("BROWSER E2E PASS: Today, history, settings tabs, projects tabs, keyboard/search, and 16 responsive layout snapshots.");
 } catch (error) {
   failed = true;
   await mkdir("test-artifacts", { recursive: true });

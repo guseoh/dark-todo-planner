@@ -4,6 +4,7 @@ import type { Goal } from "../types/goal";
 import { WeeklyView } from "../components/calendar/WeeklyView";
 
 type WeekPageProps = {
+  embedded?: boolean;
   getTodosByDate: (date: string) => Todo[];
   onAdd: (todo: TodoInput) => Promise<Todo | undefined> | Todo | undefined;
   onToggle: (id: string) => void;
@@ -18,6 +19,7 @@ type WeekPageProps = {
 };
 
 export function WeekPage({
+  embedded = false,
   getTodosByDate,
   onAdd,
   onToggle,
@@ -32,10 +34,12 @@ export function WeekPage({
 }: WeekPageProps) {
   return (
     <div className="mx-auto w-full max-w-[1120px] space-y-4">
-      <section>
-        <h2 className="text-2xl font-bold text-ink-100">주간</h2>
-        <p className="mt-1 text-sm text-ink-500">한 주의 작업 분포를 보고, 선택한 날짜의 Todo를 집중해서 관리합니다.</p>
-      </section>
+      {!embedded ? (
+        <section>
+          <h2 className="text-2xl font-bold text-ink-100">주간</h2>
+          <p className="mt-1 text-sm text-ink-500">한 주의 작업 분포를 보고, 선택한 날짜의 Todo를 집중해서 관리합니다.</p>
+        </section>
+      ) : null}
       <WeeklyView
         getTodosByDate={getTodosByDate}
         onAdd={onAdd}
