@@ -317,7 +317,7 @@ export function ScratchpadPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-[1500px] flex-col overflow-hidden rounded-lg border border-ink-700/70 bg-ink-950 shadow-2xl">
+    <div className="mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-[1500px] flex-col overflow-hidden rounded-lg border border-ink-700/70 bg-ink-950 shadow-soft">
       <div className="flex shrink-0 items-center justify-between border-b border-ink-700/70 bg-ink-900 px-2 py-1">
         <div ref={menuBarRef} className="flex items-center gap-0.5">
           <div className="relative">
