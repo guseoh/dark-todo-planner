@@ -72,7 +72,7 @@ export const preventApiCaching: MiddlewareHandler<{ Bindings: Bindings; Variable
   for (const [name, value] of Object.entries(API_NO_STORE_HEADERS)) context.header(name, value);
 };
 
-export const tooManyRequests = (context: Context<{ Bindings: Bindings; Variables: Variables }>) => {
+export const tooManyRequests = (context: Context<{ Bindings: Bindings; Variables: Variables }>): Response => {
   context.header("Retry-After", "60");
   return context.json({ message: "요청이 너무 많습니다. 1분 후 다시 시도해 주세요." }, 429);
 };
