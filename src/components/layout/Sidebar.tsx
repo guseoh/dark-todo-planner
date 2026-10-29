@@ -103,7 +103,7 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
         <nav className="flex h-full min-h-0 w-full flex-col border-r border-ink-700/50 bg-[var(--sidebar-bg)] px-2 py-2.5" onMouseEnter={openHoverPanel} onMouseLeave={closeHoverPanel} onFocusCapture={openHoverPanel} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) closeHoverPanel(); }}>
           <button type="button" onClick={() => onChangeView("today")} aria-label="Todo Planner 홈" title={collapsed && !hoverExpanded ? "Todo Planner" : undefined}
             className={`mb-2 flex min-h-10 shrink-0 items-center rounded-lg text-left transition-colors hover:bg-ink-800/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${showExpandedContent ? "gap-2.5 px-2.5" : "justify-center px-2"}`}>
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent-500 text-white"><CalendarCheck size={18} /></span>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent-500 text-ink-950"><CalendarCheck size={18} /></span>
             {showExpandedContent ? <span className="min-w-0"><span className="block truncate text-sm font-bold text-ink-100">Todo Planner</span><span className="block truncate text-xs text-ink-500">개인 작업 관리</span></span> : null}
           </button>
 
@@ -137,10 +137,10 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
         </nav>
       </aside>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-700/70 bg-ink-950/96 px-2 py-1.5 backdrop-blur-xl lg:hidden" aria-label="모바일 탐색">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-700/70 bg-ink-950/96 px-2 py-1.5 backdrop-blur-md lg:hidden" aria-label="모바일 탐색">
         <div className="relative" ref={mobileMenuRef}>
           {mobileMenuOpen ? (
-            <div id="mobile-more-menu" className="absolute bottom-full right-0 mb-3 w-[min(21rem,calc(100vw-1rem))] rounded-xl border border-ink-700 bg-ink-900 p-2 shadow-2xl">
+            <div id="mobile-more-menu" className="absolute bottom-full right-0 mb-3 w-[min(21rem,calc(100vw-1rem))] rounded-xl border border-ink-700 bg-ink-900 p-2 shadow-soft">
               <div className="flex items-center justify-between gap-2 border-b border-ink-700/70 px-2 pb-2">
                 <span className="text-xs font-bold text-ink-300">다른 화면</span>
                 <button type="button" className="rounded-md px-2 py-1 text-xs text-ink-400 hover:bg-ink-800" onClick={() => setMobileMenuOpen(false)}>닫기</button>
