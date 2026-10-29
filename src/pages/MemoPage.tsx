@@ -18,7 +18,15 @@ const memoColors = [
 ];
 
 const DRAFT_PREFIX = "dark-todo-planner:memo-draft:";
-const colorClass = (color?: string) => memoColors.find((item) => item.value === color)?.className || memoColors[0].className;
+// Preserve legacy memo records and browser drafts while showing the new neutral palette.
+const legacyMemoColorMap: Record<string, string> = {
+  "#1e293b": "#25292d",
+  "#3730a3": "#3f594b",
+};
+const resolveMemoColor = (color?: string) =>
+  memoColors.find((item) => item.value === color)?.value || (color && legacyMemoColorMap[color]) || memoColors[0].value;
+const colorClass = (color?: string) =>
+  memoColors.find((item) => item.value === resolveMemoColor(color))?.className || memoColors[0].className;
 
 type MemoDraft = { title: string; content: string; color: string; pinned: boolean; savedAt: number };
 
@@ -59,7 +67,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, todos, projects
   const initialDraft = useMemo(() => readDraft(draftKey, initial), [draftKey, initial]);
   const [title, setTitle] = useState(initialDraft?.title ?? initial?.title ?? "");
   const [content, setContent] = useState(initialDraft?.content ?? initial?.content ?? "");
-  const [color, setColor] = useState(initialDraft?.color ?? initial?.color ?? memoColors[0].value);
+  const [color, setColor] = useState(resolveMemoColor(initialDraft?.color ?? initial?.color));
   const [pinned, setPinned] = useState(initialDraft?.pinned ?? initial?.pinned ?? false);
   const [todoIds, setTodoIds] = useState<string[]>(initial?.todoIds || []);
   const [projectIds, setProjectIds] = useState<string[]>(initial?.projectIds || []);
