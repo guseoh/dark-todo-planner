@@ -93,7 +93,7 @@ export function ProjectPage({
   const [projectDescription, setProjectDescription] = useState("");
   const [projectStartDate, setProjectStartDate] = useState("");
   const [projectTargetDate, setProjectTargetDate] = useState("");
-  const [projectColor, setProjectColor] = useState("#0b72d7");
+  const [projectColor, setProjectColor] = useState("#849e89");
   const [resourceLabel, setResourceLabel] = useState("");
   const [resourceUrl, setResourceUrl] = useState("");
   const [resourceError, setResourceError] = useState("");
@@ -171,7 +171,7 @@ export function ProjectPage({
     setProjectDescription(selected.description || "");
     setProjectStartDate(selected.startDate || "");
     setProjectTargetDate(selected.targetDate || "");
-    setProjectColor(selected.color || "#0b72d7");
+    setProjectColor(selected.color || "#849e89");
     setEditingProject(true);
   };
 
