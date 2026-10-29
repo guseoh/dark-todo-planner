@@ -15,6 +15,12 @@ describe("active views", () => {
     expect(paletteIds).toEqual([...appViewIds]);
   });
 
+  it("shows a single calendar navigation destination", () => {
+    expect(navIds.filter((id) => id === "calendar")).toHaveLength(1);
+    expect(appViewIds).not.toContain("week");
+    expect(appViewIds).not.toContain("month");
+  });
+
   it("exposes Inbox without reopening dormant Planning / Insights", () => {
     expect(appViewIds).toContain("inbox");
     expect(navIds.some((id) => ["planning", "insights", "time"].includes(id))).toBe(false);
