@@ -70,7 +70,7 @@ export function MonthlyCalendar({
         {weekdayLabels.map((label, index) => (
           <div
             key={label}
-            className={`py-1 ${index === 5 ? "text-sky-400/55" : index === 6 ? "text-red-400/55" : ""}`}
+            className={`py-1 ${index === 5 ? "text-ink-400/80" : index === 6 ? "text-red-400/55" : ""}`}
           >
             {label}
           </div>
@@ -98,7 +98,7 @@ export function MonthlyCalendar({
             : isSunday
               ? "text-red-400/60"
               : isSaturday
-                ? "text-sky-400/60"
+                ? "text-ink-400/80"
                 : "text-ink-100";
           const formattedDate = formatKoreanDate(day, "M월 d일");
           const statusActionLabel =
