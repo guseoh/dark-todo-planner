@@ -31,9 +31,93 @@
 
   --shadow-elevated: none;
 
+  /* Compatibility RGB tokens preserve opacity utilities while supporting both themes. */
+  --ink-950: 16 16 17;
+  --ink-900: 22 22 23;
+  --ink-850: 27 27 29;
+  --ink-800: 40 40 43;
+  --ink-700: 69 69 73;
+  --ink-600: 139 139 145;
+  --ink-500: 153 153 159;
+  --ink-400: 188 188 193;
+  --ink-300: 209 209 213;
+  --ink-200: 226 226 229;
+  --ink-100: 239 239 240;
+  --accent-600: 168 168 173;
+  --accent-500: 212 212 216;
+  --accent-400: 225 225 228;
+  --accent-300: 237 237 240;
+  --accent-200: 244 244 245;
+
+  /* Semantic tokens: use these names in all new UI code. */
+  --ui-canvas: var(--app-bg);
+  --ui-navigation: var(--sidebar-bg);
+  --ui-surface: var(--surface-1);
+  --ui-inset: var(--surface-2);
+  --ui-hover: var(--surface-3);
+  --ui-selected: var(--surface-hover);
+  --ui-elevated: var(--surface-2);
+  --ui-divider: var(--border-subtle);
+  --ui-control-border: var(--border-strong);
+  --ui-control-border-hover: var(--border-strong);
+  --ui-text-primary: var(--text-primary);
+  --ui-text-secondary: var(--text-secondary);
+  --ui-text-muted: var(--text-muted);
+  --ui-focus: var(--accent);
+  --ui-action-bg: var(--accent);
+  --ui-action-text: var(--app-bg);
+
   background: var(--app-bg);
   color: var(--text-primary);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+
+/* Resolved theme is written before React renders. System follows OS preference. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --app-bg: #F7F7F8;
+  --sidebar-bg: #F3F3F4;
+  --surface-1: #FFFFFF;
+  --surface-2: #FFFFFF;
+  --surface-3: #E9E9EC;
+  --surface-hover: #E5E5E8;
+
+  --border-subtle: #DADADD;
+  --border-default: #ADADB4;
+  --border-strong: #8A8A90;
+
+  --text-primary: #1B1B1E;
+  --text-secondary: #505056;
+  --text-muted: #66666C;
+  --text-disabled: #7C7C83;
+
+  --accent: #26262A;
+  --accent-hover: #3A3A3E;
+  --accent-soft: rgba(38, 38, 42, 0.08);
+
+  --success: #1B6844;
+  --warning: #805000;
+  --danger: #A22636;
+
+  --ink-950: 247 247 248;
+  --ink-900: 243 243 244;
+  --ink-850: 255 255 255;
+  --ink-800: 233 233 236;
+  --ink-700: 218 218 221;
+  --ink-600: 102 102 108;
+  --ink-500: 102 102 108;
+  --ink-400: 80 80 86;
+  --ink-300: 57 57 63;
+  --ink-200: 38 38 42;
+  --ink-100: 27 27 30;
+  --accent-600: 58 58 62;
+  --accent-500: 38 38 42;
+  --accent-400: 58 58 62;
+  --accent-300: 80 80 86;
+  --accent-200: 51 51 55;
+  --ui-control-border: #8A8A90;
+  --ui-control-border-hover: #68686F;
 }
 
 * {
@@ -77,7 +161,7 @@ button:disabled {
 }
 
 ::selection {
-  background: rgba(212, 212, 216, 0.22);
+  background: rgb(var(--accent-500) / 0.22);
   color: var(--text-primary);
 }
 
@@ -143,8 +227,12 @@ button:disabled {
   }
 
   .field.field {
-    @apply min-h-9 w-full rounded-[4px] border border-ink-700/70 bg-ink-850 px-3 py-1.5 text-sm text-ink-100 outline-none transition-colors duration-150 placeholder:text-ink-500 hover:border-ink-600 focus:border-accent-600 focus:ring-2 focus:ring-accent-500/35;
+    @apply min-h-9 w-full rounded-[4px] border bg-ink-850 px-3 py-1.5 text-sm text-ink-100 outline-none transition-colors duration-150 placeholder:text-ink-500 focus:ring-2 focus:ring-accent-500/35;
+    border-color: var(--ui-control-border);
   }
+
+  .field.field:hover { border-color: var(--ui-control-border-hover); }
+  .field.field:focus { border-color: var(--ui-focus); }
 
   .btn {
     @apply inline-flex min-h-9 items-center justify-center gap-2 rounded-[4px] border border-transparent px-3 py-1.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950;

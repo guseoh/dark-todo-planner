@@ -1,5 +1,8 @@
 import type { Config } from "tailwindcss";
 
+// Each legacy shade follows the resolved theme. New components should use ui.* roles.
+const themedShade = (variable: string) => `rgb(var(--${variable}) / <alpha-value>)`;
+
 // Neutral-only UI scale. Semantic alerts retain their own accessible colors.
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
@@ -7,29 +10,45 @@ export default {
     extend: {
       colors: {
         ink: {
-          950: "#101011",
-          900: "#161617",
-          850: "#1b1b1d",
-          800: "#28282b",
-          700: "#454549",
-          600: "#8b8b91",
-          500: "#99999f",
-          400: "#bcbcc1",
-          300: "#d1d1d5",
-          200: "#e2e2e5",
-          100: "#efeff0",
+          950: themedShade("ink-950"),
+          900: themedShade("ink-900"),
+          850: themedShade("ink-850"),
+          800: themedShade("ink-800"),
+          700: themedShade("ink-700"),
+          600: themedShade("ink-600"),
+          500: themedShade("ink-500"),
+          400: themedShade("ink-400"),
+          300: themedShade("ink-300"),
+          200: themedShade("ink-200"),
+          100: themedShade("ink-100"),
         },
-        // Keep accent API names for existing components; values are achromatic.
         accent: {
-          600: "#a8a8ad",
-          500: "#d4d4d8",
-          400: "#e1e1e4",
-          300: "#ededf0",
-          200: "#f4f4f5",
+          600: themedShade("accent-600"),
+          500: themedShade("accent-500"),
+          400: themedShade("accent-400"),
+          300: themedShade("accent-300"),
+          200: themedShade("accent-200"),
         },
-        success: "#8fb9a3",
-        warning: "#d9b47d",
-        danger: "#d88d92",
+        ui: {
+          canvas: "var(--ui-canvas)",
+          navigation: "var(--ui-navigation)",
+          surface: "var(--ui-surface)",
+          inset: "var(--ui-inset)",
+          hover: "var(--ui-hover)",
+          selected: "var(--ui-selected)",
+          elevated: "var(--ui-elevated)",
+          divider: "var(--ui-divider)",
+          "control-border": "var(--ui-control-border)",
+          text: "var(--ui-text-primary)",
+          secondary: "var(--ui-text-secondary)",
+          muted: "var(--ui-text-muted)",
+          focus: "var(--ui-focus)",
+          action: "var(--ui-action-bg)",
+          "action-text": "var(--ui-action-text)",
+        },
+        success: "var(--success)",
+        warning: "var(--warning)",
+        danger: "var(--danger)",
       },
       boxShadow: {
         soft: "none",
