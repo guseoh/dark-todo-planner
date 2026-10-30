@@ -1,5 +1,5 @@
 import { addDays } from "date-fns";
-import { MoonStar, Undo2 } from "lucide-react";
+import { Undo2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppContent, viewsRequiringDeferredData } from "./components/app/AppContent";
 import { CommandPalette } from "./components/common/CommandPalette";
@@ -237,14 +237,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
             {planner.loadedOnce ? (
               <>
                 {planner.backgroundOrOperationError ? <ErrorBanner message={planner.backgroundOrOperationError} onRetry={planner.loadAll} /> : null}
-                {activeView === "today" && todayOpenTodos.length ? (
-                  <div className="flex justify-end">
-                    <button type="button" className="btn-secondary border-warning/30 bg-warning/[0.06] text-ui-text" onClick={() => setShowDayClose(true)} title="오늘 남은 Todo를 선택적으로 내일 또는 언젠가로 정리합니다">
-                      <MoonStar size={15} />오늘 정리 · 미완료 {todayOpenTodos.length}개
-                    </button>
-                  </div>
-                ) : null}
-                <AppContent activeView={activeView} calendarMode={calendarMode} onCalendarModeChange={changeCalendarMode} planner={planner} onToggleTodo={toggleTodoWithUndo} onUpdateTodo={updateTodoWithUndo} focusedMemoId={searchMemoId} focusedProjectId={searchProjectId} onFocusedItemOpened={clearOpenedSearchTarget} />
+                <AppContent activeView={activeView} calendarMode={calendarMode} onCalendarModeChange={changeCalendarMode} planner={planner} onToggleTodo={toggleTodoWithUndo} onUpdateTodo={updateTodoWithUndo} focusedMemoId={searchMemoId} focusedProjectId={searchProjectId} onFocusedItemOpened={clearOpenedSearchTarget} onOpenDayClose={() => setShowDayClose(true)} />
               </>
             ) : null}
           </main>
