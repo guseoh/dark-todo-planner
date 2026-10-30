@@ -117,10 +117,10 @@ export function MonthlyCalendar({
                       key={event.id}
                       type="button"
                       onClick={() => onSelectDate(dateKey)}
-                      title={`${eventPrefix[event.kind]}${event.title}${event.projectName ? ` · ${event.projectName}` : ""}`}
+                      title={`${event.kind === "todo" && event.dueOnDate ? "마감 · " : eventPrefix[event.kind]}${event.title}${event.projectName ? ` · ${event.projectName}` : ""}`}
                       className={`pointer-events-auto block min-h-5 w-full min-w-0 truncate rounded-[4px] border-l-[3px] px-1 py-0.5 text-left text-[10px] leading-4 transition hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${eventTone[event.kind]} ${event.completed ? "opacity-50 line-through" : ""} ${index === 1 ? "hidden sm:block" : ""} ${index === 2 ? "hidden lg:block" : ""}`}
                     >
-                      {eventPrefix[event.kind]}{event.title}
+                      {event.kind === "todo" && event.dueOnDate ? "마감 · " : eventPrefix[event.kind]}{event.title}
                     </button>
                   ))}
                   {events.length > 1 ? (
