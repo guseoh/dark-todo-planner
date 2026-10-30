@@ -575,23 +575,72 @@ try {
   });
   await scratchEditor.fill(scratchContent);
   await scratch.getByRole("button", { name: "저장 재시도" }).waitFor();
-  assert.ok(await page.evaluate(() => localStorage.getItem("dark-todo-planner:scratchpad-recovery")?.includes("Scratchpad E2E")), "Local scratchpad draft must survive API failure.");
-  await page.unroute("**/api/scratchpad");
+  const pendingScratchMarkdown = await page.evaluate(() => {
+    const stored = localStorage.getItem("dark-todo-planner:scratchpad-recovery");
+    return stored ? JSON.parse(stored).content : "";
+  });
+  assert.ok(pendingScratchMarkdown.includes("Scratchpad E2E") && pendingScratchMarkdown.includes("두 번째 줄"),
+    "Markdown draft must survive API failure without dropping Korean content.");
+  // Hold the write-failure injection through the reload to prevent a
+  // pending debounce/request from accidentally succeeding during navigation.
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "초안 복원" }).waitFor();
-  await page.getByRole("button", { name: "초안 복원" }).click();
-  assert.equal(await scratchEditor.inputValue(), scratchContent);
+  await page.getByRole("heading", { name: "낙서장", exact: true }).waitFor();
+  const recover = page.getByRole("button", { name: "초안 복원" });
+  if (!await recover.isVisible()) {
+    console.log("G4 recovery diagnostics:", JSON.stringify(await page.evaluate(async () => {
+      const response = await fetch("/api/scratchpad", { credentials: "same-origin" });
+      return {
+        storedDraft: localStorage.getItem("dark-todo-planner:scratchpad-recovery"),
+        server: (await response.json()).scratchpad?.content,
+        currentEditor: document.querySelector('[aria-label="낙서장 편집기"]')?.textContent,
+        recoveryStatus: document.querySelector('[role="status"]')?.textContent,
+      };
+    })));
+  }
+  await recover.waitFor();
+  await recover.click();
+  await page.unroute("**/api/scratchpad");
+  assert.ok((await scratchEditor.innerText()).includes("두 번째 줄"), "Recovered rich document must render Korean text.");
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("dark-todo-planner:scratchpad-recovery") || "{}").content), pendingScratchMarkdown);
   let serverScratch = "";
   for (let i = 0; i < 40; i += 1) {
     serverScratch = await page.evaluate(async () => {
       const response = await fetch("/api/scratchpad", { credentials: "same-origin" });
       return (await response.json()).scratchpad.content;
     });
-    if (serverScratch === scratchContent) break;
+    if (serverScratch === pendingScratchMarkdown) break;
     await sleep(250);
   }
-  assert.equal(serverScratch, scratchContent, "Recovered scratchpad must persist to server.");
+  assert.equal(serverScratch, pendingScratchMarkdown, "Recovered Markdown must persist unchanged to server.");
+  assert.equal(await scratchEditor.getAttribute("contenteditable"), "true", "Scratchpad must be a rich contenteditable editor.");
   await scratch.getByText("저장됨", { exact: true }).first().waitFor();
+
+  // G4: toolbar formatting is semantic WYSIWYG, serialized back as Markdown.
+  const richHeading = "서식 검증 한글 제목";
+  await scratchEditor.click();
+  await page.keyboard.press("Control+End");
+  await page.keyboard.press("Enter");
+  await page.keyboard.insertText(richHeading);
+  await page.getByRole("button", { name: "H1", exact: true }).click();
+  await scratchEditor.locator("h1").filter({ hasText: richHeading }).waitFor();
+  await page.waitForFunction(async (title) => {
+    const response = await fetch("/api/scratchpad", { credentials: "same-origin" });
+    return (await response.json()).scratchpad?.content.includes("# " + title);
+  }, richHeading);
+
+  // An unsupported legacy Markdown table must be edited as raw source,
+  // without forcing a round-trip through the beta Markdown rich parser.
+  const advancedMarkdown = "| 이름 | 값 |\n| --- | --- |\n| 기존 | 보존 |";
+  await page.locator('input[type="file"][accept*=".md"]').setInputFiles({
+    name: "legacy.md", mimeType: "text/markdown", buffer: Buffer.from(advancedMarkdown),
+  });
+  const rawEditor = page.getByRole("textbox", { name: "낙서장 편집기" });
+  await page.waitForFunction(() => document.querySelector('[aria-label="낙서장 편집기"]')?.tagName === "TEXTAREA");
+  assert.equal(await rawEditor.inputValue(), advancedMarkdown, "Unsupported Markdown must remain byte-for-byte editable in source mode.");
+  await page.waitForFunction(async (value) => {
+    const response = await fetch("/api/scratchpad", { credentials: "same-origin" });
+    return (await response.json()).scratchpad?.content === value;
+  }, advancedMarkdown);
 
   // Layout probes at common mobile, tablet and desktop breakpoints.
   // Retain screenshots as review artifacts; geometry failure blocks deployment.
