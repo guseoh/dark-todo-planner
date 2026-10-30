@@ -108,6 +108,22 @@ try {
   await page.getByRole("button", { name: "추가", exact: true }).click();
   await page.getByText(title, { exact: true }).first().waitFor();
   assert.ok(await findServerTodo(title), "Todo create should persist to local D1.");
+  // The month dashboard must expose real Todo titles and allow filtering and
+  // opening/closing the detail pane, not just numeric day summaries.
+  await nav.getByRole("button", { name: "캘린더", exact: true }).click();
+  await page.getByRole("heading", { name: "캘린더", exact: true }).waitFor();
+  const monthGrid = page.getByRole("region", { name: "월간 일정 캘린더" });
+  await monthGrid.getByRole("button", { name: title, exact: true }).waitFor();
+  const todoFilter = page.getByRole("button", { name: "Todo", exact: true });
+  await todoFilter.click();
+  assert.equal(await todoFilter.getAttribute("aria-pressed"), "false");
+  assert.equal(await monthGrid.getByRole("button", { name: title, exact: true }).count(), 0, "Todo filter must hide scheduled event chips.");
+  await todoFilter.click();
+  await monthGrid.getByRole("button", { name: title, exact: true }).click();
+  await page.getByRole("complementary", { name: "선택한 날짜 상세" }).waitFor();
+  await page.getByRole("button", { name: "날짜 상세 닫기" }).click();
+  assert.equal(await page.getByRole("complementary", { name: "선택한 날짜 상세" }).count(), 0);
+  await nav.getByRole("button", { name: "오늘", exact: true }).click();
   await page.getByRole("progressbar", { name: "오늘 완료율", exact: true }).waitFor();
   assert.equal(await page.getByRole("progressbar", { name: "오늘 완료율", exact: true }).getAttribute("aria-valuenow"), "0", "A newly added incomplete Todo must expose a visible 0% progress indicator.");
   await page.getByText("핵심 작업은 최대 3개", { exact: true }).waitFor();
