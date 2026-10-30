@@ -844,6 +844,63 @@ button:disabled {
   }
 }
 
+
+/* G6.5: desktop memo density, semantic memo colors and safe scratchpad preview. */
+@layer components {
+  .memo-page.page-shell { max-width: 1400px; }
+  .memo-collections { width: 100%; }
+  .memo-note-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 0 .9rem; }
+  @media (min-width: 1180px) {
+    .memo-note-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: .55rem 1.35rem; }
+  }
+  .memo-note {
+    position: relative;
+    border-left: 2px solid var(--memo-accent, var(--border-default));
+    background: color-mix(in srgb, var(--memo-accent, var(--info)) 7%, var(--app-bg));
+    border-bottom-color: var(--ui-divider);
+    border-radius: 3px;
+    padding-inline: .9rem;
+  }
+  .memo-note:hover, .memo-note:focus-within {
+    background: color-mix(in srgb, var(--memo-accent, var(--info)) 12%, var(--app-bg));
+  }
+  .memo-note__title { color: var(--text-primary); }
+  .memo-color-picker { gap: .5rem; }
+  .memo-color-swatch {
+    display: inline-flex;
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border: 2px solid var(--app-bg);
+    border-radius: 7px;
+    outline: 1px solid var(--border-default);
+    transition: transform 150ms, outline-color 150ms;
+  }
+  .memo-color-swatch:hover { transform: translateY(-1px); outline-color: var(--text-secondary); }
+  .memo-color-swatch[aria-pressed="true"] {
+    outline: 2px solid var(--text-primary);
+    outline-offset: 2px;
+  }
+  .memo-color-swatch:focus-visible { outline: 2px solid var(--info); outline-offset: 3px; }
+  .scratchpad-workspace { max-width: 1500px; }
+  .scratchpad-compat-notice {
+    padding: .4rem 1rem;
+    border-bottom: 1px solid var(--ui-divider);
+    color: var(--text-secondary);
+    background: var(--info-tint);
+    font-size: .72rem;
+    line-height: 1.65;
+  }
+  .scratchpad-compat-notice strong { color: var(--info); font-weight: 600; }
+  .scratchpad-source-preview { background: var(--app-bg); }
+  .scratchpad-rendered-preview { color: var(--text-secondary); font-size: .9rem; line-height: 1.75; }
+  .scratchpad-rendered-preview h1 { font-size: 1.55rem; line-height: 1.35; }
+  .scratchpad-rendered-preview h2 { font-size: 1.3rem; line-height: 1.45; }
+  .scratchpad-rendered-preview h3 { font-size: 1.08rem; line-height: 1.5; }
+  .scratchpad-rendered-preview p { margin-block: .35rem .65rem; }
+  .scratchpad-rendered-preview pre { overflow-x: auto; }
+}
+
 /* Universal focus affordance for non-component controls. */
 :where(button, a, input, select, textarea, summary):focus-visible {
   outline: 2px solid var(--accent);
