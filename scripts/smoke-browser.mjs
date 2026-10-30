@@ -162,7 +162,8 @@ try {
 
   // Date input is the touch/keyboard fallback. A server-side error must leave
   // the Todo on its previous date, keep the chosen date and permit a retry.
-  await monthGrid.getByRole("button", { name: calendarTitle, exact: true }).click();
+  await monthGrid.locator(`[data-calendar-date="${movedDate}"]`)
+    .getByRole("button", { name: /일정 .*개 보기/ }).click({ position: { x: 5, y: 5 } });
   await calendarDetails.locator("summary").filter({ hasText: "빠른 날짜 변경" }).click();
   const newDateInput = calendarDetails.getByLabel(`${calendarTitle} 변경할 실행일`);
   await newDateInput.fill(quickDate);
