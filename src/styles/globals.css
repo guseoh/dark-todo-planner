@@ -107,6 +107,43 @@ button:disabled {
     @apply rounded-xl border border-ink-700/55 bg-ink-900 shadow-soft;
   }
 
+  /* Keep all primary screens on one charcoal spacing and hierarchy system. */
+  .page-shell {
+    @apply mx-auto w-full max-w-[1280px] space-y-5;
+  }
+
+  .page-header {
+    @apply flex flex-col gap-3 border-b border-ink-700/50 pb-4 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .page-header-icon {
+    @apply inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-ink-700/60 bg-ink-900 text-accent-300;
+  }
+
+  .page-meta {
+    @apply inline-flex shrink-0 items-center rounded-full border border-ink-700/60 bg-ink-900/80 px-2.5 py-1 text-xs font-medium text-ink-300;
+  }
+
+  .page-toolbar {
+    @apply flex flex-wrap items-center gap-2 rounded-xl border border-ink-700/60 bg-ink-900/80 p-2.5;
+  }
+
+  .page-tabs {
+    @apply flex flex-wrap gap-1 rounded-lg border border-ink-700/60 bg-ink-950/50 p-1;
+  }
+
+  .page-tab {
+    @apply inline-flex min-h-10 items-center justify-center rounded-md px-3 text-xs font-semibold text-ink-400 transition-colors hover:bg-ink-800 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/60 sm:text-sm;
+  }
+
+  .page-tab[aria-selected="true"], .page-tab[aria-pressed="true"] {
+    @apply bg-ink-700 text-ink-100;
+  }
+
+  .page-list-item {
+    @apply rounded-lg border border-ink-700/55 bg-ink-950/35 p-3 transition-colors hover:border-ink-600/75 hover:bg-ink-850/55;
+  }
+
   .field {
     @apply min-h-9 w-full rounded-lg border border-ink-700/80 bg-ink-950 px-3 py-1.5 text-sm text-ink-100 outline-none transition-colors duration-150 placeholder:text-ink-500 hover:border-ink-600 focus:border-accent-600 focus:ring-2 focus:ring-accent-500/25;
   }
