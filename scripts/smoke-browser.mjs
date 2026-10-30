@@ -100,8 +100,8 @@ try {
   await page.screenshot({ path: "test-artifacts/layout-theme-dark-settings-390.png", fullPage: true });
   await themeControls.getByRole("button", { name: "라이트" }).click();
   assert.equal(await page.locator("html").getAttribute("data-theme"), "light");
-  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--app-bg").trim()), "#F7F7F8");
-  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()), "#26262A");
+  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--app-bg").trim().toLowerCase()), "#f7f7f8");
+  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim().toLowerCase()), "#26262a");
   assert.equal(await page.evaluate(() => localStorage.getItem("dark-todo-planner:theme")), "light");
   await page.screenshot({ path: "test-artifacts/layout-theme-light-settings-390.png", fullPage: true });
   await page.emulateMedia({ colorScheme: "light" });
