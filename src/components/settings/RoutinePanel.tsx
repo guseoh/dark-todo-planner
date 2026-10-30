@@ -131,19 +131,19 @@ export function RoutinePanel({ categories, projects, onTodosCreated }: { categor
               <div className="flex items-start justify-between gap-3">
                 <div><h4 className="text-sm font-bold text-ink-100">{routine.name}</h4>{routine.description ? <p className="mt-1 text-xs leading-5 text-ink-400">{routine.description}</p> : null}</div>
                 <div className="flex flex-wrap justify-end gap-1.5">
-                  {ranToday ? <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/[0.07] px-2 py-0.5 text-[11px] font-semibold text-emerald-100"><CalendarCheck2 size={12} />오늘 생성 완료</span> : null}
+                  {ranToday ? <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/[0.07] px-2 py-0.5 text-[11px] font-semibold text-success"><CalendarCheck2 size={12} />오늘 생성 완료</span> : null}
                   <span className="rounded-full border border-ink-700 px-2 py-0.5 text-[11px] font-semibold text-ink-400">{routine.items.length}개</span>
                 </div>
               </div>
               <ul className="mt-3 space-y-1.5 text-xs text-ink-400">{routine.items.slice(0, 5).map((item) => <li key={item.id || item.title} className="flex items-center justify-between gap-2"><span className="truncate">• {item.title}</span><span className="shrink-0 text-ink-500">{item.priority}</span></li>)}{routine.items.length > 5 ? <li className="text-ink-500">외 {routine.items.length - 5}개</li> : null}</ul>
-              {ranToday ? <p className="mt-3 rounded-lg border border-success/20 bg-success/[0.05] px-3 py-2 text-xs text-emerald-100">오늘 Todo는 이미 생성됐습니다. 내일 다시 생성할 수 있습니다.</p> : null}
+              {ranToday ? <p className="mt-3 rounded-lg border border-success/20 bg-success/[0.05] px-3 py-2 text-xs text-success">오늘 Todo는 이미 생성됐습니다. 내일 다시 생성할 수 있습니다.</p> : null}
               <div className="mt-3 flex flex-wrap gap-2 border-t border-ink-800 pt-3">
                 <button type="button" className={ranToday ? "btn-secondary min-h-9 px-3 py-1.5 text-xs" : "btn-primary min-h-9 px-3 py-1.5 text-xs"} disabled={runningId === routine.id || ranToday} onClick={() => void runToday(routine)}>
                   {ranToday ? <CalendarCheck2 size={14} /> : <CalendarPlus2 size={14} />}
                   {runningId === routine.id ? "생성 중..." : ranToday ? "오늘 생성됨" : "오늘 루틴 생성"}
                 </button>
                 <button type="button" className="btn-secondary min-h-9 px-3 py-1.5 text-xs" onClick={() => openEdit(routine)}><Pencil size={14} />수정</button>
-                <button type="button" className="ml-auto inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-ink-500 hover:bg-red-500/10 hover:text-red-200" onClick={() => void remove(routine)}><Trash2 size={14} />삭제</button>
+                <button type="button" className="ml-auto inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-ink-500 hover:bg-danger/10 hover:text-danger" onClick={() => void remove(routine)}><Trash2 size={14} />삭제</button>
               </div>
             </article>
           );
@@ -161,7 +161,7 @@ export function RoutinePanel({ categories, projects, onTodosCreated }: { categor
               <select className="field" value={item.priority} onChange={(event) => setItems((current) => current.map((entry) => entry.key === item.key ? { ...entry, priority: event.target.value as DraftItem["priority"] } : entry))}><option value="LOW">낮음</option><option value="MEDIUM">보통</option><option value="HIGH">높음</option></select>
               <select className="field" value={item.projectId} onChange={(event) => setItems((current) => current.map((entry) => entry.key === item.key ? { ...entry, projectId: event.target.value } : entry))}><option value="">프로젝트 없음</option>{activeProjects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select>
               <select className="field" value={item.categoryId} onChange={(event) => setItems((current) => current.map((entry) => entry.key === item.key ? { ...entry, categoryId: event.target.value } : entry))}><option value="">미분류</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select>
-              <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-ink-500 hover:bg-red-500/10 hover:text-red-200" disabled={items.length === 1} onClick={() => setItems((current) => current.filter((entry) => entry.key !== item.key))}><Trash2 size={15} /></button>
+              <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-ink-500 hover:bg-danger/10 hover:text-danger" disabled={items.length === 1} onClick={() => setItems((current) => current.filter((entry) => entry.key !== item.key))}><Trash2 size={15} /></button>
             </div>)}
           </div>
           <div className="flex justify-end gap-2 border-t border-ink-700/60 pt-4"><button type="button" className="btn-secondary" onClick={() => setEditing(null)} disabled={saving}>취소</button><button type="submit" className="btn-primary" disabled={saving || !name.trim() || !items.some((item) => item.title.trim())}>{saving ? "저장 중..." : "저장"}</button></div>

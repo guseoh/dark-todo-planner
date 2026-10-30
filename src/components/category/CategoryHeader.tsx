@@ -53,7 +53,7 @@ export function CategoryHeader({
         <div className="flex shrink-0 items-center gap-1">
           {onAddTodo ? <button type="button" className="icon-btn h-8 w-8" onClick={onAddTodo} aria-label={`${name}에 Todo 추가`}><Plus size={13} /></button> : null}
           {category && onEdit ? <button type="button" className="icon-btn h-8 w-8" onClick={onEdit} aria-label={`${name} 수정`}><Pencil size={13} /></button> : null}
-          {category && onDelete ? <button type="button" className="icon-btn h-8 w-8 hover:border-red-400 hover:text-red-200" onClick={onDelete} aria-label={`${name} 삭제`}><Trash2 size={13} /></button> : null}
+          {category && onDelete ? <button type="button" className="icon-btn h-8 w-8 hover:border-danger hover:text-danger" onClick={onDelete} aria-label={`${name} 삭제`}><Trash2 size={13} /></button> : null}
         </div>
       </div>
       {!collapsed && totalCount > 0 ? <div className="mt-1.5"><ProgressBar value={completionRate} label="" empty={false} /></div> : null}

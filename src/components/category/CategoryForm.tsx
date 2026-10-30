@@ -101,7 +101,7 @@ export function CategoryForm({ category, onSubmit, onCancel, submitLabel = "저�
       <div className="space-y-2 rounded-lg border border-ink-700 bg-ink-950/35 p-3">
         <p className="text-sm font-semibold text-ink-300">아이콘</p>
         <IconPicker value={icon} onChange={updateIcon} color={color} name={name || "카테고리"} />
-        {iconError ? <span className="block text-xs text-red-200">{iconError}</span> : null}
+        {iconError ? <span className="block text-xs text-danger">{iconError}</span> : null}
       </div>
 
       <div className="rounded-lg border border-ink-700 bg-ink-950/45 p-3">

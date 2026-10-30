@@ -100,7 +100,7 @@ export function DayCloseModal({ todos, onClose, onApply }: DayCloseModalProps) {
           </div>
         </div>
 
-        {error ? <p className="rounded-md border border-danger/40 bg-danger/[0.08] px-3 py-2 text-xs font-semibold text-red-100" role="alert">{error}</p> : null}
+        {error ? <p className="rounded-md border border-danger/40 bg-danger/[0.08] px-3 py-2 text-xs font-semibold text-danger" role="alert">{error}</p> : null}
       </div>
     </Modal>
   );

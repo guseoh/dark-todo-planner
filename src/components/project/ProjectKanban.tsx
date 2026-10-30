@@ -81,10 +81,10 @@ function KanbanColumn({ status, label, count, wipLimit, onWipLimitChange, collap
             <span>WIP</span>
             <input type="number" min={0} max={999} className="field h-7 min-h-7 w-12 px-1 py-0.5 text-center text-[11px]" value={wipLimit || ""} placeholder="—" aria-label={`${label} WIP 한도`} onChange={(event) => onWipLimitChange(status, Math.max(0, Math.min(999, Number.parseInt(event.target.value, 10) || 0)))} />
           </label>
-          <span className={`text-xs tabular-nums ${overLimit ? "font-semibold text-red-200" : "text-ink-400"}`}>{count}{wipLimit !== undefined ? `/${wipLimit}` : ""}</span>
+          <span className={`text-xs tabular-nums ${overLimit ? "font-semibold text-danger" : "text-ink-400"}`}>{count}{wipLimit !== undefined ? `/${wipLimit}` : ""}</span>
         </div>
       </div>
-      {overLimit ? <p className="mb-2 border-l-2 border-danger/65 py-1 pl-2 text-[11px] font-medium text-red-200" role="status">WIP 한도 초과 · 작업을 먼저 마무리해 보세요.</p> : null}
+      {overLimit ? <p className="mb-2 border-l-2 border-danger/65 py-1 pl-2 text-[11px] font-medium text-danger" role="status">WIP 한도 초과 · 작업을 먼저 마무리해 보세요.</p> : null}
       {collapsed ? <p className="border-t border-ink-700/35 px-2 py-5 text-center text-xs text-ink-500">완료 작업 {count}개 · 열을 펼쳐 확인하세요</p> : <div className="space-y-2">{children}</div>}
     </section>
   );
@@ -138,7 +138,7 @@ function ProjectKanbanCard({ project, todo, parent, childCount, milestone, miles
             <span>우선순위 {todo.priority === "HIGH" ? "높음" : todo.priority === "LOW" ? "낮음" : "보통"}</span>
             {milestone ? <span>{milestone.title}</span> : null}
             {childCount ? <span>하위 {childCount}</span> : null}
-            {todo.dueDate ? <span className={overdue ? "font-medium text-red-200" : dueSoon ? "font-medium text-amber-200" : "text-ink-400"}>마감 {todo.dueDate}</span> : null}
+            {todo.dueDate ? <span className={overdue ? "font-medium text-danger" : dueSoon ? "font-medium text-warning" : "text-ink-400"}>마감 {todo.dueDate}</span> : null}
           </div>
         </div>
         {!project.archived ? (
@@ -305,7 +305,7 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
                   <td className="px-3 py-2.5 text-xs text-ink-300">{todo.priority === "HIGH" ? "높음" : todo.priority === "LOW" ? "낮음" : "보통"}</td>
                   <td className="px-3 py-2.5"><select className="field h-8 min-h-8 max-w-44 py-0.5 text-xs" value={todo.milestoneId || ""} onChange={(event) => void onUpdateTodo(todo.id, { projectId: project.id, milestoneId: event.target.value || undefined })} disabled={project.archived} aria-label={`${todo.title} 마일스톤`}><option value="">미지정</option>{milestones.map((milestone) => <option key={milestone.id} value={milestone.id}>{milestone.title}</option>)}</select></td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-xs text-ink-300">{todo.date === "9999-12-31" ? "—" : todo.date}</td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-xs">{todo.dueDate ? <span className={isOverdueByDeadline(todo, today) ? "text-red-200" : isDueSoon(todo, today) ? "text-amber-200" : "text-ink-300"}>{todo.dueDate}</span> : <span className="text-ink-600">—</span>}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-xs">{todo.dueDate ? <span className={isOverdueByDeadline(todo, today) ? "text-danger" : isDueSoon(todo, today) ? "text-warning" : "text-ink-300"}>{todo.dueDate}</span> : <span className="text-ink-600">—</span>}</td>
                   <td className="px-3 py-2.5"><button type="button" className="icon-btn h-8 w-8" onClick={() => setEditingTodo(todo)} aria-label={`${todo.title} 편집`}><Pencil size={14} /></button></td>
                 </tr>
               ))}

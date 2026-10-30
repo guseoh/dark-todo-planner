@@ -148,12 +148,12 @@ export function ProjectOverviewTools({ project, todos, milestones, onUpdateTodo,
         </div>
         {nextMilestone ? <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-800/75 bg-ink-950/25 px-3 py-2.5">
           <div className="min-w-0"><p className="text-[11px] font-semibold uppercase tracking-wide text-ink-500">다음 마일스톤</p><p className="mt-0.5 truncate text-sm font-semibold text-ink-200">{nextMilestone.title}</p></div>
-          <span className={`shrink-0 text-xs ${nextMilestone.targetDate && nextMilestone.targetDate < today ? "text-red-200" : "text-ink-400"}`}>{nextMilestone.targetDate ? `목표 ${nextMilestone.targetDate}` : "목표일 미설정"}</span>
+          <span className={`shrink-0 text-xs ${nextMilestone.targetDate && nextMilestone.targetDate < today ? "text-danger" : "text-ink-400"}`}>{nextMilestone.targetDate ? `목표 ${nextMilestone.targetDate}` : "목표일 미설정"}</span>
         </div> : null}
         {todos.length > 0 && incomplete.length === 0 && project.status !== "DONE" ? <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-success/25 bg-success/[0.04] px-3 py-2.5">
           <p className="text-xs text-ink-300">{openMilestoneCount ? `Todo는 모두 완료했지만 마일스톤 ${openMilestoneCount}개가 남아 있습니다.` : "Todo와 마일스톤이 모두 완료됐습니다. 프로젝트를 완료로 표시할까요?"}</p>
           {canComplete ? <button type="button" className="btn-secondary min-h-8 px-2.5 py-1 text-xs" onClick={() => void completeProject()} disabled={completingProject}>{completingProject ? "변경 중..." : "프로젝트 완료"}</button> : null}
-          {completionError ? <p className="basis-full text-xs text-red-200" role="alert">{completionError}</p> : null}
+          {completionError ? <p className="basis-full text-xs text-danger" role="alert">{completionError}</p> : null}
         </div> : null}
       </section>
 
@@ -190,7 +190,7 @@ export function ProjectOverviewTools({ project, todos, milestones, onUpdateTodo,
             <label className="text-xs font-semibold text-ink-400">복제 범위<select className="field mt-1.5" value={duplicateMode} onChange={(event) => setDuplicateMode(event.target.value as ProjectDuplicateMode)}><option value="STRUCTURE">구조만 복제</option><option value="WITH_TODOS">Todo까지 복제</option></select></label>
             <button type="button" className="btn-primary min-h-10" onClick={() => void duplicate()} disabled={!duplicateName.trim() || duplicating}>{duplicating ? "복제 중..." : "새 프로젝트 만들기"}</button>
             <p className="text-[11px] text-ink-500 lg:col-span-3">구조 복제는 설명·색상·자료 링크·마일스톤을 복사합니다. Todo 포함 복제는 활성 Todo의 기본 정보와 구조를 복사하고 일정과 완료 상태는 초기화해 받은함에 넣습니다.</p>
-            {duplicateError ? <p className="text-xs font-semibold text-red-200 lg:col-span-3" role="alert">{duplicateError}</p> : null}
+            {duplicateError ? <p className="text-xs font-semibold text-danger lg:col-span-3" role="alert">{duplicateError}</p> : null}
           </div>
         ) : null}
       </section>

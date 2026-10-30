@@ -113,7 +113,7 @@ export function TodayCategoryManager({
             </button>
           </div>
 
-          {error ? <p className="rounded-lg border border-danger/40 bg-danger/[0.08] px-3 py-2 text-sm text-red-100" role="alert">{error}</p> : null}
+          {error ? <p className="rounded-lg border border-danger/40 bg-danger/[0.08] px-3 py-2 text-sm text-danger" role="alert">{error}</p> : null}
 
           {categories.length ? (
             <div className="space-y-2">
@@ -134,7 +134,7 @@ export function TodayCategoryManager({
                     <button type="button" className="icon-btn h-9 w-9 rounded-md" onClick={() => void moveCategory(category.id, -1)} disabled={index === 0} aria-label={`${category.name} 위로 이동`} title="위로 이동"><ChevronUp size={14} /></button>
                     <button type="button" className="icon-btn h-9 w-9 rounded-md" onClick={() => void moveCategory(category.id, 1)} disabled={index === categories.length - 1} aria-label={`${category.name} 아래로 이동`} title="아래로 이동"><ChevronDown size={14} /></button>
                     <button type="button" className="icon-btn h-9 w-9 rounded-md" onClick={() => setEditing(category)} aria-label={`${category.name} 수정`} title="수정"><Pencil size={14} /></button>
-                    <button type="button" className="icon-btn h-9 w-9 rounded-md hover:border-danger hover:text-red-100" onClick={() => void deleteCategory(category)} aria-label={`${category.name} 삭제`} title="삭제"><Trash2 size={14} /></button>
+                    <button type="button" className="icon-btn h-9 w-9 rounded-md hover:border-danger hover:text-danger" onClick={() => void deleteCategory(category)} aria-label={`${category.name} 삭제`} title="삭제"><Trash2 size={14} /></button>
                   </div>
                 </div>
               ))}

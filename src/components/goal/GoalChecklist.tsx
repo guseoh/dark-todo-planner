@@ -107,7 +107,7 @@ export function GoalChecklist({
         </form>
       </div>
 
-      {error ? <p role="alert" className="mt-2 text-xs font-semibold text-red-200">{error}</p> : null}
+      {error ? <p role="alert" className="mt-2 text-xs font-semibold text-danger">{error}</p> : null}
 
       {goals.length ? (
         <div className="mt-3 space-y-1.5">
@@ -149,7 +149,7 @@ export function GoalChecklist({
                 ) : (
                   <button type="button" className="icon-btn min-h-9 min-w-9" onClick={() => startEdit(goal)} aria-label={`${goal.title} 수정`} disabled={busy}><Pencil size={15} /></button>
                 )}
-                <button type="button" className="icon-btn min-h-9 min-w-9 hover:border-danger hover:text-red-100"
+                <button type="button" className="icon-btn min-h-9 min-w-9 hover:border-danger hover:text-danger"
                   onClick={() => { void remove(goal); }}
                   aria-label={`${goal.title} 삭제`} disabled={busy}><Trash2 size={15} /></button>
               </div>

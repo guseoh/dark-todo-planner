@@ -215,8 +215,8 @@ export function TimePlanningPanel({
         <section className="app-card p-4">
           <h3 className="font-bold text-ink-100">오늘 시간표</h3>
           <div className="mt-3 space-y-2">
-            {todayBlocks.map((block) => <div key={block.id} className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${block.completed ? "border-emerald-500/25 bg-emerald-500/5" : "border-ink-800 bg-ink-950/35"}`}>
-              <button type="button" className="icon-btn h-9 w-9 rounded-md" onClick={() => void toggleBlock(block)} aria-label={block.completed ? "시간 블록 완료 취소" : "시간 블록 완료"}>{block.completed ? <CheckCircle2 size={15} className="text-emerald-300" /> : <Clock3 size={15} />}</button>
+            {todayBlocks.map((block) => <div key={block.id} className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${block.completed ? "border-success/25 bg-success/5" : "border-ink-800 bg-ink-950/35"}`}>
+              <button type="button" className="icon-btn h-9 w-9 rounded-md" onClick={() => void toggleBlock(block)} aria-label={block.completed ? "시간 블록 완료 취소" : "시간 블록 완료"}>{block.completed ? <CheckCircle2 size={15} className="text-success" /> : <Clock3 size={15} />}</button>
               <div className="min-w-0 flex-1"><p className={`truncate text-sm font-semibold ${block.completed ? "text-ink-400 line-through" : "text-ink-100"}`}>{block.title}</p><p className="mt-1 text-xs text-ink-500">{block.startTime}–{block.endTime} · {block.plannedMinutes}분{block.todoId ? ` · ${todos.find((todo) => todo.id === block.todoId)?.title || "Todo"}` : ""}</p></div>
               <button type="button" className="icon-btn h-9 w-9 rounded-md" onClick={() => void onDeleteTimeBlock(block.id)} aria-label={`${block.title} 삭제`}><Trash2 size={14} /></button>
             </div>)}

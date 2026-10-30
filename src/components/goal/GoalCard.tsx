@@ -22,7 +22,7 @@ export function GoalCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className={`break-words text-base font-bold text-ink-100 ${goal.completed ? "line-through" : ""}`}>{goal.title}</h3>
-            <span className="rounded-full border border-warning/45 bg-warning/15 px-2.5 py-1 text-xs font-bold text-amber-100">
+            <span className="rounded-full border border-warning/45 bg-warning/15 px-2.5 py-1 text-xs font-bold text-warning">
               {getDdayLabel(goal.dueDate || goal.targetDate || goal.weekEndDate || `${goal.month || ""}-01`)}
             </span>
             <span className="rounded-full border border-accent-500/35 bg-accent-500/15 px-2.5 py-1 text-xs font-bold text-indigo-100">
@@ -38,7 +38,7 @@ export function GoalCard({
           </button>
           <button
             type="button"
-            className="icon-btn hover:border-danger hover:text-red-100"
+            className="icon-btn hover:border-danger hover:text-danger"
             onClick={() => window.confirm("목표를 삭제할까요?") && onDelete(goal.id)}
             aria-label="목표 삭제"
           >
