@@ -25,10 +25,10 @@
   --accent-hover: #e1e1e4;
   --accent-soft: rgba(212, 212, 216, 0.10);
 
-  --success: #8fb9a3;
+  --success: #bcbcc1;
   --warning: #d9b47d;
   --danger: #d88d92;
-  --semantic-success: 143 185 163;
+  --semantic-success: 188 188 193;
   --semantic-warning: 217 180 125;
   --semantic-danger: 216 141 146;
 
@@ -100,10 +100,10 @@
   --accent-hover: #3A3A3E;
   --accent-soft: rgba(38, 38, 42, 0.08);
 
-  --success: #1B6844;
+  --success: #505056;
   --warning: #805000;
   --danger: #A22636;
-  --semantic-success: 27 104 68;
+  --semantic-success: 80 80 86;
   --semantic-warning: 128 80 0;
   --semantic-danger: 162 38 54;
 
@@ -389,7 +389,6 @@ button:disabled {
     display: flex;
     flex-direction: column;
     gap: 0.7rem;
-    margin-bottom: 1.4rem;
     padding: 0.35rem 0 0.35rem 1.2rem;
     border-left: 2px solid var(--accent);
   }
@@ -432,7 +431,7 @@ button:disabled {
   .today-category-nav { margin-bottom: 0.15rem; }
 
   .today-composer {
-    margin: 0.75rem 0 1.45rem;
+    margin: 0;
     padding: 0.85rem 1rem 0.6rem;
     border-left: 2px solid var(--border-strong);
     border-bottom: 1px solid var(--border-subtle);
