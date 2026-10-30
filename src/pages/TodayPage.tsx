@@ -238,7 +238,7 @@ export function TodayPage({
                         <button key={category.id} type="button" className={`${categoryButtonClass} ${activeCategoryId === category.id ? activeCategoryButtonClass : idleCategoryButtonClass}`} onClick={() => setActiveCategoryId(category.id)} aria-pressed={activeCategoryId === category.id} title={category.description || category.name}>
                           <IconRenderer
                             icon={category.icon}
-                            color={category.color || "#a7baab"}
+                            color={category.color || "#b0b0b6"}
                             name={category.name}
                             className={category.icon ? "h-5 w-5 border-0 bg-transparent" : "h-2 w-2"}
                             iconClassName="h-3.5 w-3.5"
