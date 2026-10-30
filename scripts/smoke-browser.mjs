@@ -127,7 +127,7 @@ try {
   await fromCalendarEdit.waitFor({ state: "hidden" });
   await monthGrid.getByRole("button", { name: title, exact: true })
     .locator('xpath=ancestor::*[@data-calendar-date]')
-    .getByRole("button", { name: /일정 .*개 보기/ }).click();
+    .getByRole("button", { name: /일정 .*개 보기/ }).click({ position: { x: 5, y: 5 } });
   await page.getByRole("complementary", { name: "선택한 날짜 상세" }).waitFor();
   await page.getByRole("button", { name: "날짜 상세 닫기" }).click();
   assert.equal(await page.getByRole("complementary", { name: "선택한 날짜 상세" }).count(), 0);
