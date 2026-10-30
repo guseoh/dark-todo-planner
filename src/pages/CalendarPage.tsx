@@ -21,15 +21,15 @@ export function CalendarPage({ mode, onModeChange, children }: CalendarPageProps
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] space-y-4">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="page-shell max-w-[1500px]">
+      <header className="page-header">
         <div>
           <h2 className="text-2xl font-bold text-ink-100">캘린더</h2>
           <p className="mt-1 text-sm text-ink-400">
             {mode === "month" ? "한 달의 작업 분포와 목표를 확인하고 날짜별 Todo를 관리합니다." : "한 주의 작업과 목표를 살펴보고 날짜별 Todo를 관리합니다."}
           </p>
         </div>
-        <div role="tablist" aria-label="캘린더 보기" className="inline-flex shrink-0 self-start rounded-lg border border-ink-700/70 bg-ink-950/70 p-1 sm:self-auto">
+        <div role="tablist" aria-label="캘린더 보기" className="page-tabs inline-flex shrink-0 self-start sm:self-auto">
           {modes.map((item) => (
             <button
               key={item.id}
@@ -41,8 +41,8 @@ export function CalendarPage({ mode, onModeChange, children }: CalendarPageProps
               tabIndex={mode === item.id ? 0 : -1}
               onClick={() => onModeChange(item.id)}
               onKeyDown={selectWithKeyboard}
-              className={`min-h-9 rounded-md px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/55 ${
-                mode === item.id ? "bg-ink-800 text-ink-100 shadow-soft" : "text-ink-400 hover:bg-ink-850 hover:text-ink-100"
+              className={`page-tab min-h-9 px-4 ${
+                mode === item.id ? "text-ink-100" : "text-ink-400 hover:text-ink-100"
               }`}
             >
               {item.label}
