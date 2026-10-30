@@ -110,7 +110,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: local-browser-smoke-failure
-          path: test-artifacts/browser-smoke-failure.png
+          path: |
+            test-artifacts/browser-smoke-failure.png
+            test-artifacts/g5-browser-smoke-failure.png
           if-no-files-found: ignore
           retention-days: 7
 
