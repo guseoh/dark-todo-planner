@@ -73,7 +73,7 @@ function KanbanColumn({ status, label, count, wipLimit, onWipLimitChange, collap
   const { setNodeRef, isOver } = useDroppable({ id: `column:${status}` });
   const overLimit = wipLimit !== undefined && count > wipLimit;
   return (
-    <section ref={setNodeRef} className={`app-card min-h-[18rem] w-[17rem] shrink-0 p-3 transition sm:w-auto ${isOver ? "border-accent-500/55 bg-accent-500/[0.05]" : ""}`}>
+    <section ref={setNodeRef} className={`min-h-[18rem] w-[17rem] shrink-0 border-r border-ink-700/50 px-3 py-2 transition sm:w-auto ${isOver ? "border-accent-500/55 bg-accent-500/[0.05]" : ""}`}>
       <div className="mb-3 flex items-center justify-between gap-2">
         {onToggleCollapse ? <button type="button" className={`inline-flex min-h-8 items-center gap-1 rounded-md border px-2 text-sm font-bold ${workflowStatusClassNames[status]}`} onClick={onToggleCollapse} aria-expanded={!collapsed}>{collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}{label}</button> : <h4 className={`rounded-md border px-2 py-1 text-sm font-bold ${workflowStatusClassNames[status]}`}>{label}</h4>}
         <div className="flex items-center gap-1.5">
@@ -85,7 +85,7 @@ function KanbanColumn({ status, label, count, wipLimit, onWipLimitChange, collap
         </div>
       </div>
       {overLimit ? <p className="mb-2 rounded-md border border-danger/25 bg-danger/[0.06] px-2 py-1 text-[11px] font-semibold text-red-200" role="status">WIP 한도 초과 · 작업을 먼저 마무리해 보세요.</p> : null}
-      {collapsed ? <p className="rounded-lg border border-dashed border-ink-800/75 px-2 py-5 text-center text-xs text-ink-500">완료 작업 {count}개 · 열을 펼쳐 확인하세요</p> : <div className="space-y-2">{children}</div>}
+      {collapsed ? <p className="border-t border-ink-700/35 px-2 py-5 text-center text-xs text-ink-500">완료 작업 {count}개 · 열을 펼쳐 확인하세요</p> : <div className="space-y-2">{children}</div>}
     </section>
   );
 }
@@ -128,7 +128,7 @@ function ProjectKanbanCard({ project, todo, parent, childCount, milestone, miles
   };
 
   return (
-    <article ref={setNodeRef} style={{ transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.55 : 1 }} className="rounded-lg border border-ink-700/60 bg-ink-850 p-3 shadow-sm transition hover:border-ink-600">
+    <article ref={setNodeRef} style={{ transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.55 : 1 }} className="border-b border-ink-700/45 bg-transparent px-2 py-3 transition hover:bg-ink-850/60">
       <div className="flex items-start gap-2">
         <button type="button" onClick={() => onToggleTodo(todo.id)} className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border ${todo.completed ? "border-success bg-success" : "border-ink-600"}`} aria-label="완료 토글" />
         <div className="min-w-0 flex-1">
@@ -248,7 +248,7 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
           <select className="field h-9 min-h-9 w-auto min-w-36 py-1 text-xs" value={milestoneFilter} onChange={(event) => setMilestoneFilter(event.target.value)} aria-label="마일스톤 필터">
             <option value="">모든 마일스톤</option><option value="unassigned">미지정</option>{milestones.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
           </select>
-          <div className="inline-flex rounded-md border border-ink-700/75 bg-ink-950/45 p-0.5" role="group" aria-label="프로젝트 작업 보기">
+          <div className="inline-flex border-b border-ink-700/65" role="group" aria-label="프로젝트 작업 보기">
             <button type="button" className={`inline-flex h-8 items-center gap-1.5 rounded px-2 text-xs font-semibold ${viewMode === "board" ? "bg-ink-700 text-ink-100" : "text-ink-400 hover:text-ink-100"}`} aria-pressed={viewMode === "board"} onClick={() => setViewMode("board")}><LayoutGrid size={14} />보드</button>
             <button type="button" className={`inline-flex h-8 items-center gap-1.5 rounded px-2 text-xs font-semibold ${viewMode === "list" ? "bg-ink-700 text-ink-100" : "text-ink-400 hover:text-ink-100"}`} aria-pressed={viewMode === "list"} onClick={() => setViewMode("list")}><List size={14} />목록</button>
           </div>
