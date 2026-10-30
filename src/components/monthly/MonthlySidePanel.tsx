@@ -84,7 +84,7 @@ export function MonthlySidePanel({
       <section className="app-card flex flex-col border-l border-ui-divider px-4 py-3 xl:max-h-[calc(100vh-7rem)] xl:overflow-hidden">
         <div className="mb-4 flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h3 className="truncate text-sm font-semibold text-ink-100">선택한 날짜</h3>
+            <h3 className="truncate text-sm font-semibold text-ink-100">날짜별 할 일</h3>
             <p className="mt-1 truncate text-xs text-ink-400">
               {formatKoreanDate(selectedDate)}
               {monthEndLabel ? ` · ${monthEndLabel}` : ""}
@@ -117,7 +117,7 @@ export function MonthlySidePanel({
             ) : null}
             {selectedTodos.length ? (
               <details className="border-t border-ink-700/50 p-2.5">
-                <summary className="cursor-pointer text-xs font-semibold text-ink-300">빠른 날짜 변경 · ${selectedTodos.length}개</summary>
+                <summary className="cursor-pointer text-xs font-semibold text-ink-300">빠른 날짜 변경 · {selectedTodos.length}개</summary>
                 <div className="mt-3 space-y-2">
                   {selectedTodos.map((todo) => (
                     <CalendarDateMoveRow key={todo.id} todo={todo} busy={movingTodoId !== null} onMove={onMoveTodo} />
