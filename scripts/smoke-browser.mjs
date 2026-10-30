@@ -70,7 +70,7 @@ try {
   // preserve it and keep the chosen date for a retry.
   await nav.getByRole("button", { name: "받은함", exact: true }).click();
   await page.getByRole("heading", { name: "받은함", exact: true }).waitFor();
-  const inboxTitle = `Inbox E2E ${randomUUID().slice(0, 8)}`;
+  const inboxTitle = `Capture E2E ${randomUUID().slice(0, 8)}`;
   await page.getByRole("region", { name: "받은함 Todo 작성" }).locator('input[data-quick-todo-input="true"]').fill(inboxTitle);
   await page.getByRole("button", { name: "받은함에 저장" }).click();
   await page.getByRole("heading", { name: inboxTitle, exact: true }).waitFor();
