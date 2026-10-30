@@ -109,7 +109,7 @@ export function TodoForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="app-card p-4">
+    <form onSubmit={handleSubmit} className="border-b border-ink-700/35 py-3">
       <div className={`grid gap-2 sm:items-center ${lockCategory ? "sm:grid-cols-[minmax(0,1fr)_auto]" : "sm:grid-cols-[minmax(0,1fr)_minmax(9rem,12rem)_auto]"}`}>
         <input ref={titleInputRef} data-quick-todo-input="true" className="field flex-1" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="할 일을 빠르게 입력하세요" aria-label="Todo 제목" />
         {!lockCategory ? (
@@ -122,7 +122,7 @@ export function TodoForm({
       </div>
       {saveError ? <p role="alert" className="mt-2 text-xs font-semibold text-red-200">{saveError}</p> : null}
       {showSyntaxHint ? <p className="mt-1.5 px-1 text-[11px] text-ink-500">빠른 문법: 내일 · !high · @프로젝트 · +카테고리 · due:내일 · date:2026-08-20 · inbox/someday/waiting · 공백 이름은 @{"{"}프로젝트 이름{"}"} / +{"{"}카테고리 이름{"}"}</p> : null}
-      <button type="button" className="mt-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-ink-400 transition hover:bg-ink-900/70 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40" onClick={() => setShowDetails((value) => !value)} aria-expanded={showDetails}>
+      <button type="button" className="mt-2 inline-flex items-center gap-1.5 rounded-[4px] px-2 py-1 text-xs font-semibold text-ink-400 transition hover:bg-ink-900/70 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40" onClick={() => setShowDetails((value) => !value)} aria-expanded={showDetails}>
         <ChevronDown className={`transition ${showDetails ? "rotate-180" : ""}`} size={15} />상세 옵션
       </button>
       {showDetails ? (
