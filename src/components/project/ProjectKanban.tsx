@@ -73,15 +73,16 @@ function KanbanColumn({ status, label, count, wipLimit, onWipLimitChange, collap
   const { setNodeRef, isOver } = useDroppable({ id: `column:${status}` });
   const overLimit = wipLimit !== undefined && count > wipLimit;
   return (
-    <section ref={setNodeRef} className={`min-h-[18rem] w-[17rem] shrink-0 border-r border-ui-divider px-3 py-2 transition sm:w-auto ${isOver ? "border-accent-500/55 bg-accent-500/[0.05]" : ""}`}>
-      <div className="mb-3 flex items-center justify-between gap-2">
+    <section ref={setNodeRef} className={`min-h-[10rem] w-[17rem] shrink-0 border-b border-r border-ui-divider px-3 py-3 transition sm:w-auto ${isOver ? "border-accent-500/55 bg-accent-500/[0.05]" : ""}`}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         {onToggleCollapse ? <button type="button" className="inline-flex min-h-9 items-center gap-1 rounded-[4px] px-1 text-sm font-semibold text-ink-100 hover:bg-ink-850 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70" onClick={onToggleCollapse} aria-expanded={!collapsed}>{collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}{label}</button> : <h4 className="px-1 text-sm font-semibold text-ink-100">{label}</h4>}
+        <span className="mr-auto text-xs tabular-nums text-ui-muted" aria-label={`${label} 작업 ${count}개`}>{count}</span>
         <div className="flex items-center gap-1.5">
           <label className="flex items-center gap-1 text-[10px] text-ink-500" title="0으로 설정하면 작업 수 제한이 없습니다.">
             <span>WIP</span>
-            <input type="number" min={0} max={999} className="field h-7 min-h-7 w-12 px-1 py-0.5 text-center text-[11px]" value={wipLimit || ""} placeholder="—" aria-label={`${label} WIP 한도`} onChange={(event) => onWipLimitChange(status, Math.max(0, Math.min(999, Number.parseInt(event.target.value, 10) || 0)))} />
+            <input type="number" min={0} max={999} className="field h-8 min-h-8 w-14 px-1 py-0.5 text-center text-xs" value={wipLimit || ""} placeholder="—" aria-label={`${label} WIP 한도`} onChange={(event) => onWipLimitChange(status, Math.max(0, Math.min(999, Number.parseInt(event.target.value, 10) || 0)))} />
           </label>
-          <span className={`text-xs tabular-nums ${overLimit ? "font-semibold text-danger" : "text-ink-400"}`}>{count}{wipLimit !== undefined ? `/${wipLimit}` : ""}</span>
+          {overLimit ? <span className="text-[11px] font-semibold text-danger" aria-label="WIP 초과">초과</span> : null}
         </div>
       </div>
       {overLimit ? <p className="mb-2 border-l-2 border-danger/65 py-1 pl-2 text-[11px] font-medium text-danger" role="status">WIP 한도 초과 · 작업을 먼저 마무리해 보세요.</p> : null}
@@ -235,28 +236,33 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
 
   return (
     <section className="space-y-3">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-col gap-3 border-b border-ui-divider pb-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h3 className="text-base font-bold text-ink-100">프로젝트 작업</h3>
           <p className="mt-1 text-xs text-ink-400">{viewMode === "board" ? "카드의 핸들을 드래그해 상태를 바꾸고 제목을 눌러 상세 정보를 수정합니다." : "상태를 바로 변경하거나 행을 열어 세부 내용을 수정합니다."}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <label className="relative min-w-48 flex-1 sm:flex-none">
+        <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
+          <label className="relative w-full sm:w-60">
             <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-500" />
             <input className="field h-9 min-h-9 pl-8 py-1 text-xs" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="프로젝트 작업 검색" aria-label="프로젝트 작업 검색" />
           </label>
-          <select className="field h-9 min-h-9 w-auto min-w-36 py-1 text-xs" value={milestoneFilter} onChange={(event) => setMilestoneFilter(event.target.value)} aria-label="마일스톤 필터">
+          <select className="field h-9 min-h-9 w-full py-1 text-xs sm:w-48" value={milestoneFilter} onChange={(event) => setMilestoneFilter(event.target.value)} aria-label="마일스톤 필터">
             <option value="">모든 마일스톤</option><option value="unassigned">미지정</option>{milestones.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
           </select>
-          <div className="inline-flex border-b border-ink-700/65" role="group" aria-label="프로젝트 작업 보기">
+          <div className="inline-flex shrink-0 border-b border-ui-divider" role="group" aria-label="프로젝트 작업 보기">
             <button type="button" className={`inline-flex h-8 items-center gap-1.5 rounded px-2 text-xs font-semibold ${viewMode === "board" ? "border-b border-ui-focus text-ui-text" : "text-ui-secondary hover:text-ui-text"}`} aria-pressed={viewMode === "board"} onClick={() => setViewMode("board")}><LayoutGrid size={14} />보드</button>
             <button type="button" className={`inline-flex h-8 items-center gap-1.5 rounded px-2 text-xs font-semibold ${viewMode === "list" ? "border-b border-ui-focus text-ui-text" : "text-ui-secondary hover:text-ui-text"}`} aria-pressed={viewMode === "list"} onClick={() => setViewMode("list")}><List size={14} />목록</button>
           </div>
-          <span className="text-xs text-ink-400" aria-live="polite">{visibleTodos.length}개</span>
+          <span className="shrink-0 text-xs text-ui-muted" aria-live="polite">{visibleTodos.length}개</span>
         </div>
       </div>
 
-      {viewMode === "board" ? <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      {!visibleTodos.length ? (
+        <div className="border-b border-ui-divider py-10" role="status">
+          <h4 className="text-sm font-semibold text-ui-text">{todos.length ? "검색 조건에 맞는 작업이 없습니다." : "아직 등록한 프로젝트 작업이 없습니다."}</h4>
+          <p className="mt-1.5 text-sm text-ui-secondary">{todos.length ? "검색어 또는 마일스톤 필터를 변경해 보세요." : "위의 Todo 빠른 추가에서 첫 작업을 등록하세요."}</p>
+        </div>
+      ) : viewMode === "board" ? <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <div className="overflow-x-auto pb-2">
           <div className="grid min-w-[68rem] grid-cols-4 gap-0 border-l border-t border-ui-divider">
             {workflowColumns.map((column) => {
@@ -279,7 +285,7 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
                       onOpenDetails={setEditingTodo}
                     />
                   ))}
-                  {!items.length ? <p className="py-8 text-center text-xs text-ink-600">여기로 Todo를 드래그하세요</p> : null}
+                  {!items.length ? <p className="border-t border-ui-divider py-6 text-center text-xs text-ui-muted">여기로 작업을 이동할 수 있습니다</p> : null}
                 </KanbanColumn>
               );
             })}
