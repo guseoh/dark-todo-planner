@@ -44,6 +44,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     // pushState doesn't emit popstate: clicks update state immediately, while
     // Back/Forward or manually edited hashes restore the selected view.
     const syncLocation = () => {
+      if (window.location.hash === "#/inbox") window.history.replaceState(window.history.state, "", "#/all");
       const next = viewFromHash(window.location.hash);
       setSearchMemoId(null);
       setSearchProjectId(null);
@@ -51,6 +52,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
       setActiveView(next);
       setCalendarMode(calendarModeFromHash(window.location.hash));
     };
+    syncLocation(); // Normalize old Inbox bookmarks on initial load.
     window.addEventListener("popstate", syncLocation);
     window.addEventListener("hashchange", syncLocation);
     return () => {

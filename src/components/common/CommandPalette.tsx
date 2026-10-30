@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Calendar, CalendarCheck, ClipboardList, FileText, FolderKanban, Inbox, ListTodo, Plus, Search, Settings, StickyNote, Trash2 } from "lucide-react";
+import { Calendar, CalendarCheck, ClipboardList, FileText, FolderKanban, ListTodo, Plus, Search, Settings, StickyNote, Trash2 } from "lucide-react";
 import type { Memo } from "../../types/memo";
 import type { Project } from "../../types/project";
 import type { Todo } from "../../types/todo";
@@ -29,7 +29,6 @@ type Result = {
 export const navigation: Result[] = [
   { id: "quick-add", label: "빠른 Todo 추가", detail: "Ctrl+Shift+K", action: "quick-add", kind: "명령" },
   { id: "nav-today", label: "오늘", detail: "오늘 실행할 Todo", view: "today", kind: "이동" },
-  { id: "nav-inbox", label: "받은함", detail: "분류 전 수집한 Todo", view: "inbox", kind: "이동" },
   { id: "nav-calendar", label: "캘린더", detail: "월간·주간 일정 보기", view: "calendar", kind: "이동" },
   { id: "nav-projects", label: "프로젝트", detail: "프로젝트와 Kanban", view: "projects", kind: "이동" },
   { id: "nav-all", label: "전체 Todo", detail: "모든 Todo 검색과 관리", view: "all", kind: "이동" },
@@ -45,7 +44,6 @@ const resultIcon = (result: Result) => {
   if (result.kind === "메모") return StickyNote;
   if (result.kind === "프로젝트") return FolderKanban;
   if (result.view === "scratchpad") return FileText;
-  if (result.view === "inbox") return Inbox;
   if (result.view === "calendar") return Calendar;
   if (result.view === "all") return ClipboardList;
   if (result.view === "trash") return Trash2;
