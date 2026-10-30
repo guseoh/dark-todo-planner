@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { RichScratchpadEditor, type RichScratchpadHandle, type RichAction } from "../components/editor/RichScratchpadEditor";
+import { requiresRawScratchpadEditing } from "../lib/scratchpadEditorSafety";
 import { api, jsonBody } from "../lib/api/client";
 import { SCRATCHPAD_DRAFT_KEY, isScratchpadRecoveryNeeded, parseScratchpadDraft, type ScratchpadDraft } from "../lib/scratchpadDraft";
 
@@ -27,9 +28,7 @@ const readZoom = () => {
 };
 
 const readWrap = () => typeof window === "undefined" || localStorage.getItem(WRAP_STORAGE_KEY) !== "false";
-const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");");
-// Unsupported structures are never passed through the WYSIWYG Markdown serializer.
-const needsSourceMode = (value: string) => /(?:^|\n)\s*\|.+\|\s*(?:\n|$)|(?:^|\n)\s*\$\$|(?:^|\n)---\s*\n\w[^\n]*:\s|<\/?[a-z][^>]*>|!\[[^\]]*\]\([^)]*\)|\[[^\]]+\]:\s*\S+/im.test(value);
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export function ScratchpadPage() {
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
@@ -106,7 +105,7 @@ export function ScratchpadPage() {
       contentRef.current = next;
       savedRef.current = next;
       setContent(next);
-      setSourceMode(needsSourceMode(next));
+      setSourceMode(requiresRawScratchpadEditing(next));
       setSavedContent(next);
       setUpdatedAt(result.scratchpad.updatedAt);
       setRecoveryDraft(isScratchpadRecoveryNeeded(storedDraft, next) ? storedDraft : null);
@@ -310,7 +309,7 @@ export function ScratchpadPage() {
     if (!file) return;
     const text = await file.text();
     applyContent(text);
-    setSourceMode(needsSourceMode(text));
+    setSourceMode(requiresRawScratchpadEditing(text));
     restoreSelection(0);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -436,7 +435,7 @@ export function ScratchpadPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 px-2 text-[11px] text-ink-500">
-          <button type="button" className={menuButtonClass} disabled={sourceMode && needsSourceMode(content)} onClick={() => setSourceMode((v) => !v)} aria-pressed={sourceMode}>{sourceMode ? "시각 편집" : "Markdown 원본"}</button>
+          <button type="button" className={menuButtonClass} disabled={sourceMode && requiresRawScratchpadEditing(content)} onClick={() => setSourceMode((v) => !v)} aria-pressed={sourceMode}>{sourceMode ? "시각 편집" : "Markdown 원본"}</button>
           <span>{saveLabel}</span>
           {lastSavedLabel && saveState === "saved" ? <span>{lastSavedLabel}</span> : null}
         </div>
@@ -471,7 +470,7 @@ export function ScratchpadPage() {
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-warning/30 bg-warning/[0.06] px-3 py-2.5" role="status">
           <p className="text-xs text-ink-200">서버 내용과 다른 브라우저 임시 초안이 있습니다. 내용을 비교한 뒤 복원할 수 있습니다.</p>
           <div className="flex gap-2">
-            <button type="button" className="btn-secondary text-xs" onClick={() => { applyContent(recoveryDraft.content); setSourceMode(needsSourceMode(recoveryDraft.content)); resetHistory(recoveryDraft.content); }}>초안 복원</button>
+            <button type="button" className="btn-secondary text-xs" onClick={() => { applyContent(recoveryDraft.content); setSourceMode(requiresRawScratchpadEditing(recoveryDraft.content)); resetHistory(recoveryDraft.content); }}>초안 복원</button>
             <button type="button" className="btn-secondary text-xs" onClick={() => {
               setRecoveryDraft(null);
               try { localStorage.removeItem(SCRATCHPAD_DRAFT_KEY); } catch { /* no-op */ }
