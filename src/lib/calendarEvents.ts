@@ -9,6 +9,7 @@ export type CalendarEvent = {
   title: string;
   completed: boolean;
   relatedTodoId?: string;
+  dueOnDate?: boolean;
   projectName?: string;
 };
 export type CalendarVisibility = {
@@ -52,6 +53,7 @@ export const buildCalendarEvents = (
         title: todo.title,
         completed: todo.completed,
         relatedTodoId: todo.id,
+        dueOnDate: todo.dueDate === todo.date,
       });
     }
     if (isDateKey(todo.dueDate) && todo.dueDate !== todo.date) {
