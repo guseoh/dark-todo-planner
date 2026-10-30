@@ -146,7 +146,7 @@ export function TodoForm({
             aria-label="Todo 제목"
           />
         </div>
-        {!lockCategory ? (
+        {!lockCategory && !collapsible ? (
           <select className="todo-composer-form__category" value={categoryId} onChange={(event) => setCategoryId(event.target.value)} aria-label="카테고리 선택">
             <option value="">미분류</option>
             {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
@@ -163,12 +163,6 @@ export function TodoForm({
             <input type="date" className="field" aria-label="실행 날짜" value={date}
               onChange={(event) => { setDate(event.target.value); setPlanningState("SCHEDULED"); }} disabled={saving || planningState !== "SCHEDULED"} />
           </label>
-          <select className="field" aria-label="계획 유형" value={planningState === "SCHEDULED" ? "SCHEDULED" : planningState}
-            onChange={(event) => setPlanningState(event.target.value as TodoPlanningState)} disabled={saving}>
-            <option value="SCHEDULED">날짜 지정</option>
-            <option value="SOMEDAY">언젠가</option>
-            <option value="WAITING">대기</option>
-          </select>
           <select className="field" aria-label="우선순위" value={priority}
             onChange={(event) => setPriority(event.target.value as TodoPriority)} disabled={saving}>
             <option value="MEDIUM">보통</option>
@@ -197,7 +191,7 @@ export function TodoForm({
           <ChevronDown className={showDetails ? "rotate-180 transition-transform" : "transition-transform"} size={14} aria-hidden="true" />
           {showDetails ? "상세 옵션 닫기" : "상세 옵션"}
         </button>
-        {!showDetails && !showSyntaxHint ? <span className="todo-composer-form__hint">Enter로 추가 · 날짜 · 우선순위 · 프로젝트</span> : null}
+        {!showDetails && !showSyntaxHint ? <span className="todo-composer-form__hint">Enter로 추가 · Esc로 닫기</span> : null}
       </div>
       <div id={detailsId} hidden={!showDetails}>
         {showDetails ? (
@@ -211,7 +205,7 @@ export function TodoForm({
             memo={memo}
             categories={categories}
             projects={projects}
-            showCategory={false}
+            showCategory={collapsible && !lockCategory}
             onDateChange={setDate}
             onDueDateChange={setDueDate}
             onPriorityChange={setPriority}

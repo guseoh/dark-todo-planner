@@ -55,9 +55,9 @@ try {
     const composer = document.querySelector(".today-composer");
     const header = document.querySelector(".today-header");
     const status = document.querySelector(".today-header__status");
-    const sidebar = document.querySelector(".today-sidebar");
+    const digest = document.querySelector(".today-digest");
     const primary = document.querySelector(".btn-primary");
-    if (!section || !composer || !header || !status || !sidebar || !primary) return null;
+    if (!section || !composer || !header || !status || !digest || !primary) return null;
     const sectionStyle = getComputedStyle(section);
     const composerStyle = getComputedStyle(composer);
     const rootStyle = getComputedStyle(document.documentElement);
@@ -70,7 +70,9 @@ try {
       firstTaskOffset: section.getBoundingClientRect().top - header.getBoundingClientRect().top,
       headerText: status.textContent,
       oldDashboardCount: document.querySelectorAll(".today-overview__stat").length,
-      sidebarBorderLeft: getComputedStyle(sidebar).borderLeftWidth,
+      digestBorderTop: getComputedStyle(digest).borderTopWidth,
+      todayWidth: document.querySelector(".today-page").getBoundingClientRect().width,
+      hasSidebar: Boolean(document.querySelector(".today-sidebar")),
       primaryBackground: getComputedStyle(primary).backgroundColor,
       accent: rootStyle.getPropertyValue("--accent").trim(),
       canvas: rootStyle.getPropertyValue("--app-bg").trim(),
@@ -84,8 +86,10 @@ try {
   assert.ok(visualSystem.headerHeight <= 90, "Today heading/status must be compact.");
   assert.ok(visualSystem.firstTaskOffset <= 140, "Task entry should appear close to the header.");
   assert.equal(visualSystem.oldDashboardCount, 0, "Old KPI grid must not return.");
-  assert.ok(visualSystem.headerText.includes("남은 작업"), "Remaining task count must remain visible.");
-  assert.equal(visualSystem.sidebarBorderLeft, "1px", "Context rail should keep a functional separator.");
+  assert.ok(visualSystem.headerText.includes("중"), "Concise completion summary must remain visible.");
+  assert.equal(visualSystem.digestBorderTop, "1px", "Weekly and overdue summary should have a quiet separator.");
+  assert.equal(visualSystem.hasSidebar, false, "Today must not retain a disconnected right rail.");
+  assert.ok(visualSystem.todayWidth <= 890, "Today content should stay within the readable single-column width.");
   assert.equal(visualSystem.accent, "#d4d4d8", "Accent must remain neutral.");
   assert.equal(visualSystem.canvas, "#101011", "Canvas must stay near-black.");
   assert.equal(visualSystem.primaryBackground, "rgb(226, 226, 229)", "Primary action should remain neutral.");
@@ -252,7 +256,7 @@ try {
   await composerTrigger.click();
   const composer = page.getByRole("form", { name: "Todo 빠른 추가" });
   await composer.getByRole("textbox", { name: "Todo 제목" }).waitFor();
-  assert.equal(await composer.getByLabel("계획 유형").inputValue(), "SCHEDULED");
+  assert.equal((await composer.getByLabel("실행 날짜").inputValue()).length, 10);
   assert.equal(await composer.getByLabel("우선순위").inputValue(), "MEDIUM");
   // Esc keeps unsaved text locally; another click restores the draft.
   const draft = `Unsubmitted draft ${randomUUID().slice(0, 6)}`;
@@ -270,15 +274,16 @@ try {
   assert.equal(await composerToggle.getAttribute("aria-expanded"), "false");
   const mainLayout = await composer.locator(".todo-composer-form__main").evaluate((el) => {
     const input = el.querySelector('[data-quick-todo-input="true"]');
-    const category = el.querySelector('[aria-label="카테고리 선택"]');
-    if (!(input instanceof HTMLElement) || !(category instanceof HTMLElement)) return null;
-    const parent = el.getBoundingClientRect();
-    const a = input.getBoundingClientRect();
-    const b = category.getBoundingClientRect();
-    return { inputWidth: a.width, categoryWidth: b.width, rowHeight: parent.height };
+    const submit = el.querySelector('button[type="submit"]');
+    if (!(input instanceof HTMLElement) || !(submit instanceof HTMLElement)) return null;
+    return { titleWidth: input.getBoundingClientRect().width, submitWidth: submit.getBoundingClientRect().width,
+      categoriesInMain: el.querySelectorAll('select').length, viewport: window.innerWidth };
   });
-  assert.ok(mainLayout && mainLayout.inputWidth >= mainLayout.categoryWidth + 30,
-    "The title must be the primary control, with a quieter category selector.");
+  assert.ok(mainLayout && (mainLayout.viewport <= 720
+    ? mainLayout.titleWidth >= mainLayout.submitWidth - 2
+    : mainLayout.titleWidth > mainLayout.submitWidth * 2),
+    "G6.2: title should dominate on desktop and occupy a full row on mobile.");
+  assert.equal(mainLayout.categoriesInMain, 0, "Category selector must move to optional detail fields.");
   await composerToggle.click();
   await composer.getByRole("group", { name: "Todo 상세 옵션" }).waitFor();
   for (const name of ["일정", "분류", "메모"]) {
@@ -317,13 +322,13 @@ try {
       divider: rowStyle.borderBottomWidth,
       dividerColor: rowStyle.borderBottomColor,
       todayVariant: row.classList.contains("todo-row--today"),
-      leadingAction: !!row.querySelector('button[aria-label*="핵심 작업으로 고정"]'),
+      leadingAction: !!row.querySelector('button[aria-label*="핵심 작업으로 고정"]') && !row.querySelector("details"),
     };
   });
   assert.ok(todoVisual.size >= 16 && todoVisual.lineHeight >= 24, "Today Todo titles need a legible 16px/24px hierarchy.");
   assert.equal(todoVisual.divider, "1px", "Todo rows must have a real separator.");
   assert.equal(todoVisual.todayVariant, true, "Today Todo rows must use the dedicated editorial presentation.");
-  assert.equal(todoVisual.leadingAction, true, "Focus action must align inside the Todo row.");
+  assert.equal(todoVisual.leadingAction, false, "G6.2: Todo row should not show a permanent pin button.");
   // G6: reviewing today's tasks must never reschedule them by default.
   const dayCloseBefore = (await findServerTodo(title))?.date;
   await page.getByRole("button", { name: /오늘 정리/ }).click();
@@ -416,14 +421,24 @@ try {
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
   await page.getByRole("progressbar", { name: "오늘 완료율", exact: true }).waitFor();
   assert.equal(await page.getByRole("progressbar", { name: "오늘 완료율", exact: true }).getAttribute("aria-valuenow"), "0", "A newly added incomplete Todo must expose a visible 0% progress indicator.");
-  // Pin action keeps its tooltip and aria-label; verbose sidebar instruction was removed.
-  await page.getByRole("button", { name: `${title} 핵심 작업으로 고정` }).waitFor();
-  await page.getByRole("button", { name: `${title} 핵심 작업으로 고정` }).click();
+  // G6.2: task actions remain keyboard/touch accessible in a single menu.
+  const openTodoActions = async () => {
+    const row = page.locator(".todo-row--today").filter({ has: page.getByRole("heading", { name: title, exact: true }) });
+    await row.locator("summary").click();
+    return row;
+  };
+  let actionsRow = await openTodoActions();
+  await actionsRow.getByRole("button", { name: `${title} 핵심 작업으로 고정` }).click();
   await page.getByRole("heading", { name: "오늘의 핵심 작업" }).waitFor();
-  assert.equal(await page.getByRole("button", { name: `${title} 핵심 작업으로 고정` }).count(), 0, "Pinned Todo must not appear twice.");
-  await page.getByRole("button", { name: `${title} 핵심 작업에서 제외` }).click();
-  assert.equal(await page.getByRole("heading", { name: "오늘의 핵심 작업" }).count(), 0, "Focus card should collapse after removing the last pinned Todo.");
-  await page.getByRole("button", { name: `${title} 핵심 작업으로 고정` }).waitFor();
+  assert.equal(await page.locator(".todo-row--today").filter({ has: page.getByRole("heading", { name: title, exact: true }) }).count(), 1,
+    "Pinned Todo must not be rendered twice.");
+  actionsRow = await openTodoActions();
+  await actionsRow.getByRole("button", { name: `${title} 핵심 작업에서 제외` }).click();
+  assert.equal(await page.getByRole("heading", { name: "오늘의 핵심 작업" }).count(), 0,
+    "Focus section should collapse after removing the last pinned Todo.");
+  actionsRow = await openTodoActions();
+  await actionsRow.getByRole("button", { name: `"${title}" Todo 수정` }).waitFor();
+  await actionsRow.locator("summary").click();
 
   await page.keyboard.press("Control+k");
   const search = page.getByRole("dialog", { name: "검색 및 명령" });

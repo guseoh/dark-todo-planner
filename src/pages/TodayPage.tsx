@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ChevronDown, History, MoonStar, Settings2, Star, StarOff } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, History, MoonStar, Settings2, Star } from "lucide-react";
 import { IconRenderer } from "../components/common/IconRenderer";
 import { ProgressBar } from "../components/common/ProgressBar";
 import { TodayCategoryManager } from "../components/today/TodayCategoryManager";
@@ -46,7 +46,7 @@ type TodayPageProps = {
 
 type CategoryFilter = "all" | "uncategorized" | string;
 
-const categoryButtonClass = "inline-flex min-h-10 shrink-0 items-center gap-2 border-b-2 px-3 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus";
+const categoryButtonClass = "inline-flex min-h-9 shrink-0 items-center gap-1.5 border-b-2 px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus";
 const activeCategoryButtonClass = "border-ui-text text-ui-text font-semibold";
 const idleCategoryButtonClass = "border-transparent text-ui-muted hover:border-ui-divider hover:text-ui-text";
 const FOCUS_STORAGE_PREFIX = "dark-todo-planner:focus:";
@@ -163,12 +163,14 @@ export function TodayPage({
     });
   };
 
-  const renderTodo = (todo: Todo, leadingAction?: ReactNode) => (
+  const renderTodo = (todo: Todo) => (
     <TodoRow
       key={todo.id}
       todo={todo}
-      leadingAction={leadingAction}
       variant="today"
+      focusPinned={focusSet.has(todo.id)}
+      focusDisabled={!focusSet.has(todo.id) && focusedTodos.length >= 3}
+      onToggleFocus={toggleFocus}
       onToggle={onToggle}
       onDelete={onDelete}
       onEdit={setEditingTodo}
@@ -188,10 +190,9 @@ export function TodayPage({
           <span>{formatKoreanDate(today, "M월 d일 EEEE")}</span>
         </div>
         <div className="today-header__status" role="group" aria-label="오늘 작업 현황">
-          <span>남은 작업 <strong>{stats.todayActive}개</strong></span>
+          <span><strong>{stats.todayTotal}개</strong> 중 {stats.todayCompleted}개 완료</span>
           {hasTodayTodos ? (
             <>
-              <span>완료 {stats.todayCompleted}/{stats.todayTotal}</span>
               <div className="today-header__meter"><ProgressBar value={stats.todayRate} ariaLabel="오늘 완료율" /></div>
             </>
           ) : null}
@@ -206,7 +207,7 @@ export function TodayPage({
         </div>
       </header>
 
-      <div className="today-workspace grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_230px]">
+      <div className="today-workspace">
         <div className="min-w-0 space-y-3">
 
           {focusedTodos.length ? (
@@ -217,19 +218,17 @@ export function TodayPage({
                 </div>
                 <span className="text-xs font-medium tabular-nums text-ui-muted">{focusedTodos.length} / 3 선택</span>
               </div>
-              {focusedTodos.map((todo) => renderTodo(todo,
-                <button type="button" className="icon-btn h-10 w-10 shrink-0 text-warning" onClick={() => toggleFocus(todo.id)} title="핵심 작업에서 제외" aria-label={`${todo.title} 핵심 작업에서 제외`}><StarOff size={16} /></button>,
-              ))}
+              {focusedTodos.map(renderTodo)}
             </section>
           ) : null}
 
           <section className="today-task-section space-y-2" aria-label="오늘 Todo">
             <div className="today-task-heading">
               <h3 className="text-[17px] font-semibold tracking-tight text-ui-text">할 일</h3>
-              <span className="today-task-count">{todayTodos.length}개</span>
+              <span className="today-task-count">{activeTodos.length}개 남음</span>
             </div>
             {hasTodayTodos ? (
-              <div className="today-category-nav sticky top-[60px] z-20 border-b border-ui-divider bg-ui-canvas py-1">
+              <div className="today-category-nav border-b border-ui-divider bg-ui-canvas py-1">
                 <div className="flex items-center gap-2">
                   <div className="min-w-0 flex-1 overflow-x-auto pb-0.5">
                     <div className="flex w-max gap-1.5 pr-2" aria-label="오늘 Todo 카테고리 필터">
@@ -276,9 +275,7 @@ export function TodayPage({
               <>
 
                 {remainingTodos.length ? (
-                  <div className="border-t border-[var(--ui-row-divider)]">{remainingTodos.map((todo) => renderTodo(todo,
-                    <button type="button" className="icon-btn h-10 w-10 shrink-0 text-ui-muted hover:text-warning" onClick={() => toggleFocus(todo.id)} disabled={focusedTodos.length >= 3} title={focusedTodos.length >= 3 ? "핵심 작업은 최대 3개까지 지정할 수 있습니다." : "핵심 작업으로 고정"} aria-label={`${todo.title} 핵심 작업으로 고정`}><Star size={16} /></button>,
-                  ))}</div>
+                  <div className="border-t border-[var(--ui-row-divider)]">{remainingTodos.map(renderTodo)}</div>
                 ) : activeTodos.length ? (
                   <p className="py-2 text-xs text-ink-400">미완료 Todo는 상단 핵심 작업에 모두 표시되어 있습니다.</p>
                 ) : (
@@ -327,20 +324,21 @@ export function TodayPage({
           </section>
         </div>
 
-        <aside className="today-sidebar space-y-4 xl:sticky xl:top-20" aria-label="일정 요약">
-          <section className="today-sidebar__section space-y-3" aria-labelledby="week-summary-title">
-            <div className="today-sidebar__heading"><h3 id="week-summary-title">이번 주</h3></div>
-            <p className="today-sidebar__rate"><strong className={stats.weekRate > 0 ? "text-success" : undefined}>{formatCompletionRate(stats.weekTotal, stats.weekRate)}</strong><span>완료율</span></p>
-            <p className="today-sidebar__caption">이번 주 일정 {stats.weekTotal}개 기준</p>
-          </section>
-          {overdueTodos.length > 0 ? <section className="today-sidebar__overdue space-y-3" aria-labelledby="overdue-summary-title">
-            <h3 id="overdue-summary-title" className="inline-flex items-center gap-2 text-sm font-bold text-danger"><History size={16} />지난 일정</h3>
-            <p className="text-sm text-ink-200">미완료 작업 <strong className="text-danger">{overdueTodos.length}개</strong></p>
-            <p className="text-xs text-ink-400">가장 오래된 일정 {oldestOverdueDate ? formatKoreanDate(oldestOverdueDate, "M월 d일") : "-"}</p>
-            <button type="button" className="btn-secondary w-full text-xs" onClick={() => setShowOverdueImport(true)}>지난 일정 정리</button>
-          </section> : null}
-
-        </aside>
+        <section className="today-digest" aria-label="일정 요약">
+          <div className="today-digest__week" aria-labelledby="week-summary-title">
+            <span id="week-summary-title" className="font-medium text-ui-secondary">이번 주</span>
+            <strong className={stats.weekRate > 0 ? "text-success" : "text-ui-secondary"}>{formatCompletionRate(stats.weekTotal, stats.weekRate)}</strong>
+            <span className="text-ui-muted">· {stats.weekTotal}개 일정 기준</span>
+          </div>
+          {overdueTodos.length > 0 ? (
+            <div className="today-digest__overdue" aria-labelledby="overdue-summary-title">
+              <History size={14} className="shrink-0 text-danger" aria-hidden="true" />
+              <span id="overdue-summary-title">지난 일정 <strong className="text-danger">{overdueTodos.length}개</strong></span>
+              {oldestOverdueDate ? <span className="text-ui-muted">· {formatKoreanDate(oldestOverdueDate, "M월 d일")}부터</span> : null}
+              <button type="button" className="today-digest__link" onClick={() => setShowOverdueImport(true)}>정리하기</button>
+            </div>
+          ) : null}
+        </section>
       </div>
 
       <TodoEditModal todo={editingTodo} categories={categories} projects={activeProjects} onClose={() => setEditingTodo(null)} onSave={onUpdate} />
