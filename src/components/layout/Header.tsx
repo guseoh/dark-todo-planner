@@ -12,7 +12,7 @@ type HeaderProps = {
 
 export function Header({ storageStatus = "server", onLogout, onQuickAdd, onSearch }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-40 border-b border-ui-divider bg-ui-canvas">
+    <header className="app-topbar sticky top-0 z-40 border-b border-ui-divider bg-ui-canvas">
       <div className="flex h-14 w-full items-center justify-between gap-3 px-4 sm:px-5 lg:px-6">
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="flex items-center gap-2.5 lg:hidden">

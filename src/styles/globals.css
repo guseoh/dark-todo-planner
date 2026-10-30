@@ -851,6 +851,8 @@ button:disabled {
   .memo-page.page-shell { max-width: 1360px; --memo-sharp-radius: 2px; }
   .memo-page .page-header { padding-bottom: 1.05rem; }
   .memo-page .page-header h1 { font-size: 1.35rem; letter-spacing: -0.025em; }
+  .app-topbar .ui-button { border-radius: 2px; }
+  .app-topbar .ui-icon-button { border-radius: 2px; }
   .memo-page .memo-action-button.ui-button {
     min-height: 36px;
     border-radius: var(--memo-sharp-radius);

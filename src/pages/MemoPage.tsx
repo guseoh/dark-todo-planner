@@ -286,7 +286,7 @@ function MemoCard({ memo, onDelete, onTogglePin, onEdit, onCreateTodo, onCreateC
                 event.preventDefault();
                 event.stopPropagation();
                 closeActions();
-                menuRef.current?.querySelector("summary")?.focus();
+                menuRef.current?.querySelector<HTMLElement>("summary")?.focus();
               }
             }}
             onBlur={(event) => {
