@@ -24,8 +24,15 @@ const memoColors = [
 const DRAFT_PREFIX = "dark-todo-planner:memo-draft:";
 const safeMemoColor = (color?: string | null) =>
   typeof color === "string" && /^#[0-9a-fA-F]{6}$/.test(color) ? color : memoColors[0].value;
+// Earlier muted palettes remain stored unchanged. Increase their contrast only at render time.
+const legacyDisplayColors: Record<string, string> = {
+  "#202023": "#3b82f6", "#303034": "#8b5cf6", "#47474c": "#10b981",
+  "#1e293b": "#3b82f6", "#3730a3": "#8b5cf6",
+};
+const memoDisplayColor = (color?: string | null) =>
+  legacyDisplayColors[(color || "").toLowerCase()] ?? safeMemoColor(color);
 const memoAccentStyle = (color?: string | null): CSSProperties =>
-  ({ "--memo-accent": safeMemoColor(color) }) as CSSProperties;
+  ({ "--memo-accent": memoDisplayColor(color) }) as CSSProperties;
 // Existing unknown but valid colors are not normalized or silently replaced when editing.
 const resolveMemoColor = (color?: string | null) => safeMemoColor(color);
 
@@ -174,7 +181,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
                 className="memo-color-swatch" style={{ backgroundColor: item.value }} />
             ))}
             {!memoColors.some((item) => item.value.toLowerCase() === color.toLowerCase()) ? (
-              <button type="button" className="memo-color-swatch" style={{ backgroundColor: safeMemoColor(color) }}
+              <button type="button" className="memo-color-swatch" style={{ backgroundColor: memoDisplayColor(color) }}
                 aria-label="기존 메모 색상" aria-pressed={true} title="기존 메모 색상 유지" />
             ) : null}
           </div>
