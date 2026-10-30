@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { X } from "lucide-react";
+import { InlineTodoAdd } from "../todo/InlineTodoAdd";
 import type { Category } from "../../types/category";
 import type { Todo, TodoInput } from "../../types/todo";
 import type { CalendarEvent } from "../../lib/calendarEvents";
@@ -11,6 +13,10 @@ type MonthlySidePanelProps = {
   selectedTodos: Todo[];
   selectedEvents: CalendarEvent[];
   categories: Category[];
+  quickAdd: boolean;
+  onCancelQuickAdd: () => void;
+  movingTodoId: string | null;
+  onMoveTodo: (id: string, dateKey: string) => Promise<boolean>;
   onClose: () => void;
   onAdd: (todo: TodoInput) => Promise<Todo | undefined> | Todo | undefined;
   onToggle: (id: string) => void;
@@ -28,12 +34,41 @@ const eventLabel: Record<CalendarEvent["kind"], string> = {
   project: "프로젝트 목표일",
 };
 
+
+function CalendarDateMoveRow({ todo, busy, onMove }: {
+  todo: Todo;
+  busy: boolean;
+  onMove: (id: string, dateKey: string) => Promise<boolean>;
+}) {
+  const [targetDate, setTargetDate] = useState(todo.date);
+  return (
+    <div className="flex flex-col gap-2 rounded-md border border-ink-700/50 bg-ink-950/45 p-2">
+      <p className="truncate text-xs font-semibold text-ink-200" title={todo.title}>{todo.title}</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="min-w-0 flex-1">
+          <span className="sr-only">{todo.title} 변경할 실행일</span>
+          <input type="date" className="field min-w-0" value={targetDate} onChange={(event) => setTargetDate(event.target.value)}
+            aria-label={`${todo.title} 변경할 실행일`} disabled={busy} />
+        </label>
+        <button type="button" className="btn-secondary min-h-9 shrink-0 text-xs" disabled={busy || !targetDate || targetDate === todo.date}
+          onClick={() => void onMove(todo.id, targetDate)}>
+          {busy ? "이동 중..." : "날짜 변경"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function MonthlySidePanel({
   selectedDate,
   monthEndLabel,
   selectedTodos,
   selectedEvents,
   categories,
+  quickAdd,
+  onCancelQuickAdd,
+  movingTodoId,
+  onMoveTodo,
   onClose,
   onAdd,
   onToggle,
@@ -77,6 +112,19 @@ export function MonthlySidePanel({
               <h4 className="text-xs font-semibold text-ink-300">실행 Todo</h4>
               <span className="rounded-full border border-ink-700 bg-ink-950/70 px-2.5 py-0.5 text-xs text-ink-400">{selectedTodos.length}개</span>
             </div>
+            {quickAdd ? (
+              <InlineTodoAdd key={selectedDate} defaultDate={selectedDate} placeholder="이 날짜에 추가할 Todo" onAdd={onAdd} onCancel={onCancelQuickAdd} />
+            ) : null}
+            {selectedTodos.length ? (
+              <details className="rounded-lg border border-ink-700/60 bg-ink-950/30 p-2.5">
+                <summary className="cursor-pointer text-xs font-semibold text-ink-300">빠른 날짜 변경 · ${selectedTodos.length}개</summary>
+                <div className="mt-3 space-y-2">
+                  {selectedTodos.map((todo) => (
+                    <CalendarDateMoveRow key={todo.id} todo={todo} busy={movingTodoId !== null} onMove={onMoveTodo} />
+                  ))}
+                </div>
+              </details>
+            ) : null}
             <GroupedTodoList
               todos={selectedTodos}
               categories={categories}
