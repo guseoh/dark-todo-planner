@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { FolderKanban, Link2, ListPlus, Pencil, Pin, PinOff, Plus, Save, Search, Trash2, X } from "lucide-react";
+import { Ellipsis, FolderKanban, Link2, ListPlus, Pencil, Pin, PinOff, Plus, Save, Search, Trash2, X } from "lucide-react";
 import { EmptyState } from "../components/common/EmptyState";
 import { PageHeader } from "../components/common/PageHeader";
 import { Modal } from "../components/common/Modal";
@@ -262,29 +262,74 @@ function MemoCard({ memo, onDelete, onTogglePin, onEdit, onCreateTodo, onCreateC
 }) {
   const displayTitle = memoDisplayTitle(memo);
   const checklistTitles = uncheckedChecklistTitles(memo.content);
+  const menuRef = useRef<HTMLDetailsElement | null>(null);
+  const closeActions = () => { if (menuRef.current) menuRef.current.open = false; };
+  const confirmDelete = () => {
+    closeActions();
+    if (window.confirm("메모를 삭제할까요? 삭제 후 6초 동안 실행 취소할 수 있습니다.")) void onDelete(memo.id);
+  };
   return (
-    <article className="memo-note group min-w-0 border-b border-ui-divider px-3 py-4 transition-colors" style={memoAccentStyle(memo.color)}>
-      <div className="flex flex-col gap-2.5">
-        <div className="flex items-start justify-between gap-2">
-          <button type="button" className="min-w-0 flex-1 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/35" onClick={() => onEdit(memo)} aria-label={`${displayTitle} 메모 수정`}>
-            <div className="flex min-w-0 items-center gap-1.5">{memo.pinned ? <Pin size={13} className="shrink-0 text-accent-300" /> : null}<h3 className="memo-note__title line-clamp-1 text-[15px] font-semibold leading-6 text-ui-text" title={displayTitle}>{displayTitle}</h3></div>
-            <p className="mt-0.5 text-xs text-ui-muted">{formatKoreanDate(memo.updatedAt, "yyyy.MM.dd 수정")}</p>
+    <article className="memo-note group min-w-0" style={memoAccentStyle(memo.color)}>
+      <div className="memo-note__body">
+        <div className="memo-note__top">
+          <button type="button" className="memo-note__title-button" onClick={() => onEdit(memo)}
+            aria-label={`${displayTitle} 메모 수정`}>
+            <span className="memo-note__title-line">
+              {memo.pinned ? <Pin size={14} className="memo-note__pin" aria-label="고정된 메모" /> : null}
+              <h3 className="memo-note__title" title={displayTitle}>{displayTitle}</h3>
+            </span>
+            <span className="memo-note__date">{formatKoreanDate(memo.updatedAt, "yyyy.MM.dd 수정")}</span>
           </button>
-          <div className="flex shrink-0 gap-1 opacity-80 transition sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
-            <button type="button" className="icon-btn h-8 w-8" onClick={(event) => { event.stopPropagation(); void onCreateTodo(memo); }} aria-label={`${displayTitle} 메모를 Todo로 만들기`} title="Todo로 만들기"><ListPlus size={13} /></button>
-            <button type="button" className="icon-btn h-8 w-8" onClick={(event) => { event.stopPropagation(); void onTogglePin(memo.id); }} aria-label={memo.pinned ? "고정 해제" : "메모 고정"} title={memo.pinned ? "고정 해제" : "메모 고정"}>{memo.pinned ? <PinOff size={13} /> : <Pin size={13} />}</button>
-            <button type="button" className="icon-btn h-8 w-8" onClick={(event) => { event.stopPropagation(); onEdit(memo); }} aria-label="메모 수정" title="수정"><Pencil size={13} /></button>
-            <button type="button" className="icon-btn h-8 w-8 hover:bg-danger/10 hover:text-danger" onClick={(event) => { event.stopPropagation(); if (window.confirm("메모를 삭제할까요? 삭제 후 6초 동안 실행 취소할 수 있습니다.")) void onDelete(memo.id); }} aria-label="메모 삭제" title="삭제"><Trash2 size={13} /></button>
-          </div>
+          <details ref={menuRef} className="memo-actions"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault();
+                event.stopPropagation();
+                closeActions();
+                menuRef.current?.querySelector<HTMLElement>("summary")?.focus();
+              }
+            }}
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) closeActions();
+            }}>
+            <summary className="memo-actions__trigger" title="메모 작업" aria-label={`${displayTitle} 메모 더보기`}>
+              <Ellipsis size={17} aria-hidden="true" />
+            </summary>
+            <div className="memo-actions__panel" role="group" aria-label={`${displayTitle} 메모 작업`}>
+              <button type="button" onClick={() => { closeActions(); onEdit(memo); }}>
+                <Pencil size={15} aria-hidden="true" />수정
+              </button>
+              <button type="button" onClick={() => { closeActions(); void onTogglePin(memo.id); }}>
+                {memo.pinned ? <PinOff size={15} aria-hidden="true" /> : <Pin size={15} aria-hidden="true" />}
+                {memo.pinned ? "고정 해제" : "메모 고정"}
+              </button>
+              <button type="button" onClick={() => { closeActions(); void onCreateTodo(memo); }}>
+                <ListPlus size={15} aria-hidden="true" />Todo로 만들기
+              </button>
+              <div className="memo-actions__separator" role="separator" />
+              <button type="button" className="memo-actions__danger" onClick={confirmDelete}>
+                <Trash2 size={15} aria-hidden="true" />삭제
+              </button>
+            </div>
+          </details>
         </div>
-        <div className="-m-1 cursor-pointer rounded-md p-1" onClick={(event) => { if (event.target instanceof Element && event.target.closest("a")) return; onEdit(memo); }} title="메모 수정"><MarkdownPreview className="line-clamp-3 max-w-[76ch] text-[13px] leading-6 text-ui-secondary" value={memo.content} /></div>
+        <div className="memo-note__preview" onClick={(event) => {
+          if (event.target instanceof Element && event.target.closest("a")) return;
+          onEdit(memo);
+        }} title="메모 수정">
+          <MarkdownPreview className="memo-note__excerpt text-[13px] leading-[1.65] text-ui-secondary" value={memo.content} />
+        </div>
         {memo.todoIds.length || memo.projectIds.length ? (
-          <div className="flex flex-wrap gap-1 text-[10px] font-semibold text-ink-400">
-            {memo.todoIds.length ? <span className="px-0.5 py-0.5"><ListPlus size={11} className="mr-1 inline" />Todo {memo.todoIds.length}</span> : null}
-            {memo.projectIds.length ? <span className="px-0.5 py-0.5"><FolderKanban size={11} className="mr-1 inline" />프로젝트 {memo.projectIds.length}</span> : null}
+          <div className="memo-note__links">
+            {memo.todoIds.length ? <span><ListPlus size={12} aria-hidden="true" />Todo {memo.todoIds.length}</span> : null}
+            {memo.projectIds.length ? <span><FolderKanban size={12} aria-hidden="true" />프로젝트 {memo.projectIds.length}</span> : null}
           </div>
         ) : null}
-        {checklistTitles.length ? <button type="button" className="btn-secondary min-h-8 self-start px-2 py-1 text-[11px]" onClick={() => void onCreateChecklistTodos(memo, checklistTitles)}><ListPlus size={12} />체크리스트 {checklistTitles.length}개를 Todo로</button> : null}
+        {checklistTitles.length ? (
+          <button type="button" className="memo-note__checklist-action" onClick={() => void onCreateChecklistTodos(memo, checklistTitles)}>
+            <ListPlus size={13} aria-hidden="true" />체크리스트 {checklistTitles.length}개를 Todo로
+          </button>
+        ) : null}
       </div>
     </article>
   );
@@ -359,32 +404,36 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
     <div className="page-shell memo-page">
       <PageHeader title="메모" description="아이디어와 작업 맥락을 기록하고 관련 Todo·프로젝트를 연결하세요."
         meta={`전체 ${memos.length}개`}
-        actions={<Button variant="primary" onClick={() => setCreating(true)}><Plus size={16} aria-hidden="true" />새 메모</Button>}
+        actions={<Button variant="secondary" className="memo-action-button" onClick={() => setCreating(true)}><Plus size={16} aria-hidden="true" />새 메모</Button>}
       />
-      <div className="page-toolbar">
-        <label className="relative min-w-0 flex-1 sm:max-w-md">
+      <div className="page-toolbar memo-toolbar">
+        <label className="memo-search relative min-w-0 flex-1">
           <span className="sr-only">메모 검색</span>
           <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
-          <input type="search" className="field pl-9" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="제목 · 본문 · 연결된 작업 검색" aria-label="메모 검색" />
+          <input type="search" className="field memo-search__input pl-9 pr-10" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="제목 · 본문 · 연결된 작업 검색" aria-label="메모 검색" />
+          {searchQuery ? (
+            <button type="button" className="memo-search__clear" onClick={() => setSearchQuery("")}
+              title="검색어 지우기" aria-label="메모 검색어 지우기"><X size={15} aria-hidden="true" /></button>
+          ) : null}
         </label>
-        <div className="page-tabs" role="group" aria-label="메모 보기 필터">
+        <div className="page-tabs memo-tabs" role="group" aria-label="메모 보기 필터">
           {([
             { id: "all", label: "전체" },
             { id: "pinned", label: "고정" },
             { id: "linked", label: "연결됨" },
           ] as const).map((tab) => (
-            <button type="button" key={tab.id} className="page-tab" aria-pressed={memoView === tab.id} onClick={() => setMemoView(tab.id)}>{tab.label}</button>
+            <button type="button" key={tab.id} className="page-tab memo-filter-tab" aria-pressed={memoView === tab.id} onClick={() => setMemoView(tab.id)}>{tab.label}</button>
           ))}
         </div>
-        <span className="ml-auto text-xs text-ink-400" role="status">표시 ${filteredMemos.length}개</span>
+        <span className="memo-toolbar__count ml-auto text-xs text-ink-400" role="status">표시 ${filteredMemos.length}개</span>
       </div>
 
       {conversionMessage ? <div className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-xs font-semibold text-success" role="status">{conversionMessage}</div> : null}
 
       {filteredMemos.length ? (
-        <div className="memo-collections space-y-7">
-          {pinnedMemos.length ? <section className="space-y-2"><div className="flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">고정 메모</h3><span className="text-[10px] text-ink-600">{pinnedMemos.length}개</span></div><div className="memo-note-grid">{pinnedMemos.map(renderCard)}</div></section> : null}
-          {normalMemos.length ? <section className="space-y-2"><div className="flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">일반 메모</h3><span className="text-[10px] text-ink-600">{normalMemos.length}개</span></div><div className="memo-note-grid">{normalMemos.map(renderCard)}</div></section> : null}
+        <div className="memo-collections space-y-8">
+          {pinnedMemos.length ? <section className="memo-section space-y-2"><div className="memo-section__heading flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">고정 메모</h3><span className="text-[10px] text-ink-600">{pinnedMemos.length}개</span></div><div className="memo-note-grid">{pinnedMemos.map(renderCard)}</div></section> : null}
+          {normalMemos.length ? <section className="memo-section space-y-2"><div className="memo-section__heading flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">일반 메모</h3><span className="text-[10px] text-ink-600">{normalMemos.length}개</span></div><div className="memo-note-grid">{normalMemos.map(renderCard)}</div></section> : null}
         </div>
       ) : memos.length ? <EmptyState title="검색 결과가 없습니다." description="검색어를 변경하거나 전체 필터를 선택해보세요." /> : <EmptyState title="아직 작성한 메모가 없습니다." description="새 메모에서 작업 중 떠오른 생각을 가볍게 남겨보세요." />}
 

@@ -61,6 +61,11 @@ describe("light/dark neutral design tokens", () => {
     expect(css).toContain(".ui-icon-button--danger");
     expect(css).toContain('.app-nav-button[aria-current="page"]');
     expect(css).toContain("--button-primary-bg");
+    expect(css).toContain(".memo-note::before");
+    expect(css).toContain(".memo-actions__panel");
+    expect(css).toContain(".memo-page .memo-action-button.ui-button");
+    expect(css).toContain(".app-topbar .ui-button");
+    expect(css).toContain("border-radius: 0; background: transparent; box-shadow: none;");
     expect(css).not.toContain(".today-sidebar");
     expect(css).toContain(".todo-row__menu-action");
     expect(css).not.toContain("#2563eb");
