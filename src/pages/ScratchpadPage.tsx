@@ -65,6 +65,8 @@ export function ScratchpadPage() {
   }, []);
 
   const applyContent = useCallback((next: string, recordHistory = true) => {
+    // Tiptap may initialize before GET resolves: never replace a recoverable draft with an empty editor.
+    if (!loadedRef.current) return;
     contentRef.current = next;
     setContent(next);
     if (loadedRef.current && next !== savedRef.current) setSaveState("dirty");
