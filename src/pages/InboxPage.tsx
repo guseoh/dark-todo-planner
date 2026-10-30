@@ -49,7 +49,7 @@ export function InboxPage({ todos, categories, projects, onAdd, onUpdate, onDele
         description="떠오른 작업을 먼저 저장한 뒤, 오늘·내일 또는 원하는 날짜로 계획하세요."
         meta={`미계획 ${inboxTodos.length}개`}
       />
-      <section className="app-card space-y-2 p-3 sm:p-4" aria-label="받은함 Todo 작성">
+      <section className="space-y-2" aria-label="받은함 Todo 작성">
         <h3 className="text-sm font-semibold text-ink-200">생각 빠르게 기록하기</h3>
         <TodoForm compact submitLabel="받은함에 저장" categories={categories} projects={projects} defaultPlanningState="INBOX" defaultDate={UNSCHEDULED_DATE} onAdd={onAdd} />
       </section>
