@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 import { BellRing, RefreshCw, Save } from "lucide-react";
 import { StatCard } from "../components/common/StatCard";
+import { PageHeader } from "../components/common/PageHeader";
 import { CalendarExportCard } from "../components/settings/CalendarExportCard";
 import { ExportPanel } from "../components/settings/ExportPanel";
 import { BackupRestoreCard } from "../components/settings/BackupRestoreCard";
@@ -57,6 +58,16 @@ export function SettingsPage({
   const [section, setSection] = useState<"overview" | "automation" | "data">("overview");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const tabs = ["overview", "automation", "data"] as const;
+  const handleTabKey = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const index = tabs.indexOf(section);
+    const next = event.key === "Home" ? tabs[0] : event.key === "End" ? tabs[tabs.length - 1]
+      : tabs[(index + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
+    setSection(next);
+    document.getElementById(`settings-tab-${next}`)?.focus();
+  };
 
   useEffect(() => {
     setDraft({
@@ -83,21 +94,21 @@ export function SettingsPage({
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1180px] space-y-6">
-      <section>
-        <h2 className="text-2xl font-bold text-ink-100 sm:text-3xl">앱 정보</h2>
-        <p className="mt-2 text-sm text-ink-400">앱 연결 상태, 설치, 자동화와 알림 기준, 저장된 데이터 현황을 관리합니다.</p>
-      </section>
+    <div className="page-shell max-w-[1180px]">
+      <PageHeader title="설정" description="앱 연결 상태, 자동화·알림 기준, 백업과 저장된 데이터를 관리합니다."
+        meta={connected ? "서버 연결됨" : "연결 확인 필요"}
+      />
 
-      <nav className="flex flex-wrap gap-2 rounded-lg border border-ink-700/70 bg-ink-900/55 p-1.5" aria-label="설정 항목" role="tablist">
+      <nav className="page-tabs" aria-label="설정 항목" role="tablist">
         {([
           { id: "overview", label: "앱 및 연결 정보" },
           { id: "automation", label: "자동화 · 알림" },
           { id: "data", label: "데이터 · 백업" },
         ] as const).map((item) => (
-          <button key={item.id} type="button" role="tab" aria-selected={section === item.id}
-            onClick={() => setSection(item.id)}
-            className={`min-h-10 flex-1 rounded-md px-3 text-xs font-bold transition sm:flex-initial sm:text-sm ${section === item.id ? "bg-ink-700 text-ink-100" : "text-ink-400 hover:bg-ink-800 hover:text-ink-100"}`}>
+          <button key={item.id} id={`settings-tab-${item.id}`} type="button" role="tab" aria-controls={`settings-panel-${item.id}`}
+            aria-selected={section === item.id} tabIndex={section === item.id ? 0 : -1}
+            onKeyDown={handleTabKey} onClick={() => setSection(item.id)}
+            className="page-tab flex-1 sm:flex-initial">
             {item.label}
           </button>
         ))}
@@ -105,7 +116,7 @@ export function SettingsPage({
       {message ? <div className="rounded-lg border border-ink-700/70 bg-ink-900/75 px-3 py-2 text-sm font-semibold text-ink-200" role="status" aria-live="polite">{message}</div> : null}
 
       {section === "overview" ? (
-      <>
+      <div id="settings-panel-overview" role="tabpanel" aria-labelledby="settings-tab-overview" tabIndex={0} className="space-y-4">
       <section className="app-card p-4 sm:p-5" aria-labelledby="operation-info-title">
         <div className="flex flex-col gap-3 border-b border-ink-700 pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div><h3 id="operation-info-title" className="text-base font-bold text-ink-100">운영 정보</h3><p className="mt-1 text-xs text-ink-400">개인 플래너의 고정 운영 기준입니다.</p></div>
@@ -122,11 +133,11 @@ export function SettingsPage({
       </section>
 
       <PwaInstallCard />
-      </>
+      </div>
       ) : null}
 
       {section === "automation" ? (
-      <>
+      <div id="settings-panel-automation" role="tabpanel" aria-labelledby="settings-tab-automation" tabIndex={0} className="space-y-4">
       <section className="app-card p-4 sm:p-5" aria-labelledby="automation-settings-title">
         <div className="flex items-center gap-2"><RefreshCw size={18} className="text-accent-300" /><h3 id="automation-settings-title" className="text-base font-bold text-ink-100">Todo 자동화</h3></div>
         <p className="mt-1 text-xs text-ink-400">기본값은 꺼짐입니다. 필요한 자동화만 직접 켤 수 있습니다.</p>
@@ -155,11 +166,11 @@ export function SettingsPage({
       </section>
 
       <RoutinePanel categories={categories} projects={projects} onTodosCreated={onTodosCreated} />
-      </>
+      </div>
       ) : null}
 
       {section === "data" ? (
-      <>
+      <div id="settings-panel-data" role="tabpanel" aria-labelledby="settings-tab-data" tabIndex={0} className="space-y-4">
       <CalendarExportCard />
       <BackupRestoreCard onRestored={async () => { await onTodosCreated(); }} />
       <ExportPanel todos={todos} projects={projects} goals={goals} memos={memos} />
@@ -173,7 +184,7 @@ export function SettingsPage({
           <StatCard title="목표" value={goals.length} />
         </div>
       </section>
-      </>
+      </div>
       ) : null}
     </div>
   );

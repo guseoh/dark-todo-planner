@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, History, Settings2, Star, StarOff } from "lucide-react";
 import { IconRenderer } from "../components/common/IconRenderer";
+import { PageHeader } from "../components/common/PageHeader";
 import { ProgressBar } from "../components/common/ProgressBar";
 import { TodayCategoryManager } from "../components/today/TodayCategoryManager";
 import { OverdueTodoImportModal } from "../components/todo/OverdueTodoImportModal";
@@ -175,16 +176,11 @@ export function TodayPage({
   );
 
   return (
-    <div className="mx-auto w-full max-w-[1280px] space-y-5">
-      <section className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-ink-100">오늘</h2>
-          <p className="mt-1 text-sm text-ink-400">{formatKoreanDate(today, "M월 d일 EEEE")}</p>
-        </div>
-        <span className="text-xs text-ink-500" title="Todo Planner의 하루는 오전 3시에 바뀝니다.">
-          하루 전환 오전 3시
-        </span>
-      </section>
+    <div className="page-shell">
+      <PageHeader title="오늘" description={formatKoreanDate(today, "M월 d일 EEEE")}
+        meta={`남은 작업 ${stats.todayActive}개`}
+        actions={<span className="text-xs text-ink-400" title="Todo Planner의 하루는 오전 3시에 바뀝니다.">하루 전환 · 오전 3시</span>}
+      />
 
       <section className="app-card overflow-hidden" aria-labelledby="today-summary-title">
         <div className="grid divide-y divide-ink-700/50 sm:grid-cols-[1.4fr_1fr_1fr] sm:divide-x sm:divide-y-0">
@@ -231,7 +227,7 @@ export function TodayPage({
               <span className="text-xs text-ink-500">{todayTodos.length}개 등록</span>
             </div>
             {hasTodayTodos ? (
-              <div className="sticky top-[60px] z-20 rounded-lg border border-ink-700/50 bg-ink-900/95 p-1.5 backdrop-blur-xl">
+              <div className="sticky top-[60px] z-20 rounded-lg border border-ink-700/50 bg-ink-900/95 p-1.5 backdrop-blur-md">
                 <div className="flex items-center gap-2">
                   <div className="min-w-0 flex-1 overflow-x-auto pb-0.5">
                     <div className="flex w-max gap-1.5 pr-2" aria-label="오늘 Todo 카테고리 필터">
@@ -242,7 +238,7 @@ export function TodayPage({
                         <button key={category.id} type="button" className={`${categoryButtonClass} ${activeCategoryId === category.id ? activeCategoryButtonClass : idleCategoryButtonClass}`} onClick={() => setActiveCategoryId(category.id)} aria-pressed={activeCategoryId === category.id} title={category.description || category.name}>
                           <IconRenderer
                             icon={category.icon}
-                            color={category.color || "#0b72d7"}
+                            color={category.color || "#a7baab"}
                             name={category.name}
                             className={category.icon ? "h-5 w-5 border-0 bg-transparent" : "h-2 w-2"}
                             iconClassName="h-3.5 w-3.5"
@@ -322,7 +318,7 @@ export function TodayPage({
           </section>
         </div>
 
-        <aside className="space-y-4" aria-label="일정 요약">
+        <aside className="space-y-4 xl:sticky xl:top-20" aria-label="일정 요약">
           <section className="app-card space-y-3 p-4" aria-labelledby="week-summary-title">
             <h3 id="week-summary-title" className="text-sm font-bold text-ink-100">이번 주</h3>
             <p className="text-2xl font-bold tabular-nums text-ink-100">{formatCompletionRate(stats.weekTotal, stats.weekRate)}<span className="ml-2 text-xs font-medium text-ink-400">완료율</span></p>

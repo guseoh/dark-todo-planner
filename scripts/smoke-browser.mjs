@@ -53,11 +53,46 @@ try {
   assert.equal(await nav.locator("button").count(), 5, "Mobile bar must have exactly five primary tabs");
   await nav.getByRole("button", { name: "더보기" }).click();
   await nav.getByRole("button", { name: "설정" }).click();
-  await page.getByRole("heading", { name: "앱 정보", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "설정", exact: true }).waitFor();
   await page.getByRole("tab", { name: "자동화 · 알림" }).click();
   await page.getByRole("heading", { name: "Discord 리마인더" }).waitFor();
   await page.getByRole("tab", { name: "데이터 · 백업" }).click();
   await page.getByText("전체 데이터 백업·복원").first().waitFor();
+
+  // Settings and project tabs retain a visible focus target and respond to arrows.
+  await page.getByRole("tab", { name: "데이터 · 백업" }).focus();
+  await page.keyboard.press("ArrowLeft");
+  assert.equal(await page.getByRole("tab", { name: "자동화 · 알림" }).getAttribute("aria-selected"), "true");
+  await page.keyboard.press("Home");
+  assert.equal(await page.getByRole("tab", { name: "앱 및 연결 정보" }).getAttribute("aria-selected"), "true");
+
+  // Unscheduled Todo can be scheduled from Inbox. A failed update must
+  // preserve it and keep the chosen date for a retry.
+  await nav.getByRole("button", { name: "받은함", exact: true }).click();
+  await page.getByRole("heading", { name: "받은함", exact: true }).waitFor();
+  const inboxTitle = `Capture E2E ${randomUUID().slice(0, 8)}`;
+  await page.getByRole("region", { name: "받은함 Todo 작성" }).locator('input[data-quick-todo-input="true"]').fill(inboxTitle);
+  await page.getByRole("button", { name: "받은함에 저장" }).click();
+  await page.getByRole("heading", { name: inboxTitle, exact: true }).waitFor();
+  const inboxCard = page.getByRole("article").filter({ has: page.getByRole("heading", { name: inboxTitle, exact: true }) });
+  const inboxDate = "2026-11-12";
+  await inboxCard.getByLabel(`${inboxTitle} 실행일`).fill(inboxDate);
+  let inboxSaveFailOnce = true;
+  await page.route("**/api/todos/*", async (route) => {
+    if (route.request().method() === "PUT" && inboxSaveFailOnce) {
+      inboxSaveFailOnce = false;
+      await route.fulfill({ status: 503, contentType: "application/json", body: '{"message":"inbox test failure"}' });
+    } else await route.continue();
+  });
+  await inboxCard.getByRole("button", { name: "날짜 지정" }).click();
+  await page.getByRole("alert").filter({ hasText: "받은함에 그대로 남아 있습니다" }).waitFor();
+  assert.equal((await findServerTodo(inboxTitle))?.planningState, "INBOX");
+  assert.equal(await inboxCard.getByLabel(`${inboxTitle} 실행일`).inputValue(), inboxDate);
+  await inboxCard.getByRole("button", { name: "날짜 지정" }).click();
+  await page.getByRole("status").filter({ hasText: inboxTitle }).waitFor();
+  assert.equal((await findServerTodo(inboxTitle))?.date, inboxDate);
+  await page.unroute("**/api/todos/*");
+
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
 
   // Browser history, direct hash links and reloads should retain the active screen.
@@ -309,7 +344,7 @@ try {
       if (view === "today") await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
       if (view === "calendar") await page.getByRole("heading", { name: "캘린더", exact: true }).waitFor();
       if (view === "projects") await page.getByRole("heading", { name: "프로젝트", exact: true }).waitFor();
-      if (view === "settings") await page.getByRole("heading", { name: "앱 정보", exact: true }).waitFor();
+      if (view === "settings") await page.getByRole("heading", { name: "설정", exact: true }).waitFor();
       const geometry = await page.evaluate(() => ({ viewport: window.innerWidth, document: document.documentElement.scrollWidth }));
       assert.ok(geometry.document <= geometry.viewport + 2, `Unexpected page overflow at ${width}px on ${view}: ${JSON.stringify(geometry)}`);
       await page.screenshot({ path: `test-artifacts/layout-${width}-${view}.png`, fullPage: true });
