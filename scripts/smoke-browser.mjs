@@ -56,7 +56,7 @@ try {
     const header = document.querySelector(".today-header");
     const status = document.querySelector(".today-header__status");
     const digest = document.querySelector(".today-digest");
-    const primary = document.querySelector(".btn-primary");
+    const primary = document.querySelector("header .ui-button--primary");
     if (!section || !composer || !header || !status || !digest || !primary) return null;
     const sectionStyle = getComputedStyle(section);
     const composerStyle = getComputedStyle(composer);
@@ -93,6 +93,28 @@ try {
   assert.equal(visualSystem.accent, "#d4d4d8", "Accent must remain neutral.");
   assert.equal(visualSystem.canvas, "#101011", "Canvas must stay near-black.");
   assert.equal(visualSystem.primaryBackground, "rgb(226, 226, 229)", "Primary action should remain neutral.");
+  // G6.4: primary, search, active navigation and warning stay visually distinct.
+  const buttonSystem = await page.evaluate(() => {
+    const search = document.querySelector("header .app-search-button");
+    const activeNav = document.querySelector('.app-nav-button[aria-current="page"]');
+    const warning = document.querySelector(".today-header__action");
+    return {
+      searchVisible: Boolean(search && search.getBoundingClientRect().width > 0),
+      searchBackground: search ? getComputedStyle(search).backgroundColor : "",
+      activeNavBackground: activeNav ? getComputedStyle(activeNav).backgroundColor : "",
+      activeNavIcon: activeNav?.querySelector("svg") ? getComputedStyle(activeNav.querySelector("svg")).color : "",
+      warningBackground: warning ? getComputedStyle(warning).backgroundColor : "",
+      accent: getComputedStyle(document.documentElement).getPropertyValue("--info").trim(),
+    };
+  });
+  assert.equal(buttonSystem.searchVisible, true, "Search should be available in desktop header.");
+  assert.notEqual(buttonSystem.searchBackground, visualSystem.primaryBackground, "Search and Add need separate priority.");
+  assert.notEqual(buttonSystem.activeNavBackground, "rgba(0, 0, 0, 0)", "Active navigation must use a soft state tint.");
+  assert.equal(buttonSystem.accent, "#93b4ff", "Blue info is reserved for active navigation and focus.");
+  assert.notEqual(buttonSystem.activeNavIcon, "", "Current view has a visible icon state.");
+  if (buttonSystem.warningBackground) {
+    assert.notEqual(buttonSystem.warningBackground, visualSystem.primaryBackground, "Day cleanup must use warning tone.");
+  }
   await page.setViewportSize({ width: 390, height: 844 });
 
 
