@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronDown, History, Settings2, Star, StarOff } from "lucide-react";
 import { IconRenderer } from "../components/common/IconRenderer";
 import { PageHeader } from "../components/common/PageHeader";
@@ -160,10 +160,11 @@ export function TodayPage({
     });
   };
 
-  const renderTodo = (todo: Todo) => (
+  const renderTodo = (todo: Todo, leadingAction?: ReactNode) => (
     <TodoRow
       key={todo.id}
       todo={todo}
+      leadingAction={leadingAction}
       onToggle={onToggle}
       onDelete={onDelete}
       onEdit={setEditingTodo}
@@ -202,11 +203,8 @@ export function TodayPage({
                 <h3 id="today-focus-title" className="inline-flex items-center gap-2 text-sm font-bold text-ink-100"><Star size={15} className="text-warning" />오늘의 핵심 작업</h3>
                 <span className="text-xs text-ink-400">{focusedTodos.length} / 3개 선택</span>
               </div>
-              {focusedTodos.map((todo) => (
-                <div key={todo.id} className="flex items-center gap-2">
-                  <button type="button" className="icon-btn h-9 w-9 shrink-0 text-warning" onClick={() => toggleFocus(todo.id)} title="핵심 작업에서 제외" aria-label={`${todo.title} 핵심 작업에서 제외`}><StarOff size={16} /></button>
-                  <div className="min-w-0 flex-1">{renderTodo(todo)}</div>
-                </div>
+              {focusedTodos.map((todo) => renderTodo(todo,
+                <button type="button" className="icon-btn h-10 w-10 shrink-0 text-warning" onClick={() => toggleFocus(todo.id)} title="핵심 작업에서 제외" aria-label={`${todo.title} 핵심 작업에서 제외`}><StarOff size={16} /></button>,
               ))}
             </section>
           ) : null}
@@ -217,7 +215,7 @@ export function TodayPage({
               <span className="text-xs text-ink-500">{todayTodos.length}개 등록</span>
             </div>
             {hasTodayTodos ? (
-              <div className="sticky top-[60px] z-20 border-b border-ink-700/50 bg-ink-950/95 px-0 py-1 backdrop-blur-md">
+              <div className="sticky top-[60px] z-20 border-b border-ui-divider bg-ui-canvas px-0 py-1">
                 <div className="flex items-center gap-2">
                   <div className="min-w-0 flex-1 overflow-x-auto pb-0.5">
                     <div className="flex w-max gap-1.5 pr-2" aria-label="오늘 Todo 카테고리 필터">
@@ -279,11 +277,8 @@ export function TodayPage({
                 </div>
 
                 {remainingTodos.length ? (
-                  <div className="divide-y divide-ink-700/20">{remainingTodos.map((todo) => (
-                    <div key={todo.id} className="flex items-center gap-2">
-                      <button type="button" className="icon-btn h-9 w-9 shrink-0 text-ink-400 hover:text-warning" onClick={() => toggleFocus(todo.id)} disabled={focusedTodos.length >= 3} title={focusedTodos.length >= 3 ? "핵심 작업은 최대 3개까지 지정할 수 있습니다." : "핵심 작업으로 고정"} aria-label={`${todo.title} 핵심 작업으로 고정`}><Star size={16} /></button>
-                      <div className="min-w-0 flex-1">{renderTodo(todo)}</div>
-                    </div>
+                  <div className="border-t border-[var(--ui-row-divider)]">{remainingTodos.map((todo) => renderTodo(todo,
+                    <button type="button" className="icon-btn h-10 w-10 shrink-0 text-ui-muted hover:text-warning" onClick={() => toggleFocus(todo.id)} disabled={focusedTodos.length >= 3} title={focusedTodos.length >= 3 ? "핵심 작업은 최대 3개까지 지정할 수 있습니다." : "핵심 작업으로 고정"} aria-label={`${todo.title} 핵심 작업으로 고정`}><Star size={16} /></button>,
                   ))}</div>
                 ) : activeTodos.length ? (
                   <p className="py-2 text-xs text-ink-400">미완료 Todo는 상단 핵심 작업에 모두 표시되어 있습니다.</p>
