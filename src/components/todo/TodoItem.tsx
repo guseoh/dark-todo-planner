@@ -40,7 +40,7 @@ export function TodoItem({ todo, onToggle, onDelete, onEdit, onArchive, onUnarch
             {todo.planningState !== "SCHEDULED" ? <span>{planningLabel[todo.planningState]}</span> : null}
             {todo.archived ? <span>보관됨</span> : null}
             {showDate && todo.planningState === "SCHEDULED" ? <span className="inline-flex items-center gap-1"><CalendarDays size={14} />{formatKoreanDate(todo.date, "M월 d일 E")}</span> : null}
-            {todo.dueDate ? <span className={`font-medium ${overdue ? "text-red-200" : dueSoon ? "text-amber-200" : "text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {getDdayLabel(todo.dueDate)}</span> : null}
+            {todo.dueDate ? <span className={`font-medium ${overdue ? "text-danger" : dueSoon ? "text-warning" : "text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {getDdayLabel(todo.dueDate)}</span> : null}
           </div>
         </div>
 
@@ -48,7 +48,7 @@ export function TodoItem({ todo, onToggle, onDelete, onEdit, onArchive, onUnarch
           {todo.archived && onUnarchive ? <button type="button" className="icon-btn min-h-9 min-w-9" onClick={() => onUnarchive(todo.id)} aria-label="보관 해제"><RotateCcw size={16} /></button> : null}
           {!todo.archived && todo.completed && onArchive ? <button type="button" className="icon-btn min-h-9 min-w-9" onClick={() => onArchive(todo.id)} aria-label="Todo 보관"><Archive size={16} /></button> : null}
           <button type="button" className="icon-btn min-h-9 min-w-9" onClick={() => onEdit(todo)} aria-label="Todo 수정"><Pencil size={16} /></button>
-          <button type="button" className="icon-btn min-h-9 min-w-9 hover:text-red-200" onClick={handleDelete} aria-label="Todo 삭제"><Trash2 size={16} /></button>
+          <button type="button" className="icon-btn min-h-9 min-w-9 hover:text-danger" onClick={handleDelete} aria-label="Todo 삭제"><Trash2 size={16} /></button>
         </div>
       </div>
     </article>

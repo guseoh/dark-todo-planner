@@ -31,7 +31,7 @@ const TodoMiniList = ({ todos }: { todos: Todo[] }) => todos.length ? (
             {todo.dueDate ? `마감 ${todo.dueDate}` : `실행 ${todo.date}`} · {planningLabels[todo.planningState]} · {priorityLabels[todo.priority]}
           </p>
         </div>
-        {todo.completed ? <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-300" /> : null}
+        {todo.completed ? <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-success" /> : null}
       </div>
     ))}
     {todos.length > 20 ? <p className="text-xs text-ink-500">외 {todos.length - 20}개</p> : null}

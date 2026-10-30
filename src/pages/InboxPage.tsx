@@ -55,7 +55,7 @@ export function InboxPage({ todos, categories, projects, onAdd, onUpdate, onDele
       </section>
 
       {feedback ? (
-        <p role={feedback.error ? "alert" : "status"} className={`border-l-2 py-1 pl-3 text-sm ${feedback.error ? "border-danger text-red-200" : "border-ink-500 text-ink-200"}`}>
+        <p role={feedback.error ? "alert" : "status"} className={`border-l-2 py-1 pl-3 text-sm ${feedback.error ? "border-danger text-danger" : "border-ink-500 text-ink-200"}`}>
           {feedback.message}
         </p>
       ) : null}
@@ -77,7 +77,7 @@ export function InboxPage({ todos, categories, projects, onAdd, onUpdate, onDele
                       {todo.dueDate ? <span>마감 {todo.dueDate}</span> : null}
                     </div>
                   </div>
-                  <button type="button" className="icon-btn h-9 w-9 shrink-0 hover:text-red-200"
+                  <button type="button" className="icon-btn h-9 w-9 shrink-0 hover:text-danger"
                     onClick={() => window.confirm(`“${todo.title}” Todo를 삭제할까요?`) && onDelete(todo.id)}
                     disabled={busyId !== null} aria-label={`${todo.title} 받은함에서 삭제`}><Trash2 size={14} /></button>
                 </div>

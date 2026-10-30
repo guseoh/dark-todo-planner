@@ -132,7 +132,7 @@ export function TodoWorkflowPanel({ todo }: { todo: Todo }) {
             {workflow?.blockers.map((blocker) => <li key={blocker.id} className="flex min-h-9 items-center justify-between gap-2 rounded-md bg-ink-900 px-2.5 text-xs">
               <span className="min-w-0 truncate text-ink-200">{blocker.title}</span>
               <span className={`shrink-0 ${blocker.completed ? "text-success" : "text-warning"}`}>{blocker.completed ? "완료" : "미완료"}</span>
-              <button type="button" className="shrink-0 text-ink-500 hover:text-red-200" disabled={busy} onClick={() => void mutate(() => api(`/api/todos/${todo.id}/dependencies/${blocker.id}`, { method: "DELETE" }), "선행 작업을 해제했습니다.")}>해제</button>
+              <button type="button" className="shrink-0 text-ink-500 hover:text-danger" disabled={busy} onClick={() => void mutate(() => api(`/api/todos/${todo.id}/dependencies/${blocker.id}`, { method: "DELETE" }), "선행 작업을 해제했습니다.")}>해제</button>
             </li>)}
           </ul>
           {workflow?.blockers.some((blocker) => !blocker.completed) ? <p className="text-xs font-semibold text-warning">미완료 선행 작업 {workflow.blockers.filter((blocker) => !blocker.completed).length}개가 남아 있습니다.</p> : null}
@@ -164,7 +164,7 @@ export function TodoWorkflowPanel({ todo }: { todo: Todo }) {
           </ol>}
         </section>
       </div>
-      {error ? <p className="mt-3 text-xs font-semibold text-red-200" role="alert">{error}</p> : null}
+      {error ? <p className="mt-3 text-xs font-semibold text-danger" role="alert">{error}</p> : null}
       {notice ? <p className="mt-3 text-xs text-success" role="status">{notice}</p> : null}
     </details>
   );

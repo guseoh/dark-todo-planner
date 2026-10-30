@@ -138,7 +138,7 @@ export function SettingsPage({
       <section className="app-card p-4 sm:p-5" aria-labelledby="operation-info-title">
         <div className="flex flex-col gap-3 border-b border-ink-700 pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div><h3 id="operation-info-title" className="text-base font-bold text-ink-100">운영 정보</h3><p className="mt-1 text-xs text-ink-400">개인 플래너의 고정 운영 기준입니다.</p></div>
-          <div className={`inline-flex min-h-9 items-center gap-2 self-start text-xs font-medium ${connected ? "text-ink-300" : "text-red-200"}`} role="status">
+          <div className={`inline-flex min-h-9 items-center gap-2 self-start text-xs font-medium ${connected ? "text-ink-300" : "text-danger"}`} role="status">
             <span className={`h-2 w-2 rounded-full ${connected ? "bg-success" : "bg-danger"}`} aria-hidden="true" />{connected ? "Cloudflare D1 연결됨" : "Cloudflare D1 연결 확인 필요"}
           </div>
         </div>

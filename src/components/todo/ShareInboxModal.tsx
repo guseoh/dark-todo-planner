@@ -121,10 +121,10 @@ export function ShareInboxModal({ draft, onClose, onSave }: ShareInboxModalProps
               maxLength={2048}
             />
           </div>
-          {invalidReferenceUrl ? <p className="text-xs font-semibold text-red-200">http 또는 https 링크만 사용할 수 있습니다.</p> : null}
+          {invalidReferenceUrl ? <p className="text-xs font-semibold text-danger">http 또는 https 링크만 사용할 수 있습니다.</p> : null}
         </div>
 
-        {error ? <p role="alert" className="rounded-lg border border-danger/35 bg-danger/[0.06] px-3 py-2 text-sm font-semibold text-red-100">{error}</p> : null}
+        {error ? <p role="alert" className="rounded-lg border border-danger/35 bg-danger/[0.06] px-3 py-2 text-sm font-semibold text-danger">{error}</p> : null}
 
         <div className="flex flex-col-reverse gap-2 border-t border-ink-700/60 pt-4 sm:flex-row sm:justify-end">
           <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>취소</button>

@@ -251,7 +251,7 @@ export function OverdueTodoImportModal({ todos, onImport, onDeleteMany, onClose 
                       </button>
                       <button
                         type="button"
-                        className="icon-btn h-8 w-8 shrink-0 rounded-md hover:text-red-200"
+                        className="icon-btn h-8 w-8 shrink-0 rounded-md hover:text-danger"
                         onClick={() => void deleteDateTodos(date, dateTodos)}
                         disabled={busy}
                         aria-label={`${formatKoreanDate(date, "M월 d일")} Todo 전체 삭제`}
@@ -287,7 +287,7 @@ export function OverdueTodoImportModal({ todos, onImport, onDeleteMany, onClose 
                             <span className="flex flex-wrap items-center gap-1.5">
                               <span className={`break-words text-sm font-semibold ${todo.completed ? "text-ink-500 line-through" : "text-ink-100"}`}>{todo.title}</span>
                               {duplicateTodoIds.has(todo.id) ? (
-                                <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold text-amber-100">
+                                <span className="rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-[10px] font-semibold text-warning">
                                   중복 후보
                                 </span>
                               ) : null}
@@ -307,14 +307,14 @@ export function OverdueTodoImportModal({ todos, onImport, onDeleteMany, onClose 
           })}
         </div>
 
-        {deleteError ? <p role="alert" className="rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-red-100">{deleteError}</p> : null}
+        {deleteError ? <p role="alert" className="rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">{deleteError}</p> : null}
         {resultMessage ? (
           <p
             role="status"
             className={`rounded-md border px-3 py-2 text-sm ${
               result?.failed
-                ? "border-danger/40 bg-danger/10 text-red-100"
-                : "border-emerald-400/30 bg-emerald-400/10 text-emerald-100"
+                ? "border-danger/40 bg-danger/10 text-danger"
+                : "border-success/30 bg-success/10 text-success"
             }`}
           >
             {resultMessage}

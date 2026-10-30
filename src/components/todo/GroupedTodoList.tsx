@@ -260,9 +260,9 @@ export function GroupedTodoList({
     return (
       <div className="space-y-3">
         {showCategoryCreator && onAddCategory ? <button type="button" className="btn-secondary" onClick={() => { setCategoryError(""); setCreatingCategory(true); }}><FolderPlus size={16} />카테고리 추가</button> : null}
-        {categoryError ? <p className="text-sm text-red-200">{categoryError}</p> : null}
+        {categoryError ? <p className="text-sm text-danger">{categoryError}</p> : null}
         <EmptyState title={emptyTitle} description={emptyDescription} />
-        {creatingCategory ? <Modal title="새 카테고리 추가" description="Todo를 묶을 카테고리 이름, 색상, 아이콘을 설정합니다." onClose={() => setCreatingCategory(false)}>{categoryError ? <p className="mb-3 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-red-100">{categoryError}</p> : null}<CategoryForm onSubmit={createCategory} onCancel={() => setCreatingCategory(false)} submitLabel="카테고리 추가" /></Modal> : null}
+        {creatingCategory ? <Modal title="새 카테고리 추가" description="Todo를 묶을 카테고리 이름, 색상, 아이콘을 설정합니다." onClose={() => setCreatingCategory(false)}>{categoryError ? <p className="mb-3 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">{categoryError}</p> : null}<CategoryForm onSubmit={createCategory} onCancel={() => setCreatingCategory(false)} submitLabel="카테고리 추가" /></Modal> : null}
       </div>
     );
   }
@@ -277,7 +277,7 @@ export function GroupedTodoList({
     <>
       <div className="space-y-3">
         {showCategoryCreator && onAddCategory && !selectionMode ? <button type="button" className="btn-secondary" onClick={() => { setCategoryError(""); setCreatingCategory(true); }}><FolderPlus size={16} />카테고리 추가</button> : null}
-        {categoryError ? <p className="text-sm text-red-200">{categoryError}</p> : null}
+        {categoryError ? <p className="text-sm text-danger">{categoryError}</p> : null}
 
         {groups.length ? (
           <div className={layout === "board" ? "grid min-w-0 grid-cols-1 items-start gap-3 overflow-x-clip md:grid-cols-2 xl:grid-cols-3" : "min-w-0 space-y-2 overflow-x-clip"}>
@@ -307,9 +307,9 @@ export function GroupedTodoList({
         ) : <EmptyState title={emptyTitle} description={emptyDescription} />}
       </div>
 
-      {creatingCategory ? <Modal title="새 카테고리 추가" description="Todo를 묶을 카테고리 이름, 색상, 아이콘을 설정합니다." onClose={() => setCreatingCategory(false)}>{categoryError ? <p className="mb-3 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-red-100">{categoryError}</p> : null}<CategoryForm onSubmit={createCategory} onCancel={() => setCreatingCategory(false)} submitLabel="카테고리 추가" /></Modal> : null}
+      {creatingCategory ? <Modal title="새 카테고리 추가" description="Todo를 묶을 카테고리 이름, 색상, 아이콘을 설정합니다." onClose={() => setCreatingCategory(false)}>{categoryError ? <p className="mb-3 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">{categoryError}</p> : null}<CategoryForm onSubmit={createCategory} onCancel={() => setCreatingCategory(false)} submitLabel="카테고리 추가" /></Modal> : null}
 
-      {editingCategory ? <Modal title="카테고리 수정" description="카테고리 카드에 표시할 이름, 설명, 색상, 아이콘을 정리합니다." onClose={() => setEditingCategoryId(null)}>{categoryError ? <p className="mb-3 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-red-100">{categoryError}</p> : null}<CategoryForm category={editingCategory} onSubmit={updateCategory} onCancel={() => setEditingCategoryId(null)} submitLabel="저장" /></Modal> : null}
+      {editingCategory ? <Modal title="카테고리 수정" description="카테고리 카드에 표시할 이름, 설명, 색상, 아이콘을 정리합니다." onClose={() => setEditingCategoryId(null)}>{categoryError ? <p className="mb-3 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">{categoryError}</p> : null}<CategoryForm category={editingCategory} onSubmit={updateCategory} onCancel={() => setEditingCategoryId(null)} submitLabel="저장" /></Modal> : null}
 
       <TodoEditModal todo={editingTodo} categories={categories} projects={projects} onClose={() => setEditingTodo(null)} onSave={onUpdate} />
     </>

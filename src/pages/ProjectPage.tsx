@@ -346,7 +346,7 @@ export function ProjectPage({
                   <option value="ON_HOLD">보류</option>
                   <option value="DONE">완료</option>
                 </select>
-                <button type="button" className="btn-secondary hover:border-danger/50 hover:text-red-200" onClick={() => void deleteSelectedProject()} disabled={deletingProject}>
+                <button type="button" className="btn-secondary hover:border-danger/50 hover:text-danger" onClick={() => void deleteSelectedProject()} disabled={deletingProject}>
                   <Trash2 size={15} />{deletingProject ? "삭제 중" : "삭제"}
                 </button>
                 {selected.archived ? (
@@ -389,7 +389,7 @@ export function ProjectPage({
                         <ExternalLink size={13} className="shrink-0" />
                         <span className="truncate">{resource.label}</span>
                       </a>
-                      {!selected.archived ? <button type="button" className="flex h-9 w-8 shrink-0 items-center justify-center border-l border-ink-800 text-ink-600 hover:text-red-200" onClick={() => void removeResource(resource.id)} aria-label={`${resource.label} 링크 삭제`}><X size={13} /></button> : null}
+                      {!selected.archived ? <button type="button" className="flex h-9 w-8 shrink-0 items-center justify-center border-l border-ink-800 text-ink-600 hover:text-danger" onClick={() => void removeResource(resource.id)} aria-label={`${resource.label} 링크 삭제`}><X size={13} /></button> : null}
                     </div>
                   ))}
                 </div>
@@ -400,7 +400,7 @@ export function ProjectPage({
                   <input className="field min-h-9 py-1.5 text-xs" value={resourceLabel} onChange={(event) => setResourceLabel(event.target.value)} placeholder="예: GitHub 저장소" maxLength={80} />
                   <input className="field min-h-9 py-1.5 text-xs" type="url" value={resourceUrl} onChange={(event) => { setResourceUrl(event.target.value); setResourceError(""); }} placeholder="https://..." maxLength={2048} />
                   <button type="submit" className="btn-secondary min-h-9 py-1.5 text-xs" disabled={!resourceLabel.trim() || !resourceUrl.trim()}><Plus size={14} />링크 추가</button>
-                  {resourceError ? <p className="text-xs font-semibold text-red-200 lg:col-span-3">{resourceError}</p> : null}
+                  {resourceError ? <p className="text-xs font-semibold text-danger lg:col-span-3">{resourceError}</p> : null}
                 </form>
               ) : null}
             </details>
@@ -477,7 +477,7 @@ export function ProjectPage({
                   <div key={milestone.id} className="border-b border-ink-700/35 py-3">
                     <div className="flex items-start gap-2">
                       <button type="button" className="icon-btn h-9 w-9 shrink-0 rounded-md" onClick={() => void onUpdateMilestone(milestone.id, { status: milestone.status === "DONE" ? "TODO" : "DONE" })} aria-label="마일스톤 완료 토글">
-                        {milestone.status === "DONE" ? <CheckCircle2 size={16} className="text-emerald-300" /> : <CircleDot size={16} />}
+                        {milestone.status === "DONE" ? <CheckCircle2 size={16} className="text-success" /> : <CircleDot size={16} />}
                       </button>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -489,7 +489,7 @@ export function ProjectPage({
                           <span>Todo {milestoneTodos.length}개</span>
                         </div>
                       </div>
-                      <button type="button" className="icon-btn h-9 w-9 shrink-0 rounded-md hover:text-red-200" onClick={() => window.confirm("마일스톤을 삭제할까요? 연결된 Todo의 마일스톤 지정은 해제됩니다.") && void onDeleteMilestone(milestone.id)} aria-label="마일스톤 삭제"><Trash2 size={14} /></button>
+                      <button type="button" className="icon-btn h-9 w-9 shrink-0 rounded-md hover:text-danger" onClick={() => window.confirm("마일스톤을 삭제할까요? 연결된 Todo의 마일스톤 지정은 해제됩니다.") && void onDeleteMilestone(milestone.id)} aria-label="마일스톤 삭제"><Trash2 size={14} /></button>
                     </div>
 
                     <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink-800">

@@ -103,7 +103,7 @@ export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
         </button>
       </section>
 
-      {error ? <div className="rounded-lg border border-danger/40 bg-danger/[0.08] px-3 py-2 text-sm text-red-100" role="alert">{error}</div> : null}
+      {error ? <div className="rounded-lg border border-danger/40 bg-danger/[0.08] px-3 py-2 text-sm text-danger" role="alert">{error}</div> : null}
 
       {loading ? <div className="app-card p-8 text-center text-sm text-ink-500">휴지통을 불러오는 중...</div> : items.length ? (
         <section className="app-card divide-y divide-ink-800 overflow-hidden">
@@ -156,8 +156,8 @@ export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
 
             {preview.warnings.length ? (
               <div className="border-l-2 border-warning/70 py-1 pl-3">
-                <div className="flex items-center gap-2 text-sm font-bold text-amber-100"><AlertTriangle size={15} />복원 시 변경되는 항목</div>
-                <ul className="mt-2 space-y-1 text-xs text-amber-100/90">{preview.warnings.map((warning) => <li key={warning}>• {warning}</li>)}</ul>
+                <div className="flex items-center gap-2 text-sm font-bold text-warning"><AlertTriangle size={15} />복원 시 변경되는 항목</div>
+                <ul className="mt-2 space-y-1 text-xs text-warning/90">{preview.warnings.map((warning) => <li key={warning}>• {warning}</li>)}</ul>
               </div>
             ) : <p className="border-l-2 border-success/70 py-1 pl-3 text-sm text-ink-300">기존 연결을 그대로 복원할 수 있습니다.</p>}
 
