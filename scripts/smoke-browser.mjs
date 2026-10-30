@@ -398,13 +398,18 @@ try {
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "초안 복원" }).waitFor();
   await page.getByRole("button", { name: "초안 복원" }).click();
-  await page.getByText("저장됨", { exact: true }).first().waitFor();
   assert.equal(await scratchEditor.inputValue(), scratchContent);
-  const serverScratch = await page.evaluate(async () => {
-    const response = await fetch("/api/scratchpad", { credentials: "same-origin" });
-    return (await response.json()).scratchpad.content;
-  });
+  let serverScratch = "";
+  for (let i = 0; i < 40; i += 1) {
+    serverScratch = await page.evaluate(async () => {
+      const response = await fetch("/api/scratchpad", { credentials: "same-origin" });
+      return (await response.json()).scratchpad.content;
+    });
+    if (serverScratch === scratchContent) break;
+    await sleep(250);
+  }
   assert.equal(serverScratch, scratchContent, "Recovered scratchpad must persist to server.");
+  await scratch.getByText("저장됨", { exact: true }).first().waitFor();
 
   // Layout probes at common mobile, tablet and desktop breakpoints.
   // Retain screenshots as review artifacts; geometry failure blocks deployment.
