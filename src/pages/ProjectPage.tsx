@@ -182,7 +182,7 @@ export function ProjectPage({
     setProjectDescription(selected.description || "");
     setProjectStartDate(selected.startDate || "");
     setProjectTargetDate(selected.targetDate || "");
-    setProjectColor(selected.color || "#849e89");
+    setProjectColor(selected.color || "#9b9ba0");
     setEditingProject(true);
   };
 
@@ -301,9 +301,9 @@ export function ProjectPage({
                 type="button"
                 onClick={() => setSelectedId(project.id)}
                 aria-pressed={selectedId === project.id}
-                className={`flex min-h-10 min-w-44 max-w-64 shrink-0 items-center gap-2 rounded-lg border px-3 text-left text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/55 ${selectedId === project.id ? "border-accent-500/35 bg-accent-500/[0.08] text-ink-100" : "border-transparent text-ink-400 hover:border-ink-700 hover:bg-ink-800/65 hover:text-ink-100"}`}
+                className={`flex min-h-10 min-w-44 max-w-64 shrink-0 items-center gap-2 rounded-[4px] border-b-2 px-3 text-left text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/55 ${selectedId === project.id ? "border-ink-200 bg-ink-850/35 text-ink-100" : "border-transparent text-ink-400 hover:border-ink-700 hover:bg-ink-850/55 hover:text-ink-100"}`}
               >
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: project.color || "#a7baab" }} />
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: project.color || "#9b9ba0" }} />
                 <span className="min-w-0 flex-1 truncate">{project.name}</span>
                 <span className="shrink-0 text-xs text-ink-400">{projectStatusLabel[project.status]}</span>
               </button>
@@ -371,8 +371,8 @@ export function ProjectPage({
               </form>
             ) : null}
 
-            <div role="progressbar" aria-label="프로젝트 완료율" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="mt-4 h-2 overflow-hidden rounded-full bg-ink-800">
-              <div className="h-full rounded-full bg-accent-500 transition-all" style={{ width: `${progress}%` }} />
+            <div role="progressbar" aria-label="프로젝트 완료율" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="mt-4 h-1 overflow-hidden bg-ink-800">
+              <div className="h-full bg-accent-500 transition-[width]" style={{ width: `${progress}%` }} />
             </div>
 
             <details className="mt-4 border-t border-ink-800/80 pt-3" key={selected.id}>
@@ -474,7 +474,7 @@ export function ProjectPage({
                 const milestoneCompleted = milestoneTodos.filter((todo) => todo.completed).length;
                 const milestoneProgress = milestoneTodos.length ? Math.round((milestoneCompleted / milestoneTodos.length) * 100) : 0;
                 return (
-                  <div key={milestone.id} className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3">
+                  <div key={milestone.id} className="border-b border-ink-700/35 py-3">
                     <div className="flex items-start gap-2">
                       <button type="button" className="icon-btn h-9 w-9 shrink-0 rounded-md" onClick={() => void onUpdateMilestone(milestone.id, { status: milestone.status === "DONE" ? "TODO" : "DONE" })} aria-label="마일스톤 완료 토글">
                         {milestone.status === "DONE" ? <CheckCircle2 size={16} className="text-emerald-300" /> : <CircleDot size={16} />}
