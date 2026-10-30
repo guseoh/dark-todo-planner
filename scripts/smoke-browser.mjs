@@ -200,6 +200,38 @@ try {
   assert.equal(await page.getByRole("button", { name: "카테고리 관리" }).count(), 1, "Keep category management discoverable even when Today is empty.");
   assert.equal(await page.locator('section[aria-label="오늘 Todo"]').count(), 1, "Todo entry must remain available while empty.");
 
+
+  // T16–T19: compact quick entry + progressively disclosed, grouped details.
+  const composer = page.getByRole("form", { name: "Todo 빠른 추가" });
+  const composerToggle = composer.getByRole("button", { name: "상세 옵션", exact: true });
+  await composerToggle.waitFor();
+  assert.equal(await composerToggle.getAttribute("aria-expanded"), "false");
+  const mainLayout = await composer.locator(".todo-composer-form__main").evaluate((el) => {
+    const input = el.querySelector('[data-quick-todo-input="true"]');
+    const category = el.querySelector('[aria-label="카테고리 선택"]');
+    if (!(input instanceof HTMLElement) || !(category instanceof HTMLElement)) return null;
+    const parent = el.getBoundingClientRect();
+    const a = input.getBoundingClientRect();
+    const b = category.getBoundingClientRect();
+    return { inputWidth: a.width, categoryWidth: b.width, rowHeight: parent.height };
+  });
+  assert.ok(mainLayout && mainLayout.inputWidth >= mainLayout.categoryWidth + 30,
+    "The title must be the primary control, with a quieter category selector.");
+  await composerToggle.click();
+  await composer.getByRole("group", { name: "Todo 상세 옵션" }).waitFor();
+  for (const name of ["일정", "분류", "메모"]) {
+    assert.equal(await composer.getByRole("group", { name, exact: true }).count(), 1,
+      "Advanced options must group fields by purpose: " + name);
+  }
+  await composer.getByRole("group", { name: "분류" }).getByLabel("우선순위").selectOption("HIGH");
+  await composer.getByRole("button", { name: "상세 옵션 닫기", exact: true }).click();
+  assert.equal(await composer.getByRole("group", { name: "Todo 상세 옵션" }).count(), 0);
+  await composerToggle.click();
+  assert.equal(await composer.getByLabel("우선순위").inputValue(), "HIGH",
+    "Collapsing details must not discard the current form state.");
+  await composer.getByLabel("우선순위").selectOption("MEDIUM");
+  await composer.getByRole("button", { name: "상세 옵션 닫기", exact: true }).click();
+
   const title = `Browser Todo ${randomUUID().slice(0, 8)}`;
   const edited = title + " edited";
   const quickInput = page.locator('input[data-quick-todo-input="true"]');
@@ -554,6 +586,11 @@ try {
         if (view === "scratchpad") await page.getByRole("textbox", { name: "낙서장 편집기" }).waitFor();
         else await page.getByRole("heading", { name: heading, exact: true }).first().waitFor();
         if (view === "today") {
+          const composer = page.getByRole("form", { name: "Todo 빠른 추가" });
+          await composer.getByRole("button", { name: "상세 옵션", exact: true }).click();
+          await composer.getByRole("group", { name: "Todo 상세 옵션" }).waitFor();
+          await page.screenshot({ path: `test-artifacts/g2-composer-expanded-${theme}-${width}.png`, fullPage: true });
+          await composer.getByRole("button", { name: "상세 옵션 닫기", exact: true }).click();
           const surfaces = await page.evaluate(() => ({
             canvas: getComputedStyle(document.documentElement).getPropertyValue("--app-bg").trim(),
             composer: getComputedStyle(document.querySelector(".today-composer")).backgroundColor,

@@ -43,27 +43,55 @@ export function TodoDetailFields({
   onMemoChange,
 }: TodoDetailFieldsProps) {
   return (
-    <div className="mt-3 grid gap-3">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <label className="space-y-1 text-xs font-semibold text-ink-400">
-          보관 위치
-          <select className="field h-10 min-h-10 py-1.5" value={planningState} onChange={(event) => onPlanningStateChange(event.target.value as TodoPlanningState)}>
-            <option value="SCHEDULED">일정</option><option value="INBOX">받은함</option><option value="SOMEDAY">언젠가</option><option value="WAITING">대기</option>
-          </select>
-        </label>
-        {planningState === "SCHEDULED" ? (
-          <label className="space-y-1 text-xs font-semibold text-ink-400">실행일<input className="field h-10 min-h-10 py-1.5" type="date" value={date} onChange={(event) => onDateChange(event.target.value)} /></label>
-        ) : (
-          <div className="rounded-lg border border-ink-700/60 bg-ink-950/35 px-3 py-2 text-xs text-ink-500"><span className="font-semibold text-ink-400">실행일 없음</span><p className="mt-1">일정으로 옮길 때 날짜를 정합니다.</p></div>
-        )}
-        <label className="space-y-1 text-xs font-semibold text-ink-400">마감일<input className="field h-10 min-h-10 py-1.5" type="date" value={dueDate} onChange={(event) => onDueDateChange(event.target.value)} /></label>
-        <label className="space-y-1 text-xs font-semibold text-ink-400">프로젝트
-          <select className="field h-10 min-h-10 py-1.5" value={projectId} onChange={(event) => onProjectChange(event.target.value)}><option value="">프로젝트 없음</option>{projects.filter((project) => !project.archived).map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select>
-        </label>
-        <label className="space-y-1 text-xs font-semibold text-ink-400">우선순위<select className="field h-10 min-h-10 py-1.5" value={priority} onChange={(event) => onPriorityChange(event.target.value as TodoPriority)}><option value="LOW">낮음</option><option value="MEDIUM">보통</option><option value="HIGH">높음</option></select></label>
-        {showCategory ? <label className="space-y-1 text-xs font-semibold text-ink-400">카테고리<select className="field h-10 min-h-10 py-1.5" value={categoryId} onChange={(event) => onCategoryChange(event.target.value)}><option value="">미분류</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label> : null}
-      </div>
-      <MarkdownEditor label="메모" value={memo} onChange={onMemoChange} placeholder="간단한 메모를 남겨두세요" />
+    <div className="todo-composer-details" role="group" aria-label="Todo 상세 옵션">
+      <fieldset className="todo-composer-details__group">
+        <legend className="todo-composer-details__legend">일정</legend>
+        <div className="todo-composer-details__grid">
+          {planningState === "SCHEDULED" ? (
+            <label className="todo-composer-details__field">실행일
+              <input className="field" type="date" value={date} onChange={(event) => onDateChange(event.target.value)} />
+            </label>
+          ) : (
+            <div className="todo-composer-details__note"><span>실행일 없음</span><p>일정으로 옮길 때 날짜를 지정합니다.</p></div>
+          )}
+          <label className="todo-composer-details__field">마감일
+            <input className="field" type="date" value={dueDate} onChange={(event) => onDueDateChange(event.target.value)} />
+          </label>
+        </div>
+      </fieldset>
+      <fieldset className="todo-composer-details__group">
+        <legend className="todo-composer-details__legend">분류</legend>
+        <div className="todo-composer-details__grid">
+          <label className="todo-composer-details__field">보관 위치
+            <select className="field" value={planningState} onChange={(event) => onPlanningStateChange(event.target.value as TodoPlanningState)}>
+              <option value="SCHEDULED">일정</option><option value="INBOX">받은함</option><option value="SOMEDAY">언젠가</option><option value="WAITING">대기</option>
+            </select>
+          </label>
+          <label className="todo-composer-details__field">프로젝트
+            <select className="field" value={projectId} onChange={(event) => onProjectChange(event.target.value)}>
+              <option value="">프로젝트 없음</option>
+              {projects.filter((project) => !project.archived).map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
+            </select>
+          </label>
+          <label className="todo-composer-details__field">우선순위
+            <select className="field" value={priority} onChange={(event) => onPriorityChange(event.target.value as TodoPriority)}>
+              <option value="LOW">낮음</option><option value="MEDIUM">보통</option><option value="HIGH">높음</option>
+            </select>
+          </label>
+          {showCategory ? (
+            <label className="todo-composer-details__field">카테고리
+              <select className="field" value={categoryId} onChange={(event) => onCategoryChange(event.target.value)}>
+                <option value="">미분류</option>
+                {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+              </select>
+            </label>
+          ) : null}
+        </div>
+      </fieldset>
+      <fieldset className="todo-composer-details__group todo-composer-details__group--memo">
+        <legend className="todo-composer-details__legend">메모</legend>
+        <MarkdownEditor value={memo} onChange={onMemoChange} aria-label="Todo 메모" placeholder="필요한 내용만 간단히 기록하세요" />
+      </fieldset>
     </div>
   );
 }
