@@ -309,7 +309,7 @@ try {
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
   await page.getByRole("progressbar", { name: "오늘 완료율", exact: true }).waitFor();
   assert.equal(await page.getByRole("progressbar", { name: "오늘 완료율", exact: true }).getAttribute("aria-valuenow"), "0", "A newly added incomplete Todo must expose a visible 0% progress indicator.");
-  await page.getByText("핵심 작업은 최대 3개", { exact: true }).waitFor();
+  // Pin action keeps its tooltip and aria-label; verbose sidebar instruction was removed.\n  await page.getByRole("button", { name: `${title} 핵심 작업으로 고정` }).waitFor();
   await page.getByRole("button", { name: `${title} 핵심 작업으로 고정` }).click();
   await page.getByRole("heading", { name: "오늘의 핵심 작업" }).waitFor();
   assert.equal(await page.getByRole("button", { name: `${title} 핵심 작업으로 고정` }).count(), 0, "Pinned Todo must not appear twice.");
