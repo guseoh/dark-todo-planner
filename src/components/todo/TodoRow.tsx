@@ -1,4 +1,4 @@
-import { Archive, CalendarDays, CheckCircle2, ExternalLink, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { Archive, CalendarDays, CheckCircle2, ExternalLink, FolderKanban, Pencil, RotateCcw, Tag, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { formatKoreanDate, getDdayLabel, todayKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../../lib/todo";
@@ -19,6 +19,7 @@ type TodoRowProps = {
   showCategoryMeta?: boolean;
   projectName?: string;
   leadingAction?: ReactNode;
+  variant?: "default" | "today";
   hideMediumPriority?: boolean;
   duplicateCandidate?: boolean;
   selectionMode?: boolean;
@@ -40,6 +41,7 @@ export function TodoRow({
   showCategoryMeta = false,
   projectName,
   leadingAction,
+  variant = "default",
   hideMediumPriority = false,
   duplicateCandidate = false,
   selectionMode = false,
@@ -55,7 +57,7 @@ export function TodoRow({
   const openOrSelect = () => selectionMode ? onSelect?.(todo.id) : onEdit(todo);
 
   return (
-    <article className={`todo-row group px-1 py-3 transition-colors sm:px-2 ${selected && selectionMode ? "bg-ui-selected" : "bg-transparent hover:bg-ui-hover"}`}>
+    <article className={`todo-row ${variant === "today" ? "todo-row--today" : ""} group px-1 py-3 transition-colors sm:px-2 ${selected && selectionMode ? "bg-ui-selected" : "bg-transparent hover:bg-ui-hover"}`}>
       <div className="flex min-w-0 items-start gap-1.5 sm:gap-2">
         {leadingAction ? <div className="flex h-10 w-10 shrink-0 items-center justify-center">{leadingAction}</div> : null}
         {selectionMode ? (
@@ -78,8 +80,8 @@ export function TodoRow({
             {todo.planningState !== "SCHEDULED" ? <span>{planningLabel[todo.planningState]}</span> : null}
             {todo.archived ? <span>보관됨</span> : null}
             {duplicateCandidate ? <span className="font-medium text-warning">중복 후보</span> : null}
-            {projectName ? <span className="font-medium text-ui-secondary">{projectName}</span> : null}
-            {showCategoryMeta && !showCategoryBadge ? <span>{todo.category?.name || "미분류"}</span> : null}
+            {projectName ? <span className="inline-flex items-center gap-1 font-medium text-ui-secondary">{variant === "today" ? <FolderKanban size={12} aria-hidden="true" /> : null}{projectName}</span> : null}
+            {showCategoryMeta && !showCategoryBadge ? <span className="inline-flex items-center gap-1">{variant === "today" ? <Tag size={12} aria-hidden="true" /> : null}{todo.category?.name || "미분류"}</span> : null}
             {showDate && todo.planningState === "SCHEDULED" ? <span className="inline-flex items-center gap-1"><CalendarDays size={12} />{formatKoreanDate(todo.date, "M월 d일 E")}</span> : null}
             {todo.dueDate ? <span className={`font-medium ${overdue ? "text-danger" : dueSoon ? "text-warning" : "text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {getDdayLabel(todo.dueDate)}</span> : null}
             {todo.referenceUrl ? <span className="inline-flex items-center gap-1 font-semibold text-accent-200"><ExternalLink size={11} />{todo.referenceLabel || "관련 링크"}</span> : null}
