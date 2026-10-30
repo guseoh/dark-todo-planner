@@ -27,9 +27,9 @@ export function TodoItem({ todo, onToggle, onDelete, onEdit, onArchive, onUnarch
   const dueSoon = isDueSoon(todo, today);
 
   return (
-    <article className={`rounded-lg border border-ink-700 bg-ink-950/50 p-4 transition hover:border-ink-500 ${todo.completed ? "opacity-60" : ""}`}>
+    <article className={`border-b border-ink-700/40 bg-transparent px-2 py-3 transition hover:bg-ink-850/50 ${todo.completed ? "opacity-60" : ""}`}>
       <div className="flex gap-3">
-        <button type="button" onClick={() => onToggle(todo.id)} className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition ${todo.completed ? "border-emerald-400 bg-emerald-400 text-ink-950" : "border-ink-600 text-transparent hover:border-accent-500"}`} aria-label={todo.completed ? "미완료로 변경" : "완료로 변경"}><CheckCircle2 size={16} /></button>
+        <button type="button" onClick={() => onToggle(todo.id)} className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition ${todo.completed ? "border-success bg-success text-ink-950" : "border-ink-600 text-transparent hover:border-accent-500"}`} aria-label={todo.completed ? "미완료로 변경" : "완료로 변경"}><CheckCircle2 size={16} /></button>
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
