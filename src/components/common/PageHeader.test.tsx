@@ -8,7 +8,7 @@ describe("shared planner page header", () => {
       <PageHeader title="받은함" description="미계획 작업을 정리합니다." meta="미계획 3개" />,
     );
     expect(html).toContain('<header class="page-header">');
-    expect(html).toContain(">받은함</h2>");
+    expect(html).toContain(">받은함</h1>");
     expect(html).toContain("미계획 작업을 정리합니다.");
     expect(html).toContain("미계획 3개");
   });

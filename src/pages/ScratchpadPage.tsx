@@ -383,7 +383,7 @@ export function ScratchpadPage() {
   return (
     <section aria-label="낙서장" className="mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-[1500px] flex-col overflow-hidden bg-ui-canvas">
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-ui-divider bg-transparent px-3 py-3">
-        <div className="flex items-center gap-2"><h2 className="text-lg font-semibold text-ui-text">낙서장</h2><span className="text-xs text-ink-400">자동 저장되는 자유 편집 공간</span></div>
+        <div className="flex items-center gap-2"><h1 className="text-lg font-semibold text-ui-text">낙서장</h1><span className="text-xs text-ink-400">자동 저장되는 자유 편집 공간</span></div>
       </div>
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-1 border-b border-ui-divider bg-transparent px-2 py-1">
         <div ref={menuBarRef} className="flex items-center gap-0.5">
