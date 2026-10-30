@@ -123,6 +123,67 @@ try {
   await page.getByRole("complementary", { name: "선택한 날짜 상세" }).waitFor();
   await page.getByRole("button", { name: "날짜 상세 닫기" }).click();
   assert.equal(await page.getByRole("complementary", { name: "선택한 날짜 상세" }).count(), 0);
+
+  // The scheduled Todo chip opens the real edit form without changing the stored date.
+  await monthGrid.getByRole("button", { name: title, exact: true }).click();
+  const fromCalendarEdit = page.getByRole("dialog", { name: "Todo 수정" });
+  await fromCalendarEdit.getByPlaceholder("Todo 제목").waitFor();
+  await fromCalendarEdit.getByRole("button", { name: "취소" }).click();
+  await fromCalendarEdit.waitFor({ state: "hidden" });
+
+  const sourceDate = await monthGrid.getByRole("button", { name: title, exact: true })
+    .locator('xpath=ancestor::*[@data-calendar-date]').getAttribute("data-calendar-date");
+  assert.ok(sourceDate);
+  const monthCells = await monthGrid.locator("[data-calendar-date]").evaluateAll((cells) =>
+    cells.map((cell) => cell.getAttribute("data-calendar-date")).filter(Boolean));
+  const neighboringDates = monthCells.filter((date) => date.startsWith(sourceDate.slice(0, 7)) && date !== sourceDate);
+  assert.ok(neighboringDates.length >= 2, "Two dates are needed for interactive calendar smoke checks.");
+  const quickDate = neighboringDates[0];
+  const movedDate = neighboringDates[1];
+  const calendarTitle = `Calendar E2E ${randomUUID().slice(0, 8)}`;
+  await monthGrid.locator(`[data-calendar-date="${quickDate}"]`).getByRole("button", { name: /Todo 추가/ }).click();
+  const calendarDetails = page.getByRole("complementary", { name: "선택한 날짜 상세" });
+  const addInput = calendarDetails.getByPlaceholder("이 날짜에 추가할 Todo");
+  await addInput.fill(calendarTitle);
+  await addInput.locator("xpath=..").getByRole("button", { name: "추가", exact: true }).click();
+  await monthGrid.getByRole("button", { name: calendarTitle, exact: true }).waitFor();
+  assert.equal((await findServerTodo(calendarTitle))?.date, quickDate, "Calendar quick-add must use selected day.");
+
+  // Mouse drag changes only the execution date, preserving the due date.
+  await page.setViewportSize({ width: 1280, height: 844 });
+  await monthGrid.getByRole("button", { name: calendarTitle, exact: true })
+    .dragTo(monthGrid.locator(`[data-calendar-date="${movedDate}"]`), { steps: 15 });
+  for (let i = 0; i < 30; i += 1) {
+    if ((await findServerTodo(calendarTitle))?.date === movedDate) break;
+    await sleep(200);
+  }
+  assert.equal((await findServerTodo(calendarTitle))?.date, movedDate, "Drag and drop must persist new execution date.");
+
+  // Date input is the touch/keyboard fallback. A server-side error must leave
+  // the Todo on its previous date, keep the chosen date and permit a retry.
+  await monthGrid.getByRole("button", { name: calendarTitle, exact: true }).click();
+  await calendarDetails.locator("summary").filter({ hasText: "빠른 날짜 변경" }).click();
+  const newDateInput = calendarDetails.getByLabel(`${calendarTitle} 변경할 실행일`);
+  await newDateInput.fill(quickDate);
+  let failCalendarMoveOnce = true;
+  await page.route("**/api/todos/*", async (route) => {
+    if (route.request().method() === "PUT" && failCalendarMoveOnce) {
+      failCalendarMoveOnce = false;
+      await route.fulfill({ status: 503, contentType: "application/json", body: '{"message":"test calendar save failure"}' });
+    } else await route.continue();
+  });
+  await calendarDetails.getByRole("button", { name: "날짜 변경", exact: true }).click();
+  await page.getByRole("alert").filter({ hasText: "기존 날짜가 유지됩니다" }).waitFor();
+  assert.equal((await findServerTodo(calendarTitle))?.date, movedDate, "Failed move must preserve original date.");
+  assert.equal(await newDateInput.inputValue(), quickDate, "Failed move retains chosen date.");
+  await calendarDetails.getByRole("button", { name: "날짜 변경", exact: true }).click();
+  for (let i = 0; i < 30; i += 1) {
+    if ((await findServerTodo(calendarTitle))?.date === quickDate) break;
+    await sleep(200);
+  }
+  assert.equal((await findServerTodo(calendarTitle))?.date, quickDate, "Retry persists a changed date.");
+  await page.unroute("**/api/todos/*");
+  await page.setViewportSize({ width: 390, height: 844 });
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
   await page.getByRole("progressbar", { name: "오늘 완료율", exact: true }).waitFor();
   assert.equal(await page.getByRole("progressbar", { name: "오늘 완료율", exact: true }).getAttribute("aria-valuenow"), "0", "A newly added incomplete Todo must expose a visible 0% progress indicator.");
