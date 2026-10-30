@@ -649,6 +649,9 @@ try {
   await resumedMemo.getByRole("button", { name: "메모 저장", exact: true }).click();
   await resumedMemo.getByRole("alert").waitFor();
   assert.equal(await resumedMemo.getByPlaceholder("메모 제목").inputValue(), memoTitle);
+  // G6.5: color selection must persist and be rendered, not be discarded.
+  await resumedMemo.getByRole("button", { name: "파랑", exact: true }).click();
+  assert.equal(await resumedMemo.getByRole("button", { name: "파랑", exact: true }).getAttribute("aria-pressed"), "true");
   await resumedMemo.getByRole("button", { name: "메모 저장", exact: true }).click();
   await resumedMemo.waitFor({ state: "hidden" });
   await page.unroute("**/api/memos/*/links");
@@ -657,6 +660,23 @@ try {
     return (await response.json()).memos;
   });
   assert.equal(savedMemos.filter((item) => item.title === memoTitle).length, 1, "Failed memo link save must not duplicate the memo.");
+  assert.equal(savedMemos.find((item) => item.title === memoTitle)?.color, "#3b82f6", "Chosen memo color must persist.");
+  const memoCard = page.locator(".memo-note").filter({ has: page.getByRole("heading", { name: memoTitle, exact: true }) });
+  await memoCard.waitFor();
+  const noteAccent = await memoCard.evaluate((node) => ({
+    accent: node.style.getPropertyValue("--memo-accent"),
+    border: getComputedStyle(node).borderLeftColor,
+    background: getComputedStyle(node).backgroundColor,
+  }));
+  assert.equal(noteAccent.accent, "#3b82f6");
+  assert.notEqual(noteAccent.background, "rgba(0, 0, 0, 0)", "Memo colors should remain visible, not transparent.");
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const memoLayout = await page.evaluate(() => ({
+    cols: getComputedStyle(document.querySelector(".memo-note-grid")).gridTemplateColumns.split(" ").length,
+    width: document.querySelector(".memo-collections").getBoundingClientRect().width,
+  }));
+  assert.ok(memoLayout.width >= 1050 && memoLayout.cols === 2,
+    `Desktop memos need a balanced 2-column reading layout: ${JSON.stringify(memoLayout)}`);
   await page.getByRole("searchbox", { name: "메모 검색" }).fill(edited);
   await page.getByRole("heading", { name: memoTitle, exact: true }).waitFor();
   await page.getByRole("button", { name: "연결됨", exact: true }).click();
@@ -740,10 +760,30 @@ try {
   const rawEditor = page.getByRole("textbox", { name: "낙서장 편집기" });
   await page.waitForFunction(() => document.querySelector('[aria-label="낙서장 편집기"]')?.tagName === "TEXTAREA");
   assert.equal(await rawEditor.inputValue(), advancedMarkdown, "Unsupported Markdown must remain byte-for-byte editable in source mode.");
+  await scratch.getByRole("button", { name: "Markdown 서식 미리보기" }).click();
+  await scratch.getByRole("region", { name: "낙서장 Markdown 서식 미리보기" }).waitFor();
+  await scratch.getByRole("button", { name: "Markdown 원본 편집" }).click();
+  assert.equal(await rawEditor.inputValue(), advancedMarkdown, "Preview must not modify unsupported legacy source.");
+  // Source-mode toolbar adds real Markdown syntax, and preview renders it.
+  const formatted = `검증 제목\n검증 목록\n\n${advancedMarkdown}`;
+  await rawEditor.fill(formatted);
+  await rawEditor.evaluate((el) => { el.focus(); el.setSelectionRange(0, 0); });
+  await scratch.getByRole("button", { name: "H1", exact: true }).click();
+  assert.ok((await rawEditor.inputValue()).startsWith("# 검증 제목"), "Heading action must edit raw Markdown.");
+  await rawEditor.evaluate((el) => { const start = el.value.indexOf("검증 목록"); el.focus(); el.setSelectionRange(start, start); });
+  await scratch.getByRole("button", { name: "• 목록", exact: true }).click();
+  const formattedSource = await rawEditor.inputValue();
+  assert.ok(formattedSource.includes("- 검증 목록"), "Bullet action must edit raw Markdown.");
+  await scratch.getByRole("button", { name: "Markdown 서식 미리보기" }).click();
+  const rendered = scratch.getByRole("region", { name: "낙서장 Markdown 서식 미리보기" });
+  await rendered.locator("h1").filter({ hasText: "검증 제목" }).waitFor();
+  await rendered.getByText("검증 목록").waitFor();
+  await scratch.getByRole("button", { name: "Markdown 원본 편집" }).click();
+  assert.equal(await rawEditor.inputValue(), formattedSource, "Source-preview round trip must preserve every byte.");
   await page.waitForFunction(async (value) => {
     const response = await fetch("/api/scratchpad", { credentials: "same-origin" });
     return (await response.json()).scratchpad?.content === value;
-  }, advancedMarkdown);
+  }, formattedSource);
 
   // Layout probes at common mobile, tablet and desktop breakpoints.
   // Retain screenshots as review artifacts; geometry failure blocks deployment.
