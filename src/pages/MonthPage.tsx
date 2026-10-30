@@ -1,11 +1,14 @@
 import type { Todo, TodoInput } from "../types/todo";
 import type { Category } from "../types/category";
 import type { Goal } from "../types/goal";
+import type { Milestone, Project } from "../types/project";
 import { MonthlyView } from "../components/calendar/MonthlyView";
 
 type MonthPageProps = {
   embedded?: boolean;
   todos: Todo[];
+  projects?: Project[];
+  milestones?: Milestone[];
   getTodosByDate: (date: string) => Todo[];
   onAdd: (todo: TodoInput) => Promise<Todo | undefined> | Todo | undefined;
   onToggle: (id: string) => void;
@@ -24,6 +27,8 @@ type MonthPageProps = {
 export function MonthPage({
   embedded = false,
   todos,
+  projects = [],
+  milestones = [],
   getTodosByDate,
   onAdd,
   onToggle,
@@ -48,6 +53,8 @@ export function MonthPage({
       ) : null}
       <MonthlyView
         todos={todos}
+        projects={projects}
+        milestones={milestones}
         getTodosByDate={getTodosByDate}
         onAdd={onAdd}
         onToggle={onToggle}
