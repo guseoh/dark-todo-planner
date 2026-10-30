@@ -63,6 +63,7 @@ export function ScratchpadPage() {
   const applyContent = useCallback((next: string, recordHistory = true) => {
     contentRef.current = next;
     setContent(next);
+    if (loadedRef.current && next !== savedRef.current) setSaveState("dirty");
     try {
       localStorage.setItem(SCRATCHPAD_DRAFT_KEY, JSON.stringify({ content: next, savedAt: Date.now() }));
       setLocalDraftError(false);
