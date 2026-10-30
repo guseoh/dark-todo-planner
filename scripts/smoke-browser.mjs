@@ -162,6 +162,10 @@ try {
   assert.equal((await findServerTodo(legacyTitle))?.planningState, "INBOX");
   await page.getByRole("button", { name: "고급 필터", exact: true }).click();
   assert.equal(await page.getByRole("combobox", { name: "계획 상태 필터" }).inputValue(), "INBOX");
+  // Close the tall advanced filter panel before editing on a small screen.
+  // The sticky panel and fixed mobile nav can otherwise cover the row's action buttons.
+  await page.getByRole("button", { name: "고급 필터", exact: true }).click();
+  await legacyRow.evaluate((row) => row.scrollIntoView({ block: "center", inline: "nearest" }));
   await legacyRow.getByRole("button", { name: `"${legacyTitle}" Todo 수정` }).click();
   const legacyEdit = page.getByRole("dialog", { name: "Todo 수정" });
   await legacyEdit.getByRole("combobox", { name: "보관 위치" }).waitFor();
