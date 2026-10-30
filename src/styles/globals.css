@@ -847,24 +847,137 @@ button:disabled {
 
 /* G6.5: desktop memo density, semantic memo colors and safe scratchpad preview. */
 @layer components {
-  .memo-page.page-shell { max-width: 1400px; }
+  /* G6.6 — flat editorial memo surfaces, no nested cards. */
+  .memo-page.page-shell { max-width: 1360px; --memo-sharp-radius: 2px; }
+  .memo-page .page-header { padding-bottom: 1.05rem; }
+  .memo-page .page-header h1 { font-size: 1.35rem; letter-spacing: -0.025em; }
+  .memo-page .memo-action-button.ui-button {
+    min-height: 36px;
+    border-radius: var(--memo-sharp-radius);
+    background: var(--surface-1);
+    border-color: var(--border-default);
+    color: var(--text-primary);
+    padding-inline: .85rem;
+  }
+  .memo-page .memo-action-button.ui-button:hover { background: var(--surface-2); border-color: var(--border-strong); }
+  .memo-page .memo-toolbar.page-toolbar { gap: .8rem; padding-block: .65rem; align-items: center; }
+  .memo-search { max-width: 430px; min-width: min(100%, 230px); }
+  .memo-page .memo-search__input.field {
+    min-height: 38px;
+    width: 100%;
+    background: var(--surface-1);
+    border: 1px solid var(--border-default);
+    border-radius: var(--memo-sharp-radius);
+    color: var(--text-primary);
+    font-size: .82rem;
+  }
+  .memo-page .memo-search__input.field:hover { border-color: var(--border-strong); }
+  .memo-page .memo-search__input.field:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
+  .memo-search__input::-webkit-search-cancel-button { display: none; }
+  .memo-search__clear {
+    position: absolute; right: .3rem; top: 50%; transform: translateY(-50%);
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: var(--memo-sharp-radius);
+    color: var(--text-muted);
+  }
+  .memo-search__clear:hover { background: var(--surface-3); color: var(--text-primary); }
+  .memo-search__clear:focus-visible { outline: 2px solid var(--info); outline-offset: 1px; }
+  .memo-page .memo-tabs.page-tabs { gap: .3rem; }
+  .memo-page .memo-filter-tab.page-tab {
+    padding-inline: .7rem; min-height: 38px; font-size: .78rem;
+    border-bottom-width: 2px; border-radius: 0; background: transparent;
+  }
+  .memo-page .memo-filter-tab.page-tab[aria-pressed="true"] {
+    border-bottom-color: var(--text-primary); color: var(--text-primary);
+  }
+  .memo-page .memo-filter-tab.page-tab:hover { background: var(--surface-1); }
+  .memo-toolbar__count { white-space: nowrap; }
   .memo-collections { width: 100%; }
-  .memo-note-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 0 .9rem; }
-  @media (min-width: 1180px) {
-    .memo-note-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: .55rem 1.35rem; }
+  .memo-section__heading { min-height: 32px; padding-bottom: .2rem; }
+  .memo-note-grid {
+    display: grid; grid-template-columns: minmax(0, 1fr);
+    column-gap: 24px; row-gap: 12px; align-items: start;
+  }
+  @media (min-width: 1100px) {
+    .memo-note-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
   }
   .memo-note {
-    position: relative;
-    border-left: 2px solid var(--memo-accent, var(--border-default));
-    background: color-mix(in srgb, var(--memo-accent, var(--info)) 7%, var(--app-bg));
-    border-bottom-color: var(--ui-divider);
-    border-radius: 3px;
-    padding-inline: .9rem;
+    position: relative; min-width: 0;
+    margin: 0; padding: 18px 16px;
+    border: 0; border-top: 1px solid var(--ui-divider);
+    border-bottom: 1px solid var(--ui-divider);
+    border-radius: 0; background: transparent; box-shadow: none;
+    transition: background-color 150ms ease, border-color 150ms ease;
   }
-  .memo-note:hover, .memo-note:focus-within {
-    background: color-mix(in srgb, var(--memo-accent, var(--info)) 12%, var(--app-bg));
+  .memo-note::before {
+    content: ""; position: absolute; left: 0; top: 18px;
+    width: 2px; height: 18px; background: var(--memo-accent, var(--info));
   }
-  .memo-note__title { color: var(--text-primary); }
+  .memo-note:hover, .memo-note:focus-within { background: var(--surface-1); border-color: var(--border-default); }
+  .memo-note__body { display: flex; flex-direction: column; gap: .6rem; min-width: 0; }
+  .memo-note__top { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
+  .memo-note__title-button { flex: 1; min-width: 0; text-align: left; }
+  .memo-note__title-button:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; border-radius: 0; }
+  .memo-note__title-line { display: flex; align-items: center; gap: .5rem; min-width: 0; }
+  .memo-note__pin { flex-shrink: 0; color: var(--warning); }
+  .memo-note__title {
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: var(--text-primary); font-size: .96rem; font-weight: 600; line-height: 1.5;
+  }
+  .memo-note__date { display: block; margin-top: .15rem; color: var(--text-muted); font-size: .72rem; line-height: 1.5; }
+  .memo-note__preview { min-width: 0; cursor: pointer; color: var(--text-secondary); }
+  .memo-note__excerpt {
+    max-height: 5.25rem; overflow: hidden; overflow-wrap: anywhere;
+    font-size: .8125rem; line-height: 1.65; color: var(--text-secondary);
+  }
+  .memo-note__links { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; font-size: .72rem; color: var(--text-muted); }
+  .memo-note__links span { display: inline-flex; align-items: center; gap: .25rem; }
+  .memo-note__checklist-action {
+    display: inline-flex; align-items: center; align-self: flex-start; gap: .35rem;
+    padding: .4rem .25rem; min-height: 32px; color: var(--info);
+    font-size: .75rem; font-weight: 500;
+    border-bottom: 1px solid transparent;
+  }
+  .memo-note__checklist-action:hover { border-bottom-color: var(--info); }
+  .memo-note__checklist-action:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
+  .memo-actions { position: relative; z-index: 2; flex-shrink: 0; }
+  .memo-actions[open] { z-index: 30; }
+  .memo-actions__trigger {
+    display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+    width: 34px; height: 34px; list-style: none; color: var(--text-muted);
+    border: 1px solid transparent; border-radius: var(--memo-sharp-radius);
+  }
+  .memo-actions__trigger::-webkit-details-marker { display: none; }
+  .memo-actions__trigger:hover,
+  .memo-actions[open] > .memo-actions__trigger {
+    background: var(--surface-2); border-color: var(--ui-divider); color: var(--text-primary);
+  }
+  .memo-actions__trigger:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
+  .memo-actions__panel {
+    position: absolute; right: 0; top: calc(100% + 4px);
+    display: grid; min-width: 180px; padding: 4px; gap: 1px;
+    background: var(--surface-2); border: 1px solid var(--border-default);
+    border-radius: var(--memo-sharp-radius); box-shadow: 0 10px 24px rgb(0 0 0 / .2);
+  }
+  .memo-actions__panel > button {
+    display: flex; align-items: center; gap: .6rem; min-height: 36px;
+    padding: .45rem .6rem; text-align: left; color: var(--text-secondary);
+    font-size: .78rem; border-radius: 0;
+  }
+  .memo-actions__panel > button:hover, .memo-actions__panel > button:focus-visible {
+    background: var(--surface-3); color: var(--text-primary);
+  }
+  .memo-actions__panel > button:focus-visible { outline: 2px solid var(--info); outline-offset: -2px; }
+  .memo-actions__separator { margin: .2rem .25rem; border-top: 1px solid var(--ui-divider); }
+  .memo-actions__panel > .memo-actions__danger { color: var(--danger); }
+  .memo-actions__panel > .memo-actions__danger:hover { background: var(--danger-tint); color: var(--danger); }
+  @media (max-width: 639px) {
+    .memo-search { max-width: none; flex-basis: 100%; }
+    .memo-toolbar__count { margin-left: auto; }
+    .memo-note { padding-block: 16px; padding-inline: 13px; }
+    .memo-actions__trigger { min-width: 44px; min-height: 44px; }
+    .memo-actions__panel > button { min-height: 44px; }
+  }
   .memo-color-picker { gap: .5rem; }
   .memo-color-swatch {
     display: inline-flex;
