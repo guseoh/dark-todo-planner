@@ -156,7 +156,7 @@ export function TodoForm({
           <Plus size={16} aria-hidden="true" />{saving ? "저장 중..." : submitLabel}
         </button>
       </div>
-      {collapsible ? (
+      {collapsible && !showDetails ? (
         <div className="todo-composer-form__quick-fields" role="group" aria-label="빠른 일정 및 분류">
           <label>
             <span className="sr-only">실행 날짜</span>
