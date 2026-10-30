@@ -119,17 +119,18 @@ try {
   assert.equal(await todoFilter.getAttribute("aria-pressed"), "false");
   assert.equal(await monthGrid.getByRole("button", { name: title, exact: true }).count(), 0, "Todo filter must hide scheduled event chips.");
   await todoFilter.click();
-  await monthGrid.getByRole("button", { name: title, exact: true }).click();
-  await page.getByRole("complementary", { name: "선택한 날짜 상세" }).waitFor();
-  await page.getByRole("button", { name: "날짜 상세 닫기" }).click();
-  assert.equal(await page.getByRole("complementary", { name: "선택한 날짜 상세" }).count(), 0);
-
-  // The scheduled Todo chip opens the real edit form without changing the stored date.
+  // Clicking a scheduled chip edits its Todo; clicking the day opens details.
   await monthGrid.getByRole("button", { name: title, exact: true }).click();
   const fromCalendarEdit = page.getByRole("dialog", { name: "Todo 수정" });
   await fromCalendarEdit.getByPlaceholder("Todo 제목").waitFor();
   await fromCalendarEdit.getByRole("button", { name: "취소" }).click();
   await fromCalendarEdit.waitFor({ state: "hidden" });
+  await monthGrid.getByRole("button", { name: title, exact: true })
+    .locator('xpath=ancestor::*[@data-calendar-date]')
+    .getByRole("button", { name: /일정 .*개 보기/ }).click();
+  await page.getByRole("complementary", { name: "선택한 날짜 상세" }).waitFor();
+  await page.getByRole("button", { name: "날짜 상세 닫기" }).click();
+  assert.equal(await page.getByRole("complementary", { name: "선택한 날짜 상세" }).count(), 0);
 
   const sourceDate = await monthGrid.getByRole("button", { name: title, exact: true })
     .locator('xpath=ancestor::*[@data-calendar-date]').getAttribute("data-calendar-date");
