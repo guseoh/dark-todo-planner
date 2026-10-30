@@ -342,7 +342,7 @@ try {
   const memoDialog = page.getByRole("dialog", { name: "새 메모" });
   const memoTitle = `Writer E2E ${randomUUID().slice(0, 8)}`;
   await memoDialog.getByPlaceholder("메모 제목").fill(memoTitle);
-  await memoDialog.getByPlaceholder("- 떠오른 생각을 적어두세요").fill("# 작성 내용\\n- [ ] 검증하기");
+  await memoDialog.getByPlaceholder("- 떠오른 생각을 적어두세요").fill("# 작성 내용\n- [ ] 검증하기");
   await memoDialog.getByRole("button", { name: "미리보기" }).click();
   await memoDialog.getByText("작성 내용", { exact: true }).waitFor();
   await memoDialog.getByRole("button", { name: "편집" }).click();
@@ -383,7 +383,7 @@ try {
   const scratch = page.getByRole("region", { name: "낙서장" });
   const scratchEditor = scratch.getByRole("textbox", { name: "낙서장 편집기" });
   await scratchEditor.waitFor();
-  const scratchContent = `Scratchpad E2E ${randomUUID().slice(0, 8)}\\n남아야 할 두 번째 줄`;
+  const scratchContent = `Scratchpad E2E ${randomUUID().slice(0, 8)}\n남아야 할 두 번째 줄`;
   let failScratchOnce = true;
   await page.route("**/api/scratchpad", async (route) => {
     if (route.request().method() === "PUT" && failScratchOnce) {
