@@ -256,8 +256,21 @@ try {
   await composerTrigger.click();
   const composer = page.getByRole("form", { name: "Todo 빠른 추가" });
   await composer.getByRole("textbox", { name: "Todo 제목" }).waitFor();
-  assert.equal((await composer.getByLabel("실행 날짜").inputValue()).length, 10);
+  // G6.3: compact chips replace the permanent date/priority/project input boxes.
+  assert.equal(await composer.locator(".todo-composer-form__chips").count(), 1);
   assert.equal(await composer.getByLabel("우선순위").inputValue(), "MEDIUM");
+  const dateChip = composer.locator(".todo-composer-chip-menu > summary");
+  assert.ok((await dateChip.innerText()).includes("오늘"));
+  await dateChip.click();
+  assert.equal((await composer.getByLabel("실행 날짜").inputValue()).length, 10);
+  await composer.getByRole("group", { name: "날짜 빠른 선택" }).getByRole("button", { name: "내일", exact: true }).click();
+  assert.ok((await dateChip.innerText()).includes("내일"));
+  await dateChip.click();
+  await composer.getByRole("group", { name: "날짜 빠른 선택" }).getByRole("button", { name: "언젠가", exact: true }).click();
+  assert.ok((await dateChip.innerText()).includes("언젠가"));
+  await dateChip.click();
+  await composer.getByRole("group", { name: "날짜 빠른 선택" }).getByRole("button", { name: "오늘", exact: true }).click();
+  assert.ok((await dateChip.innerText()).includes("오늘"));
   // Esc keeps unsaved text locally; another click restores the draft.
   const draft = `Unsubmitted draft ${randomUUID().slice(0, 6)}`;
   await composer.getByRole("textbox", { name: "Todo 제목" }).fill(draft);
@@ -266,24 +279,36 @@ try {
   assert.equal(await page.locator(".today-composer form").count(), 0);
   await composerTrigger.click();
   assert.equal(await composer.getByRole("textbox", { name: "Todo 제목" }).inputValue(), draft);
-  // Compact quick fields expose date, project and priority without advanced options.
+  // Date input lives inside the compact date popover; project/priority stay visible.
+  await dateChip.click();
   await composer.getByLabel("실행 날짜").waitFor();
+  await dateChip.click();
   await composer.getByLabel("프로젝트 선택").waitFor();
   const composerToggle = composer.getByRole("button", { name: "상세 옵션", exact: true });
   await composerToggle.waitFor();
   assert.equal(await composerToggle.getAttribute("aria-expanded"), "false");
-  const mainLayout = await composer.locator(".todo-composer-form__main").evaluate((el) => {
+  const mainLayout = await composer.evaluate((el) => {
     const input = el.querySelector('[data-quick-todo-input="true"]');
-    const submit = el.querySelector('button[type="submit"]');
-    if (!(input instanceof HTMLElement) || !(submit instanceof HTMLElement)) return null;
-    return { titleWidth: input.getBoundingClientRect().width, submitWidth: submit.getBoundingClientRect().width,
-      categoriesInMain: el.querySelectorAll('select').length, viewport: window.innerWidth };
+    const main = el.querySelector(".todo-composer-form__main");
+    const footer = el.querySelector(".todo-composer-form__footer--inline");
+    const chips = el.querySelector(".todo-composer-form__chips");
+    const titleSurface = el.querySelector(".todo-composer-form__title");
+    if (!(input instanceof HTMLElement) || !(main instanceof HTMLElement) ||
+        !(footer instanceof HTMLElement) || !(chips instanceof HTMLElement) ||
+        !(titleSurface instanceof HTMLElement)) return null;
+    return {
+      titleWidth: input.getBoundingClientRect().width,
+      formWidth: el.getBoundingClientRect().width,
+      titleBorder: getComputedStyle(titleSurface).borderTopWidth,
+      submitInsideMain: !!main.querySelector('button[type="submit"]'),
+      footerBelowChips: footer.getBoundingClientRect().top >= chips.getBoundingClientRect().bottom - 1,
+    };
   });
-  assert.ok(mainLayout && (mainLayout.viewport <= 720
-    ? mainLayout.titleWidth >= mainLayout.submitWidth - 2
-    : mainLayout.titleWidth > mainLayout.submitWidth * 2),
-    "G6.2: title should dominate on desktop and occupy a full row on mobile.");
-  assert.equal(mainLayout.categoriesInMain, 0, "Category selector must move to optional detail fields.");
+  assert.ok(mainLayout && mainLayout.titleWidth > mainLayout.formWidth * 0.72,
+    "G6.3: title must occupy most of the composer width.");
+  assert.equal(mainLayout.titleBorder, "0px", "Title must not look like a nested input box.");
+  assert.equal(mainLayout.submitInsideMain, false, "Submit belongs in the separate action footer.");
+  assert.equal(mainLayout.footerBelowChips, true, "Chips must sit below the title but above actions.");
   await composerToggle.click();
   await composer.getByRole("group", { name: "Todo 상세 옵션" }).waitFor();
   for (const name of ["일정", "분류", "메모"]) {
@@ -298,6 +323,15 @@ try {
     "Collapsing details must not discard the current form state.");
   await composer.getByLabel("우선순위").selectOption("MEDIUM");
   await composer.getByRole("button", { name: "상세 옵션 닫기", exact: true }).click();
+
+  // IME composition must not submit a half-written Korean title.
+  const quickTitleField = composer.getByRole("textbox", { name: "Todo 제목" });
+  await quickTitleField.fill("한글 조합 확인");
+  await quickTitleField.evaluate((input) => input.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true, data: "인" })));
+  await quickTitleField.press("Enter");
+  assert.equal(await composer.count(), 1, "Enter during composition must not collapse the form.");
+  assert.equal(await quickTitleField.inputValue(), "한글 조합 확인");
+  await quickTitleField.evaluate((input) => input.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true, data: "인" })));
 
   const title = `Browser Todo ${randomUUID().slice(0, 8)}`;
   const edited = title + " edited";
