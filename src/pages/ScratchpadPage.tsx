@@ -39,6 +39,7 @@ export function ScratchpadPage() {
   const historyRef = useRef<string[]>([""]);
   const historyIndexRef = useRef(0);
   const loadedRef = useRef(false);
+  const recoveryPendingRef = useRef(false);
   const contentRef = useRef("");
   const savedRef = useRef("");
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
@@ -66,7 +67,7 @@ export function ScratchpadPage() {
 
   const applyContent = useCallback((next: string, recordHistory = true) => {
     // Tiptap may initialize before GET resolves: never replace a recoverable draft with an empty editor.
-    if (!loadedRef.current) return;
+    if (!loadedRef.current || recoveryPendingRef.current) return;
     contentRef.current = next;
     setContent(next);
     if (loadedRef.current && next !== savedRef.current) setSaveState("dirty");
@@ -110,7 +111,9 @@ export function ScratchpadPage() {
       setSourceMode(requiresRawScratchpadEditing(next));
       setSavedContent(next);
       setUpdatedAt(result.scratchpad.updatedAt);
-      setRecoveryDraft(isScratchpadRecoveryNeeded(storedDraft, next) ? storedDraft : null);
+      const recovered = isScratchpadRecoveryNeeded(storedDraft, next) ? storedDraft : null;
+      recoveryPendingRef.current = Boolean(recovered);
+      setRecoveryDraft(recovered);
       if (storedDraft && storedDraft.content === next) {
         try { localStorage.removeItem(SCRATCHPAD_DRAFT_KEY); } catch { /* no-op */ }
       }
@@ -472,8 +475,9 @@ export function ScratchpadPage() {
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-warning/30 bg-warning/[0.06] px-3 py-2.5" role="status">
           <p className="text-xs text-ink-200">서버 내용과 다른 브라우저 임시 초안이 있습니다. 내용을 비교한 뒤 복원할 수 있습니다.</p>
           <div className="flex gap-2">
-            <button type="button" className="btn-secondary text-xs" onClick={() => { applyContent(recoveryDraft.content); setSourceMode(requiresRawScratchpadEditing(recoveryDraft.content)); resetHistory(recoveryDraft.content); }}>초안 복원</button>
+            <button type="button" className="btn-secondary text-xs" onClick={() => { recoveryPendingRef.current = false; applyContent(recoveryDraft.content); setSourceMode(requiresRawScratchpadEditing(recoveryDraft.content)); resetHistory(recoveryDraft.content); }}>초안 복원</button>
             <button type="button" className="btn-secondary text-xs" onClick={() => {
+              recoveryPendingRef.current = false;
               setRecoveryDraft(null);
               try { localStorage.removeItem(SCRATCHPAD_DRAFT_KEY); } catch { /* no-op */ }
             }}>초안 버리기</button>
@@ -492,12 +496,12 @@ export function ScratchpadPage() {
         onClick={(event) => setSelectionStart(event.currentTarget.selectionStart)}
         spellCheck={false}
         wrap={wrap ? "soft" : "off"}
-        disabled={saveState === "loading" || (!loadedRef.current && saveState === "error")}
+        disabled={Boolean(recoveryDraft) || saveState === "loading" || (!loadedRef.current && saveState === "error")}
         className="min-h-0 flex-1 resize-none border-0 bg-ui-canvas px-4 py-5 font-mono leading-7 text-ui-text sm:px-8 outline-none selection:bg-accent-500/35 disabled:opacity-60"
         style={{ fontSize: `${Math.round(15 * zoom / 100)}px`, whiteSpace: wrap ? "pre-wrap" : "pre" }}
         placeholder="아무 내용이나 바로 작성하세요. 내용은 자동으로 저장됩니다."
         aria-label="낙서장 편집기"
-      /> : <RichScratchpadEditor ref={richEditorRef} markdown={content} onChange={applyContent} readOnly={saveState === "loading" || (!loadedRef.current && saveState === "error")} zoom={zoom} wrap={wrap} onShortcut={handleEditorKeyDown} /> }
+      /> : <RichScratchpadEditor ref={richEditorRef} markdown={content} onChange={applyContent} readOnly={Boolean(recoveryDraft) || saveState === "loading" || (!loadedRef.current && saveState === "error")} zoom={zoom} wrap={wrap} onShortcut={handleEditorKeyDown} /> }
 
       <div className="flex shrink-0 items-center justify-between gap-3 border-t border-ui-divider bg-ui-canvas px-3 py-1.5 text-[11px] text-ui-muted">
         <div className="flex min-w-0 items-center gap-3">
