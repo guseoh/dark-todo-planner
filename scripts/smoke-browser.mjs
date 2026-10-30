@@ -279,8 +279,10 @@ try {
   assert.equal(await page.locator(".today-composer form").count(), 0);
   await composerTrigger.click();
   assert.equal(await composer.getByRole("textbox", { name: "Todo 제목" }).inputValue(), draft);
-  // Compact quick fields expose date, project and priority without advanced options.
+  // Date input lives inside the compact date popover; project/priority stay visible.
+  await dateChip.click();
   await composer.getByLabel("실행 날짜").waitFor();
+  await dateChip.click();
   await composer.getByLabel("프로젝트 선택").waitFor();
   const composerToggle = composer.getByRole("button", { name: "상세 옵션", exact: true });
   await composerToggle.waitFor();
