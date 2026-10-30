@@ -21,6 +21,7 @@ type TodoFormProps = {
   defaultPlanningState?: TodoPlanningState;
   showSyntaxHint?: boolean;
   lockCategory?: boolean;
+  collapsible?: boolean;
 };
 
 export function TodoForm({
@@ -35,6 +36,7 @@ export function TodoForm({
   defaultPlanningState = "SCHEDULED",
   showSyntaxHint = true,
   lockCategory = false,
+  collapsible = false,
 }: TodoFormProps) {
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const detailsId = useId();
@@ -48,9 +50,11 @@ export function TodoForm({
   const [planningState, setPlanningState] = useState<TodoPlanningState>(defaultPlanningState);
   const [showDetails, setShowDetails] = useState(!compact);
   const [saving, setSaving] = useState(false);
+  const [expanded, setExpanded] = useState(!collapsible);
   const [saveError, setSaveError] = useState("");
 
   useEffect(() => { setDate(defaultDate || todayKey()); }, [defaultDate]);
+  useEffect(() => { if (collapsible && expanded) titleInputRef.current?.focus(); }, [collapsible, expanded]);
   useEffect(() => { setCategoryId(defaultCategoryId); }, [defaultCategoryId]);
   useEffect(() => { setProjectId(defaultProjectId); }, [defaultProjectId]);
   useEffect(() => { setPlanningState(defaultPlanningState); }, [defaultPlanningState]);
@@ -101,7 +105,8 @@ export function TodoForm({
         return;
       }
       reset();
-      window.requestAnimationFrame(() => titleInputRef.current?.focus());
+      if (collapsible) setExpanded(false);
+      else window.requestAnimationFrame(() => titleInputRef.current?.focus());
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Todo 저장 중 오류가 발생했습니다.");
     } finally {
@@ -109,8 +114,26 @@ export function TodoForm({
     }
   };
 
+  if (collapsible && !expanded) {
+    return (
+      <button type="button" className="todo-composer-trigger" onClick={() => setExpanded(true)}
+        aria-label="할 일 추가" aria-expanded={false} data-todo-composer-trigger="true">
+        <Plus size={17} aria-hidden="true" />
+        <span>할 일 추가</span>
+        <span className="ml-auto text-xs text-ui-muted">클릭하여 입력</span>
+      </button>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="todo-composer-form" aria-label="Todo 빠른 추가">
+    <form onSubmit={handleSubmit} className={`todo-composer-form ${collapsible ? "todo-composer-form--inline" : ""}`}
+      aria-label="Todo 빠른 추가"
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && collapsible && !saving) {
+          event.preventDefault();
+          setExpanded(false);
+        }
+      }}>
       <div className="todo-composer-form__main">
         <div className="todo-composer-form__title">
           <input
@@ -133,9 +156,37 @@ export function TodoForm({
           <Plus size={16} aria-hidden="true" />{saving ? "저장 중..." : submitLabel}
         </button>
       </div>
+      {collapsible ? (
+        <div className="todo-composer-form__quick-fields" role="group" aria-label="빠른 일정 및 분류">
+          <label>
+            <span className="sr-only">실행 날짜</span>
+            <input type="date" className="field" aria-label="실행 날짜" value={date}
+              onChange={(event) => { setDate(event.target.value); setPlanningState("SCHEDULED"); }} disabled={saving || planningState !== "SCHEDULED"} />
+          </label>
+          <select className="field" aria-label="계획 유형" value={planningState === "SCHEDULED" ? "SCHEDULED" : planningState}
+            onChange={(event) => setPlanningState(event.target.value as TodoPlanningState)} disabled={saving}>
+            <option value="SCHEDULED">날짜 지정</option>
+            <option value="SOMEDAY">언젠가</option>
+            <option value="WAITING">대기</option>
+          </select>
+          <select className="field" aria-label="우선순위" value={priority}
+            onChange={(event) => setPriority(event.target.value as TodoPriority)} disabled={saving}>
+            <option value="MEDIUM">보통</option>
+            <option value="HIGH">높음</option>
+            <option value="LOW">낮음</option>
+          </select>
+          <select className="field" aria-label="프로젝트 선택" value={projectId}
+            onChange={(event) => setProjectId(event.target.value)} disabled={saving}>
+            <option value="">프로젝트 없음</option>
+            {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
+          </select>
+        </div>
+      ) : null}
       {saveError ? <p role="alert" className="mt-2 text-xs font-semibold text-danger">{saveError}</p> : null}
       {showSyntaxHint ? <p className="mt-2 text-[11px] leading-5 text-ui-muted">빠른 문법: 내일 · !high · @프로젝트 · +카테고리 · due:내일 · date:2026-08-20 · someday/waiting · 공백 이름은 @{"{"}프로젝트 이름{"}"} / +{"{"}카테고리 이름{"}"}</p> : null}
       <div className="todo-composer-form__footer">
+        {collapsible ? <button type="button" className="todo-composer-form__toggle"
+          onClick={() => setExpanded(false)} disabled={saving}>취소 <span className="text-ui-muted">(Esc)</span></button> : null}
         <button
           type="button"
           className="todo-composer-form__toggle"
