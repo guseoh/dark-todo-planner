@@ -44,6 +44,8 @@ export function AllTodosPage({
   const [workflowValue, setWorkflowValue] = useState<TodoWorkflowStatus>("TODO");
   const [priorityValue, setPriorityValue] = useState<TodoPriority>("MEDIUM");
   const filteredTodos = useMemo(() => filterTodos(filters), [filterTodos, filters]);
+  const unplannedCount = allTodos.filter((todo) => !todo.archived && todo.planningState === "INBOX").length;
+  const showingUnplanned = filters.planningState === "INBOX";
 
   const toggleSelectionMode = () => {
     if (deleting || updating) return;
@@ -121,6 +123,14 @@ export function AllTodosPage({
         }
       />
 
+      {unplannedCount > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-ui-divider py-2.5">
+          <p className="text-sm text-ui-secondary">기존 미계획 Todo <strong className="font-semibold text-ui-text">{unplannedCount}개</strong> · 일정을 지정하기 전까지 그대로 보관됩니다.</p>
+          <button type="button" className="btn-secondary min-h-9 text-xs" aria-pressed={showingUnplanned} onClick={() => setFilters((current) => ({
+            ...current, planningState: showingUnplanned ? "ALL" : "INBOX", status: "ALL", archived: "ACTIVE",
+          }))}>{showingUnplanned ? "전체 보기" : `미계획 ${unplannedCount}개 보기`}</button>
+        </div>
+      ) : null}
       <div className="sticky top-[60px] z-20 border-b border-ui-divider bg-ui-canvas py-2">
         <TodoFilter filters={filters} onChange={setFilters} categories={categories} projects={projects} />
       </div>

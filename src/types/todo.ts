@@ -79,6 +79,8 @@ export type TodoFilters = {
   priority: TodoPriorityFilter;
   categoryId: string;
   projectId: string;
+  /** Legacy persisted INBOX is presented only as 미계획 in the UI. */
+  planningState: "ALL" | TodoPlanningState;
   archived: "ACTIVE" | "ARCHIVED" | "ALL";
   duplicatesOnly: boolean;
   date: string;

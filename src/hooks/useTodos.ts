@@ -32,6 +32,7 @@ export const defaultFilters: TodoFilters = {
   priority: "ALL",
   categoryId: "",
   projectId: "",
+  planningState: "ALL",
   archived: "ACTIVE",
   duplicatesOnly: false,
   date: "",
@@ -400,6 +401,7 @@ export function useTodos() {
     if (filters.categoryId === "uncategorized") result = result.filter((todo) => !todo.categoryId);
     else if (filters.categoryId) result = result.filter((todo) => todo.categoryId === filters.categoryId);
     if (filters.duplicatesOnly) result = result.filter((todo) => duplicateTodoIds.has(todo.id));
+    if (filters.planningState && filters.planningState !== "ALL") result = result.filter((todo) => todo.planningState === filters.planningState);
     if (filters.date) result = result.filter((todo) => todoOccursOnDate(todo, filters.date));
     return [...result].sort((a, b) => {
       if (filters.sort === "OLDEST") return a.createdAt.localeCompare(b.createdAt);
