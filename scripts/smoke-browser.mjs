@@ -130,31 +130,58 @@ try {
   await themeControls.getByRole("button", { name: "다크" }).click();
   assert.equal(await page.locator("html").getAttribute("data-theme"), "dark");
 
-  // Unscheduled Todo can be scheduled from Inbox. A failed update must
-  // preserve it and keep the chosen date for a retry.
-  await nav.getByRole("button", { name: "받은함", exact: true }).click();
-  await page.getByRole("heading", { name: "받은함", exact: true }).waitFor();
-  const inboxTitle = `Capture E2E ${randomUUID().slice(0, 8)}`;
-  await page.getByRole("region", { name: "받은함 Todo 작성" }).locator('input[data-quick-todo-input="true"]').fill(inboxTitle);
-  await page.getByRole("button", { name: "받은함에 저장" }).click();
-  await page.getByRole("heading", { name: inboxTitle, exact: true }).waitFor();
-  const inboxCard = page.getByRole("article").filter({ has: page.getByRole("heading", { name: inboxTitle, exact: true }) });
-  const inboxDate = "2026-11-12";
-  await inboxCard.getByLabel(`${inboxTitle} 실행일`).fill(inboxDate);
-  let inboxSaveFailOnce = true;
+  // G3: a historical INBOX row remains stored unchanged and is reachable
+  // via All Todo, while no new Inbox UI or input shortcut can produce it.
+  assert.equal(await nav.getByRole("button", { name: "받은함", exact: true }).count(), 0);
+  assert.equal(await page.getByRole("button", { name: "전체 Todo", exact: true }).count(), 1);
+  const legacyTitle = `Legacy unplanned ${randomUUID().slice(0, 8)}`;
+  const legacyCreate = await page.evaluate(async (title) => {
+    const response = await fetch("/api/todos", {
+      method: "POST", credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title, date: "9999-12-31", planningState: "INBOX", priority: "MEDIUM" }),
+    });
+    return { status: response.status, body: await response.json() };
+  }, legacyTitle);
+  assert.ok(legacyCreate.status >= 200 && legacyCreate.status < 300,
+    `Legacy fixture must be inserted only in isolated D1: ${JSON.stringify(legacyCreate)}`);
+  await page.goto(new URL("/#/inbox", base).toString(), { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "전체 Todo", exact: true }).waitFor();
+  assert.equal(new URL(page.url()).hash, "#/all", "Old Inbox bookmarks must redirect to All Todo.");
+  const unplannedButton = page.getByRole("button", { name: /미계획 \d+개 보기/ });
+  await unplannedButton.click();
+  const legacyRow = page.locator(".todo-row").filter({ has: page.getByRole("heading", { name: legacyTitle, exact: true }) });
+  await legacyRow.waitFor();
+  await legacyRow.getByText("미계획", { exact: true }).waitFor();
+  assert.equal((await findServerTodo(legacyTitle))?.planningState, "INBOX");
+  await page.getByRole("button", { name: "고급 필터", exact: true }).click();
+  assert.equal(await page.getByRole("combobox", { name: "계획 상태 필터" }).inputValue(), "INBOX");
+  await legacyRow.getByRole("button", { name: `"${legacyTitle}" Todo 수정` }).click();
+  const legacyEdit = page.getByRole("dialog", { name: "Todo 수정" });
+  await legacyEdit.getByRole("combobox", { name: "보관 위치" }).waitFor();
+  assert.equal(await legacyEdit.getByRole("combobox", { name: "보관 위치" }).inputValue(), "INBOX");
+  await legacyEdit.getByRole("combobox", { name: "보관 위치" }).selectOption("SCHEDULED");
+  await legacyEdit.getByRole("textbox", { name: "제목" }).fill(legacyTitle);
+  await legacyEdit.getByRole("combobox", { name: "보관 위치" }).selectOption("SCHEDULED");
+  await legacyEdit.getByLabel("실행일").fill("2026-11-12");
+  let legacyUpdateFailure = true;
   await page.route("**/api/todos/*", async (route) => {
-    if (route.request().method() === "PUT" && inboxSaveFailOnce) {
-      inboxSaveFailOnce = false;
-      await route.fulfill({ status: 503, contentType: "application/json", body: '{"message":"inbox test failure"}' });
+    if (route.request().method() === "PUT" && legacyUpdateFailure) {
+      legacyUpdateFailure = false;
+      await route.fulfill({ status: 503, contentType: "application/json", body: '{"message":"isolated injected failure"}' });
     } else await route.continue();
   });
-  await inboxCard.getByRole("button", { name: "날짜 지정" }).click();
-  await page.getByRole("alert").filter({ hasText: "받은함에 그대로 남아 있습니다" }).waitFor();
-  assert.equal((await findServerTodo(inboxTitle))?.planningState, "INBOX");
-  assert.equal(await inboxCard.getByLabel(`${inboxTitle} 실행일`).inputValue(), inboxDate);
-  await inboxCard.getByRole("button", { name: "날짜 지정" }).click();
-  await page.getByRole("status").filter({ hasText: inboxTitle }).waitFor();
-  assert.equal((await findServerTodo(inboxTitle))?.date, inboxDate);
+  await legacyEdit.getByRole("button", { name: "저장", exact: true }).click();
+  await legacyEdit.getByRole("alert").waitFor();
+  assert.equal((await findServerTodo(legacyTitle))?.planningState, "INBOX",
+    "Failed schedule update must preserve the legacy planning state.");
+  await legacyEdit.getByRole("button", { name: "저장", exact: true }).click();
+  await page.waitForFunction(async (title) => {
+    const response = await fetch("/api/todos?archived=all&limit=100");
+    const body = await response.json();
+    return body.todos?.find((todo) => todo.title === title)?.planningState === "SCHEDULED";
+  }, legacyTitle);
+  assert.equal((await findServerTodo(legacyTitle))?.date, "2026-11-12");
   await page.unroute("**/api/todos/*");
 
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
