@@ -257,7 +257,7 @@ export function ScratchpadPage() {
     if (historyIndexRef.current >= historyRef.current.length - 1) return;
     historyIndexRef.current += 1;
     const next = historyRef.current[historyIndexRef.current];
-    setContent(next);
+    applyContent(next, false);
     restoreSelection(next.length);
   };
 
