@@ -147,15 +147,15 @@ export function AllTodosPage({
           </div>
 
           <details className="mt-3 rounded-md border border-danger/25 bg-danger/[0.025]">
-            <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-xs font-semibold text-red-200 hover:bg-danger/[0.06]">
+            <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-xs font-semibold text-danger hover:bg-danger/[0.06]">
               <Trash2 size={14} />위험 작업 · 여러 Todo를 휴지통으로 이동
             </summary>
             <div className="flex flex-wrap items-center gap-2 border-t border-danger/20 px-3 py-3">
               <p className="mr-auto text-xs text-ink-400">휴지통에서 복원할 수 있습니다. 실행 전에 대상 개수를 확인하세요.</p>
-              <button type="button" className="btn-secondary hover:border-danger/60 hover:text-red-100" onClick={() => void deleteIds(filteredTodos.map((todo) => todo.id), "현재 결과 Todo")} disabled={!filteredTodos.length || deleting || updating}>
+              <button type="button" className="btn-secondary hover:border-danger/60 hover:text-danger" onClick={() => void deleteIds(filteredTodos.map((todo) => todo.id), "현재 결과 Todo")} disabled={!filteredTodos.length || deleting || updating}>
                 현재 결과 {filteredTodos.length}개를 휴지통으로
               </button>
-              <button type="button" className="btn-secondary hover:border-danger/60 hover:text-red-100" onClick={() => void deleteIds(allTodos.map((todo) => todo.id), "전체 Todo")} disabled={!allTodos.length || deleting || updating}>
+              <button type="button" className="btn-secondary hover:border-danger/60 hover:text-danger" onClick={() => void deleteIds(allTodos.map((todo) => todo.id), "전체 Todo")} disabled={!allTodos.length || deleting || updating}>
                 전체 {allTodos.length}개를 휴지통으로
               </button>
             </div>
@@ -185,8 +185,8 @@ export function AllTodosPage({
             </div>
           </details>
 
-          {actionMessage ? <p className="mt-3 rounded-md border border-success/30 bg-success/[0.08] px-3 py-2 text-xs font-semibold text-emerald-100" role="status">{actionMessage}</p> : null}
-          {actionError ? <p className="mt-3 rounded-md border border-danger/40 bg-danger/[0.08] px-3 py-2 text-xs font-semibold text-red-100" role="alert">{actionError}</p> : null}
+          {actionMessage ? <p className="mt-3 rounded-md border border-success/30 bg-success/[0.08] px-3 py-2 text-xs font-semibold text-success" role="status">{actionMessage}</p> : null}
+          {actionError ? <p className="mt-3 rounded-md border border-danger/40 bg-danger/[0.08] px-3 py-2 text-xs font-semibold text-danger" role="alert">{actionError}</p> : null}
         </section>
       ) : null}
 

@@ -33,7 +33,7 @@ export function Header({ storageStatus = "server", onLogout, onQuickAdd, onSearc
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
           {storageStatus === "offline" ? (
-            <div className="hidden items-center gap-2 rounded-md border border-danger/40 bg-danger/10 px-2.5 py-1.5 text-xs font-semibold text-red-100 md:flex">
+            <div className="hidden items-center gap-2 rounded-md border border-danger/40 bg-danger/10 px-2.5 py-1.5 text-xs font-semibold text-danger md:flex">
               <AlertCircle size={14} />
               <span>서버 연결 오류</span>
             </div>

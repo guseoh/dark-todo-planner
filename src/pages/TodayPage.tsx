@@ -209,12 +209,12 @@ export function TodayPage({
           {focusedTodos.length ? (
             <section className="app-card space-y-2 border-warning/30 p-4" aria-labelledby="today-focus-title">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 id="today-focus-title" className="inline-flex items-center gap-2 text-sm font-bold text-ink-100"><Star size={15} className="text-amber-200" />오늘의 핵심 작업</h3>
+                <h3 id="today-focus-title" className="inline-flex items-center gap-2 text-sm font-bold text-ink-100"><Star size={15} className="text-warning" />오늘의 핵심 작업</h3>
                 <span className="text-xs text-ink-400">{focusedTodos.length} / 3개 선택</span>
               </div>
               {focusedTodos.map((todo) => (
                 <div key={todo.id} className="flex items-center gap-2">
-                  <button type="button" className="icon-btn h-9 w-9 shrink-0 text-amber-200" onClick={() => toggleFocus(todo.id)} title="핵심 작업에서 제외" aria-label={`${todo.title} 핵심 작업에서 제외`}><StarOff size={16} /></button>
+                  <button type="button" className="icon-btn h-9 w-9 shrink-0 text-warning" onClick={() => toggleFocus(todo.id)} title="핵심 작업에서 제외" aria-label={`${todo.title} 핵심 작업에서 제외`}><StarOff size={16} /></button>
                   <div className="min-w-0 flex-1">{renderTodo(todo)}</div>
                 </div>
               ))}
@@ -291,7 +291,7 @@ export function TodayPage({
                 {remainingTodos.length ? (
                   <div className="divide-y divide-ink-700/20">{remainingTodos.map((todo) => (
                     <div key={todo.id} className="flex items-center gap-2">
-                      <button type="button" className="icon-btn h-9 w-9 shrink-0 text-ink-400 hover:text-amber-200" onClick={() => toggleFocus(todo.id)} disabled={focusedTodos.length >= 3} title={focusedTodos.length >= 3 ? "핵심 작업은 최대 3개까지 지정할 수 있습니다." : "핵심 작업으로 고정"} aria-label={`${todo.title} 핵심 작업으로 고정`}><Star size={16} /></button>
+                      <button type="button" className="icon-btn h-9 w-9 shrink-0 text-ink-400 hover:text-warning" onClick={() => toggleFocus(todo.id)} disabled={focusedTodos.length >= 3} title={focusedTodos.length >= 3 ? "핵심 작업은 최대 3개까지 지정할 수 있습니다." : "핵심 작업으로 고정"} aria-label={`${todo.title} 핵심 작업으로 고정`}><Star size={16} /></button>
                       <div className="min-w-0 flex-1">{renderTodo(todo)}</div>
                     </div>
                   ))}</div>

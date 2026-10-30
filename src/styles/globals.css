@@ -28,6 +28,9 @@
   --success: #8fb9a3;
   --warning: #d9b47d;
   --danger: #d88d92;
+  --semantic-success: 143 185 163;
+  --semantic-warning: 217 180 125;
+  --semantic-danger: 216 141 146;
 
   --shadow-elevated: none;
 
@@ -99,6 +102,9 @@
   --success: #1B6844;
   --warning: #805000;
   --danger: #A22636;
+  --semantic-success: 27 104 68;
+  --semantic-warning: 128 80 0;
+  --semantic-danger: 162 38 54;
 
   --ink-950: 247 247 248;
   --ink-900: 243 243 244;

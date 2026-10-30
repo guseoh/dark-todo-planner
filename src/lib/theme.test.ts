@@ -41,6 +41,8 @@ describe("light/dark neutral design tokens", () => {
     expect(tailwind).toContain('themedShade("ink-950")');
     expect(tailwind).toContain('themedShade("accent-500")');
     expect(tailwind).toContain('"var(--ui-canvas)"');
+    expect(tailwind).toContain('themedShade("semantic-danger")');
+    expect(css).toContain("--semantic-danger: 162 38 54;");
     expect(css).not.toContain("#2563eb");
     expect(css).toContain("@apply rounded-none border-0 border-b");
   });

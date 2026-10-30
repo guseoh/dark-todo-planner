@@ -46,9 +46,9 @@ export default {
           action: "var(--ui-action-bg)",
           "action-text": "var(--ui-action-text)",
         },
-        success: "var(--success)",
-        warning: "var(--warning)",
-        danger: "var(--danger)",
+        success: themedShade("semantic-success"),
+        warning: themedShade("semantic-warning"),
+        danger: themedShade("semantic-danger"),
       },
       boxShadow: {
         soft: "none",
