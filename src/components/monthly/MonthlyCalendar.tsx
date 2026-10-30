@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import type { ReactNode } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -45,7 +46,7 @@ const eventPrefix: Record<CalendarEvent["kind"], string> = {
 };
 
 
-function CalendarDropCell({ dateKey, disabled, children }: { dateKey: string; disabled: boolean; children: React.ReactNode }) {
+function CalendarDropCell({ dateKey, disabled, children }: { dateKey: string; disabled: boolean; children: ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: dateKey, disabled, data: { dateKey } });
   return (
     <div ref={setNodeRef} data-calendar-date={dateKey} className={`min-w-0 ${isOver ? "rounded-lg ring-2 ring-accent-500/80" : ""}`}>
