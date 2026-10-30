@@ -32,10 +32,10 @@ type MonthlyCalendarProps = {
 };
 
 const eventTone: Record<CalendarEvent["kind"], string> = {
-  todo: "border-l-ink-300 bg-ink-800/45 text-ink-200",
-  deadline: "border-l-warning bg-warning/[0.06] text-ink-200",
-  milestone: "border-l-ink-600 bg-ink-850/75 text-ink-300",
-  project: "border-l-ink-500 bg-ink-850 text-ink-300",
+  todo: "border-l-ink-400 bg-ink-850/65 text-ink-200",
+  deadline: "border-l-warning bg-warning/[0.10] text-ink-200",
+  milestone: "border-l-info bg-info/[0.09] text-ink-200",
+  project: "border-l-info bg-info/[0.09] text-ink-200",
 };
 const eventPrefix: Record<CalendarEvent["kind"], string> = {
   todo: "",
@@ -86,6 +86,13 @@ function CalendarEventChip({ event, onClick, draggingDisabled, hiddenClass }: {
   const draggable = event.kind === "todo" && Boolean(event.relatedTodoId) && !draggingDisabled;
   const [dragging, setDragging] = useState(false);
   const prefix = event.kind === "todo" && event.dueOnDate ? "마감 · " : eventPrefix[event.kind];
+  const tone = event.completed
+    ? "border-l-success bg-success/[0.10] text-success"
+    : event.kind === "deadline" && event.date < toDateKey(new Date())
+      ? "border-l-danger bg-danger/[0.10] text-danger"
+      : event.kind === "todo" && event.dueOnDate
+        ? "border-l-warning bg-warning/[0.10] text-ink-200"
+        : eventTone[event.kind];
   return (
     <button
       type="button"
@@ -101,7 +108,7 @@ function CalendarEventChip({ event, onClick, draggingDisabled, hiddenClass }: {
       data-calendar-event={event.id}
       title={`${prefix}${event.title}${event.projectName ? ` · ${event.projectName}` : ""}`}
       aria-label={event.title}
-      className={`pointer-events-auto relative block min-h-5 w-full min-w-0 truncate rounded-[2px] border-l-2 px-1 py-0.5 text-left text-[10px] leading-4 transition-colors hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${eventTone[event.kind]} ${event.completed ? "opacity-50 line-through" : ""} ${dragging ? "cursor-grabbing opacity-60" : draggable ? "cursor-grab" : "cursor-pointer"} ${hiddenClass}`}
+      className={`pointer-events-auto relative block min-h-5 w-full min-w-0 truncate rounded-[2px] border-l-2 px-1 py-0.5 text-left text-[10px] leading-4 transition-colors hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${tone} ${event.completed ? "line-through" : ""} ${dragging ? "cursor-grabbing opacity-60" : draggable ? "cursor-grab" : "cursor-pointer"} ${hiddenClass}`}
     >
       {prefix}{event.title}
     </button>
@@ -168,9 +175,10 @@ export function MonthlyCalendar({
           return (
             <CalendarDropCell key={dateKey} dateKey={dateKey} disabled={draggingDisabled} onMoveTodo={onMoveTodo}>
             <article
-              className={`group relative flex min-h-[6.5rem] min-w-0 flex-col overflow-hidden border-b border-r p-1.5 transition-colors sm:min-h-[9rem] sm:p-2 ${
+              data-selected={selected}
+              className={`calendar-day group relative flex min-h-[6.5rem] min-w-0 flex-col overflow-hidden border-b border-r p-1.5 transition-colors sm:min-h-[9rem] sm:p-2 ${
                 selected
-                  ? "border-ink-600/85 bg-ink-800/55 ring-1 ring-inset ring-ink-500/35"
+                  ? "border-ink-600/85 bg-ui-selected ring-1 ring-inset ring-ink-500/35"
                   : "border-ink-700/45 bg-transparent hover:border-ink-600/70 hover:bg-ink-850/60"
               } ${!inMonth ? "opacity-60" : ""} ${today && !selected ? "ring-1 ring-inset ring-ink-400/45" : ""}`}
             >
@@ -183,7 +191,7 @@ export function MonthlyCalendar({
                   }`}>{formatKoreanDate(day, "d")}</span>
                   <div className="pointer-events-auto flex shrink-0 items-center gap-0.5">
                     {events.length > 0 ? <span className="hidden truncate text-[10px] text-ink-400 sm:inline">{activeCount ? `${activeCount} 남음` : `${events.length} 완료`}</span> : null}
-                    <button type="button" className="inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-500 hover:bg-ink-800 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500" onClick={() => onQuickAdd(dateKey)} aria-label={`${formattedDate} Todo 추가`} title="이 날짜에 Todo 추가">
+                    <button type="button" className={`inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-500 transition-opacity hover:bg-ink-800 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${!selected ? "calendar-day-action--quiet" : ""}`} onClick={() => onQuickAdd(dateKey)} aria-label={`${formattedDate} Todo 추가`} title="이 날짜에 Todo 추가">
                       <Plus size={14} />
                     </button>
                   </div>
@@ -219,7 +227,7 @@ export function MonthlyCalendar({
                   <span className="hidden truncate text-[10px] text-ink-500 sm:block">{dayGoals.length ? `목표 ${dayGoals.length}` : ""}</span>
                   <button type="button" onClick={() => onCycleDayStatus(dateKey)} aria-label={statusActionLabel} title="일일 수행 상태 O → X → 미설정"
                     className={`pointer-events-auto ml-auto inline-flex min-h-6 min-w-6 items-center justify-center rounded border px-1 text-[10px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
-                      dayStatus === "O" ? "border-success/35 text-success" : dayStatus === "X" ? "border-danger/35 text-danger" : "border-transparent text-ink-600 hover:border-ink-700 hover:text-ink-300"
+                      dayStatus === "O" ? "border-success/55 bg-success/[0.10] text-success" : dayStatus === "X" ? "border-danger/55 bg-danger/[0.10] text-danger" : "calendar-day-action--quiet border-transparent text-ink-600 hover:border-ink-700 hover:text-ink-300"
                     }`}>
                     {dayStatus ?? "–"}
                   </button>

@@ -33,6 +33,7 @@ describe("light/dark neutral design tokens", () => {
   it("shares RGB compatibility tokens and semantic roles across themes", () => {
     expect(css).toContain(':root[data-theme="light"]');
     expect(css).toContain("--ink-950: 16 16 17;");
+    expect(css).toContain("--surface-2: #252529;");
     expect(css).toContain("--ink-950: 247 247 248;");
     expect(css).toContain("--accent-500: 212 212 216;");
     expect(css).toContain("--accent-500: 38 38 42;");
@@ -42,9 +43,11 @@ describe("light/dark neutral design tokens", () => {
     expect(tailwind).toContain('themedShade("accent-500")');
     expect(tailwind).toContain('"var(--ui-canvas)"');
     expect(tailwind).toContain('themedShade("semantic-danger")');
-    expect(css).toContain("--semantic-danger: 162 38 54;");
-    expect(css).toContain("--success: #bcbcc1;");
-    expect(css).toContain("--success: #505056;");
+    expect(css).toContain("--semantic-danger: 190 18 60;");
+    expect(css).toContain("--semantic-info: 147 180 255;");
+    expect(tailwind).toContain('themedShade("semantic-info")');
+    expect(css).toContain("--success: #4ade80;");
+    expect(css).toContain("--success: #15803d;");
     expect(css).not.toContain("#8fb9a3");
     expect(css).toContain(".today-header__status");
     expect(css).toContain(".today-page.page-shell");
@@ -62,8 +65,14 @@ describe("light/dark neutral design tokens", () => {
     expect(contrast("#66666C", "#FFFFFF")).toBeGreaterThanOrEqual(4.5);
     expect(contrast("#101011", "#D4D4D8")).toBeGreaterThanOrEqual(4.5);
     expect(contrast("#F7F7F8", "#26262A")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#BCBCC1", "#101011")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#505056", "#F7F7F8")).toBeGreaterThanOrEqual(4.5);
+    expect(contrast("#4ADE80", "#101011")).toBeGreaterThanOrEqual(4.5);
+    expect(contrast("#FB7185", "#101011")).toBeGreaterThanOrEqual(4.5);
+    expect(contrast("#FBBF24", "#101011")).toBeGreaterThanOrEqual(4.5);
+    expect(contrast("#93B4FF", "#101011")).toBeGreaterThanOrEqual(4.5);
+    expect(contrast("#15803D", "#F7F7F8")).toBeGreaterThanOrEqual(4.5);
+    expect(contrast("#BE123C", "#F7F7F8")).toBeGreaterThanOrEqual(4.5);
+    expect(contrast("#92400E", "#F7F7F8")).toBeGreaterThanOrEqual(4.5);
+    expect(contrast("#1D4ED8", "#F7F7F8")).toBeGreaterThanOrEqual(4.5);
   });
 
   it("provides visible focus, OS theme support, and reduced motion", () => {

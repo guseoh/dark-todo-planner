@@ -89,7 +89,7 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
     const active = activeView === item.id;
     return (
       <button key={item.id} type="button" onClick={() => onChangeView(item.id)} aria-label={item.label} aria-current={active ? "page" : undefined} title={collapsed && !hoverExpanded ? item.label : undefined}
-        className={`relative flex min-h-10 w-full items-center rounded-[4px] text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${active ? "bg-transparent font-semibold text-ui-text" : "text-ui-secondary hover:bg-ui-hover hover:text-ui-text"} ${showExpandedContent ? "gap-3 px-3 text-left" : "justify-center px-2"}`}>
+        className={`relative flex min-h-10 w-full items-center rounded-[4px] text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${active ? "bg-ui-selected font-semibold text-ui-text" : "text-ui-secondary hover:bg-ui-hover hover:text-ui-text"} ${showExpandedContent ? "gap-3 px-3 text-left" : "justify-center px-2"}`}>
         {active ? <span aria-hidden="true" className="absolute bottom-2 left-0 top-2 w-0.5 bg-ui-focus" /> : null}
         <Icon size={17} className="shrink-0" />
         {showExpandedContent ? <span className="truncate">{item.label}</span> : null}
@@ -166,7 +166,7 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
               const Icon = item.icon;
               const active = activeView === item.id;
               return <button key={item.id} type="button" onClick={() => { setMobileMenuOpen(false); onChangeView(item.id); }} aria-current={active ? "page" : undefined}
-                className={`relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-[4px] px-1 text-xs font-medium transition ${active ? "bg-transparent text-ui-text" : "text-ui-secondary hover:bg-ui-hover hover:text-ui-text"}`}>
+                className={`relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-[4px] px-1 text-xs font-medium transition ${active ? "bg-ui-selected text-ui-text" : "text-ui-secondary hover:bg-ui-hover hover:text-ui-text"}`}>
                 {active ? <span aria-hidden="true" className="absolute inset-x-3 top-0 h-0.5 bg-ui-focus" /> : null}<Icon size={18} /><span className="max-w-full truncate">{item.label}</span>
               </button>;
             })}

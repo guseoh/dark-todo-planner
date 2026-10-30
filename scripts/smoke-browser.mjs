@@ -80,7 +80,7 @@ try {
   assert.equal(visualSystem.sectionRadius, "0px", "Tasks must not become a rounded card.");
   assert.equal(visualSystem.sectionBackground, "rgba(0, 0, 0, 0)", "Tasks must stay on the workspace canvas.");
   assert.equal(visualSystem.sectionBorderTop, "0px", "Task sections must not be enclosed.");
-  assert.equal(visualSystem.composerBackground, "rgb(22, 22, 23)", "Quick entry retains a quiet inset.");
+  assert.equal(visualSystem.composerBackground, "rgb(27, 27, 30)", "Quick entry retains a quiet inset.");
   assert.ok(visualSystem.headerHeight <= 90, "Today heading/status must be compact.");
   assert.ok(visualSystem.firstTaskOffset <= 140, "Task entry should appear close to the header.");
   assert.equal(visualSystem.oldDashboardCount, 0, "Old KPI grid must not return.");
@@ -304,6 +304,15 @@ try {
   assert.equal(todoVisual.divider, "1px", "Todo rows must have a real separator.");
   assert.equal(todoVisual.todayVariant, true, "Today Todo rows must use the dedicated editorial presentation.");
   assert.equal(todoVisual.leadingAction, true, "Focus action must align inside the Todo row.");
+  // G6: reviewing today's tasks must never reschedule them by default.
+  const dayCloseBefore = (await findServerTodo(title))?.date;
+  await page.getByRole("button", { name: /오늘 정리/ }).click();
+  const dayClose = page.getByRole("dialog", { name: "오늘 정리" });
+  const closeDecision = dayClose.getByRole("combobox", { name: new RegExp(title + ".*오늘 정리 처리") });
+  assert.equal(await closeDecision.inputValue(), "KEEP");
+  assert.equal(await dayClose.getByRole("button", { name: /선택한 .*개 반영/ }).isDisabled(), true);
+  await dayClose.getByRole("button", { name: "취소" }).click();
+  assert.equal((await findServerTodo(title))?.date, dayCloseBefore, "Cancelling today review must not move the Todo.");
   // The month dashboard must expose real Todo titles and allow filtering and
   // opening/closing the detail pane, not just numeric day summaries.
   await nav.getByRole("button", { name: "캘린더", exact: true }).click();

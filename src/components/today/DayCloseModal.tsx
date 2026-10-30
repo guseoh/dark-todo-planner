@@ -22,7 +22,7 @@ export function DayCloseModal({ todos, onClose, onApply }: DayCloseModalProps) {
   useEffect(() => {
     setDecisions((current) => {
       const next: Record<string, DayCloseDecision> = {};
-      for (const todo of todos) next[todo.id] = current[todo.id] || "TOMORROW";
+      for (const todo of todos) next[todo.id] = current[todo.id] || "KEEP";
       return next;
     });
   }, [todos]);
@@ -46,11 +46,12 @@ export function DayCloseModal({ todos, onClose, onApply }: DayCloseModalProps) {
   const tomorrowCount = Object.values(decisions).filter((decision) => decision === "TOMORROW").length;
   const somedayCount = Object.values(decisions).filter((decision) => decision === "SOMEDAY").length;
   const keepCount = Object.values(decisions).filter((decision) => decision === "KEEP").length;
+  const changesCount = tomorrowCount + somedayCount;
 
   return (
     <Modal
-      title="하루 마감"
-      description={`오늘 남은 Todo를 검토합니다. 내일은 ${formatKoreanDate(tomorrow, "M월 d일 EEEE")}입니다.`}
+      title="오늘 정리"
+      description={`미완료 Todo ${todos.length}개를 검토합니다. 기본값은 오늘 유지이며, 명시적으로 선택한 항목만 이동합니다. 내일은 ${formatKoreanDate(tomorrow, "M월 d일 EEEE")}입니다.`}
       onClose={saving ? () => undefined : onClose}
       size="lg"
     >
@@ -79,10 +80,10 @@ export function DayCloseModal({ todos, onClose, onApply }: DayCloseModalProps) {
               </div>
               <select
                 className="field min-h-9 shrink-0 py-1.5 text-xs sm:w-40"
-                value={decisions[todo.id] || "TOMORROW"}
+                value={decisions[todo.id] || "KEEP"}
                 onChange={(event) => setDecisions((current) => ({ ...current, [todo.id]: event.target.value as DayCloseDecision }))}
                 disabled={saving}
-                aria-label={`“${todo.title}” 하루 마감 처리`}
+                aria-label={`“${todo.title}” 오늘 정리 처리`}
               >
                 <option value="TOMORROW">내일로 이동</option>
                 <option value="SOMEDAY">Someday</option>
@@ -96,7 +97,7 @@ export function DayCloseModal({ todos, onClose, onApply }: DayCloseModalProps) {
           <p className="text-xs text-ink-500">내일 {tomorrowCount} · Someday {somedayCount} · 유지 {keepCount}</p>
           <div className="flex justify-end gap-2">
             <button type="button" className="btn-secondary" disabled={saving} onClick={onClose}>취소</button>
-            <button type="button" className="btn-primary" disabled={saving || !todos.length} onClick={() => void apply()}>{saving ? "반영 중..." : "하루 마감 적용"}</button>
+            <button type="button" className="btn-primary" disabled={saving || !changesCount} onClick={() => void apply()}>{saving ? "반영 중..." : `선택한 ${changesCount}개 반영`}</button>
           </div>
         </div>
 

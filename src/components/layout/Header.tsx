@@ -1,4 +1,4 @@
-import { AlertCircle, CalendarCheck2, Github, LogOut, Plus, Search } from "lucide-react";
+import { AlertCircle, CalendarCheck2, Github, LogOut, Plus, Search, UserRound } from "lucide-react";
 
 const REPOSITORY_URL = "https://github.com/guseoh/dark-todo-planner";
 
@@ -50,10 +50,14 @@ export function Header({ storageStatus = "server", onLogout, onQuickAdd, onSearc
               <span className="hidden sm:inline">빠른 추가</span>
             </button>
           ) : null}
-          <button type="button" onClick={() => void onLogout()} className="btn-secondary border-transparent px-2.5" title="로그아웃">
-            <LogOut size={15} />
-            <span className="hidden xl:inline">로그아웃</span>
-          </button>
+          <details className="relative">
+            <summary className="icon-btn h-9 w-9 list-none" aria-label="계정 메뉴" title="계정 메뉴"><UserRound size={17} /></summary>
+            <div className="absolute right-0 top-full z-50 mt-2 min-w-40 rounded-md border border-ui-divider bg-ui-elevated p-1.5 shadow-lg">
+              <button type="button" onClick={() => void onLogout()} className="flex min-h-10 w-full items-center gap-2 rounded px-3 text-left text-sm text-ui-secondary hover:bg-ui-hover hover:text-ui-text">
+                <LogOut size={15} />로그아웃
+              </button>
+            </div>
+          </details>
         </div>
       </div>
     </header>
