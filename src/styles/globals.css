@@ -328,7 +328,7 @@ button:disabled {
     border-left: 2px solid var(--accent);
   }
   .todo-row--today { padding-top: 0.65rem; padding-bottom: 0.65rem; }
-  .todo-row--today h4 { font-size: 0.94rem; line-height: 1.45; letter-spacing: -0.01em; }
+  .todo-row--today h4 { font-size: 1rem; line-height: 1.5; letter-spacing: -0.01em; }
   .todo-row--today .text-xs.text-ui-secondary { font-size: 0.73rem; line-height: 1.5; }
   .today-empty-state {
     padding: 1.25rem 0.25rem;
