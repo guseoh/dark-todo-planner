@@ -34,7 +34,7 @@ function readSavedViews(): SavedTodoView[] {
 }
 
 const filterButtonClassName =
-  "inline-flex h-8 items-center justify-center whitespace-nowrap rounded-md border px-2.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/35";
+  "inline-flex min-h-9 items-center justify-center whitespace-nowrap rounded-md border px-2.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/35";
 
 export function TodoFilterBar({ filters, onChange, categories = [], projects = [] }: TodoFilterBarProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -82,19 +82,19 @@ export function TodoFilterBar({ filters, onChange, categories = [], projects = [
 
   const buttonTone = (active: boolean) =>
     active
-      ? "border-accent-500 bg-accent-500 text-white"
+      ? "border-accent-500 bg-accent-500 text-ink-950"
       : "border-ink-700/70 bg-ink-950/50 text-ink-400 hover:border-accent-500/55 hover:text-ink-100";
 
   return (
-    <div className="app-card p-3">
-      <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
+    <div className="rounded-lg bg-ink-900/70 p-2.5 sm:p-3">
+      <div className="flex flex-col gap-2 2xl:flex-row 2xl:items-center">
         <div className="min-w-0 flex-1">
           <TodoSearchInput value={filters.query} onChange={(query) => changeFilters({ ...filters, query })} />
         </div>
 
         <div className="flex flex-wrap gap-1.5" aria-label="완료 상태 필터">
           {statusFilters.map((filter) => (
-            <button key={filter.value} type="button" onClick={() => changeFilters({ ...filters, status: filter.value })} className={`${filterButtonClassName} ${buttonTone(filters.status === filter.value)}`}>
+            <button key={filter.value} type="button" onClick={() => changeFilters({ ...filters, status: filter.value })} aria-pressed={filters.status === filter.value} className={`${filterButtonClassName} ${buttonTone(filters.status === filter.value)}`}>
               {filter.label}
             </button>
           ))}
@@ -102,7 +102,7 @@ export function TodoFilterBar({ filters, onChange, categories = [], projects = [
 
         <div className="flex flex-wrap gap-1.5" aria-label="우선순위 필터">
           {priorityFilters.map((filter) => (
-            <button key={filter.value} type="button" onClick={() => changeFilters({ ...filters, priority: filter.value })} className={`${filterButtonClassName} ${buttonTone(filters.priority === filter.value)}`}>
+            <button key={filter.value} type="button" onClick={() => changeFilters({ ...filters, priority: filter.value })} aria-pressed={filters.priority === filter.value} className={`${filterButtonClassName} ${buttonTone(filters.priority === filter.value)}`}>
               {filter.label}
             </button>
           ))}
