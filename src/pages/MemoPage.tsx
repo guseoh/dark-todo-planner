@@ -1,8 +1,9 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { FolderKanban, Link2, ListPlus, Pencil, Pin, PinOff, Plus, Save, Search, Trash2, X } from "lucide-react";
 import { EmptyState } from "../components/common/EmptyState";
 import { PageHeader } from "../components/common/PageHeader";
 import { Modal } from "../components/common/Modal";
+import { Button } from "../components/ui/Button";
 import { MarkdownEditor } from "../components/editor/MarkdownEditor";
 import { MarkdownPreview } from "../components/editor/MarkdownPreview";
 import { formatKoreanDate, todayKey } from "../lib/date";
@@ -10,21 +11,23 @@ import type { Memo, MemoInput, MemoLinksInput } from "../types/memo";
 import type { Project } from "../types/project";
 import type { Todo, TodoInput } from "../types/todo";
 
+/* Keep stored legacy colors intact. All newly chosen colors are selectable. */
 const memoColors = [
-  { label: "검정", value: "#202023", className: "" },
-  { label: "진회색", value: "#303034", className: "" },
-  { label: "회색", value: "#47474c", className: "" },
-];
-
+  { label: "중립", value: "#64748b" },
+  { label: "파랑", value: "#3b82f6" },
+  { label: "보라", value: "#8b5cf6" },
+  { label: "초록", value: "#10b981" },
+  { label: "노랑", value: "#f59e0b" },
+  { label: "분홍", value: "#ec4899" },
+  { label: "빨강", value: "#ef4444" },
+] as const;
 const DRAFT_PREFIX = "dark-todo-planner:memo-draft:";
-// Preserve legacy memo records and browser drafts while showing the new neutral palette.
-const legacyMemoColorMap: Record<string, string> = {
-  "#1e293b": "#25292d",
-  "#3730a3": "#3f594b",
-};
-const resolveMemoColor = (color?: string) =>
-  memoColors.find((item) => item.value === color)?.value || (color && legacyMemoColorMap[color]) || memoColors[0].value;
-const colorClass = (_color?: string) => "border-ink-700/40 bg-transparent";
+const safeMemoColor = (color?: string | null) =>
+  typeof color === "string" && /^#[0-9a-fA-F]{6}$/.test(color) ? color : memoColors[0].value;
+const memoAccentStyle = (color?: string | null): CSSProperties =>
+  ({ "--memo-accent": safeMemoColor(color) }) as CSSProperties;
+// Existing unknown but valid colors are not normalized or silently replaced when editing.
+const resolveMemoColor = (color?: string | null) => safeMemoColor(color);
 
 type MemoDraft = { title: string; content: string; color: string; pinned: boolean; todoIds?: string[]; projectIds?: string[]; createdMemoId?: string; savedAt: number };
 
@@ -161,7 +164,21 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
     <form onSubmit={submit} className="space-y-3">
       <label className="block space-y-1 text-xs font-semibold text-ink-400">제목<input className="field text-sm font-semibold" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="메모 제목" autoFocus /></label>
       <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-        <label className="block space-y-1 text-xs font-semibold text-ink-400">색상<select className="field" value={color} onChange={(event) => setColor(event.target.value)} aria-label="메모 색상">{memoColors.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+        <fieldset className="min-w-0 space-y-1.5">
+          <legend className="text-xs font-semibold text-ink-400">메모 색상</legend>
+          <div role="group" aria-label="메모 색상 선택" className="memo-color-picker flex min-h-10 flex-wrap items-center gap-2">
+            {memoColors.map((item) => (
+              <button key={item.value} type="button" aria-label={item.label}
+                aria-pressed={color.toLowerCase() === item.value.toLowerCase()}
+                title={item.label} onClick={() => setColor(item.value)}
+                className="memo-color-swatch" style={{ backgroundColor: item.value }} />
+            ))}
+            {!memoColors.some((item) => item.value.toLowerCase() === color.toLowerCase()) ? (
+              <button type="button" className="memo-color-swatch" style={{ backgroundColor: safeMemoColor(color) }}
+                aria-label="기존 메모 색상" aria-pressed={true} title="기존 메모 색상 유지" />
+            ) : null}
+          </div>
+        </fieldset>
         <label className="flex min-h-9 items-center gap-2 px-2 text-xs font-semibold text-ink-300"><input type="checkbox" checked={pinned} onChange={(event) => setPinned(event.target.checked)} className="h-4 w-4 accent-accent-500" />고정</label>
       </div>
 
@@ -239,18 +256,18 @@ function MemoCard({ memo, onDelete, onTogglePin, onEdit, onCreateTodo, onCreateC
   const displayTitle = memoDisplayTitle(memo);
   const checklistTitles = uncheckedChecklistTitles(memo.content);
   return (
-    <article className={`group border-b border-ui-divider px-1 py-4 transition-colors hover:bg-ui-hover ${colorClass(memo.color)}`}>
+    <article className="memo-note group min-w-0 border-b border-ui-divider px-3 py-4 transition-colors" style={memoAccentStyle(memo.color)}>
       <div className="flex flex-col gap-2.5">
         <div className="flex items-start justify-between gap-2">
           <button type="button" className="min-w-0 flex-1 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/35" onClick={() => onEdit(memo)} aria-label={`${displayTitle} 메모 수정`}>
-            <div className="flex min-w-0 items-center gap-1.5">{memo.pinned ? <Pin size={13} className="shrink-0 text-accent-300" /> : null}<h3 className="line-clamp-1 text-[15px] font-semibold leading-6 text-ui-text" title={displayTitle}>{displayTitle}</h3></div>
+            <div className="flex min-w-0 items-center gap-1.5">{memo.pinned ? <Pin size={13} className="shrink-0 text-accent-300" /> : null}<h3 className="memo-note__title line-clamp-1 text-[15px] font-semibold leading-6 text-ui-text" title={displayTitle}>{displayTitle}</h3></div>
             <p className="mt-0.5 text-xs text-ui-muted">{formatKoreanDate(memo.updatedAt, "yyyy.MM.dd 수정")}</p>
           </button>
           <div className="flex shrink-0 gap-1 opacity-80 transition sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
             <button type="button" className="icon-btn h-8 w-8" onClick={(event) => { event.stopPropagation(); void onCreateTodo(memo); }} aria-label={`${displayTitle} 메모를 Todo로 만들기`} title="Todo로 만들기"><ListPlus size={13} /></button>
             <button type="button" className="icon-btn h-8 w-8" onClick={(event) => { event.stopPropagation(); void onTogglePin(memo.id); }} aria-label={memo.pinned ? "고정 해제" : "메모 고정"} title={memo.pinned ? "고정 해제" : "메모 고정"}>{memo.pinned ? <PinOff size={13} /> : <Pin size={13} />}</button>
             <button type="button" className="icon-btn h-8 w-8" onClick={(event) => { event.stopPropagation(); onEdit(memo); }} aria-label="메모 수정" title="수정"><Pencil size={13} /></button>
-            <button type="button" className="icon-btn h-8 w-8 hover:border-danger hover:text-danger" onClick={(event) => { event.stopPropagation(); if (window.confirm("메모를 삭제할까요? 삭제 후 6초 동안 실행 취소할 수 있습니다.")) void onDelete(memo.id); }} aria-label="메모 삭제" title="삭제"><Trash2 size={13} /></button>
+            <button type="button" className="icon-btn h-8 w-8 hover:bg-danger/10 hover:text-danger" onClick={(event) => { event.stopPropagation(); if (window.confirm("메모를 삭제할까요? 삭제 후 6초 동안 실행 취소할 수 있습니다.")) void onDelete(memo.id); }} aria-label="메모 삭제" title="삭제"><Trash2 size={13} /></button>
           </div>
         </div>
         <div className="-m-1 cursor-pointer rounded-md p-1" onClick={(event) => { if (event.target instanceof Element && event.target.closest("a")) return; onEdit(memo); }} title="메모 수정"><MarkdownPreview className="line-clamp-3 max-w-[76ch] text-[13px] leading-6 text-ui-secondary" value={memo.content} /></div>
@@ -332,10 +349,10 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
   const renderCard = (memo: Memo) => <MemoCard key={memo.id} memo={memo} onDelete={onDelete} onTogglePin={onTogglePin} onEdit={setEditingMemo} onCreateTodo={createTodoFromMemo} onCreateChecklistTodos={createChecklistTodos} />;
 
   return (
-    <div className="page-shell">
+    <div className="page-shell memo-page">
       <PageHeader title="메모" description="아이디어와 작업 맥락을 기록하고 관련 Todo·프로젝트를 연결하세요."
         meta={`전체 ${memos.length}개`}
-        actions={<button type="button" className="btn-primary" onClick={() => setCreating(true)}><Plus size={15} />새 메모</button>}
+        actions={<Button variant="primary" onClick={() => setCreating(true)}><Plus size={16} aria-hidden="true" />새 메모</Button>}
       />
       <div className="page-toolbar">
         <label className="relative min-w-0 flex-1 sm:max-w-md">
@@ -358,9 +375,9 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
       {conversionMessage ? <div className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-xs font-semibold text-success" role="status">{conversionMessage}</div> : null}
 
       {filteredMemos.length ? (
-        <div className="max-w-[920px] space-y-6">
-          {pinnedMemos.length ? <section className="space-y-2"><div className="flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">고정 메모</h3><span className="text-[10px] text-ink-600">{pinnedMemos.length}개</span></div><div className="divide-y divide-ink-700/20">{pinnedMemos.map(renderCard)}</div></section> : null}
-          {normalMemos.length ? <section className="space-y-2"><div className="flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">일반 메모</h3><span className="text-[10px] text-ink-600">{normalMemos.length}개</span></div><div className="divide-y divide-ink-700/20">{normalMemos.map(renderCard)}</div></section> : null}
+        <div className="memo-collections space-y-7">
+          {pinnedMemos.length ? <section className="space-y-2"><div className="flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">고정 메모</h3><span className="text-[10px] text-ink-600">{pinnedMemos.length}개</span></div><div className="memo-note-grid">{pinnedMemos.map(renderCard)}</div></section> : null}
+          {normalMemos.length ? <section className="space-y-2"><div className="flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">일반 메모</h3><span className="text-[10px] text-ink-600">{normalMemos.length}개</span></div><div className="memo-note-grid">{normalMemos.map(renderCard)}</div></section> : null}
         </div>
       ) : memos.length ? <EmptyState title="검색 결과가 없습니다." description="검색어를 변경하거나 전체 필터를 선택해보세요." /> : <EmptyState title="아직 작성한 메모가 없습니다." description="새 메모에서 작업 중 떠오른 생각을 가볍게 남겨보세요." />}
 
