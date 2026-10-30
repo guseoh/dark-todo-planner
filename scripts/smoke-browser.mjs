@@ -581,10 +581,25 @@ try {
   });
   assert.ok(pendingScratchMarkdown.includes("Scratchpad E2E") && pendingScratchMarkdown.includes("두 번째 줄"),
     "Markdown draft must survive API failure without dropping Korean content.");
-  await page.unroute("**/api/scratchpad");
+  // Hold the write-failure injection through the reload to prevent a
+  // pending debounce/request from accidentally succeeding during navigation.
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "초안 복원" }).waitFor();
-  await page.getByRole("button", { name: "초안 복원" }).click();
+  await page.getByRole("heading", { name: "낙서장", exact: true }).waitFor();
+  const recover = page.getByRole("button", { name: "초안 복원" });
+  if (!await recover.isVisible()) {
+    console.log("G4 recovery diagnostics:", JSON.stringify(await page.evaluate(async () => {
+      const response = await fetch("/api/scratchpad", { credentials: "same-origin" });
+      return {
+        storedDraft: localStorage.getItem("dark-todo-planner:scratchpad-recovery"),
+        server: (await response.json()).scratchpad?.content,
+        currentEditor: document.querySelector('[aria-label="낙서장 편집기"]')?.textContent,
+        recoveryStatus: document.querySelector('[role="status"]')?.textContent,
+      };
+    })));
+  }
+  await recover.waitFor();
+  await recover.click();
+  await page.unroute("**/api/scratchpad");
   assert.ok((await scratchEditor.innerText()).includes("두 번째 줄"), "Recovered rich document must render Korean text.");
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("dark-todo-planner:scratchpad-recovery") || "{}").content), pendingScratchMarkdown);
   let serverScratch = "";
