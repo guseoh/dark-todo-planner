@@ -665,11 +665,33 @@ try {
   await memoCard.waitFor();
   const noteAccent = await memoCard.evaluate((node) => ({
     accent: node.style.getPropertyValue("--memo-accent"),
-    border: getComputedStyle(node).borderLeftColor,
+    stripe: getComputedStyle(node, "::before").backgroundColor,
+    topBorder: getComputedStyle(node).borderTopWidth,
+    bottomBorder: getComputedStyle(node).borderBottomWidth,
+    radius: getComputedStyle(node).borderTopLeftRadius,
     background: getComputedStyle(node).backgroundColor,
   }));
-  assert.equal(noteAccent.accent, "#3b82f6");
-  assert.notEqual(noteAccent.background, "rgba(0, 0, 0, 0)", "Memo colors should remain visible, not transparent.");
+  assert.equal(noteAccent.accent, "#3b82f6", "Memo accent must keep the stored color.");
+  assert.equal(noteAccent.stripe, "rgb(59, 130, 246)", "Accent color should be a narrow stripe, not a filled card.");
+  assert.equal(noteAccent.background, "rgba(0, 0, 0, 0)", "Idle editorial memo panel must stay transparent.");
+  assert.equal(noteAccent.topBorder, "1px");
+  assert.equal(noteAccent.bottomBorder, "1px");
+  assert.equal(noteAccent.radius, "0px", "Editorial notes should have square corners.");
+  // Four former action icons should be consolidated in an accessible disclosure.
+  const memoActions = memoCard.locator(".memo-actions");
+  assert.equal(await memoActions.evaluate((element) => element.open), false);
+  await memoActions.locator("summary").click();
+  assert.equal(await memoActions.evaluate((element) => element.open), true);
+  await memoActions.getByRole("button", { name: "메모 고정", exact: true }).waitFor();
+  await memoActions.getByRole("button", { name: "Todo로 만들기", exact: true }).waitFor();
+  await memoActions.getByRole("button", { name: "삭제", exact: true }).waitFor();
+  await page.keyboard.press("Escape");
+  assert.equal(await memoActions.evaluate((element) => element.open), false, "Escape must close the action disclosure.");
+  await memoActions.locator("summary").click();
+  await memoActions.getByRole("button", { name: "수정", exact: true }).click();
+  const memoEditDialog = page.getByRole("dialog", { name: "메모 수정" });
+  await memoEditDialog.waitFor();
+  await memoEditDialog.getByRole("button", { name: "메모 수정 닫기" }).click();
   await page.setViewportSize({ width: 1440, height: 900 });
   const memoLayout = await page.evaluate(() => ({
     cols: getComputedStyle(document.querySelector(".memo-note-grid")).gridTemplateColumns.split(" ").length,
@@ -677,6 +699,18 @@ try {
   }));
   assert.ok(memoLayout.width >= 1050 && memoLayout.cols === 2,
     `Desktop memos need a balanced 2-column reading layout: ${JSON.stringify(memoLayout)}`);
+  const newMemoButton = page.getByRole("button", { name: "새 메모", exact: true });
+  const memoCreateAppearance = await newMemoButton.evaluate((button) => ({
+    radius: getComputedStyle(button).borderTopLeftRadius,
+    background: getComputedStyle(button).backgroundColor,
+    primary: getComputedStyle(document.querySelector("header .ui-button--primary")).backgroundColor,
+  }));
+  assert.equal(memoCreateAppearance.radius, "2px", "New memo should have sharp corners.");
+  assert.notEqual(memoCreateAppearance.background, memoCreateAppearance.primary, "New memo should be an outline action, not a second bright CTA.");
+  await page.getByRole("searchbox", { name: "메모 검색" }).fill(edited);
+  await page.getByRole("heading", { name: memoTitle, exact: true }).waitFor();
+  await page.getByRole("button", { name: "메모 검색어 지우기" }).click();
+  assert.equal(await page.getByRole("searchbox", { name: "메모 검색" }).inputValue(), "", "Clear should reset only the query.");
   await page.getByRole("searchbox", { name: "메모 검색" }).fill(edited);
   await page.getByRole("heading", { name: memoTitle, exact: true }).waitFor();
   await page.getByRole("button", { name: "연결됨", exact: true }).click();
