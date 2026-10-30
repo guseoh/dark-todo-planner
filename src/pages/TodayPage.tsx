@@ -221,7 +221,7 @@ export function TodayPage({
             <section className="today-focus-section" aria-labelledby="today-focus-title">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <span className="today-section-kicker">FOCUS</span>
+                  <span className="today-section-kicker">집중 작업</span>
                   <h3 id="today-focus-title" className="mt-1 inline-flex items-center gap-2 text-base font-semibold text-ui-text"><Star size={15} className="text-warning" />오늘의 핵심 작업</h3>
                 </div>
                 <span className="text-xs font-medium tabular-nums text-ui-muted">{focusedTodos.length} / 3 선택</span>
@@ -235,7 +235,7 @@ export function TodayPage({
           <section className="today-task-section space-y-4" aria-label="오늘 Todo">
             <div className="today-task-heading">
               <div>
-                <span className="today-section-kicker">DAILY TASKS</span>
+                <span className="today-section-kicker">오늘의 작업</span>
                 <h3 className="mt-1 text-xl font-semibold tracking-tight text-ui-text">할 일</h3>
               </div>
               <span className="today-task-count"><strong>{todayTodos.length}</strong>개 등록</span>
@@ -316,7 +316,7 @@ export function TodayPage({
                 )}
               </>
             ) : <div className="today-empty-state">
-              <span className="today-empty-state__index">START HERE</span>
+              <span className="today-empty-state__index">첫 작업</span>
               <p className="mt-2 text-base font-semibold text-ui-text">오늘 할 일을 정해 보세요.</p>
               <p className="mt-1.5 text-sm text-ui-secondary">위 입력창에서 할 일을 추가하거나 캘린더에서 날짜를 지정할 수 있습니다.</p>
             </div>}
@@ -335,7 +335,7 @@ export function TodayPage({
 
         <aside className="today-sidebar space-y-6 xl:sticky xl:top-20" aria-label="일정 요약">
           <section className="today-sidebar__section space-y-3" aria-labelledby="week-summary-title">
-            <div className="today-sidebar__heading"><h3 id="week-summary-title">이번 주</h3><span>WEEKLY</span></div>
+            <div className="today-sidebar__heading"><h3 id="week-summary-title">이번 주</h3><span>주간 요약</span></div>
             <p className="today-sidebar__rate"><strong>{formatCompletionRate(stats.weekTotal, stats.weekRate)}</strong><span>완료율</span></p>
             <ProgressBar value={stats.weekRate} empty={!stats.weekTotal} label="주간 진행률" emptyLabel="등록된 작업 없음" />
             <p className="today-sidebar__caption">이번 주 일정 {stats.weekTotal}개 기준</p>
