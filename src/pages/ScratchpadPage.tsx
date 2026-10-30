@@ -475,7 +475,7 @@ export function ScratchpadPage() {
       </div> : null}
 
       {findOpen ? (
-        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-ui-divider bg-transparent px-3 py-3"
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-ui-divider bg-transparent px-3 py-3">
           <input autoFocus className="field min-h-8 w-48 py-1 text-xs" value={findText} onChange={(event) => setFindText(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); findNext(); } }} placeholder="찾을 내용" />
           {replaceOpen ? <input className="field min-h-8 w-48 py-1 text-xs" value={replaceText} onChange={(event) => setReplaceText(event.target.value)} placeholder="바꿀 내용" /> : null}
           <button type="button" className="btn-secondary min-h-8 px-2 py-1 text-xs" onClick={findNext}>다음 찾기</button>
