@@ -7,6 +7,7 @@ import type { Category } from "../types/category";
 import type { Project } from "../types/project";
 import type { Todo, TodoBulkAction, TodoFilters, TodoInput, TodoPriority, TodoWorkflowStatus } from "../types/todo";
 import { TodoFilter } from "../components/todo/TodoFilter";
+import { PageHeader } from "../components/common/PageHeader";
 import { GroupedTodoList } from "../components/todo/GroupedTodoList";
 
 type AllTodosPageProps = {
@@ -104,14 +105,10 @@ export function AllTodosPage({
   };
 
   return (
-    <div className="space-y-4">
-      <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-ink-100">전체 Todo</h2>
-          <p className="mt-1 text-sm text-ink-500">찾고, 고르고, 여러 Todo를 한 번에 정리하는 관리 화면입니다.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-ink-700/60 bg-ink-900/70 px-2.5 py-1 text-xs font-semibold text-ink-400">{filteredTodos.length}개 표시</span>
+    <div className="page-shell">
+      <PageHeader title="전체 Todo" description="필터로 찾고, 필요한 항목을 골라 한 번에 정리하세요."
+        meta={`검색 결과 ${filteredTodos.length}개`}
+        actions={
           <button
             type="button"
             className={`btn-secondary ${selectionMode ? "border-accent-500/45 bg-accent-500/10 text-accent-200" : ""}`}
@@ -121,15 +118,15 @@ export function AllTodosPage({
             {selectionMode ? <X size={15} /> : <ListChecks size={15} />}
             {selectionMode ? "선택 종료" : "선택 작업"}
           </button>
-        </div>
-      </section>
+        }
+      />
 
-      <div className="sticky top-[60px] z-20 -mx-1 rounded-lg border border-ink-800/60 bg-ink-950/90 px-1 py-1.5 backdrop-blur-xl">
+      <div className="sticky top-[60px] z-20 rounded-xl border border-ink-700/50 bg-ink-950/95 p-1 backdrop-blur-md">
         <TodoFilter filters={filters} onChange={setFilters} categories={categories} projects={projects} />
       </div>
 
       {selectionMode ? (
-        <section className="app-card p-3" aria-label="Todo 선택 작업 도구">
+        <section className="app-card p-3 sm:p-4" aria-label="Todo 선택 작업 도구">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="relative pl-3">
               <span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 rounded-full bg-accent-500" />
