@@ -46,7 +46,9 @@ describe("light/dark neutral design tokens", () => {
     expect(css).toContain("--success: #bcbcc1;");
     expect(css).toContain("--success: #505056;");
     expect(css).not.toContain("#8fb9a3");
-    expect(css).toContain(".today-overview");
+    expect(css).toContain(".today-header__status");
+    expect(css).toContain(".today-page.page-shell");
+    expect(css).not.toContain(".today-overview__stat");
     expect(css).toContain(".today-composer");
     expect(css).toContain(".today-sidebar");
     expect(css).not.toContain("#2563eb");
