@@ -29,7 +29,7 @@ type SettingsPageProps = {
 };
 
 const optionCardClass = (enabled: boolean) =>
-  `flex cursor-pointer items-start gap-3 border-b border-ink-700/40 px-1 py-3 transition-colors ${enabled ? "bg-ink-850/40" : "hover:bg-ink-850/45"}`;
+  `flex cursor-pointer items-start gap-3 border-b border-ui-divider px-1 py-4 transition-colors ${enabled ? "bg-ui-selected/50" : "hover:bg-ui-hover"}`;
 
 export function SettingsPage({
   categories,
@@ -135,7 +135,7 @@ export function SettingsPage({
           ))}
         </div>
       </section>
-      <section className="app-card p-4 sm:p-5" aria-labelledby="operation-info-title">
+      <section className="app-card py-4" aria-labelledby="operation-info-title">
         <div className="flex flex-col gap-3 border-b border-ink-700 pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div><h3 id="operation-info-title" className="text-base font-bold text-ink-100">운영 정보</h3><p className="mt-1 text-xs text-ink-400">개인 플래너의 고정 운영 기준입니다.</p></div>
           <div className={`inline-flex min-h-9 items-center gap-2 self-start text-xs font-medium ${connected ? "text-ink-300" : "text-danger"}`} role="status">
@@ -156,7 +156,7 @@ export function SettingsPage({
 
       {section === "automation" ? (
       <div id="settings-panel-automation" role="tabpanel" aria-labelledby="settings-tab-automation" tabIndex={0} className="space-y-4">
-      <section className="app-card p-4 sm:p-5" aria-labelledby="automation-settings-title">
+      <section className="app-card py-4" aria-labelledby="automation-settings-title">
         <div className="flex items-center gap-2"><RefreshCw size={18} className="text-accent-300" /><h3 id="automation-settings-title" className="text-base font-bold text-ink-100">Todo 자동화</h3></div>
         <p className="mt-1 text-xs text-ink-400">기본값은 꺼짐입니다. 필요한 자동화만 직접 켤 수 있습니다.</p>
         <div className="mt-4 space-y-3">
@@ -171,7 +171,7 @@ export function SettingsPage({
         </div>
       </section>
 
-      <section className="app-card p-4 sm:p-5" aria-labelledby="reminder-settings-title">
+      <section className="app-card py-4" aria-labelledby="reminder-settings-title">
         <div className="flex items-center gap-2"><BellRing size={18} className="text-accent-300" /><h3 id="reminder-settings-title" className="text-base font-bold text-ink-100">Discord 리마인더</h3></div>
         <p className="mt-1 text-xs text-ink-400">아래 조건은 매일 오후 9시(한국 시간) 일괄 알림에 사용됩니다.</p>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -195,7 +195,7 @@ export function SettingsPage({
 
       <section aria-labelledby="data-summary-title">
         <h3 id="data-summary-title" className="mb-3 text-base font-bold text-ink-100">저장된 데이터</h3>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-x-5 gap-y-2 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard title="Todo" value={stats.total} description={`완료 ${stats.completedTotal} · 보관 ${stats.archivedTotal}`} />
           <StatCard title="카테고리" value={categories.length} />
           <StatCard title="메모" value={memos.length} />

@@ -162,7 +162,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
       <label className="block space-y-1 text-xs font-semibold text-ink-400">제목<input className="field text-sm font-semibold" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="메모 제목" autoFocus /></label>
       <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
         <label className="block space-y-1 text-xs font-semibold text-ink-400">색상<select className="field" value={color} onChange={(event) => setColor(event.target.value)} aria-label="메모 색상">{memoColors.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
-        <label className="flex min-h-9 items-center gap-2 rounded-md border border-ink-700/65 bg-ink-950/55 px-3 text-xs font-semibold text-ink-300"><input type="checkbox" checked={pinned} onChange={(event) => setPinned(event.target.checked)} className="h-4 w-4 accent-accent-500" />고정</label>
+        <label className="flex min-h-9 items-center gap-2 px-2 text-xs font-semibold text-ink-300"><input type="checkbox" checked={pinned} onChange={(event) => setPinned(event.target.checked)} className="h-4 w-4 accent-accent-500" />고정</label>
       </div>
 
       <section aria-label="메모 내용" className="space-y-2">
@@ -174,7 +174,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
           </div>
         </div>
         {previewMode ? (
-          <div className={`overflow-y-auto rounded-lg border border-ink-700 bg-ink-950/55 p-4 ${large ? "min-h-[300px] max-h-[55vh]" : "min-h-36"}`}>
+          <div className={`overflow-y-auto border-t border-ui-divider bg-transparent p-4 ${large ? "min-h-[300px] max-h-[55vh]" : "min-h-36"}`}>
             {content.trim() ? <MarkdownPreview value={content} /> : <p className="text-sm text-ink-500">미리 볼 내용이 없습니다.</p>}
           </div>
         ) : (
@@ -182,7 +182,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
         )}
       </section>
 
-      <details className="rounded-md border border-ink-700/60 bg-ink-950/30 p-3">
+      <details className="border-t border-ui-divider py-3">
         <summary className="cursor-pointer list-none text-xs font-bold text-ink-300">
           <span className="inline-flex items-center gap-2"><Link2 size={14} className="text-accent-300" />연결 · Todo {todoIds.length} · 프로젝트 {projectIds.length}</span>
         </summary>
@@ -239,12 +239,12 @@ function MemoCard({ memo, onDelete, onTogglePin, onEdit, onCreateTodo, onCreateC
   const displayTitle = memoDisplayTitle(memo);
   const checklistTitles = uncheckedChecklistTitles(memo.content);
   return (
-    <article className={`group border-b p-3 transition hover:border-ink-500/70 hover:bg-ink-850/50 ${colorClass(memo.color)}`}>
+    <article className={`group border-b border-ui-divider px-1 py-4 transition-colors hover:bg-ui-hover/50 ${colorClass(memo.color)}`}>
       <div className="flex flex-col gap-2.5">
         <div className="flex items-start justify-between gap-2">
           <button type="button" className="min-w-0 flex-1 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/35" onClick={() => onEdit(memo)} aria-label={`${displayTitle} 메모 수정`}>
-            <div className="flex min-w-0 items-center gap-1.5">{memo.pinned ? <Pin size={13} className="shrink-0 text-accent-300" /> : null}<h3 className="line-clamp-1 text-sm font-bold leading-5 text-ink-100" title={displayTitle}>{displayTitle}</h3></div>
-            <p className="mt-0.5 text-[10px] text-ink-500">{formatKoreanDate(memo.updatedAt, "yyyy.MM.dd 수정")}</p>
+            <div className="flex min-w-0 items-center gap-1.5">{memo.pinned ? <Pin size={13} className="shrink-0 text-accent-300" /> : null}<h3 className="line-clamp-1 text-[15px] font-semibold leading-6 text-ui-text" title={displayTitle}>{displayTitle}</h3></div>
+            <p className="mt-0.5 text-xs text-ui-muted">{formatKoreanDate(memo.updatedAt, "yyyy.MM.dd 수정")}</p>
           </button>
           <div className="flex shrink-0 gap-1 opacity-80 transition sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
             <button type="button" className="icon-btn h-8 w-8" onClick={(event) => { event.stopPropagation(); void onCreateTodo(memo); }} aria-label={`${displayTitle} 메모를 Todo로 만들기`} title="Todo로 만들기"><ListPlus size={13} /></button>
@@ -253,7 +253,7 @@ function MemoCard({ memo, onDelete, onTogglePin, onEdit, onCreateTodo, onCreateC
             <button type="button" className="icon-btn h-8 w-8 hover:border-danger hover:text-danger" onClick={(event) => { event.stopPropagation(); if (window.confirm("메모를 삭제할까요? 삭제 후 6초 동안 실행 취소할 수 있습니다.")) void onDelete(memo.id); }} aria-label="메모 삭제" title="삭제"><Trash2 size={13} /></button>
           </div>
         </div>
-        <div className="-m-1 cursor-pointer rounded-md p-1" onClick={(event) => { if (event.target instanceof Element && event.target.closest("a")) return; onEdit(memo); }} title="메모 수정"><MarkdownPreview className="line-clamp-3 text-xs leading-5 text-ink-300" value={memo.content} /></div>
+        <div className="-m-1 cursor-pointer rounded-md p-1" onClick={(event) => { if (event.target instanceof Element && event.target.closest("a")) return; onEdit(memo); }} title="메모 수정"><MarkdownPreview className="line-clamp-3 max-w-[76ch] text-[13px] leading-6 text-ui-secondary" value={memo.content} /></div>
         {memo.todoIds.length || memo.projectIds.length ? (
           <div className="flex flex-wrap gap-1 text-[10px] font-semibold text-ink-400">
             {memo.todoIds.length ? <span className="px-0.5 py-0.5"><ListPlus size={11} className="mr-1 inline" />Todo {memo.todoIds.length}</span> : null}
@@ -358,7 +358,7 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
       {conversionMessage ? <div className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-xs font-semibold text-success" role="status">{conversionMessage}</div> : null}
 
       {filteredMemos.length ? (
-        <div className="space-y-4">
+        <div className="max-w-[920px] space-y-6">
           {pinnedMemos.length ? <section className="space-y-2"><div className="flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">고정 메모</h3><span className="text-[10px] text-ink-600">{pinnedMemos.length}개</span></div><div className="divide-y divide-ink-700/20">{pinnedMemos.map(renderCard)}</div></section> : null}
           {normalMemos.length ? <section className="space-y-2"><div className="flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">일반 메모</h3><span className="text-[10px] text-ink-600">{normalMemos.length}개</span></div><div className="divide-y divide-ink-700/20">{normalMemos.map(renderCard)}</div></section> : null}
         </div>

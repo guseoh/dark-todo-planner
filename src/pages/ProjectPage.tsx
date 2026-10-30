@@ -285,14 +285,14 @@ export function ProjectPage({
       />
 
       {showCreateProject && !showArchived ? (
-        <form className="app-card grid gap-2 p-3 sm:grid-cols-[minmax(0,1fr)_11rem_auto]" onSubmit={createProject}>
+        <form className="grid gap-2 border-b border-ui-divider py-4 sm:grid-cols-[minmax(0,1fr)_11rem_auto]" onSubmit={createProject}>
           <input className="field" value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="새 프로젝트 이름" autoFocus />
           <input className="field" type="date" value={newTargetDate} onChange={(event) => setNewTargetDate(event.target.value)} aria-label="프로젝트 목표일" />
           <button className="btn-primary" type="submit" disabled={!newName.trim()}><Plus size={16} />추가</button>
         </form>
       ) : null}
 
-      <section className="app-card p-2.5" aria-label={showArchived ? "보관 프로젝트 선택" : "진행 프로젝트 선택"}>
+      <section className="border-b border-ui-divider py-1" aria-label={showArchived ? "보관 프로젝트 선택" : "진행 프로젝트 선택"}>
         {visibleProjects.length ? (
           <div className="flex gap-1.5 overflow-x-auto pb-0.5">
             {visibleProjects.map((project) => (
@@ -301,7 +301,7 @@ export function ProjectPage({
                 type="button"
                 onClick={() => setSelectedId(project.id)}
                 aria-pressed={selectedId === project.id}
-                className={`flex min-h-10 min-w-44 max-w-64 shrink-0 items-center gap-2 rounded-[4px] border-b-2 px-3 text-left text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/55 ${selectedId === project.id ? "border-ink-200 bg-ink-850/35 text-ink-100" : "border-transparent text-ink-400 hover:border-ink-700 hover:bg-ink-850/55 hover:text-ink-100"}`}
+                className={`flex min-h-10 min-w-44 max-w-64 shrink-0 items-center gap-2 rounded-[4px] border-b-2 px-3 text-left text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/55 ${selectedId === project.id ? "border-ui-focus bg-transparent text-ui-text" : "border-transparent text-ui-secondary hover:bg-ui-hover hover:text-ui-text"}`}
               >
                 <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: project.color || "#9b9ba0" }} />
                 <span className="min-w-0 flex-1 truncate">{project.name}</span>
@@ -314,7 +314,7 @@ export function ProjectPage({
 
       {selected ? (
         <div className="min-w-0 space-y-4">
-          <section className="app-card p-4 sm:p-5">
+          <section className="app-card py-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -358,7 +358,7 @@ export function ProjectPage({
             </div>
 
             {editingProject ? (
-              <form className="mt-4 grid gap-3 rounded-lg border border-ink-700/70 bg-ink-950/25 p-3 lg:grid-cols-2" onSubmit={saveProjectInfo}>
+              <form className="mt-4 grid gap-3 border-t border-ui-divider pt-4 lg:grid-cols-2" onSubmit={saveProjectInfo}>
                 <label className="text-xs font-semibold text-ink-400">프로젝트 이름<input className="field mt-1.5" value={projectName} onChange={(event) => setProjectName(event.target.value)} maxLength={120} /></label>
                 <label className="text-xs font-semibold text-ink-400">색상<div className="mt-1.5 flex gap-2"><input className="h-10 w-14 rounded-md border border-ink-700 bg-ink-950 p-1" type="color" value={projectColor} onChange={(event) => setProjectColor(event.target.value)} /><input className="field" value={projectColor} onChange={(event) => setProjectColor(event.target.value)} maxLength={20} /></div></label>
                 <label className="text-xs font-semibold text-ink-400">시작일<input className="field mt-1.5" type="date" value={projectStartDate} onChange={(event) => setProjectStartDate(event.target.value)} /></label>
@@ -436,7 +436,7 @@ export function ProjectPage({
           /> : null}
 
           {projectTab === "work" && !selected.archived ? (
-            <details className="app-card p-3">
+            <details className="app-card py-3">
               <summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 px-1 text-sm font-semibold text-ink-200 hover:text-ink-100"><Plus size={15} className="text-accent-300" />Todo 빠른 추가</summary>
               <div className="mt-3 space-y-2 border-t border-ink-800/65 pt-3">
                 <div className="flex flex-wrap items-center justify-between gap-2 px-1">
@@ -454,7 +454,7 @@ export function ProjectPage({
             </details>
           ) : null}
 
-          {projectTab === "milestones" ? <section className="app-card p-4">
+          {projectTab === "milestones" ? <section className="app-card py-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2"><Target size={17} className="text-accent-300" /><h3 className="font-bold text-ink-100">마일스톤</h3></div>
               {projectTodos.length ? <span className="text-xs text-ink-400">미지정 Todo {unassignedMilestoneTodos}개</span> : null}

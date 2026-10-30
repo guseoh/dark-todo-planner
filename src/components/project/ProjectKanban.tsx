@@ -73,7 +73,7 @@ function KanbanColumn({ status, label, count, wipLimit, onWipLimitChange, collap
   const { setNodeRef, isOver } = useDroppable({ id: `column:${status}` });
   const overLimit = wipLimit !== undefined && count > wipLimit;
   return (
-    <section ref={setNodeRef} className={`min-h-[18rem] w-[17rem] shrink-0 border-r border-ink-700/50 px-3 py-2 transition sm:w-auto ${isOver ? "border-accent-500/55 bg-accent-500/[0.05]" : ""}`}>
+    <section ref={setNodeRef} className={`min-h-[18rem] w-[17rem] shrink-0 border-r border-ui-divider px-3 py-2 transition sm:w-auto ${isOver ? "border-accent-500/55 bg-accent-500/[0.05]" : ""}`}>
       <div className="mb-3 flex items-center justify-between gap-2">
         {onToggleCollapse ? <button type="button" className="inline-flex min-h-9 items-center gap-1 rounded-[4px] px-1 text-sm font-semibold text-ink-100 hover:bg-ink-850 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70" onClick={onToggleCollapse} aria-expanded={!collapsed}>{collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}{label}</button> : <h4 className="px-1 text-sm font-semibold text-ink-100">{label}</h4>}
         <div className="flex items-center gap-1.5">
@@ -249,8 +249,8 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
             <option value="">모든 마일스톤</option><option value="unassigned">미지정</option>{milestones.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
           </select>
           <div className="inline-flex border-b border-ink-700/65" role="group" aria-label="프로젝트 작업 보기">
-            <button type="button" className={`inline-flex h-8 items-center gap-1.5 rounded px-2 text-xs font-semibold ${viewMode === "board" ? "bg-ink-700 text-ink-100" : "text-ink-400 hover:text-ink-100"}`} aria-pressed={viewMode === "board"} onClick={() => setViewMode("board")}><LayoutGrid size={14} />보드</button>
-            <button type="button" className={`inline-flex h-8 items-center gap-1.5 rounded px-2 text-xs font-semibold ${viewMode === "list" ? "bg-ink-700 text-ink-100" : "text-ink-400 hover:text-ink-100"}`} aria-pressed={viewMode === "list"} onClick={() => setViewMode("list")}><List size={14} />목록</button>
+            <button type="button" className={`inline-flex h-8 items-center gap-1.5 rounded px-2 text-xs font-semibold ${viewMode === "board" ? "border-b border-ui-focus text-ui-text" : "text-ui-secondary hover:text-ui-text"}`} aria-pressed={viewMode === "board"} onClick={() => setViewMode("board")}><LayoutGrid size={14} />보드</button>
+            <button type="button" className={`inline-flex h-8 items-center gap-1.5 rounded px-2 text-xs font-semibold ${viewMode === "list" ? "border-b border-ui-focus text-ui-text" : "text-ui-secondary hover:text-ui-text"}`} aria-pressed={viewMode === "list"} onClick={() => setViewMode("list")}><List size={14} />목록</button>
           </div>
           <span className="text-xs text-ink-400" aria-live="polite">{visibleTodos.length}개</span>
         </div>
@@ -258,7 +258,7 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
 
       {viewMode === "board" ? <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <div className="overflow-x-auto pb-2">
-          <div className="grid min-w-[68rem] grid-cols-4 gap-3">
+          <div className="grid min-w-[68rem] grid-cols-4 gap-0 border-l border-t border-ui-divider">
             {workflowColumns.map((column) => {
               const items = visibleTodos.filter((todo) => statusOf(todo) === column.status);
               return (
