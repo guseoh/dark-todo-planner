@@ -770,10 +770,12 @@ try {
   await rawEditor.evaluate((el) => { el.focus(); el.setSelectionRange(0, 0); });
   await scratch.getByRole("button", { name: "H1", exact: true }).click();
   assert.ok((await rawEditor.inputValue()).startsWith("# 검증 제목"), "Heading action must edit raw Markdown.");
+  // Wait for the previous formatting command's requestAnimationFrame selection restore.
+  await page.waitForTimeout(100);
   await rawEditor.evaluate((el) => { const start = el.value.indexOf("검증 목록"); el.focus(); el.setSelectionRange(start, start); });
   await scratch.getByRole("button", { name: "• 목록", exact: true }).click();
   const formattedSource = await rawEditor.inputValue();
-  assert.ok(formattedSource.includes("- 검증 목록"), "Bullet action must edit raw Markdown.");
+  assert.ok(formattedSource.includes("- 검증 목록"), `Bullet action must edit raw Markdown: ${JSON.stringify(formattedSource.slice(0, 90))}`);
   await scratch.getByRole("button", { name: "Markdown 서식 미리보기" }).click();
   const rendered = scratch.getByRole("region", { name: "낙서장 Markdown 서식 미리보기" });
   await rendered.locator("h1").filter({ hasText: "검증 제목" }).waitFor();
