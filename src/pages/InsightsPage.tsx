@@ -25,7 +25,7 @@ const projectStatusLabel: Record<ProjectStatus, string> = {
 
 function MetricCard({ icon, label, value, detail }: { icon: ReactNode; label: string; value: string; detail: string }) {
   return (
-    <article className="rounded-lg border border-ink-700/60 bg-ink-900/55 px-3.5 py-3">
+    <article className="border-b border-ui-divider px-1 py-3">
       <div className="flex items-center gap-2 text-xs font-semibold text-ink-400">{icon}<span>{label}</span></div>
       <p className="mt-2 text-xl font-bold tracking-tight text-ink-100">{value}</p>
       <p className="mt-1 text-[11px] leading-4 text-ink-500">{detail}</p>
@@ -84,9 +84,9 @@ export function InsightsPage({ todos, projects }: InsightsPageProps) {
           </div>
           <p className="mt-1 text-xs text-ink-500">{formatKoreanDate(from, "M월 d일")} ~ {formatKoreanDate(today, "M월 d일")} · Todo 계획일 기준</p>
         </div>
-        <div className="inline-flex self-start rounded-md border border-ink-700/65 bg-ink-950/55 p-1 sm:self-auto" aria-label="인사이트 기간">
+        <div className="inline-flex self-start border-b border-ui-divider sm:self-auto" aria-label="인사이트 기간">
           {([7, 30] as const).map((days) => (
-            <button key={days} type="button" onClick={() => setPeriodDays(days)} className={`min-h-8 rounded px-3 text-xs font-semibold transition ${periodDays === days ? "bg-accent-500/15 text-accent-200" : "text-ink-500 hover:bg-ink-800 hover:text-ink-200"}`} aria-pressed={periodDays === days}>{days}일</button>
+            <button key={days} type="button" onClick={() => setPeriodDays(days)} className={`min-h-9 border-b-2 px-3 text-xs font-medium transition-colors ${periodDays === days ? "border-ui-focus text-ui-text" : "border-transparent text-ui-secondary hover:bg-ui-hover hover:text-ui-text"}`} aria-pressed={periodDays === days}>{days}일</button>
           ))}
         </div>
       </header>
@@ -105,7 +105,7 @@ export function InsightsPage({ todos, projects }: InsightsPageProps) {
       </section>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,.85fr)]">
-        <section className="rounded-lg border border-ink-700/60 bg-ink-900/45 p-3.5">
+        <section className="border-b border-ui-divider py-4">
           <div className="mb-3 flex items-end justify-between gap-3">
             <div>
               <h2 className="text-sm font-bold text-ink-100">프로젝트 진행량</h2>
@@ -116,7 +116,7 @@ export function InsightsPage({ todos, projects }: InsightsPageProps) {
           {visibleProjects.length ? (
             <div className="space-y-2.5">
               {visibleProjects.map((project) => (
-                <article key={project.id} className="rounded-md border border-ink-800/75 bg-ink-950/25 px-3 py-2.5">
+                <article key={project.id} className="border-b border-ui-divider px-1 py-3">
                   <div className="flex min-w-0 items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2">
                       <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-accent-500" style={project.color ? { backgroundColor: project.color } : undefined} aria-hidden="true" />
@@ -133,10 +133,10 @@ export function InsightsPage({ todos, projects }: InsightsPageProps) {
                 </article>
               ))}
             </div>
-          ) : <p className="rounded-md border border-dashed border-ink-700/65 px-3 py-6 text-center text-sm text-ink-500">Todo가 연결된 활성 프로젝트가 없습니다.</p>}
+          ) : <p className="border-t border-ui-divider py-6 text-left text-sm text-ink-500">Todo가 연결된 활성 프로젝트가 없습니다.</p>}
         </section>
 
-        <section className="rounded-lg border border-ink-700/60 bg-ink-900/45 p-3.5">
+        <section className="border-b border-ui-divider py-4">
           <div className="flex items-center gap-2">
             <TimerReset size={15} className="text-ink-400" />
             <h2 className="text-sm font-bold text-ink-100">계획 대비 실제 집중</h2>
@@ -144,8 +144,8 @@ export function InsightsPage({ todos, projects }: InsightsPageProps) {
           <p className="mt-1 text-[11px] leading-4 text-ink-500">시간 블록의 계획 시간과 완료된 FOCUS 세션 시간을 비교합니다.</p>
 
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <div className="rounded-md bg-ink-950/45 px-3 py-2.5"><p className="text-[10px] font-semibold text-ink-500">계획</p><p className="mt-1 text-base font-bold text-ink-100">{formatInsightMinutes(summary.plannedMinutes)}</p></div>
-            <div className="rounded-md bg-ink-950/45 px-3 py-2.5"><p className="text-[10px] font-semibold text-ink-500">실제 집중</p><p className="mt-1 text-base font-bold text-ink-100">{formatInsightMinutes(summary.focusMinutes)}</p></div>
+            <div className="border-b border-ui-divider px-1 py-3"><p className="text-[10px] font-semibold text-ink-500">계획</p><p className="mt-1 text-base font-bold text-ink-100">{formatInsightMinutes(summary.plannedMinutes)}</p></div>
+            <div className="border-b border-ui-divider px-1 py-3"><p className="text-[10px] font-semibold text-ink-500">실제 집중</p><p className="mt-1 text-base font-bold text-ink-100">{formatInsightMinutes(summary.focusMinutes)}</p></div>
           </div>
           <div className="mt-3"><ProgressBar label="계획 대비 집중" value={summary.focusVsPlanRate || 0} empty={summary.plannedMinutes === 0} emptyLabel="시간 블록 계획 없음" /></div>
           <div className="mt-3 border-t border-ink-800/80 pt-3 text-[11px] leading-5 text-ink-500">
@@ -155,14 +155,14 @@ export function InsightsPage({ todos, projects }: InsightsPageProps) {
         </section>
       </div>
 
-      <section className="rounded-lg border border-ink-700/60 bg-ink-900/45 p-3.5">
+      <section className="border-b border-ui-divider py-4">
         <div className="mb-3">
           <h2 className="text-sm font-bold text-ink-100">최근 7일 상세</h2>
           <p className="mt-0.5 text-[11px] text-ink-500">Todo 완료 흐름과 실제 집중 시간을 날짜별로 봅니다.</p>
         </div>
         <div className="space-y-1.5">
           {recentDaily.map((day) => (
-            <article key={day.date} className={`grid gap-2 rounded-md border px-3 py-2 sm:grid-cols-[7rem_minmax(0,1fr)_7rem] sm:items-center ${day.date === today ? "border-accent-500/30 bg-accent-500/[0.04]" : "border-ink-800/70 bg-ink-950/20"}`}>
+            <article key={day.date} className={`grid gap-2 border-b border-ui-divider px-1 py-3 sm:grid-cols-[7rem_minmax(0,1fr)_7rem] sm:items-center ${day.date === today ? "bg-ui-selected" : "bg-transparent"}`}>
               <div className="flex items-center justify-between gap-2 sm:block">
                 <p className="text-xs font-semibold text-ink-300">{formatKoreanDate(day.date, "M/d E")}</p>
                 {day.date === today ? <span className="text-[10px] font-semibold text-accent-200">오늘</span> : null}

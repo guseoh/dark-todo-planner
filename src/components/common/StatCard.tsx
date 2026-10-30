@@ -11,11 +11,11 @@ type StatCardProps = {
 
 export function StatCard({ title, value, description, icon, progress }: StatCardProps) {
   return (
-    <article className="app-card p-4">
+    <article className="app-card py-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold text-ink-400">{title}</p>
-          <strong className="mt-1 block text-xl font-bold tracking-normal text-ink-100">
+          <strong className="mt-1 block text-xl font-semibold tracking-normal text-ui-text">
             {value}
           </strong>
         </div>

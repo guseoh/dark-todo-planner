@@ -111,7 +111,7 @@ export function WeeklyView({
 
   return (
     <div className="space-y-4">
-      <section className="app-card px-3.5 py-3" aria-labelledby="week-summary-title">
+      <section className="app-card py-3" aria-labelledby="week-summary-title">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-3">
             <div>
@@ -161,7 +161,7 @@ export function WeeklyView({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+        <div className="grid grid-cols-2 gap-0 border-l border-t border-ui-divider sm:grid-cols-4 lg:grid-cols-7">
           {daySummaries.map(({ date, day, index, active, completed, high }) => {
             const selected = date === selectedDate;
             const isToday = date === today;
@@ -169,17 +169,17 @@ export function WeeklyView({
               <button
                 key={date}
                 type="button"
-                className={`min-w-0 rounded-md border px-2.5 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 ${
+                className={`min-w-0 border-b border-r border-ui-divider px-3 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus ${
                   selected
-                    ? "border-accent-500/50 bg-accent-500/[0.08] ring-1 ring-accent-500/15"
-                    : "border-ink-700/65 bg-ink-900/45 hover:border-ink-500 hover:bg-ink-800/65"
+                    ? "bg-ui-selected text-ui-text"
+                    : "bg-transparent hover:bg-ui-hover"
                 }`}
                 onClick={() => setSelectedDate(date)}
                 aria-pressed={selected}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className={`text-xs font-bold ${selected ? "text-ink-100" : dayLabelTone(index)}`}>{formatKoreanDate(day, "E요일")}</span>
-                  {isToday ? <span className="rounded-full border border-accent-500/35 bg-accent-500/10 px-1.5 py-0.5 text-[9px] font-bold text-accent-200">오늘</span> : null}
+                  {isToday ? <span className="border-b border-ui-focus text-[10px] font-medium text-ui-secondary">오늘</span> : null}
                 </div>
                 <p className="mt-0.5 text-[11px] text-ink-500">{formatKoreanDate(day, "M월 d일")}</p>
                 <div className="mt-2 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px]">
@@ -193,7 +193,7 @@ export function WeeklyView({
         </div>
       </section>
 
-      <section className="app-card p-3.5" aria-labelledby="selected-day-title">
+      <section className="app-card py-4" aria-labelledby="selected-day-title">
         <div className="flex flex-col gap-3 border-b border-ink-700/55 pb-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 id="selected-day-title" className="text-base font-bold text-ink-100">{formatKoreanDate(selectedDate, "M월 d일 EEEE")}</h3>
@@ -236,7 +236,7 @@ export function WeeklyView({
               />
             ))
           ) : (
-            <div className="rounded-md border border-dashed border-ink-700/60 px-3 py-4 text-center">
+            <div className="border-t border-ui-divider px-2 py-6 text-left">
               <p className="text-sm font-semibold text-ink-400">미완료 Todo가 없습니다.</p>
               <p className="mt-1 text-[11px] text-ink-600">다른 날짜를 선택하거나 새 Todo를 추가할 수 있습니다.</p>
             </div>

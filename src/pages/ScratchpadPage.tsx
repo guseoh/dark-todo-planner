@@ -354,11 +354,11 @@ export function ScratchpadPage() {
   };
 
   return (
-    <section aria-label="낙서장" className="mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-[1500px] flex-col overflow-hidden rounded-none border-x-0 border-y border-ink-700/45 bg-ink-950 shadow-none">
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-ink-700/70 bg-ink-900 px-3 py-2">
-        <div className="flex items-center gap-2"><h2 className="text-sm font-bold text-ink-100">낙서장</h2><span className="text-xs text-ink-400">자동 저장되는 자유 편집 공간</span></div>
+    <section aria-label="낙서장" className="mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-[1500px] flex-col overflow-hidden bg-ui-canvas">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-ui-divider bg-transparent px-3 py-3">
+        <div className="flex items-center gap-2"><h2 className="text-lg font-semibold text-ui-text">낙서장</h2><span className="text-xs text-ink-400">자동 저장되는 자유 편집 공간</span></div>
       </div>
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-1 border-b border-ink-700/70 bg-ink-900/70 px-2 py-1">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-1 border-b border-ui-divider bg-transparent px-2 py-1">
         <div ref={menuBarRef} className="flex items-center gap-0.5">
           <div className="relative">
             <button type="button" className={menuButtonClass} aria-haspopup="menu" aria-expanded={openMenu === "file"} onClick={() => toggleMenu("file")}>파일</button>
@@ -415,7 +415,7 @@ export function ScratchpadPage() {
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1 border-b border-ink-700/70 bg-ink-900/80 px-2 py-1.5">
+      <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-ui-divider bg-transparent px-2 py-1.5">
         <button type="button" className={toolButtonClass} title="제목 H1" onClick={() => prefixSelectedLines("# ")}>H1</button>
         <button type="button" className={toolButtonClass} title="글머리 목록" onClick={() => prefixSelectedLines("- ")}>• 목록</button>
         <span className="mx-1 h-5 w-px bg-ink-700" />
@@ -427,7 +427,7 @@ export function ScratchpadPage() {
       </div>
 
       {findOpen ? (
-        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-ink-700/70 bg-ink-900 px-3 py-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-ui-divider bg-transparent px-3 py-3">
           <input autoFocus className="field min-h-8 w-48 py-1 text-xs" value={findText} onChange={(event) => setFindText(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); findNext(); } }} placeholder="찾을 내용" />
           {replaceOpen ? <input className="field min-h-8 w-48 py-1 text-xs" value={replaceText} onChange={(event) => setReplaceText(event.target.value)} placeholder="바꿀 내용" /> : null}
           <button type="button" className="btn-secondary min-h-8 px-2 py-1 text-xs" onClick={findNext}>다음 찾기</button>
@@ -462,13 +462,13 @@ export function ScratchpadPage() {
         spellCheck={false}
         wrap={wrap ? "soft" : "off"}
         disabled={saveState === "loading" || (!loadedRef.current && saveState === "error")}
-        className="min-h-0 flex-1 resize-none border-0 bg-ink-850 px-5 py-4 font-mono leading-7 text-ink-100 outline-none selection:bg-accent-500/35 disabled:opacity-60"
+        className="min-h-0 flex-1 resize-none border-0 bg-ui-canvas px-4 py-5 font-mono leading-7 text-ui-text sm:px-8 outline-none selection:bg-accent-500/35 disabled:opacity-60"
         style={{ fontSize: `${Math.round(15 * zoom / 100)}px`, whiteSpace: wrap ? "pre-wrap" : "pre" }}
         placeholder="아무 내용이나 바로 작성하세요. 내용은 자동으로 저장됩니다."
         aria-label="낙서장 편집기"
       />
 
-      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-ink-700/70 bg-ink-900 px-3 py-1.5 text-[10px] text-ink-500">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-ui-divider bg-ui-canvas px-3 py-1.5 text-[11px] text-ui-muted">
         <div className="flex min-w-0 items-center gap-3">
           <span className={saveState === "error" ? "text-danger" : saveState === "saved" ? "text-ink-400" : "text-warning"}>{saveLabel}</span>
           <span className="hidden sm:inline">줄 {cursor.line}, 열 {cursor.column}</span>

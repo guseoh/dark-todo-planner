@@ -24,7 +24,7 @@ const priorityLabels: Record<TodoPriority, string> = { LOW: "낮음", MEDIUM: "�
 const TodoMiniList = ({ todos }: { todos: Todo[] }) => todos.length ? (
   <div className="space-y-2">
     {todos.slice(0, 20).map((todo) => (
-      <div key={todo.id} className="flex items-start justify-between gap-3 rounded-lg border border-ink-800/80 bg-ink-950/25 px-3 py-2.5">
+      <div key={todo.id} className="flex items-start justify-between gap-3 border-b border-ui-divider px-1 py-3">
         <div className="min-w-0">
           <p className={`truncate text-sm font-semibold ${todo.completed ? "text-ink-500 line-through" : "text-ink-100"}`}>{todo.title}</p>
           <p className="mt-1 text-xs text-ink-500">
@@ -191,14 +191,14 @@ export function PlanningPage({
 
       {message ? <div className="rounded-lg border border-ink-700/70 bg-ink-900/75 px-3 py-2 text-sm font-semibold text-ink-200" aria-live="polite">{message}</div> : null}
 
-      <div className="flex gap-1 overflow-x-auto rounded-lg border border-ink-700/65 bg-ink-950/35 p-1 pb-1">
+      <div className="flex gap-1 overflow-x-auto border-b border-ui-divider">
         {tabItems.map((item) => {
           const active = tab === item.id;
           return (
             <button
               key={item.id}
               type="button"
-              className={`relative min-h-9 shrink-0 rounded-md px-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 ${active ? "bg-ink-800 text-ink-100 ring-1 ring-inset ring-ink-700/80" : "text-ink-400 hover:bg-ink-800/65 hover:text-ink-100"}`}
+              className={`relative min-h-10 shrink-0 px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus ${active ? "text-ui-text" : "text-ink-400 hover:bg-ink-800/65 hover:text-ink-100"}`}
               onClick={() => setTab(item.id)}
               aria-pressed={active}
             >
@@ -211,7 +211,7 @@ export function PlanningPage({
 
       {tab === "daily" ? (
         <div className="grid gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-          <section className="app-card space-y-4 p-4">
+          <section className="app-card space-y-4 py-4">
             <div className="flex items-center gap-2"><CalendarCheck2 size={18} className="text-accent-300" /><h3 className="font-bold text-ink-100">오늘의 초점</h3></div>
             <textarea className="field min-h-28" value={focusText} onChange={(event) => setFocusText(event.target.value)} placeholder="오늘 끝내고 싶은 가장 중요한 결과를 적어두세요." />
             <div>
@@ -220,12 +220,12 @@ export function PlanningPage({
             </div>
             <button type="button" className="btn-primary w-full justify-center" onClick={() => void saveDaily()}><Save size={16} />오늘 계획 저장</button>
           </section>
-          <section className="app-card p-4">
+          <section className="app-card py-4">
             <h3 className="font-bold text-ink-100">실행 후보</h3>
             <div className="mt-3 max-h-[32rem] space-y-2 overflow-y-auto pr-1">
               {planningCandidates.map((todo) => {
                 const checked = topTodoIds.includes(todo.id);
-                return <label key={todo.id} className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5 transition ${checked ? "border-accent-500/40 bg-accent-500/[0.07]" : "border-ink-800/80 bg-ink-950/25 hover:border-ink-700 hover:bg-ink-900/55"}`}>
+                return <label key={todo.id} className={`flex cursor-pointer items-start gap-3 border-b border-ui-divider px-2 py-3 transition-colors ${checked ? "bg-ui-selected" : "hover:bg-ui-hover"}`}>
                   <input type="checkbox" className="mt-1 h-4 w-4 accent-accent-500" checked={checked} onChange={() => toggleTopTodo(todo.id)} disabled={!checked && topTodoIds.length >= 5} />
                   <span className="min-w-0"><span className="block truncate text-sm font-semibold text-ink-100">{todo.title}</span><span className="mt-1 block text-xs text-ink-500">{todo.dueDate ? `마감 ${todo.dueDate}` : `실행 ${todo.date}`} · {priorityLabels[todo.priority]}</span></span>
                 </label>;
@@ -237,15 +237,15 @@ export function PlanningPage({
 
       {tab === "weekly" ? (
         <div className="grid gap-4 xl:grid-cols-[18rem_minmax(0,1fr)]">
-          <section className="app-card p-4">
+          <section className="app-card py-4">
             <h3 className="font-bold text-ink-100">이번 주</h3>
             <p className="mt-1 text-xs text-ink-500">{weekRange.start} ~ {weekRange.end}</p>
             <dl className="mt-4 grid grid-cols-2 gap-2">
-              <div className="rounded-lg border border-ink-800/70 bg-ink-950/30 p-3"><dt className="text-xs text-ink-500">계획 Todo</dt><dd className="mt-1 text-xl font-bold text-ink-100">{weekTodos.length}</dd></div>
-              <div className="rounded-lg border border-ink-800/70 bg-ink-950/30 p-3"><dt className="text-xs text-ink-500">완료 Todo</dt><dd className="mt-1 text-xl font-bold text-ink-100">{completedWeekTodos.length}</dd></div>
+              <div className="border-b border-ui-divider px-1 py-3"><dt className="text-xs text-ink-500">계획 Todo</dt><dd className="mt-1 text-xl font-bold text-ink-100">{weekTodos.length}</dd></div>
+              <div className="border-b border-ui-divider px-1 py-3"><dt className="text-xs text-ink-500">완료 Todo</dt><dd className="mt-1 text-xl font-bold text-ink-100">{completedWeekTodos.length}</dd></div>
             </dl>
           </section>
-          <section className="app-card space-y-4 p-4">
+          <section className="app-card space-y-4 py-4">
             <div className="grid gap-3 md:grid-cols-2">
               <label className="space-y-1 text-sm font-semibold text-ink-300">잘한 점<textarea className="field min-h-28" value={wins} onChange={(event) => setWins(event.target.value)} placeholder="이번 주에 잘 진행된 일" /></label>
               <label className="space-y-1 text-sm font-semibold text-ink-300">막힌 점<textarea className="field min-h-28" value={blockers} onChange={(event) => setBlockers(event.target.value)} placeholder="지연되거나 막힌 이유" /></label>
@@ -260,7 +260,7 @@ export function PlanningPage({
       {tab === "views" ? (
         <div className="grid gap-4 xl:grid-cols-[21rem_minmax(0,1fr)]">
           <aside className="space-y-4">
-            <section className="app-card p-4">
+            <section className="app-card py-4">
               <div className="flex items-center gap-2"><Sparkles size={17} className="text-accent-300" /><h3 className="font-bold text-ink-100">Smart List</h3></div>
               <div className="mt-3 space-y-1">
                 {builtInSmartViews.map((view) => {
@@ -269,7 +269,7 @@ export function PlanningPage({
                 })}
               </div>
             </section>
-            <section className="app-card p-4">
+            <section className="app-card py-4">
               <h3 className="font-bold text-ink-100">저장된 보기</h3>
               <div className="mt-3 space-y-1">
                 {savedViews.map((view) => {
@@ -281,11 +281,11 @@ export function PlanningPage({
             </section>
           </aside>
           <div className="space-y-4">
-            <section className="app-card p-4">
+            <section className="app-card py-4">
               <div className="flex items-center justify-between gap-3"><div><h3 className="font-bold text-ink-100">{activeView.name}</h3><p className="mt-1 text-xs text-ink-500">현재 조건에 맞는 Todo {activeViewTodos.length}개</p></div><ClipboardList size={18} className="text-ink-500" /></div>
               <div className="mt-4"><TodoMiniList todos={activeViewTodos} /></div>
             </section>
-            <form className="app-card space-y-3 p-4" onSubmit={createSavedView}>
+            <form className="app-card space-y-3 py-4" onSubmit={createSavedView}>
               <div className="flex items-center gap-2"><BookmarkPlus size={17} className="text-accent-300" /><h3 className="font-bold text-ink-100">새 보기 저장</h3></div>
               <input className="field" value={viewName} onChange={(event) => setViewName(event.target.value)} placeholder="보기 이름" />
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -302,7 +302,7 @@ export function PlanningPage({
 
       {tab === "templates" ? (
         <div className="grid gap-4 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-          <form className="app-card space-y-3 p-4" onSubmit={createTemplate}>
+          <form className="app-card space-y-3 py-4" onSubmit={createTemplate}>
             <h3 className="font-bold text-ink-100">새 Todo 템플릿</h3>
             <input className="field" value={templateName} onChange={(event) => setTemplateName(event.target.value)} placeholder="템플릿 이름 (예: 블로그 글 작성)" />
             <input className="field" value={templateTitle} onChange={(event) => setTemplateTitle(event.target.value)} placeholder="Todo 제목" />
@@ -314,10 +314,10 @@ export function PlanningPage({
             </div>
             <div className="flex justify-end"><button type="submit" className="btn-primary"><Plus size={16} />템플릿 저장</button></div>
           </form>
-          <section className="app-card p-4">
+          <section className="app-card py-4">
             <h3 className="font-bold text-ink-100">저장된 템플릿</h3>
             <div className="mt-3 space-y-2">
-              {taskTemplates.map((template) => <div key={template.id} className="rounded-lg border border-ink-800/80 bg-ink-950/25 p-3"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="font-semibold text-ink-100">{template.name}</p><p className="mt-1 truncate text-sm text-ink-300">{template.todo.title}</p><p className="mt-1 text-xs text-ink-500">{priorityLabels[template.todo.priority || "MEDIUM"]} · {planningLabels[template.todo.planningState || "SCHEDULED"]}</p></div><button type="button" className="icon-btn h-9 w-9 rounded-md" aria-label={`${template.name} 삭제`} onClick={() => void onDeleteTaskTemplate(template.id)}><Trash2 size={14} /></button></div><button type="button" className="btn-secondary mt-3 min-h-9 px-3 py-1 text-xs" onClick={() => void useTemplate(template)}>오늘 Todo 만들기</button></div>)}
+              {taskTemplates.map((template) => <div key={template.id} className="border-b border-ui-divider py-3"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="font-semibold text-ink-100">{template.name}</p><p className="mt-1 truncate text-sm text-ink-300">{template.todo.title}</p><p className="mt-1 text-xs text-ink-500">{priorityLabels[template.todo.priority || "MEDIUM"]} · {planningLabels[template.todo.planningState || "SCHEDULED"]}</p></div><button type="button" className="icon-btn h-9 w-9 rounded-md" aria-label={`${template.name} 삭제`} onClick={() => void onDeleteTaskTemplate(template.id)}><Trash2 size={14} /></button></div><button type="button" className="btn-secondary mt-3 min-h-9 px-3 py-1 text-xs" onClick={() => void useTemplate(template)}>오늘 Todo 만들기</button></div>)}
               {!taskTemplates.length ? <EmptyState title="저장된 템플릿이 없습니다." description="반복해서 만드는 Todo의 기본값을 템플릿으로 저장해보세요." /> : null}
             </div>
           </section>
