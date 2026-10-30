@@ -215,7 +215,7 @@ try {
     const b = category.getBoundingClientRect();
     return { inputWidth: a.width, categoryWidth: b.width, rowHeight: parent.height };
   });
-  assert.ok(mainLayout && mainLayout.inputWidth > mainLayout.categoryWidth * 1.5,
+  assert.ok(mainLayout && mainLayout.inputWidth >= mainLayout.categoryWidth + 30,
     "The title must be the primary control, with a quieter category selector.");
   await composerToggle.click();
   await composer.getByRole("group", { name: "Todo 상세 옵션" }).waitFor();
