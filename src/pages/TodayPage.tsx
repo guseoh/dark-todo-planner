@@ -208,7 +208,7 @@ export function TodayPage({
             <strong>{stats.todayRate}%</strong>
           </div>
           {hasTodayTodos
-            ? <ProgressBar value={stats.todayRate} />
+            ? <ProgressBar value={stats.todayRate} ariaLabel="오늘 완료율" />
             : <p className="today-overview__empty">작업을 추가하면 오늘의 진행률이 여기에 표시됩니다.</p>}
           <p className="today-overview__progress-caption">{stats.todayCompleted} / {stats.todayTotal}개 완료</p>
         </div>
