@@ -80,7 +80,7 @@ try {
   assert.equal(visualSystem.sectionRadius, "0px", "Tasks must not become a rounded card.");
   assert.equal(visualSystem.sectionBackground, "rgba(0, 0, 0, 0)", "Tasks must stay on the workspace canvas.");
   assert.equal(visualSystem.sectionBorderTop, "0px", "Task sections must not be enclosed.");
-  assert.equal(visualSystem.composerBackground, "rgb(27, 27, 30)", "Quick entry retains a quiet inset.");
+  assert.equal(visualSystem.composerBackground, "rgba(0, 0, 0, 0)", "Collapsed inline entry should not create an empty card.");
   assert.ok(visualSystem.headerHeight <= 90, "Today heading/status must be compact.");
   assert.ok(visualSystem.firstTaskOffset <= 140, "Task entry should appear close to the header.");
   assert.equal(visualSystem.oldDashboardCount, 0, "Old KPI grid must not return.");
@@ -245,8 +245,26 @@ try {
   assert.equal(await page.locator('section[aria-label="오늘 Todo"]').count(), 1, "Todo entry must remain available while empty.");
 
 
-  // T16–T19: compact quick entry + progressively disclosed, grouped details.
+  // G6.1: Today starts as one inline add action, without a permanent form card.
+  const composerTrigger = page.locator(".today-composer").getByRole("button", { name: "할 일 추가" });
+  await composerTrigger.waitFor();
+  assert.equal(await page.locator(".today-composer form").count(), 0);
+  await composerTrigger.click();
   const composer = page.getByRole("form", { name: "Todo 빠른 추가" });
+  await composer.getByRole("textbox", { name: "Todo 제목" }).waitFor();
+  assert.equal(await composer.getByLabel("계획 유형").inputValue(), "SCHEDULED");
+  assert.equal(await composer.getByLabel("우선순위").inputValue(), "MEDIUM");
+  // Esc keeps unsaved text locally; another click restores the draft.
+  const draft = `Unsubmitted draft ${randomUUID().slice(0, 6)}`;
+  await composer.getByRole("textbox", { name: "Todo 제목" }).fill(draft);
+  await composer.getByRole("textbox", { name: "Todo 제목" }).press("Escape");
+  await composerTrigger.waitFor();
+  assert.equal(await page.locator(".today-composer form").count(), 0);
+  await composerTrigger.click();
+  assert.equal(await composer.getByRole("textbox", { name: "Todo 제목" }).inputValue(), draft);
+  // Compact quick fields expose date, project and priority without advanced options.
+  await composer.getByLabel("실행 날짜").waitFor();
+  await composer.getByLabel("프로젝트 선택").waitFor();
   const composerToggle = composer.getByRole("button", { name: "상세 옵션", exact: true });
   await composerToggle.waitFor();
   assert.equal(await composerToggle.getAttribute("aria-expanded"), "false");
@@ -281,6 +299,8 @@ try {
   const quickInput = page.locator('input[data-quick-todo-input="true"]');
   await quickInput.fill(title);
   await page.getByRole("button", { name: "추가", exact: true }).click();
+  await composerTrigger.waitFor();
+  assert.equal(await page.locator(".today-composer form").count(), 0, "Successful inline add should return to quiet state.");
   await page.getByText(title, { exact: true }).first().waitFor();
   assert.ok(await findServerTodo(title), "Todo create should persist to local D1.");
   // Readability regression: a task is a distinct text-first row, not a barely
@@ -319,6 +339,8 @@ try {
   await page.getByRole("heading", { name: "캘린더", exact: true }).waitFor();
   const monthGrid = page.getByRole("region", { name: "월간 일정 캘린더" });
   await monthGrid.getByRole("button", { name: title, exact: true }).waitFor();
+  const desktopCell = await monthGrid.locator(".calendar-day").first().evaluate((cell) => cell.getBoundingClientRect().height);
+  assert.ok(desktopCell <= 122, `G6.1 compact calendar must not exceed 122px: ${desktopCell}`);
   const todoFilter = page.getByRole("button", { name: "Todo", exact: true });
   await todoFilter.click();
   assert.equal(await todoFilter.getAttribute("aria-pressed"), "false");
@@ -418,6 +440,7 @@ try {
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
   const offlineTitle = `Offline Browser Todo ${randomUUID().slice(0, 8)}`;
   await context.setOffline(true);
+  await composerTrigger.click();
   await quickInput.fill(offlineTitle);
   await page.getByRole("button", { name: "추가", exact: true }).click();
   await page.getByText(offlineTitle, { exact: true }).first().waitFor();
@@ -688,6 +711,8 @@ try {
         if (view === "scratchpad") await page.getByRole("textbox", { name: "낙서장 편집기" }).waitFor();
         else await page.getByRole("heading", { name: heading, exact: true }).first().waitFor();
         if (view === "today") {
+          const trigger = page.locator(".today-composer").getByRole("button", { name: "할 일 추가" });
+          await trigger.click();
           const composer = page.getByRole("form", { name: "Todo 빠른 추가" });
           await composer.getByRole("button", { name: "상세 옵션", exact: true }).click();
           await composer.getByRole("group", { name: "Todo 상세 옵션" }).waitFor();
@@ -697,7 +722,8 @@ try {
             canvas: getComputedStyle(document.documentElement).getPropertyValue("--app-bg").trim(),
             composer: getComputedStyle(document.querySelector(".today-composer")).backgroundColor,
           }));
-          assert.notEqual(surfaces.composer, surfaces.canvas, `Today composer must remain distinguishable in ${theme} theme.`);
+          assert.notEqual(surfaces.composer, surfaces.canvas, `Expanded composer must remain distinguishable in ${theme} theme.`);
+          await composer.getByRole("button", { name: /취소/ }).click();
         }
         const geometry = await page.evaluate(() => ({
           viewport: window.innerWidth, document: document.documentElement.scrollWidth,
