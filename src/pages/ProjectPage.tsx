@@ -94,7 +94,7 @@ export function ProjectPage({
   const [projectDescription, setProjectDescription] = useState("");
   const [projectStartDate, setProjectStartDate] = useState("");
   const [projectTargetDate, setProjectTargetDate] = useState("");
-  const [projectColor, setProjectColor] = useState("#849e89");
+  const [projectColor, setProjectColor] = useState("#9b9ba0");
   const [resourceLabel, setResourceLabel] = useState("");
   const [resourceUrl, setResourceUrl] = useState("");
   const [resourceError, setResourceError] = useState("");
@@ -493,7 +493,7 @@ export function ProjectPage({
                     </div>
 
                     <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink-800">
-                      <div className="h-full rounded-full bg-accent-500 transition-all" style={{ width: `${milestoneProgress}%` }} />
+                      <div className="h-full bg-accent-500 transition-[width]" style={{ width: `${milestoneProgress}%` }} />
                     </div>
 
                     {milestoneTodos.length ? (
