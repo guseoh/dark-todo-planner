@@ -55,7 +55,7 @@ export function InboxPage({ todos, categories, projects, onAdd, onUpdate, onDele
       </section>
 
       {feedback ? (
-        <p role={feedback.error ? "alert" : "status"} className={`rounded-lg border px-3 py-2 text-sm ${feedback.error ? "border-danger/35 bg-danger/[0.06] text-red-200" : "border-success/30 bg-success/[0.04] text-ink-200"}`}>
+        <p role={feedback.error ? "alert" : "status"} className={`border-l-2 py-1 pl-3 text-sm ${feedback.error ? "border-danger text-red-200" : "border-ink-500 text-ink-200"}`}>
           {feedback.message}
         </p>
       ) : null}
@@ -107,7 +107,7 @@ export function InboxPage({ todos, categories, projects, onAdd, onUpdate, onDele
             </article>
           ))}
           {!inboxTodos.length ? (
-            <div className="rounded-lg border border-dashed border-ink-700/70 px-4 py-10 text-center">
+            <div className="border-t border-ink-700/40 px-4 py-10 text-center">
               <p className="text-sm font-semibold text-ink-200">받은함이 비어 있습니다.</p>
               <p className="mt-1.5 text-xs text-ink-400">떠오른 작업을 위 입력창에 저장해 보세요.</p>
             </div>

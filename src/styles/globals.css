@@ -5,37 +5,35 @@
 :root {
   color-scheme: dark;
 
-  --app-bg: #111315;
-  --sidebar-bg: #15171a;
-  --surface-1: #191b1f;
-  --surface-2: #212428;
-  --surface-3: #292d31;
-  --surface-hover: #34393e;
+  --app-bg: #101011;
+  --sidebar-bg: #121213;
+  --surface-1: #161617;
+  --surface-2: #1b1b1d;
+  --surface-3: #28282b;
+  --surface-hover: #303033;
 
-  --border-subtle: #32363b;
-  --border-default: #41464b;
-  --border-strong: #777f87;
+  --border-subtle: #323236;
+  --border-default: #454549;
+  --border-strong: #77777d;
 
-  --text-primary: #e8e9ec;
-  --text-secondary: #cbd1d6;
-  --text-muted: #aab0b6;
-  --text-disabled: #777f87;
+  --text-primary: #efeff0;
+  --text-secondary: #bcbcc1;
+  --text-muted: #99999f;
+  --text-disabled: #77777d;
 
-  --accent: #a7baab;
-  --accent-hover: #b6c8b9;
-  --accent-soft: rgba(167, 186, 171, 0.12);
+  --accent: #d4d4d8;
+  --accent-hover: #e1e1e4;
+  --accent-soft: rgba(212, 212, 216, 0.10);
 
-  --success: #76c3a2;
-  --warning: #e3bd78;
-  --danger: #e48e92;
+  --success: #8fb9a3;
+  --warning: #d9b47d;
+  --danger: #d88d92;
 
-  --shadow-elevated: 0 12px 32px rgba(0, 0, 0, 0.22);
+  --shadow-elevated: none;
 
   background: var(--app-bg);
   color: var(--text-primary);
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 * {
@@ -79,7 +77,7 @@ button:disabled {
 }
 
 ::selection {
-  background: rgba(167, 186, 171, 0.30);
+  background: rgba(212, 212, 216, 0.22);
   color: var(--text-primary);
 }
 
@@ -103,70 +101,76 @@ button:disabled {
 }
 
 @layer components {
-  .app-card {
-    @apply rounded-xl border border-ink-700/55 bg-ink-900 shadow-soft;
+  /* The app's primary surfaces are content sections, not individual cards. */
+  .app-card.app-card, .work-section.work-section {
+    @apply rounded-none border-0 border-b border-ink-700/40 bg-transparent shadow-none;
   }
 
-  /* Keep all primary screens on one charcoal spacing and hierarchy system. */
   .page-shell {
-    @apply mx-auto w-full max-w-[1280px] space-y-5;
+    @apply mx-auto w-full max-w-[1280px] space-y-6;
   }
 
   .page-header {
-    @apply flex flex-col gap-3 border-b border-ink-700/50 pb-4 sm:flex-row sm:items-center sm:justify-between;
+    @apply flex flex-col gap-3 border-b border-ink-700/55 pb-5 sm:flex-row sm:items-center sm:justify-between;
   }
 
   .page-header-icon {
-    @apply inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-ink-700/60 bg-ink-900 text-accent-300;
+    @apply inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-ink-850 text-ink-200;
   }
 
   .page-meta {
-    @apply inline-flex shrink-0 items-center rounded-full border border-ink-700/60 bg-ink-900/80 px-2.5 py-1 text-xs font-medium text-ink-300;
+    @apply inline-flex shrink-0 items-center px-0.5 py-1 text-xs font-medium text-ink-400;
   }
 
-  .page-toolbar {
-    @apply flex flex-wrap items-center gap-2 rounded-xl border border-ink-700/60 bg-ink-900/80 p-2.5;
+  .page-toolbar.page-toolbar {
+    @apply flex flex-wrap items-center gap-2 rounded-none border-0 border-b border-ink-700/45 bg-transparent px-0 py-2;
   }
 
-  .page-tabs {
-    @apply flex flex-wrap gap-1 rounded-lg border border-ink-700/60 bg-ink-950/50 p-1;
+  .page-tabs.page-tabs {
+    @apply flex flex-wrap gap-2 rounded-none border-0 border-b border-ink-700/50 bg-transparent p-0;
   }
 
-  .page-tab {
-    @apply inline-flex min-h-10 items-center justify-center rounded-md px-3 text-xs font-semibold text-ink-400 transition-colors hover:bg-ink-800 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/60 sm:text-sm;
+  .page-tab.page-tab {
+    @apply inline-flex min-h-10 items-center justify-center rounded-none border-b-2 border-transparent px-3 text-xs font-medium text-ink-400 transition-colors hover:bg-ink-850/60 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 sm:text-sm;
   }
 
   .page-tab[aria-selected="true"], .page-tab[aria-pressed="true"] {
-    @apply bg-ink-700 text-ink-100;
+    @apply border-ink-200 bg-transparent text-ink-100;
   }
 
-  .page-list-item {
-    @apply rounded-lg border border-ink-700/55 bg-ink-950/35 p-3 transition-colors hover:border-ink-600/75 hover:bg-ink-850/55;
+  .page-list-item.page-list-item {
+    @apply rounded-none border-0 border-b border-ink-700/40 bg-transparent p-3 transition-colors hover:bg-ink-850/60;
   }
 
-  .field {
-    @apply min-h-9 w-full rounded-lg border border-ink-700/80 bg-ink-950 px-3 py-1.5 text-sm text-ink-100 outline-none transition-colors duration-150 placeholder:text-ink-500 hover:border-ink-600 focus:border-accent-600 focus:ring-2 focus:ring-accent-500/25;
+  .field.field {
+    @apply min-h-9 w-full rounded-[4px] border border-ink-700/70 bg-ink-850 px-3 py-1.5 text-sm text-ink-100 outline-none transition-colors duration-150 placeholder:text-ink-500 hover:border-ink-600 focus:border-accent-600 focus:ring-2 focus:ring-accent-500/35;
   }
 
   .btn {
-    @apply inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-transparent px-3 py-1.5 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/55 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950;
+    @apply inline-flex min-h-9 items-center justify-center gap-2 rounded-[4px] border border-transparent px-3 py-1.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950;
   }
 
-  .btn-primary {
-    @apply btn bg-accent-500 text-ink-950 hover:bg-accent-400 active:bg-accent-600;
+  .btn-primary.btn-primary {
+    @apply btn border-ink-200 bg-ink-200 text-ink-950 hover:border-ink-100 hover:bg-ink-100 active:bg-ink-300;
   }
 
-  .btn-secondary {
-    @apply btn border-ink-700/80 bg-ink-900 text-ink-200 hover:border-ink-600 hover:bg-ink-800 hover:text-ink-100;
+  .btn-secondary.btn-secondary {
+    @apply btn border-ink-700/65 bg-transparent text-ink-200 hover:border-ink-600 hover:bg-ink-850 hover:text-ink-100;
   }
 
-  .btn-danger {
-    @apply btn border-danger/35 bg-transparent text-red-200 hover:border-danger/65 hover:bg-danger/10 hover:text-red-100;
+  .btn-danger.btn-danger {
+    @apply btn border-danger/30 bg-transparent text-red-200 hover:border-danger/65 hover:bg-danger/10;
   }
 
-  .icon-btn {
-    @apply inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-ink-700/80 bg-ink-950/65 text-ink-400 transition-colors duration-150 hover:border-ink-600 hover:bg-ink-800 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950;
+  .icon-btn.icon-btn {
+    @apply inline-flex min-h-8 min-w-8 items-center justify-center rounded-[4px] border-0 bg-transparent text-ink-400 transition-colors duration-150 hover:bg-ink-800/75 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950;
   }
+}
+
+/* Universal focus affordance for non-component controls. */
+:where(button, a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {

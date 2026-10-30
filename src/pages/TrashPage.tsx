@@ -91,11 +91,11 @@ export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
   };
 
   return (
-    <div className="space-y-5">
-      <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="page-shell">
+      <section className="page-header sm:items-end">
         <div>
-          <h2 className="text-2xl font-bold text-ink-100 sm:text-3xl">휴지통</h2>
-          <p className="mt-2 text-sm text-ink-400">삭제된 Todo를 복원하기 전에 어떤 연결이 돌아오는지 미리 확인합니다.</p>
+          <h2 className="text-[23px] font-semibold tracking-tight text-ink-100">휴지통</h2>
+          <p className="mt-1 text-sm text-ink-400">삭제된 Todo를 복원하기 전에 어떤 연결이 돌아오는지 미리 확인합니다.</p>
         </div>
         <button type="button" className="btn-danger min-h-10" onClick={() => void emptyTrash()} disabled={!items.length || working}>
           <Trash2 size={16} />
@@ -131,35 +131,35 @@ export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
       {preview ? (
         <Modal title="Todo 복원 미리보기" description="현재 데이터 상태를 기준으로 실제 복원 가능한 연결만 보여줍니다." onClose={() => setPreview(null)} size="lg">
           <div className="space-y-4">
-            <div className="rounded-lg border border-ink-700 bg-ink-950/35 p-3">
+            <div className="border-b border-ink-700/45 pb-3">
               <p className="font-bold text-ink-100">{preview.title}</p>
               <p className="mt-1 text-xs text-ink-500">원본 Todo ID: {preview.originalTodoId}</p>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><p className="text-xs font-semibold text-ink-500">카테고리</p><p className="mt-1 text-sm text-ink-200">{refLabel(preview.refs.category)}</p></div>
-              <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><p className="text-xs font-semibold text-ink-500">프로젝트</p><p className="mt-1 text-sm text-ink-200">{refLabel(preview.refs.project)}</p></div>
-              <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><p className="text-xs font-semibold text-ink-500">마일스톤</p><p className="mt-1 text-sm text-ink-200">{refLabel(preview.refs.milestone)}</p></div>
-              <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><p className="text-xs font-semibold text-ink-500">상위 Todo</p><p className="mt-1 text-sm text-ink-200">{refLabel(preview.refs.parentTodo)}</p></div>
+            <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
+              <div className="border-b border-ink-700/35 py-2.5"><p className="text-xs font-semibold text-ink-500">카테고리</p><p className="mt-1 text-sm text-ink-200">{refLabel(preview.refs.category)}</p></div>
+              <div className="border-b border-ink-700/35 py-2.5"><p className="text-xs font-semibold text-ink-500">프로젝트</p><p className="mt-1 text-sm text-ink-200">{refLabel(preview.refs.project)}</p></div>
+              <div className="border-b border-ink-700/35 py-2.5"><p className="text-xs font-semibold text-ink-500">마일스톤</p><p className="mt-1 text-sm text-ink-200">{refLabel(preview.refs.milestone)}</p></div>
+              <div className="border-b border-ink-700/35 py-2.5"><p className="text-xs font-semibold text-ink-500">상위 Todo</p><p className="mt-1 text-sm text-ink-200">{refLabel(preview.refs.parentTodo)}</p></div>
             </div>
 
             <div>
               <p className="text-sm font-bold text-ink-100">연결 데이터</p>
-              <dl className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs text-ink-500">하위 Todo</dt><dd className="mt-1 text-sm font-semibold text-ink-200">{countLabel(preview.links.children)}</dd></div>
-                <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs text-ink-500">메모</dt><dd className="mt-1 text-sm font-semibold text-ink-200">{countLabel(preview.links.memos)}</dd></div>
-                <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs text-ink-500">Time Block</dt><dd className="mt-1 text-sm font-semibold text-ink-200">{countLabel(preview.links.timeBlocks)}</dd></div>
-                <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs text-ink-500">집중 기록</dt><dd className="mt-1 text-sm font-semibold text-ink-200">{countLabel(preview.links.focusSessions)}</dd></div>
-                <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs text-ink-500">오늘 계획</dt><dd className="mt-1 text-sm font-semibold text-ink-200">{countLabel(preview.links.dailyPlans)}</dd></div>
+              <dl className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 sm:grid-cols-3">
+                <div className="border-b border-ink-700/35 py-2.5"><dt className="text-xs text-ink-500">하위 Todo</dt><dd className="mt-1 text-sm font-semibold text-ink-200">{countLabel(preview.links.children)}</dd></div>
+                <div className="border-b border-ink-700/35 py-2.5"><dt className="text-xs text-ink-500">메모</dt><dd className="mt-1 text-sm font-semibold text-ink-200">{countLabel(preview.links.memos)}</dd></div>
+                <div className="border-b border-ink-700/35 py-2.5"><dt className="text-xs text-ink-500">Time Block</dt><dd className="mt-1 text-sm font-semibold text-ink-200">{countLabel(preview.links.timeBlocks)}</dd></div>
+                <div className="border-b border-ink-700/35 py-2.5"><dt className="text-xs text-ink-500">집중 기록</dt><dd className="mt-1 text-sm font-semibold text-ink-200">{countLabel(preview.links.focusSessions)}</dd></div>
+                <div className="border-b border-ink-700/35 py-2.5"><dt className="text-xs text-ink-500">오늘 계획</dt><dd className="mt-1 text-sm font-semibold text-ink-200">{countLabel(preview.links.dailyPlans)}</dd></div>
               </dl>
             </div>
 
             {preview.warnings.length ? (
-              <div className="rounded-lg border border-amber-400/25 bg-amber-500/[0.07] p-3">
+              <div className="border-l-2 border-warning/70 py-1 pl-3">
                 <div className="flex items-center gap-2 text-sm font-bold text-amber-100"><AlertTriangle size={15} />복원 시 변경되는 항목</div>
                 <ul className="mt-2 space-y-1 text-xs text-amber-100/90">{preview.warnings.map((warning) => <li key={warning}>• {warning}</li>)}</ul>
               </div>
-            ) : <p className="rounded-lg border border-emerald-500/25 bg-emerald-500/[0.07] px-3 py-2 text-sm text-emerald-100">기존 연결을 그대로 복원할 수 있습니다.</p>}
+            ) : <p className="border-l-2 border-success/70 py-1 pl-3 text-sm text-ink-300">기존 연결을 그대로 복원할 수 있습니다.</p>}
 
             <div className="flex justify-end gap-2 border-t border-ink-700 pt-4">
               <button type="button" className="btn-secondary" onClick={() => setPreview(null)} disabled={working}>취소</button>

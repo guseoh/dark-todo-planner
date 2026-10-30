@@ -29,13 +29,15 @@ const contrast = (a: string, b: string) => {
   return (Math.max(one, two) + 0.05) / (Math.min(one, two) + 0.05);
 };
 
-describe("charcoal dark design tokens", () => {
+describe("neutral minimal dark design tokens", () => {
   it("keeps the global palette aligned with Tailwind tokens", () => {
     expect(css).toContain(`--app-bg: ${token("ink", 950)};`);
     expect(css).toContain(`--surface-1: ${token("ink", 900)};`);
     expect(css).toContain(`--surface-2: ${token("ink", 850)};`);
     expect(css).toContain(`--accent: ${token("accent", 500)};`);
     expect(css).not.toContain("#2563eb");
+    expect(token("accent", 500)).toBe("#d4d4d8");
+    expect(css).toContain("@apply rounded-none border-0 border-b");
   });
 
   it("meets WCAG AA contrast for the main and muted text", () => {
@@ -44,9 +46,10 @@ describe("charcoal dark design tokens", () => {
     expect(contrast(token("ink", 600), token("ink", 900))).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("uses dark foreground text on the light sage primary action", () => {
+  it("uses neutral contrast for the primary action", () => {
     expect(contrast(token("ink", 950), token("accent", 500))).toBeGreaterThanOrEqual(4.5);
-    expect(css).toContain("@apply btn bg-accent-500 text-ink-950");
+    expect(css).toContain("@apply btn border-ink-200 bg-ink-200 text-ink-950");
+    expect(contrast(token("ink", 950), token("ink", 200))).toBeGreaterThanOrEqual(4.5);
   });
 
   it("respects reduced motion preferences", () => {

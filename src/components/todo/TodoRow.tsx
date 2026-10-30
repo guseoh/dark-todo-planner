@@ -1,7 +1,7 @@
 import { Archive, CalendarDays, CheckCircle2, ExternalLink, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { formatKoreanDate, getDdayLabel, todayKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../../lib/todo";
-import { planningStateLabels, workflowStatusClassNames, workflowStatusLabels } from "../../lib/todoLabels";
+import { planningStateLabels, workflowStatusLabels } from "../../lib/todoLabels";
 import type { Todo } from "../../types/todo";
 import { PriorityBadge } from "./PriorityBadge";
 import { QuickSnoozeMenu } from "./QuickSnoozeMenu";
@@ -52,7 +52,7 @@ export function TodoRow({
   const openOrSelect = () => selectionMode ? onSelect?.(todo.id) : onEdit(todo);
 
   return (
-    <article className={`group rounded-lg border px-2 py-2 transition sm:px-2.5 ${selected && selectionMode ? "border-accent-300/45 bg-accent-500/15" : "border-ink-700/50 bg-ink-850/70 hover:border-ink-600/70 hover:bg-ink-800/70"}`}>
+    <article className={`group border-b px-2 py-2 transition sm:px-2.5 ${selected && selectionMode ? "border-ink-500/60 bg-ink-850/70" : "border-ink-700/35 bg-transparent hover:border-ink-600/55 hover:bg-ink-850/55"}`}>
       <div className="flex min-w-0 items-center gap-1.5">
         {selectionMode ? (
           <label className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md transition hover:bg-ink-800" title={selected ? "선택 해제" : "선택"}>
@@ -65,21 +65,19 @@ export function TodoRow({
         )}
 
         <button type="button" className="min-w-0 flex-1 rounded-md px-1 py-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/30" onClick={openOrSelect} aria-pressed={selectionMode ? selected : undefined}>
-          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-            <h4 className={`min-w-0 break-words text-sm font-semibold leading-5 text-ink-100 ${todo.completed ? "text-ink-500 line-through" : ""}`}>{todo.title}</h4>
-            {!(hideMediumPriority && todo.priority === "MEDIUM") ? <PriorityBadge priority={todo.priority} compact /> : null}
-            {!todo.completed && (todo.workflowStatus === "IN_PROGRESS" || todo.workflowStatus === "BLOCKED") ? <span className={`rounded-full border px-1.5 py-0.5 text-[11px] font-semibold leading-4 ${workflowStatusClassNames[todo.workflowStatus]}`}>{workflowStatusLabels[todo.workflowStatus]}</span> : null}
-            {showCategoryBadge ? <span className="rounded-full border border-ink-700/65 bg-ink-900/65 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-ink-400">{todo.category?.name || "미분류"}</span> : null}
-            {todo.planningState !== "SCHEDULED" ? <span className="rounded-full border border-ink-700/65 bg-ink-900/65 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-ink-300">{planningLabel[todo.planningState]}</span> : null}
-            {todo.archived ? <span className="rounded-full border border-ink-600 bg-ink-700/35 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-ink-300">보관됨</span> : null}
-            {duplicateCandidate ? <span className="rounded-full border border-amber-400/30 bg-amber-400/[0.07] px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-amber-100">중복 후보</span> : null}
-          </div>
+          <h4 className={`min-w-0 break-words text-sm font-semibold leading-5 text-ink-100 ${todo.completed ? "text-ink-500 line-through" : ""}`}>{todo.title}</h4>
           {todo.memo ? <p className="mt-1 line-clamp-1 whitespace-pre-wrap text-xs text-ink-400">{todo.memo}</p> : null}
-          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-ink-500">
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-500">
+            {!(hideMediumPriority && todo.priority === "MEDIUM") ? <PriorityBadge priority={todo.priority} compact /> : null}
+            {!todo.completed && (todo.workflowStatus === "IN_PROGRESS" || todo.workflowStatus === "BLOCKED") ? <span className={todo.workflowStatus === "BLOCKED" ? "font-medium text-red-200" : "text-ink-300"}>{workflowStatusLabels[todo.workflowStatus]}</span> : null}
+            {showCategoryBadge ? <span>{todo.category?.name || "미분류"}</span> : null}
+            {todo.planningState !== "SCHEDULED" ? <span>{planningLabel[todo.planningState]}</span> : null}
+            {todo.archived ? <span>보관됨</span> : null}
+            {duplicateCandidate ? <span className="font-medium text-amber-200">중복 후보</span> : null}
             {projectName ? <span className="font-semibold text-ink-400">{projectName}</span> : null}
-            {showCategoryMeta ? <span>{todo.category?.name || "미분류"}</span> : null}
+            {showCategoryMeta && !showCategoryBadge ? <span>{todo.category?.name || "미분류"}</span> : null}
             {showDate && todo.planningState === "SCHEDULED" ? <span className="inline-flex items-center gap-1"><CalendarDays size={12} />{formatKoreanDate(todo.date, "M월 d일 E")}</span> : null}
-            {todo.dueDate ? <span className={`rounded-full border px-1.5 py-0.5 font-semibold ${overdue ? "border-danger/35 bg-danger/[0.07] text-red-100" : dueSoon ? "border-warning/35 bg-warning/[0.07] text-amber-100" : "border-ink-700/65 text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {getDdayLabel(todo.dueDate)}</span> : null}
+            {todo.dueDate ? <span className={`font-medium ${overdue ? "text-red-200" : dueSoon ? "text-amber-200" : "text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {getDdayLabel(todo.dueDate)}</span> : null}
             {todo.referenceUrl ? <span className="inline-flex items-center gap-1 font-semibold text-accent-200"><ExternalLink size={11} />{todo.referenceLabel || "관련 링크"}</span> : null}
           </div>
         </button>

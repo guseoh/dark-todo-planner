@@ -11,11 +11,9 @@ import type { Project } from "../types/project";
 import type { Todo, TodoInput } from "../types/todo";
 
 const memoColors = [
-  { label: "차콜", value: "#25292d", className: "border-zinc-400/25 bg-zinc-400/[0.04]" },
-  { label: "세이지", value: "#3f594b", className: "border-emerald-300/25 bg-emerald-300/[0.05]" },
-  { label: "에메랄드", value: "#065f46", className: "border-emerald-400/30 bg-emerald-500/[0.07]" },
-  { label: "앰버", value: "#92400e", className: "border-amber-400/30 bg-amber-500/[0.07]" },
-  { label: "로즈", value: "#9f1239", className: "border-rose-400/30 bg-rose-500/[0.07]" },
+  { label: "검정", value: "#202023", className: "" },
+  { label: "진회색", value: "#303034", className: "" },
+  { label: "회색", value: "#47474c", className: "" },
 ];
 
 const DRAFT_PREFIX = "dark-todo-planner:memo-draft:";
@@ -26,8 +24,7 @@ const legacyMemoColorMap: Record<string, string> = {
 };
 const resolveMemoColor = (color?: string) =>
   memoColors.find((item) => item.value === color)?.value || (color && legacyMemoColorMap[color]) || memoColors[0].value;
-const colorClass = (color?: string) =>
-  memoColors.find((item) => item.value === resolveMemoColor(color))?.className || memoColors[0].className;
+const colorClass = (_color?: string) => "border-ink-700/40 bg-transparent";
 
 type MemoDraft = { title: string; content: string; color: string; pinned: boolean; todoIds?: string[]; projectIds?: string[]; createdMemoId?: string; savedAt: number };
 
@@ -242,8 +239,8 @@ function MemoCard({ memo, onDelete, onTogglePin, onEdit, onCreateTodo, onCreateC
   const displayTitle = memoDisplayTitle(memo);
   const checklistTitles = uncheckedChecklistTitles(memo.content);
   return (
-    <article className={`group rounded-lg border p-3 transition hover:border-ink-500/70 ${colorClass(memo.color)}`}>
-      <div className="flex min-h-full flex-col gap-2.5">
+    <article className={`group border-b p-3 transition hover:border-ink-500/70 hover:bg-ink-850/50 ${colorClass(memo.color)}`}>
+      <div className="flex flex-col gap-2.5">
         <div className="flex items-start justify-between gap-2">
           <button type="button" className="min-w-0 flex-1 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/35" onClick={() => onEdit(memo)} aria-label={`${displayTitle} 메모 수정`}>
             <div className="flex min-w-0 items-center gap-1.5">{memo.pinned ? <Pin size={13} className="shrink-0 text-accent-300" /> : null}<h3 className="line-clamp-1 text-sm font-bold leading-5 text-ink-100" title={displayTitle}>{displayTitle}</h3></div>
@@ -259,8 +256,8 @@ function MemoCard({ memo, onDelete, onTogglePin, onEdit, onCreateTodo, onCreateC
         <div className="-m-1 cursor-pointer rounded-md p-1" onClick={(event) => { if (event.target instanceof Element && event.target.closest("a")) return; onEdit(memo); }} title="메모 수정"><MarkdownPreview className="line-clamp-3 text-xs leading-5 text-ink-300" value={memo.content} /></div>
         {memo.todoIds.length || memo.projectIds.length ? (
           <div className="flex flex-wrap gap-1 text-[10px] font-semibold text-ink-400">
-            {memo.todoIds.length ? <span className="rounded-full bg-ink-950/55 px-1.5 py-0.5"><ListPlus size={11} className="mr-1 inline" />Todo {memo.todoIds.length}</span> : null}
-            {memo.projectIds.length ? <span className="rounded-full bg-ink-950/55 px-1.5 py-0.5"><FolderKanban size={11} className="mr-1 inline" />프로젝트 {memo.projectIds.length}</span> : null}
+            {memo.todoIds.length ? <span className="px-0.5 py-0.5"><ListPlus size={11} className="mr-1 inline" />Todo {memo.todoIds.length}</span> : null}
+            {memo.projectIds.length ? <span className="px-0.5 py-0.5"><FolderKanban size={11} className="mr-1 inline" />프로젝트 {memo.projectIds.length}</span> : null}
           </div>
         ) : null}
         {checklistTitles.length ? <button type="button" className="btn-secondary min-h-8 self-start px-2 py-1 text-[11px]" onClick={() => void onCreateChecklistTodos(memo, checklistTitles)}><ListPlus size={12} />체크리스트 {checklistTitles.length}개를 Todo로</button> : null}
@@ -362,8 +359,8 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
 
       {filteredMemos.length ? (
         <div className="space-y-4">
-          {pinnedMemos.length ? <section className="space-y-2"><div className="flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">고정 메모</h3><span className="text-[10px] text-ink-600">{pinnedMemos.length}개</span></div><div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">{pinnedMemos.map(renderCard)}</div></section> : null}
-          {normalMemos.length ? <section className="space-y-2"><div className="flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">일반 메모</h3><span className="text-[10px] text-ink-600">{normalMemos.length}개</span></div><div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">{normalMemos.map(renderCard)}</div></section> : null}
+          {pinnedMemos.length ? <section className="space-y-2"><div className="flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">고정 메모</h3><span className="text-[10px] text-ink-600">{pinnedMemos.length}개</span></div><div className="divide-y divide-ink-700/20">{pinnedMemos.map(renderCard)}</div></section> : null}
+          {normalMemos.length ? <section className="space-y-2"><div className="flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">일반 메모</h3><span className="text-[10px] text-ink-600">{normalMemos.length}개</span></div><div className="divide-y divide-ink-700/20">{normalMemos.map(renderCard)}</div></section> : null}
         </div>
       ) : memos.length ? <EmptyState title="검색 결과가 없습니다." description="검색어를 변경하거나 전체 필터를 선택해보세요." /> : <EmptyState title="아직 작성한 메모가 없습니다." description="새 메모에서 작업 중 떠오른 생각을 가볍게 남겨보세요." />}
 

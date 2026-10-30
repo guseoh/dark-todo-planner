@@ -32,10 +32,10 @@ type MonthlyCalendarProps = {
 };
 
 const eventTone: Record<CalendarEvent["kind"], string> = {
-  todo: "border-l-accent-600 bg-accent-500/10 text-ink-200",
-  deadline: "border-l-warning bg-warning/10 text-amber-100",
-  milestone: "border-l-ink-500 bg-ink-800/90 text-ink-200",
-  project: "border-l-ink-400 bg-ink-850 text-ink-200",
+  todo: "border-l-ink-300 bg-ink-800/45 text-ink-200",
+  deadline: "border-l-warning bg-warning/[0.06] text-ink-200",
+  milestone: "border-l-ink-600 bg-ink-850/75 text-ink-300",
+  project: "border-l-ink-500 bg-ink-850 text-ink-300",
 };
 const eventPrefix: Record<CalendarEvent["kind"], string> = {
   todo: "",
@@ -56,7 +56,7 @@ function CalendarDropCell({ dateKey, disabled, onMoveTodo, children }: {
   return (
     <div
       data-calendar-date={dateKey}
-      className={`min-w-0 ${hovered && !disabled ? "rounded-lg ring-2 ring-accent-500/80" : ""}`}
+      className={`min-w-0 ${hovered && !disabled ? "ring-2 ring-accent-500/80" : ""}`}
       onDragOver={(event: DragEvent<HTMLDivElement>) => {
         if (disabled || !event.dataTransfer.types.includes("text/plain")) return;
         event.preventDefault();
@@ -101,7 +101,7 @@ function CalendarEventChip({ event, onClick, draggingDisabled, hiddenClass }: {
       data-calendar-event={event.id}
       title={`${prefix}${event.title}${event.projectName ? ` · ${event.projectName}` : ""}`}
       aria-label={event.title}
-      className={`pointer-events-auto relative block min-h-5 w-full min-w-0 truncate rounded-[4px] border-l-[3px] px-1 py-0.5 text-left text-[10px] leading-4 transition-colors hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${eventTone[event.kind]} ${event.completed ? "opacity-50 line-through" : ""} ${dragging ? "cursor-grabbing opacity-60" : draggable ? "cursor-grab" : "cursor-pointer"} ${hiddenClass}`}
+      className={`pointer-events-auto relative block min-h-5 w-full min-w-0 truncate rounded-[2px] border-l-2 px-1 py-0.5 text-left text-[10px] leading-4 transition-colors hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${eventTone[event.kind]} ${event.completed ? "opacity-50 line-through" : ""} ${dragging ? "cursor-grabbing opacity-60" : draggable ? "cursor-grab" : "cursor-pointer"} ${hiddenClass}`}
     >
       {prefix}{event.title}
     </button>
@@ -144,7 +144,7 @@ export function MonthlyCalendar({
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
+      <div className="grid grid-cols-7 overflow-hidden border-l border-t border-ink-700/45">
         {monthDays.map((day) => {
           const dateKey = toDateKey(day);
           const events = eventsByDate.get(dateKey) ?? [];
@@ -168,18 +168,18 @@ export function MonthlyCalendar({
           return (
             <CalendarDropCell key={dateKey} dateKey={dateKey} disabled={draggingDisabled} onMoveTodo={onMoveTodo}>
             <article
-              className={`group relative flex min-h-[6.5rem] min-w-0 flex-col overflow-hidden rounded-lg border p-1.5 transition-colors sm:min-h-[9rem] sm:p-2 ${
+              className={`group relative flex min-h-[6.5rem] min-w-0 flex-col overflow-hidden border-b border-r p-1.5 transition-colors sm:min-h-[9rem] sm:p-2 ${
                 selected
-                  ? "border-accent-600/85 bg-accent-500/[0.075] ring-1 ring-accent-500/20"
-                  : "border-ink-700/45 bg-ink-950/30 hover:border-ink-600/70 hover:bg-ink-850/70"
-              } ${!inMonth ? "opacity-60" : ""} ${today && !selected ? "ring-1 ring-accent-600/45" : ""}`}
+                  ? "border-ink-600/85 bg-ink-800/55 ring-1 ring-inset ring-ink-500/35"
+                  : "border-ink-700/45 bg-transparent hover:border-ink-600/70 hover:bg-ink-850/60"
+              } ${!inMonth ? "opacity-60" : ""} ${today && !selected ? "ring-1 ring-inset ring-ink-400/45" : ""}`}
             >
-              <button type="button" className="absolute inset-0 z-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500/60"
+              <button type="button" className="absolute inset-0 z-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500/60"
                 onClick={() => onSelectDate(dateKey)} aria-label={`${formattedDate} 일정 ${events.length}개 보기`} />
               <div className="pointer-events-none relative z-10 flex h-full min-w-0 flex-1 flex-col">
                 <div className="flex min-w-0 items-center justify-between gap-1">
-                  <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-md text-xs font-bold sm:text-sm ${
-                    today ? "bg-accent-500 text-ink-950" : holidayName || isSunday ? "text-red-300" : "text-ink-200"
+                  <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-[3px] text-xs font-semibold sm:text-sm ${
+                    today ? "bg-ink-200 text-ink-950" : holidayName || isSunday ? "text-red-300" : "text-ink-200"
                   }`}>{formatKoreanDate(day, "d")}</span>
                   <div className="pointer-events-auto flex shrink-0 items-center gap-0.5">
                     {events.length > 0 ? <span className="hidden truncate text-[10px] text-ink-400 sm:inline">{activeCount ? `${activeCount} 남음` : `${events.length} 완료`}</span> : null}

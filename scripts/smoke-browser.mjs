@@ -48,6 +48,32 @@ try {
   await page.locator('input[autocomplete="current-password"]').fill(process.env.SMOKE_PASSWORD);
   await page.getByRole("button", { name: "로그인" }).click();
   await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
+  // Design-system regression: flat content sections and strictly neutral
+  // visual accent. Do not turn the workspace back into bordered tile cards.
+  const visualSystem = await page.evaluate(() => {
+    const section = document.querySelector(".app-card");
+    const primary = document.querySelector(".btn-primary");
+    if (!section || !primary) return null;
+    const sectionStyle = getComputedStyle(section);
+    const buttonStyle = getComputedStyle(primary);
+    const rootStyle = getComputedStyle(document.documentElement);
+    return {
+      sectionRadius: sectionStyle.borderTopLeftRadius,
+      sectionBackground: sectionStyle.backgroundColor,
+      sectionBorderTop: sectionStyle.borderTopWidth,
+      primaryBackground: buttonStyle.backgroundColor,
+      accent: rootStyle.getPropertyValue("--accent").trim(),
+      canvas: rootStyle.getPropertyValue("--app-bg").trim(),
+    };
+  });
+  assert.ok(visualSystem, "Today screen should contain a content section and a primary control.");
+  assert.equal(visualSystem.sectionRadius, "0px", "Content sections must not look like rounded cards.");
+  assert.equal(visualSystem.sectionBackground, "rgba(0, 0, 0, 0)", "Content sections must share the workspace canvas.");
+  assert.equal(visualSystem.sectionBorderTop, "0px", "Content sections must not be enclosed on every edge.");
+  assert.equal(visualSystem.accent, "#d4d4d8", "Accent must be achromatic rather than sage.");
+  assert.equal(visualSystem.canvas, "#101011", "The workspace canvas must use neutral near-black.");
+  assert.equal(visualSystem.primaryBackground, "rgb(226, 226, 229)", "Primary action should be neutral light gray.");
+
 
   const nav = page.getByRole("navigation", { name: "모바일 탐색" });
   assert.equal(await nav.locator("button").count(), 5, "Mobile bar must have exactly five primary tabs");

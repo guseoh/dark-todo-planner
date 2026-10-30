@@ -42,7 +42,7 @@ function CalendarDateMoveRow({ todo, busy, onMove }: {
 }) {
   const [targetDate, setTargetDate] = useState(todo.date);
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-ink-700/50 bg-ink-950/45 p-2">
+    <div className="flex flex-col gap-2 border-b border-ink-700/35 p-2">
       <p className="truncate text-xs font-semibold text-ink-200" title={todo.title}>{todo.title}</p>
       <div className="flex flex-wrap items-center gap-2">
         <label className="min-w-0 flex-1">
@@ -98,7 +98,7 @@ export function MonthlySidePanel({
               <h4 className="text-xs font-semibold text-ink-300">마감·프로젝트 일정</h4>
               <ul className="space-y-1.5">
                 {relatedEvents.map((event) => (
-                  <li key={event.id} className={`rounded-lg border border-ink-700/55 bg-ink-950/45 px-2.5 py-2 ${event.completed ? "opacity-60" : ""}`}>
+                  <li key={event.id} className={`border-b border-ink-700/35 px-1 py-2 ${event.completed ? "opacity-60" : ""}`}>
                     <span className="block text-[11px] font-semibold text-ink-400">{eventLabel[event.kind]}</span>
                     <span className={`block break-words text-xs text-ink-200 ${event.completed ? "line-through" : ""}`}>{event.title}</span>
                     {event.projectName && event.kind === "milestone" ? <span className="mt-0.5 block text-[11px] text-ink-500">{event.projectName}</span> : null}
@@ -110,13 +110,13 @@ export function MonthlySidePanel({
           <section aria-label="선택한 날짜 실행 Todo" className="space-y-2">
             <div className="flex items-center justify-between gap-2">
               <h4 className="text-xs font-semibold text-ink-300">실행 Todo</h4>
-              <span className="rounded-full border border-ink-700 bg-ink-950/70 px-2.5 py-0.5 text-xs text-ink-400">{selectedTodos.length}개</span>
+              <span className="px-1 py-0.5 text-xs text-ink-400">{selectedTodos.length}개</span>
             </div>
             {quickAdd ? (
               <InlineTodoAdd key={selectedDate} defaultDate={selectedDate} placeholder="이 날짜에 추가할 Todo" onAdd={onAdd} onCancel={onCancelQuickAdd} />
             ) : null}
             {selectedTodos.length ? (
-              <details className="rounded-lg border border-ink-700/60 bg-ink-950/30 p-2.5">
+              <details className="border-t border-ink-700/50 p-2.5">
                 <summary className="cursor-pointer text-xs font-semibold text-ink-300">빠른 날짜 변경 · ${selectedTodos.length}개</summary>
                 <div className="mt-3 space-y-2">
                   {selectedTodos.map((todo) => (
