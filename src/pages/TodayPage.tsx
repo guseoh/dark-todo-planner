@@ -310,15 +310,14 @@ export function TodayPage({
         <aside className="today-sidebar space-y-4 xl:sticky xl:top-20" aria-label="일정 요약">
           <section className="today-sidebar__section space-y-3" aria-labelledby="week-summary-title">
             <div className="today-sidebar__heading"><h3 id="week-summary-title">이번 주</h3></div>
-            <p className="today-sidebar__rate"><strong>{formatCompletionRate(stats.weekTotal, stats.weekRate)}</strong><span>완료율</span></p>
-            <ProgressBar value={stats.weekRate} empty={!stats.weekTotal} label="주간 진행률" emptyLabel="등록된 작업 없음" />
+            <p className="today-sidebar__rate"><strong className={stats.weekRate > 0 ? "text-success" : undefined}>{formatCompletionRate(stats.weekTotal, stats.weekRate)}</strong><span>완료율</span></p>
             <p className="today-sidebar__caption">이번 주 일정 {stats.weekTotal}개 기준</p>
           </section>
           {overdueTodos.length > 0 ? <section className="today-sidebar__overdue space-y-3" aria-labelledby="overdue-summary-title">
-            <h3 id="overdue-summary-title" className="inline-flex items-center gap-2 text-sm font-bold text-warning"><History size={16} />지난 일정</h3>
-            <p className="text-sm text-ink-200">미완료 작업 <strong className="text-warning">{overdueTodos.length}개</strong></p>
+            <h3 id="overdue-summary-title" className="inline-flex items-center gap-2 text-sm font-bold text-danger"><History size={16} />지난 일정</h3>
+            <p className="text-sm text-ink-200">미완료 작업 <strong className="text-danger">{overdueTodos.length}개</strong></p>
             <p className="text-xs text-ink-400">가장 오래된 일정 {oldestOverdueDate ? formatKoreanDate(oldestOverdueDate, "M월 d일") : "-"}</p>
-            <button type="button" className="btn-secondary w-full text-xs" onClick={() => setShowOverdueImport(true)}>지난 일정 가져오기</button>
+            <button type="button" className="btn-secondary w-full text-xs" onClick={() => setShowOverdueImport(true)}>지난 일정 정리</button>
           </section> : null}
 
         </aside>

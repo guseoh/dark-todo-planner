@@ -239,8 +239,8 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
                 {planner.backgroundOrOperationError ? <ErrorBanner message={planner.backgroundOrOperationError} onRetry={planner.loadAll} /> : null}
                 {activeView === "today" && todayOpenTodos.length ? (
                   <div className="flex justify-end">
-                    <button type="button" className="btn-secondary border-accent-500/25 bg-accent-500/[0.05] text-accent-100" onClick={() => setShowDayClose(true)}>
-                      <MoonStar size={15} />하루 마감 · {todayOpenTodos.length}
+                    <button type="button" className="btn-secondary border-warning/30 bg-warning/[0.06] text-ui-text" onClick={() => setShowDayClose(true)} title="오늘 남은 Todo를 선택적으로 내일 또는 언젠가로 정리합니다">
+                      <MoonStar size={15} />오늘 정리 · 미완료 {todayOpenTodos.length}개
                     </button>
                   </div>
                 ) : null}

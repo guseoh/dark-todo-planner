@@ -292,7 +292,7 @@ button:disabled {
     border-bottom: 1px solid var(--ui-divider);
   }
   .today-header__identity { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0.75rem; }
-  .today-header__identity h2 {
+  .today-header__identity h1 {
     color: var(--text-primary);
     font-size: 1.3rem;
     font-weight: 650;
@@ -312,7 +312,7 @@ button:disabled {
   .today-header__status strong { color: var(--text-primary); font-weight: 650; }
   .today-header__meter { width: 86px; }
   .today-header__meter [role="progressbar"] { height: 3px; background: var(--surface-3); }
-  .today-header__meter [role="progressbar"] > div { border-radius: 0; }
+  .today-header__meter [role="progressbar"] > div { border-radius: 0; background: var(--success); }
 
   .today-task-section { min-width: 0; }
   .today-task-heading {
@@ -519,7 +519,9 @@ button:disabled {
   .today-sidebar__rate span,
   .today-sidebar__caption { color: var(--text-muted); font-size: 0.72rem; }
   .today-sidebar__section [role="progressbar"] { height: 4px; }
-  .today-sidebar__overdue { padding: 0 0 0 0.7rem; border-left: 2px solid var(--warning); }
+  .today-sidebar__rate strong.text-success { color: var(--success); }
+  .todo-row__more > summary::-webkit-details-marker { display: none; }
+  .today-sidebar__overdue { padding: 0 0 0 0.7rem; border-left: 2px solid var(--danger); }
   .todo-row__actions { transition: opacity 150ms ease; }
   @media (hover: hover) and (pointer: fine) {
     .todo-row__actions { opacity: 0.42; }
