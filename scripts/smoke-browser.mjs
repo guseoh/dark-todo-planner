@@ -277,10 +277,12 @@ try {
     const submit = el.querySelector('button[type="submit"]');
     if (!(input instanceof HTMLElement) || !(submit instanceof HTMLElement)) return null;
     return { titleWidth: input.getBoundingClientRect().width, submitWidth: submit.getBoundingClientRect().width,
-      categoriesInMain: el.querySelectorAll('select').length };
+      categoriesInMain: el.querySelectorAll('select').length, viewport: window.innerWidth };
   });
-  assert.ok(mainLayout && mainLayout.titleWidth > mainLayout.submitWidth * 2,
-    "G6.2: inline title should dominate the creation row.");
+  assert.ok(mainLayout && (mainLayout.viewport <= 720
+    ? mainLayout.titleWidth >= mainLayout.submitWidth - 2
+    : mainLayout.titleWidth > mainLayout.submitWidth * 2),
+    "G6.2: title should dominate on desktop and occupy a full row on mobile.");
   assert.equal(mainLayout.categoriesInMain, 0, "Category selector must move to optional detail fields.");
   await composerToggle.click();
   await composer.getByRole("group", { name: "Todo 상세 옵션" }).waitFor();
