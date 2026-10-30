@@ -148,6 +148,9 @@ try {
   await page.goto(new URL("/#/inbox", base).toString(), { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "전체 Todo", exact: true }).waitFor();
   assert.equal(new URL(page.url()).hash, "#/all", "Old Inbox bookmarks must redirect to All Todo.");
+  // The view renders before asynchronous Todo hydration finishes.
+  // Wait for the legacy fixture to become visible before checking its count control.
+  await page.getByRole("heading", { name: legacyTitle, exact: true }).waitFor();
   const unplannedButton = page.getByRole("button", { name: /미계획 \d+개 보기/ });
   await unplannedButton.click();
   const legacyRow = page.locator(".todo-row").filter({ has: page.getByRole("heading", { name: legacyTitle, exact: true }) });
