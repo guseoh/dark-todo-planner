@@ -1,4 +1,5 @@
 import { Archive, CalendarDays, CheckCircle2, ExternalLink, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import type { ReactNode } from "react";
 import { formatKoreanDate, getDdayLabel, todayKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../../lib/todo";
 import { planningStateLabels, workflowStatusLabels } from "../../lib/todoLabels";
@@ -17,6 +18,7 @@ type TodoRowProps = {
   showCategoryBadge?: boolean;
   showCategoryMeta?: boolean;
   projectName?: string;
+  leadingAction?: ReactNode;
   hideMediumPriority?: boolean;
   duplicateCandidate?: boolean;
   selectionMode?: boolean;
@@ -37,6 +39,7 @@ export function TodoRow({
   showCategoryBadge = true,
   showCategoryMeta = false,
   projectName,
+  leadingAction,
   hideMediumPriority = false,
   duplicateCandidate = false,
   selectionMode = false,
@@ -52,29 +55,30 @@ export function TodoRow({
   const openOrSelect = () => selectionMode ? onSelect?.(todo.id) : onEdit(todo);
 
   return (
-    <article className={`group border-b px-2 py-2 transition sm:px-2.5 ${selected && selectionMode ? "border-ink-500/60 bg-ink-850/70" : "border-ink-700/35 bg-transparent hover:border-ink-600/55 hover:bg-ink-850/55"}`}>
-      <div className="flex min-w-0 items-center gap-1.5">
+    <article className={`todo-row group px-1 py-3 transition-colors sm:px-2 ${selected && selectionMode ? "bg-ui-selected" : "bg-transparent hover:bg-ui-hover"}`}>
+      <div className="flex min-w-0 items-start gap-1.5 sm:gap-2">
+        {leadingAction ? <div className="flex h-10 w-10 shrink-0 items-center justify-center">{leadingAction}</div> : null}
         {selectionMode ? (
-          <label className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md transition hover:bg-ink-800" title={selected ? "선택 해제" : "선택"}>
+          <label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-[4px] transition-colors hover:bg-ui-hover" title={selected ? "선택 해제" : "선택"}>
             <input type="checkbox" className="h-4 w-4 accent-accent-500" checked={selected} onChange={() => onSelect?.(todo.id)} aria-label={`"${todo.title}" 선택`} />
           </label>
         ) : (
-          <button type="button" onClick={() => onToggle(todo.id)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition hover:bg-ink-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40" aria-label={todo.completed ? `"${todo.title}" 미완료로 변경` : `"${todo.title}" 완료로 변경`} title={todo.completed ? "미완료로 변경" : "완료로 변경"}>
+          <button type="button" onClick={() => onToggle(todo.id)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[4px] transition-colors hover:bg-ui-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus" aria-label={todo.completed ? `"${todo.title}" 미완료로 변경` : `"${todo.title}" 완료로 변경`} title={todo.completed ? "미완료로 변경" : "완료로 변경"}>
             <span className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${todo.completed ? "border-success bg-success text-ink-950" : "border-ink-600 text-transparent"}`} aria-hidden="true"><CheckCircle2 size={13} /></span>
           </button>
         )}
 
-        <button type="button" className="min-w-0 flex-1 rounded-md px-1 py-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/30" onClick={openOrSelect} aria-pressed={selectionMode ? selected : undefined}>
-          <h4 className={`min-w-0 break-words text-sm font-semibold leading-5 text-ink-100 ${todo.completed ? "text-ink-500 line-through" : ""}`}>{todo.title}</h4>
-          {todo.memo ? <p className="mt-1 line-clamp-1 whitespace-pre-wrap text-xs text-ink-400">{todo.memo}</p> : null}
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-500">
+        <button type="button" className="min-w-0 flex-1 rounded-[4px] px-1 py-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus" onClick={openOrSelect} aria-pressed={selectionMode ? selected : undefined}>
+          <h4 className={`min-w-0 break-words text-[15px] font-semibold leading-6 tracking-[-0.01em] text-ui-text ${todo.completed ? "text-ui-muted line-through" : ""}`}>{todo.title}</h4>
+          {todo.memo ? <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-[13px] leading-5 text-ui-secondary">{todo.memo}</p> : null}
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ui-secondary">
             {!(hideMediumPriority && todo.priority === "MEDIUM") ? <PriorityBadge priority={todo.priority} compact /> : null}
             {!todo.completed && (todo.workflowStatus === "IN_PROGRESS" || todo.workflowStatus === "BLOCKED") ? <span className={todo.workflowStatus === "BLOCKED" ? "font-medium text-danger" : "text-ink-300"}>{workflowStatusLabels[todo.workflowStatus]}</span> : null}
             {showCategoryBadge ? <span>{todo.category?.name || "미분류"}</span> : null}
             {todo.planningState !== "SCHEDULED" ? <span>{planningLabel[todo.planningState]}</span> : null}
             {todo.archived ? <span>보관됨</span> : null}
             {duplicateCandidate ? <span className="font-medium text-warning">중복 후보</span> : null}
-            {projectName ? <span className="font-semibold text-ink-400">{projectName}</span> : null}
+            {projectName ? <span className="font-medium text-ui-secondary">{projectName}</span> : null}
             {showCategoryMeta && !showCategoryBadge ? <span>{todo.category?.name || "미분류"}</span> : null}
             {showDate && todo.planningState === "SCHEDULED" ? <span className="inline-flex items-center gap-1"><CalendarDays size={12} />{formatKoreanDate(todo.date, "M월 d일 E")}</span> : null}
             {todo.dueDate ? <span className={`font-medium ${overdue ? "text-danger" : dueSoon ? "text-warning" : "text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {getDdayLabel(todo.dueDate)}</span> : null}
@@ -83,7 +87,7 @@ export function TodoRow({
         </button>
 
         {!selectionMode ? (
-          <div className="flex shrink-0 flex-wrap justify-end gap-1 opacity-100 sm:opacity-75 sm:transition sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+          <div className="flex shrink-0 flex-wrap justify-end gap-0.5 opacity-100 sm:opacity-65 sm:transition-opacity sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
             <QuickSnoozeMenu todo={todo} />
             {todo.referenceUrl ? <a href={todo.referenceUrl} target="_blank" rel="noreferrer" className="icon-btn h-8 w-8" aria-label={`"${todo.title}" 관련 링크 열기`} title={todo.referenceLabel || "관련 링크 열기"}><ExternalLink size={13} /></a> : null}
             {todo.archived && onUnarchive ? <button type="button" className="icon-btn h-8 w-8" onClick={() => onUnarchive(todo.id)} aria-label={`"${todo.title}" 보관 해제`}><RotateCcw size={13} /></button> : null}

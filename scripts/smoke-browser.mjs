@@ -190,6 +190,26 @@ try {
   await page.getByRole("button", { name: "추가", exact: true }).click();
   await page.getByText(title, { exact: true }).first().waitFor();
   assert.ok(await findServerTodo(title), "Todo create should persist to local D1.");
+  // Readability regression: a task is a distinct text-first row, not a barely
+  // visible line or a nested rounded card.
+  const createdRow = page.locator(".todo-row").filter({ has: page.getByRole("heading", { name: title, exact: true }) });
+  const todoVisual = await createdRow.evaluate((row) => {
+    const heading = row.querySelector("h4");
+    if (!heading) throw new Error("Todo title heading missing");
+    const rowStyle = getComputedStyle(row);
+    const titleStyle = getComputedStyle(heading);
+    return {
+      size: parseFloat(titleStyle.fontSize),
+      lineHeight: parseFloat(titleStyle.lineHeight),
+      divider: rowStyle.borderBottomWidth,
+      dividerColor: rowStyle.borderBottomColor,
+      canvas: getComputedStyle(document.documentElement).getPropertyValue("--app-bg").trim(),
+      leadingAction: !!row.querySelector('button[aria-label*="핵심 작업으로 고정"]'),
+    };
+  });
+  assert.ok(todoVisual.size >= 15 && todoVisual.lineHeight >= 24, "Todo titles need a legible 15px/24px hierarchy.");
+  assert.equal(todoVisual.divider, "1px", "Todo rows must have a real separator.");
+  assert.equal(todoVisual.leadingAction, true, "Focus action must align inside the Todo row.");
   // The month dashboard must expose real Todo titles and allow filtering and
   // opening/closing the detail pane, not just numeric day summaries.
   await nav.getByRole("button", { name: "캘린더", exact: true }).click();
@@ -377,6 +397,26 @@ try {
   await page.getByRole("tab", { name: /분석·관리/ }).click();
   await page.getByRole("heading", { name: "프로젝트 상태" }).waitFor();
   await page.getByRole("tab", { name: /작업·Kanban/ }).click();
+  await page.getByText("아직 등록한 프로젝트 작업이 없습니다.", { exact: true }).waitFor();
+  // Inputs previously expanded across the entire desktop toolbar because
+  // .field.field overrode explicit Tailwind width utilities.
+  await page.setViewportSize({ width: 1280, height: 844 });
+  const kanbanFilterWidths = await page.evaluate(() => {
+    const search = document.querySelector('input[aria-label="프로젝트 작업 검색"]');
+    const milestone = document.querySelector('select[aria-label="마일스톤 필터"]');
+    if (!search || !milestone) return null;
+    return { search: search.getBoundingClientRect().width,
+      milestone: milestone.getBoundingClientRect().width,
+      viewport: window.innerWidth, document: document.documentElement.scrollWidth };
+  });
+  assert.ok(kanbanFilterWidths, "Project search and milestone controls must exist.");
+  assert.ok(kanbanFilterWidths.search >= 180 && kanbanFilterWidths.search <= 300,
+    `Project search width must be controlled: ${JSON.stringify(kanbanFilterWidths)}`);
+  assert.ok(kanbanFilterWidths.milestone >= 150 && kanbanFilterWidths.milestone <= 225,
+    `Milestone filter must not fill the toolbar: ${JSON.stringify(kanbanFilterWidths)}`);
+  assert.ok(kanbanFilterWidths.document <= kanbanFilterWidths.viewport + 2,
+    "Project controls must not overflow the desktop viewport.");
+  await page.setViewportSize({ width: 390, height: 844 });
   const resourceDisclosure = page.locator("details").filter({ hasText: "자료 링크" }).first();
   await resourceDisclosure.locator("summary").click();
   assert.equal(await resourceDisclosure.evaluate((node) => node.open), true);
