@@ -48,31 +48,44 @@ try {
   await page.locator('input[autocomplete="current-password"]').fill(process.env.SMOKE_PASSWORD);
   await page.getByRole("button", { name: "로그인" }).click();
   await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
-  // Design-system regression: flat content sections and strictly neutral
-  // visual accent. Do not turn the workspace back into bordered tile cards.
+  // Design-system regression: Today remains content-first, but typography,
+  // the task composer and the editorial side rail must provide clear hierarchy.
+  await page.setViewportSize({ width: 1440, height: 900 });
   const visualSystem = await page.evaluate(() => {
-    const section = document.querySelector(".app-card");
+    const section = document.querySelector(".today-task-section");
+    const composer = document.querySelector(".today-composer");
+    const overviewValue = document.querySelector(".today-overview__stat--primary strong");
+    const sidebar = document.querySelector(".today-sidebar");
     const primary = document.querySelector(".btn-primary");
-    if (!section || !primary) return null;
+    if (!section || !composer || !overviewValue || !sidebar || !primary) return null;
     const sectionStyle = getComputedStyle(section);
-    const buttonStyle = getComputedStyle(primary);
+    const composerStyle = getComputedStyle(composer);
     const rootStyle = getComputedStyle(document.documentElement);
     return {
       sectionRadius: sectionStyle.borderTopLeftRadius,
       sectionBackground: sectionStyle.backgroundColor,
       sectionBorderTop: sectionStyle.borderTopWidth,
-      primaryBackground: buttonStyle.backgroundColor,
+      composerBackground: composerStyle.backgroundColor,
+      composerBorderLeft: composerStyle.borderLeftWidth,
+      overviewValueSize: parseFloat(getComputedStyle(overviewValue).fontSize),
+      sidebarBorderLeft: getComputedStyle(sidebar).borderLeftWidth,
+      primaryBackground: getComputedStyle(primary).backgroundColor,
       accent: rootStyle.getPropertyValue("--accent").trim(),
       canvas: rootStyle.getPropertyValue("--app-bg").trim(),
     };
   });
-  assert.ok(visualSystem, "Today screen should contain a content section and a primary control.");
-  assert.equal(visualSystem.sectionRadius, "0px", "Content sections must not look like rounded cards.");
-  assert.equal(visualSystem.sectionBackground, "rgba(0, 0, 0, 0)", "Content sections must share the workspace canvas.");
-  assert.equal(visualSystem.sectionBorderTop, "0px", "Content sections must not be enclosed on every edge.");
-  assert.equal(visualSystem.accent, "#d4d4d8", "Accent must be achromatic rather than sage.");
+  assert.ok(visualSystem, "Today screen should contain its editorial sections and primary control.");
+  assert.equal(visualSystem.sectionRadius, "0px", "The task section must not become a rounded card.");
+  assert.equal(visualSystem.sectionBackground, "rgba(0, 0, 0, 0)", "The task section must remain on the workspace canvas.");
+  assert.equal(visualSystem.sectionBorderTop, "0px", "The task section must not be enclosed on every edge.");
+  assert.equal(visualSystem.composerBackground, "rgb(22, 22, 23)", "The quick composer should use one subtle inset surface.");
+  assert.equal(visualSystem.composerBorderLeft, "2px", "The quick composer should read as a distinct action band.");
+  assert.ok(visualSystem.overviewValueSize >= 44, "The primary daily metric must establish a clear typographic anchor.");
+  assert.equal(visualSystem.sidebarBorderLeft, "1px", "The desktop side rail must be separated by a quiet vertical rule.");
+  assert.equal(visualSystem.accent, "#d4d4d8", "Accent must remain achromatic rather than sage.");
   assert.equal(visualSystem.canvas, "#101011", "The workspace canvas must use neutral near-black.");
   assert.equal(visualSystem.primaryBackground, "rgb(226, 226, 229)", "Primary action should be neutral light gray.");
+  await page.setViewportSize({ width: 390, height: 844 });
 
 
   const nav = page.getByRole("navigation", { name: "모바일 탐색" });
@@ -203,12 +216,13 @@ try {
       lineHeight: parseFloat(titleStyle.lineHeight),
       divider: rowStyle.borderBottomWidth,
       dividerColor: rowStyle.borderBottomColor,
-      canvas: getComputedStyle(document.documentElement).getPropertyValue("--app-bg").trim(),
+      todayVariant: row.classList.contains("todo-row--today"),
       leadingAction: !!row.querySelector('button[aria-label*="핵심 작업으로 고정"]'),
     };
   });
-  assert.ok(todoVisual.size >= 15 && todoVisual.lineHeight >= 24, "Todo titles need a legible 15px/24px hierarchy.");
+  assert.ok(todoVisual.size >= 16 && todoVisual.lineHeight >= 24, "Today Todo titles need a legible 16px/24px hierarchy.");
   assert.equal(todoVisual.divider, "1px", "Todo rows must have a real separator.");
+  assert.equal(todoVisual.todayVariant, true, "Today Todo rows must use the dedicated editorial presentation.");
   assert.equal(todoVisual.leadingAction, true, "Focus action must align inside the Todo row.");
   // The month dashboard must expose real Todo titles and allow filtering and
   // opening/closing the detail pane, not just numeric day summaries.
@@ -534,6 +548,13 @@ try {
         await page.evaluate((next) => { window.location.hash = "#/" + next; }, view);
         if (view === "scratchpad") await page.getByRole("textbox", { name: "낙서장 편집기" }).waitFor();
         else await page.getByRole("heading", { name: heading, exact: true }).first().waitFor();
+        if (view === "today") {
+          const surfaces = await page.evaluate(() => ({
+            canvas: getComputedStyle(document.documentElement).getPropertyValue("--app-bg").trim(),
+            composer: getComputedStyle(document.querySelector(".today-composer")).backgroundColor,
+          }));
+          assert.notEqual(surfaces.composer, surfaces.canvas, `Today composer must remain distinguishable in ${theme} theme.`);
+        }
         const geometry = await page.evaluate(() => ({
           viewport: window.innerWidth, document: document.documentElement.scrollWidth,
         }));
