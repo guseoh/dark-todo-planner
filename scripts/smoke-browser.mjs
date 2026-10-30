@@ -575,22 +575,29 @@ try {
   });
   await scratchEditor.fill(scratchContent);
   await scratch.getByRole("button", { name: "저장 재시도" }).waitFor();
-  assert.ok(await page.evaluate(() => localStorage.getItem("dark-todo-planner:scratchpad-recovery")?.includes("Scratchpad E2E")), "Local scratchpad draft must survive API failure.");
+  const pendingScratchMarkdown = await page.evaluate(() => {
+    const stored = localStorage.getItem("dark-todo-planner:scratchpad-recovery");
+    return stored ? JSON.parse(stored).content : "";
+  });
+  assert.ok(pendingScratchMarkdown.includes("Scratchpad E2E") && pendingScratchMarkdown.includes("두 번째 줄"),
+    "Markdown draft must survive API failure without dropping Korean content.");
   await page.unroute("**/api/scratchpad");
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "초안 복원" }).waitFor();
   await page.getByRole("button", { name: "초안 복원" }).click();
-  assert.equal(await scratchEditor.inputValue(), scratchContent);
+  assert.ok((await scratchEditor.innerText()).includes("두 번째 줄"), "Recovered rich document must render Korean text.");
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("dark-todo-planner:scratchpad-recovery") || "{}").content), pendingScratchMarkdown);
   let serverScratch = "";
   for (let i = 0; i < 40; i += 1) {
     serverScratch = await page.evaluate(async () => {
       const response = await fetch("/api/scratchpad", { credentials: "same-origin" });
       return (await response.json()).scratchpad.content;
     });
-    if (serverScratch === scratchContent) break;
+    if (serverScratch === pendingScratchMarkdown) break;
     await sleep(250);
   }
-  assert.equal(serverScratch, scratchContent, "Recovered scratchpad must persist to server.");
+  assert.equal(serverScratch, pendingScratchMarkdown, "Recovered Markdown must persist unchanged to server.");
+  assert.equal(await scratchEditor.getAttribute("contenteditable"), "true", "Scratchpad must be a rich contenteditable editor.");
   await scratch.getByText("저장됨", { exact: true }).first().waitFor();
 
   // Layout probes at common mobile, tablet and desktop breakpoints.
