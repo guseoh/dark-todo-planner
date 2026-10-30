@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { Archive, ArchiveRestore, CheckCircle2, ChevronDown, CircleDot, ExternalLink, FolderKanban, Link2, PauseCircle, Pencil, Plus, Save, Target, Trash2, X } from "lucide-react";
 import { ProjectDecisionLog } from "../components/project/ProjectDecisionLog";
 import { PageHeader } from "../components/common/PageHeader";
@@ -99,6 +99,16 @@ export function ProjectPage({
   const [resourceUrl, setResourceUrl] = useState("");
   const [resourceError, setResourceError] = useState("");
   const [deletingProject, setDeletingProject] = useState(false);
+  const projectTabIds = ["work", "milestones", "decisions", "manage"] as const;
+  const onProjectTabKey = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const index = projectTabIds.indexOf(projectTab);
+    const next = event.key === "Home" ? projectTabIds[0] : event.key === "End" ? projectTabIds[3]
+      : projectTabIds[(index + (event.key === "ArrowRight" ? 1 : projectTabIds.length - 1)) % projectTabIds.length];
+    setProjectTab(next);
+    document.getElementById(`project-tab-${next}`)?.focus();
+  };
 
   useEffect(() => {
     const candidates = showArchived ? archivedProjects : activeProjects;
@@ -403,7 +413,8 @@ export function ProjectPage({
               { id: "decisions", label: "결정 기록", count: projectDecisions.length },
               { id: "manage", label: "분석·관리", count: null },
             ] as const).map((tab) => (
-              <button type="button" role="tab" key={tab.id} aria-selected={projectTab === tab.id}
+              <button type="button" role="tab" key={tab.id} id={`project-tab-${tab.id}`} aria-selected={projectTab === tab.id}
+                tabIndex={projectTab === tab.id ? 0 : -1} onKeyDown={onProjectTabKey}
                 onClick={() => setProjectTab(tab.id)}
                 className="page-tab">
                 {tab.label}{tab.count !== null ? <span className="ml-1.5 text-xs opacity-80">{tab.count}</span> : null}
