@@ -1,7 +1,7 @@
-import { Calendar, CalendarCheck, ClipboardList, FileText, FolderKanban, Inbox, Menu, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Trash2 } from "lucide-react";
+import { Calendar, CalendarCheck, ClipboardList, FileText, FolderKanban, Menu, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-export const appViewIds = ["today", "inbox", "calendar", "projects", "all", "memo", "scratchpad", "trash", "settings"] as const;
+export const appViewIds = ["today", "calendar", "projects", "all", "memo", "scratchpad", "trash", "settings"] as const;
 export type AppView = (typeof appViewIds)[number];
 
 type SidebarProps = {
@@ -13,7 +13,7 @@ type NavItem = { id: AppView; label: string; icon: typeof CalendarCheck };
 type SidebarMode = "expanded" | "collapsed";
 
 export const navGroups: Array<{ label: string; items: NavItem[] }> = [
-  { label: "실행", items: [{ id: "today", label: "오늘", icon: CalendarCheck }, { id: "inbox", label: "받은함", icon: Inbox }] },
+  { label: "실행", items: [{ id: "today", label: "오늘", icon: CalendarCheck }] },
   { label: "보기", items: [{ id: "calendar", label: "캘린더", icon: Calendar }, { id: "projects", label: "프로젝트", icon: FolderKanban }, { id: "all", label: "전체 Todo", icon: ClipboardList }] },
   { label: "관리", items: [{ id: "memo", label: "메모", icon: StickyNote }, { id: "scratchpad", label: "낙서장", icon: FileText }, { id: "trash", label: "휴지통", icon: Trash2 }] },
 ];
@@ -23,9 +23,9 @@ const mobilePrimaryItems = [
   navGroups[0].items[0], // Today
   navGroups[1].items[0], // Calendar
   navGroups[1].items[1], // Projects
-  navGroups[0].items[1], // Inbox
+  navGroups[1].items[2], // All Todo
 ];
-const mobileMoreItems = [navGroups[1].items[2], ...navGroups[2].items, settingsItem];
+const mobileMoreItems = [...navGroups[2].items, settingsItem];
 const SIDEBAR_MODE_KEY = "dark-todo-planner:sidebar-mode";
 const LEGACY_SIDEBAR_COLLAPSED_KEY = "dark-todo-planner:sidebar-collapsed";
 const HOVER_OPEN_DELAY_MS = 110;

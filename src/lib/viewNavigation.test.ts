@@ -25,6 +25,10 @@ describe("history-aware view navigation", () => {
     expect(calendarModeFromHash("#/month")).toBe("month");
   });
 
+  it("redirects legacy Inbox bookmarks to all Todo", () => {
+    expect(viewFromHash("#/inbox")).toBe("all");
+  });
+
   it("defaults unknown, dormant or malformed routes to Today", () => {
     for (const hash of ["", "#", "#/insights", "#/planning", "#/projects/unknown", "#/today?x=1", "#/", "#/calendar/day"]) {
       expect(viewFromHash(hash)).toBe("today");

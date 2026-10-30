@@ -149,6 +149,9 @@ export function TodoFilterBar({ filters, onChange, categories = [], projects = [
           <select className="field h-9 min-h-9 w-full py-1 sm:w-48" value={filters.projectId} onChange={(event) => changeFilters({ ...filters, projectId: event.target.value })} aria-label="프로젝트 필터">
             <option value="">모든 프로젝트</option><option value="unassigned">프로젝트 미지정</option>{projects.filter((project) => !project.archived || project.id === filters.projectId).map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
           </select>
+          <select className="field h-9 min-h-9 w-full py-1 sm:w-44" value={filters.planningState || "ALL"} onChange={(event) => changeFilters({ ...filters, planningState: event.target.value as TodoFilters["planningState"] })} aria-label="계획 상태 필터">
+            <option value="ALL">모든 계획 상태</option><option value="INBOX">미계획 (기존 Todo)</option><option value="SCHEDULED">일정</option><option value="SOMEDAY">언젠가</option><option value="WAITING">대기</option>
+          </select>
           <select className="field h-9 min-h-9 w-full py-1 sm:w-44" value={filters.workflowStatus} onChange={(event) => changeFilters({ ...filters, workflowStatus: event.target.value as "ALL" | TodoWorkflowStatus })} aria-label="작업 상태 필터">
             <option value="ALL">모든 작업 상태</option>{(["TODO", "IN_PROGRESS", "BLOCKED", "DONE"] as const).map((status) => <option key={status} value={status}>{workflowStatusLabels[status]}</option>)}
           </select>

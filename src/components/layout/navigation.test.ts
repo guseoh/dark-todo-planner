@@ -21,8 +21,8 @@ describe("active views", () => {
     expect(appViewIds).not.toContain("month");
   });
 
-  it("exposes Inbox without reopening dormant Planning / Insights", () => {
-    expect(appViewIds).toContain("inbox");
+  it("retires Inbox navigation without reopening dormant Planning / Insights", () => {
+    expect(appViewIds).not.toContain("inbox");
     expect(navIds.some((id) => ["planning", "insights", "time"].includes(id))).toBe(false);
   });
 });

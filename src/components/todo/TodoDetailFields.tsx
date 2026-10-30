@@ -64,7 +64,7 @@ export function TodoDetailFields({
         <div className="todo-composer-details__grid">
           <label className="todo-composer-details__field">보관 위치
             <select className="field" value={planningState} onChange={(event) => onPlanningStateChange(event.target.value as TodoPlanningState)}>
-              <option value="SCHEDULED">일정</option><option value="INBOX">받은함</option><option value="SOMEDAY">언젠가</option><option value="WAITING">대기</option>
+              <option value="SCHEDULED">일정</option><option value="SOMEDAY">언젠가</option><option value="WAITING">대기</option>
             </select>
           </label>
           <label className="todo-composer-details__field">프로젝트

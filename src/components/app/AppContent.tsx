@@ -13,7 +13,6 @@ type PlannerData = ReturnType<typeof import("../../hooks/usePlannerData").usePla
 type ToggleTodo = PlannerData["toggleTodo"];
 type UpdateTodo = PlannerData["updateTodo"];
 
-const InboxPage = lazy(() => import("../../pages/InboxPage").then((module) => ({ default: module.InboxPage })));
 const WeekPage = lazy(() => import("../../pages/WeekPage").then((module) => ({ default: module.WeekPage })));
 const MonthPage = lazy(() => import("../../pages/MonthPage").then((module) => ({ default: module.MonthPage })));
 const ProjectPage = lazy(() => import("../../pages/ProjectPage").then((module) => ({ default: module.ProjectPage })));
@@ -96,9 +95,6 @@ export function AppContent({ activeView, calendarMode, onCalendarModeChange, pla
   switch (activeView) {
     case "today":
       content = <TodayPage todayTodos={planner.getTodayTodos()} stats={planner.stats} onAdd={planner.addTodo} onToggle={toggleTodo} onDelete={planner.deleteTodo} onDeleteMany={planner.deleteTodos} onUpdate={updateTodo} categories={planner.categories} projects={planner.projects} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} onReorderCategories={planner.reorderCategories} overdueTodos={planner.getOverdueIncompleteTodos()} onBringOverdueTodos={bringOverdueTodosToToday} />;
-      break;
-    case "inbox":
-      content = <InboxPage todos={planner.inboxTodos} categories={planner.categories} projects={planner.activeProjects} onAdd={planner.addTodo} onUpdate={updateTodo} onDelete={planner.deleteTodo} />;
       break;
     case "calendar":
       content = (

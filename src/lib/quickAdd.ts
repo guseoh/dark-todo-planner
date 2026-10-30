@@ -29,7 +29,6 @@ const priorityTokens: Array<[RegExp, TodoPriority]> = [
 ];
 
 const planningTokens: Array<[RegExp, TodoPlanningState]> = [
-  [/(?:^|\s)(?:inbox|수신함)(?=\s|$)/gi, "INBOX"],
   [/(?:^|\s)(?:someday|언젠가)(?=\s|$)/gi, "SOMEDAY"],
   [/(?:^|\s)(?:waiting|대기)(?=\s|$)/gi, "WAITING"],
 ];

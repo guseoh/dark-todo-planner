@@ -1,7 +1,7 @@
 import type { TodoPlanningState, TodoWorkflowStatus } from "../types/todo";
 
 export const planningStateLabels: Record<TodoPlanningState, string> = {
-  INBOX: "받은함",
+  INBOX: "미계획",
   SCHEDULED: "일정",
   SOMEDAY: "언젠가",
   WAITING: "대기",
