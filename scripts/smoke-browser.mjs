@@ -162,16 +162,23 @@ try {
   assert.equal((await findServerTodo(legacyTitle))?.planningState, "INBOX");
   await page.getByRole("button", { name: "고급 필터", exact: true }).click();
   assert.equal(await page.getByRole("combobox", { name: "계획 상태 필터" }).inputValue(), "INBOX");
-  // Close the tall advanced filter panel before editing on a small screen.
-  // The sticky panel and fixed mobile nav can otherwise cover the row's action buttons.
-  await page.getByRole("button", { name: "고급 필터", exact: true }).click();
+  // Advanced filters stay expanded on mobile: Todo actions must still be reachable.
   await legacyRow.evaluate((row) => row.scrollIntoView({ block: "center", inline: "nearest" }));
-  await legacyRow.getByRole("button", { name: `"${legacyTitle}" Todo 수정` }).click();
+  const editLegacy = legacyRow.getByRole("button", { name: `"${legacyTitle}" Todo 수정` });
+  await editLegacy.click();
   const legacyEdit = page.getByRole("dialog", { name: "Todo 수정" });
   await legacyEdit.getByRole("combobox", { name: "보관 위치" }).waitFor();
   assert.equal(await legacyEdit.getByRole("combobox", { name: "보관 위치" }).inputValue(), "INBOX");
-  await legacyEdit.getByRole("combobox", { name: "보관 위치" }).selectOption("SCHEDULED");
-  await legacyEdit.getByRole("textbox", { name: "제목" }).fill(legacyTitle);
+  // Ordinary metadata edits must not silently move old INBOX records into Today.
+  await legacyEdit.getByRole("combobox", { name: "우선순위" }).selectOption("HIGH");
+  await legacyEdit.getByRole("button", { name: "저장", exact: true }).click();
+  await legacyEdit.waitFor({ state: "hidden" });
+  const preservedLegacy = await findServerTodo(legacyTitle);
+  assert.equal(preservedLegacy?.planningState, "INBOX");
+  assert.equal(preservedLegacy?.date, "9999-12-31");
+  assert.equal(preservedLegacy?.priority, "HIGH");
+  await legacyRow.evaluate((row) => row.scrollIntoView({ block: "center", inline: "nearest" }));
+  await editLegacy.click();
   await legacyEdit.getByRole("combobox", { name: "보관 위치" }).selectOption("SCHEDULED");
   await legacyEdit.getByLabel("실행일").fill("2026-11-12");
   let legacyUpdateFailure = true;
