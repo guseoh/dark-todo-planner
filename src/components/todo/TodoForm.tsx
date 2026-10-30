@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useId, useRef, useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
 import { todayKey } from "../../lib/date";
 import { parseQuickTodoTitle } from "../../lib/quickAdd";
@@ -37,6 +37,7 @@ export function TodoForm({
   lockCategory = false,
 }: TodoFormProps) {
   const titleInputRef = useRef<HTMLInputElement | null>(null);
+  const detailsId = useId();
   const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
   const [date, setDate] = useState(defaultDate || todayKey());
@@ -109,43 +110,67 @@ export function TodoForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="border-b border-ink-700/35 py-3">
-      <div className={`grid gap-2 sm:items-center ${lockCategory ? "sm:grid-cols-[minmax(0,1fr)_auto]" : "sm:grid-cols-[minmax(0,1fr)_minmax(9rem,12rem)_auto]"}`}>
-        <input ref={titleInputRef} data-quick-todo-input="true" className="field flex-1" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="할 일을 빠르게 입력하세요" aria-label="Todo 제목" />
+    <form onSubmit={handleSubmit} className="todo-composer-form" aria-label="Todo 빠른 추가">
+      <div className="todo-composer-form__main">
+        <div className="todo-composer-form__title">
+          <input
+            ref={titleInputRef}
+            data-quick-todo-input="true"
+            className="todo-composer-form__input"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="무엇을 할 예정인가요?"
+            aria-label="Todo 제목"
+          />
+        </div>
         {!lockCategory ? (
-          <select className="field" value={categoryId} onChange={(event) => setCategoryId(event.target.value)} aria-label="카테고리 선택">
+          <select className="todo-composer-form__category" value={categoryId} onChange={(event) => setCategoryId(event.target.value)} aria-label="카테고리 선택">
             <option value="">미분류</option>
             {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
           </select>
         ) : null}
-        <div className="flex"><button type="submit" className="btn-primary" disabled={saving}><Plus size={18} />{saving ? "저장 중..." : submitLabel}</button></div>
+        <button type="submit" className="btn-primary todo-composer-form__submit" disabled={saving}>
+          <Plus size={16} aria-hidden="true" />{saving ? "저장 중..." : submitLabel}
+        </button>
       </div>
       {saveError ? <p role="alert" className="mt-2 text-xs font-semibold text-danger">{saveError}</p> : null}
-      {showSyntaxHint ? <p className="mt-1.5 px-1 text-[11px] text-ink-500">빠른 문법: 내일 · !high · @프로젝트 · +카테고리 · due:내일 · date:2026-08-20 · inbox/someday/waiting · 공백 이름은 @{"{"}프로젝트 이름{"}"} / +{"{"}카테고리 이름{"}"}</p> : null}
-      <button type="button" className="mt-2 inline-flex items-center gap-1.5 rounded-[4px] px-2 py-1 text-xs font-semibold text-ink-400 transition hover:bg-ink-900/70 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40" onClick={() => setShowDetails((value) => !value)} aria-expanded={showDetails}>
-        <ChevronDown className={`transition ${showDetails ? "rotate-180" : ""}`} size={15} />상세 옵션
-      </button>
-      {showDetails ? (
-        <TodoDetailFields
-          date={date}
-          dueDate={dueDate}
-          priority={priority}
-          categoryId={categoryId}
-          projectId={projectId}
-          planningState={planningState}
-          memo={memo}
-          categories={categories}
-          projects={projects}
-          showCategory={false}
-          onDateChange={setDate}
-          onDueDateChange={setDueDate}
-          onPriorityChange={setPriority}
-          onCategoryChange={setCategoryId}
-          onProjectChange={setProjectId}
-          onPlanningStateChange={setPlanningState}
-          onMemoChange={setMemo}
-        />
-      ) : null}
+      {showSyntaxHint ? <p className="mt-2 text-[11px] leading-5 text-ui-muted">빠른 문법: 내일 · !high · @프로젝트 · +카테고리 · due:내일 · date:2026-08-20 · inbox/someday/waiting · 공백 이름은 @{"{"}프로젝트 이름{"}"} / +{"{"}카테고리 이름{"}"}</p> : null}
+      <div className="todo-composer-form__footer">
+        <button
+          type="button"
+          className="todo-composer-form__toggle"
+          onClick={() => setShowDetails((value) => !value)}
+          aria-expanded={showDetails}
+          aria-controls={detailsId}
+        >
+          <ChevronDown className={showDetails ? "rotate-180 transition-transform" : "transition-transform"} size={14} aria-hidden="true" />
+          {showDetails ? "상세 옵션 닫기" : "상세 옵션"}
+        </button>
+        {!showDetails && !showSyntaxHint ? <span className="todo-composer-form__hint">날짜 · 우선순위 · 프로젝트</span> : null}
+      </div>
+      <div id={detailsId} hidden={!showDetails}>
+        {showDetails ? (
+          <TodoDetailFields
+            date={date}
+            dueDate={dueDate}
+            priority={priority}
+            categoryId={categoryId}
+            projectId={projectId}
+            planningState={planningState}
+            memo={memo}
+            categories={categories}
+            projects={projects}
+            showCategory={false}
+            onDateChange={setDate}
+            onDueDateChange={setDueDate}
+            onPriorityChange={setPriority}
+            onCategoryChange={setCategoryId}
+            onProjectChange={setProjectId}
+            onPlanningStateChange={setPlanningState}
+            onMemoChange={setMemo}
+          />
+        ) : null}
+      </div>
     </form>
   );
 }
