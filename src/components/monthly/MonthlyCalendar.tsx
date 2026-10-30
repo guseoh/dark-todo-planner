@@ -1,4 +1,6 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import {
   formatKoreanDate,
   getDayIndex,
@@ -24,6 +26,9 @@ type MonthlyCalendarProps = {
   onToday: () => void;
   onSelectDate: (date: string) => void;
   onCycleDayStatus: (date: string) => void;
+  onQuickAdd: (date: string) => void;
+  onOpenTodo: (id: string) => void;
+  draggingDisabled?: boolean;
 };
 
 const eventTone: Record<CalendarEvent["kind"], string> = {
@@ -39,6 +44,47 @@ const eventPrefix: Record<CalendarEvent["kind"], string> = {
   project: "프로젝트 · ",
 };
 
+
+function CalendarDropCell({ dateKey, disabled, children }: { dateKey: string; disabled: boolean; children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id: dateKey, disabled, data: { dateKey } });
+  return (
+    <div ref={setNodeRef} data-calendar-date={dateKey} className={`min-w-0 ${isOver ? "rounded-lg ring-2 ring-accent-500/80" : ""}`}>
+      {children}
+    </div>
+  );
+}
+
+function CalendarEventChip({ event, onClick, draggingDisabled, hiddenClass }: {
+  event: CalendarEvent;
+  onClick: () => void;
+  draggingDisabled: boolean;
+  hiddenClass: string;
+}) {
+  const draggable = event.kind === "todo" && Boolean(event.relatedTodoId);
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: event.id,
+    disabled: !draggable || draggingDisabled,
+    data: { todoId: event.relatedTodoId, date: event.date, kind: event.kind },
+  });
+  const prefix = event.kind === "todo" && event.dueOnDate ? "마감 · " : eventPrefix[event.kind];
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      {...(draggable ? attributes : {})}
+      {...(draggable ? listeners : {})}
+      onClick={onClick}
+      data-calendar-event={event.id}
+      title={`${prefix}${event.title}${event.projectName ? ` · ${event.projectName}` : ""}`}
+      aria-label={event.title}
+      style={{ transform: CSS.Translate.toString(transform), touchAction: "pan-y", zIndex: isDragging ? 50 : undefined }}
+      className={`pointer-events-auto relative block min-h-5 w-full min-w-0 truncate rounded-[4px] border-l-[3px] px-1 py-0.5 text-left text-[10px] leading-4 transition-colors hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${eventTone[event.kind]} ${event.completed ? "opacity-50 line-through" : ""} ${isDragging ? "cursor-grabbing shadow-lg opacity-70" : draggable ? "cursor-grab" : "cursor-pointer"} ${hiddenClass}`}
+    >
+      {prefix}{event.title}
+    </button>
+  );
+}
+
 export function MonthlyCalendar({
   currentMonth,
   monthDays,
@@ -49,6 +95,9 @@ export function MonthlyCalendar({
   onToday,
   onSelectDate,
   onCycleDayStatus,
+  onQuickAdd,
+  onOpenTodo,
+  draggingDisabled = false,
 }: MonthlyCalendarProps) {
   return (
     <section className="app-card min-w-0 p-2.5 sm:p-4" aria-label="월간 일정 캘린더">
@@ -93,8 +142,8 @@ export function MonthlyCalendar({
               ? `${formattedDate}, 현재 미수행. 클릭하면 미설정으로 변경`
               : `${formattedDate}, 현재 미설정. 클릭하면 수행 완료로 변경`;
           return (
+            <CalendarDropCell key={dateKey} dateKey={dateKey} disabled={draggingDisabled}>
             <article
-              key={dateKey}
               className={`group relative flex min-h-[6.5rem] min-w-0 flex-col overflow-hidden rounded-lg border p-1.5 transition-colors sm:min-h-[9rem] sm:p-2 ${
                 selected
                   ? "border-accent-600/85 bg-accent-500/[0.075] ring-1 ring-accent-500/20"
@@ -108,20 +157,23 @@ export function MonthlyCalendar({
                   <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-md text-xs font-bold sm:text-sm ${
                     today ? "bg-accent-500 text-ink-950" : holidayName || isSunday ? "text-red-300" : "text-ink-200"
                   }`}>{formatKoreanDate(day, "d")}</span>
-                  {events.length > 0 ? <span className="truncate text-[10px] text-ink-400 sm:text-[11px]">{activeCount ? `${activeCount} 남음` : `${events.length} 완료`}</span> : null}
+                  <div className="pointer-events-auto flex shrink-0 items-center gap-0.5">
+                    {events.length > 0 ? <span className="hidden truncate text-[10px] text-ink-400 sm:inline">{activeCount ? `${activeCount} 남음` : `${events.length} 완료`}</span> : null}
+                    <button type="button" className="inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-500 hover:bg-ink-800 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500" onClick={() => onQuickAdd(dateKey)} aria-label={`${formattedDate} Todo 추가`} title="이 날짜에 Todo 추가">
+                      <Plus size={14} />
+                    </button>
+                  </div>
                 </div>
                 {holidayName ? <span className="mt-0.5 truncate text-[10px] text-red-300/85" title={holidayName}>{holidayName}</span> : null}
                 <div className="mt-1 min-w-0 space-y-1">
                   {events.slice(0, 3).map((event, index) => (
-                    <button
+                    <CalendarEventChip
                       key={event.id}
-                      type="button"
-                      onClick={() => onSelectDate(dateKey)}
-                      title={`${event.kind === "todo" && event.dueOnDate ? "마감 · " : eventPrefix[event.kind]}${event.title}${event.projectName ? ` · ${event.projectName}` : ""}`}
-                      className={`pointer-events-auto block min-h-5 w-full min-w-0 truncate rounded-[4px] border-l-[3px] px-1 py-0.5 text-left text-[10px] leading-4 transition hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${eventTone[event.kind]} ${event.completed ? "opacity-50 line-through" : ""} ${index === 1 ? "hidden sm:block" : ""} ${index === 2 ? "hidden lg:block" : ""}`}
-                    >
-                      {event.kind === "todo" && event.dueOnDate ? "마감 · " : eventPrefix[event.kind]}{event.title}
-                    </button>
+                      event={event}
+                      draggingDisabled={draggingDisabled}
+                      onClick={() => event.relatedTodoId ? onOpenTodo(event.relatedTodoId) : onSelectDate(dateKey)}
+                      hiddenClass={index === 1 ? "hidden sm:block" : index === 2 ? "hidden lg:block" : ""}
+                    />
                   ))}
                   {events.length > 1 ? (
                     <button type="button" onClick={() => onSelectDate(dateKey)} className="pointer-events-auto block max-w-full truncate text-left text-[10px] font-medium text-ink-400 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-500 sm:hidden">
@@ -150,10 +202,11 @@ export function MonthlyCalendar({
                 </div>
               </div>
             </article>
+            </CalendarDropCell>
           );
         })}
       </div>
-      <p className="mt-3 text-xs text-ink-400">날짜나 일정 제목을 선택하면 상세 내용을 확인할 수 있습니다. O/X는 기존 일일 수행 상태입니다.</p>
+      <p className="mt-3 text-xs text-ink-400">Todo를 끌어 다른 날짜로 이동하거나 제목을 선택해 수정하세요. 모바일에서는 상세 화면에서 날짜를 변경할 수 있습니다.</p>
     </section>
   );
 }
