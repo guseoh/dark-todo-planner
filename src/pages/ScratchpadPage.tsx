@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { RichScratchpadEditor, type RichScratchpadHandle, type RichAction } from "../components/editor/RichScratchpadEditor";
+import { MarkdownPreview } from "../components/editor/MarkdownPreview";
+import { Button } from "../components/ui/Button";
 import { requiresRawScratchpadEditing } from "../lib/scratchpadEditorSafety";
 import { api, jsonBody } from "../lib/api/client";
 import { SCRATCHPAD_DRAFT_KEY, isScratchpadRecoveryNeeded, parseScratchpadDraft, type ScratchpadDraft } from "../lib/scratchpadDraft";
@@ -34,6 +36,7 @@ export function ScratchpadPage() {
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
   const richEditorRef = useRef<RichScratchpadHandle | null>(null);
   const [sourceMode, setSourceMode] = useState(false);
+  const [sourcePreview, setSourcePreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const menuBarRef = useRef<HTMLDivElement | null>(null);
   const historyRef = useRef<string[]>([""]);
@@ -109,6 +112,7 @@ export function ScratchpadPage() {
       savedRef.current = next;
       setContent(next);
       setSourceMode(requiresRawScratchpadEditing(next));
+      setSourcePreview(false);
       setSavedContent(next);
       setUpdatedAt(result.scratchpad.updatedAt);
       const recovered = isScratchpadRecoveryNeeded(storedDraft, next) ? storedDraft : null;
@@ -211,6 +215,7 @@ export function ScratchpadPage() {
   };
 
   const replaceSelection = (before: string, after = before, fallback = "텍스트") => {
+    if (sourcePreview) setSourcePreview(false);
     if (!sourceMode && richEditorRef.current) {
       const action: RichAction = before === "**" ? "bold" : before === "_" ? "italic" : before === "~~" ? "strike" : before === "[" ? "link" : "code";
       richEditorRef.current.action(action);
@@ -224,6 +229,7 @@ export function ScratchpadPage() {
   };
 
   const prefixSelectedLines = (prefix: string) => {
+    if (sourcePreview) setSourcePreview(false);
     if (!sourceMode && richEditorRef.current) {
       const action: RichAction = prefix === "# " ? "h1" : prefix === "## " ? "h2" : prefix === "1. " ? "ordered" : prefix === "- [ ] " ? "task" : prefix === "> " ? "quote" : "bullet";
       richEditorRef.current.action(action);
@@ -373,15 +379,16 @@ export function ScratchpadPage() {
 
   const menuButtonClass = "rounded px-2 py-1 text-xs font-medium text-ink-300 hover:bg-ink-800 hover:text-ink-100";
   const menuItemClass = "w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800";
-  const toolButtonClass = "flex h-8 min-w-8 items-center justify-center rounded border border-transparent px-2 text-xs font-semibold text-ink-300 hover:border-ink-700 hover:bg-ink-800 hover:text-ink-100";
+  const toolButtonClass = "ui-button ui-button--ghost ui-button--sm min-h-9 shrink-0 px-2 text-xs";
   const toggleMenu = (menu: ScratchpadMenu) => setOpenMenu((current) => current === menu ? null : menu);
   const closeMenuAndRun = (action: () => void) => {
     setOpenMenu(null);
+    if (sourcePreview) setSourcePreview(false);
     action();
   };
 
   return (
-    <section aria-label="낙서장" className="mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-[1500px] flex-col overflow-hidden bg-ui-canvas">
+    <section aria-label="낙서장" className="scratchpad-workspace mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-[1500px] flex-col overflow-hidden bg-ui-canvas">
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-ui-divider bg-transparent px-3 py-3">
         <div className="flex items-center gap-2"><h1 className="text-lg font-semibold text-ui-text">낙서장</h1><span className="text-xs text-ink-400">자동 저장되는 자유 편집 공간</span></div>
       </div>
@@ -412,7 +419,7 @@ export function ScratchpadPage() {
             ) : null}
           </div>
           <div className="relative">
-            <button type="button" className={menuButtonClass} aria-haspopup="menu" aria-expanded={openMenu === "format"} onClick={() => toggleMenu("format")}>서식</button>
+            <button type="button" className={menuButtonClass} aria-haspopup="menu" disabled={sourcePreview} aria-expanded={openMenu === "format"} onClick={() => toggleMenu("format")}>서식</button>
             {openMenu === "format" ? (
               <div role="menu" className="absolute left-0 top-full z-40 mt-1 w-48 rounded-md border border-ink-700 bg-ink-900 p-1 shadow-xl">
                 <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => prefixSelectedLines("# "))}>제목 H1</button>
@@ -440,13 +447,20 @@ export function ScratchpadPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 px-2 text-[11px] text-ink-500">
-          <button type="button" className={menuButtonClass} disabled={sourceMode && requiresRawScratchpadEditing(content)} onClick={() => setSourceMode((v) => !v)} aria-pressed={sourceMode}>{sourceMode ? "시각 편집" : "Markdown 원본"}</button>
+          <button type="button" className={menuButtonClass} disabled={sourceMode && requiresRawScratchpadEditing(content)} onClick={() => { setSourcePreview(false); setSourceMode((v) => !v); }} aria-pressed={sourceMode}>{sourceMode ? "시각 편집" : "Markdown 원본"}</button>
+          {sourceMode ? (
+            <Button variant={sourcePreview ? "info" : "secondary"} size="sm"
+              onClick={() => setSourcePreview((open) => !open)} aria-pressed={sourcePreview}
+              aria-label={sourcePreview ? "Markdown 원본 편집" : "Markdown 서식 미리보기"}>
+              {sourcePreview ? "원본 편집" : "서식 미리보기"}
+            </Button>
+          ) : null}
           <span>{saveLabel}</span>
           {lastSavedLabel && saveState === "saved" ? <span>{lastSavedLabel}</span> : null}
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-ui-divider bg-transparent px-2 py-1.5">
+      {!sourcePreview ? <div className="scratchpad-toolbar flex shrink-0 items-center gap-1 overflow-x-auto border-b border-ui-divider bg-transparent px-2 py-1.5">
         <button type="button" className={toolButtonClass} title="제목 H1" onClick={() => prefixSelectedLines("# ")}>H1</button>
         <button type="button" className={toolButtonClass} title="글머리 목록" onClick={() => prefixSelectedLines("- ")}>• 목록</button>
         <button type="button" className={toolButtonClass} title="번호 목록" onClick={() => prefixSelectedLines("1. ")}>1. 목록</button>
@@ -457,8 +471,8 @@ export function ScratchpadPage() {
         <button type="button" className={`${toolButtonClass} text-sm italic`} title="기울임" onClick={() => replaceSelection("_", "_")}>I</button>
         <button type="button" className={`${toolButtonClass} text-sm line-through`} title="취소선" onClick={() => replaceSelection("~~", "~~")}>S</button>
         <button type="button" className={toolButtonClass} title="링크" onClick={() => replaceSelection("[", "](https://)", "링크")}>링크</button>
-        <span className="ml-auto hidden text-[10px] text-ink-600 sm:block">{sourceMode ? "원본 Markdown 편집" : "서식은 바로 적용되며 Markdown으로 저장됩니다."}</span>
-      </div>
+        <span className="ml-auto hidden text-[10px] text-ink-600 sm:block">{sourceMode ? "원본 편집 · 서식 결과는 미리보기에서 확인" : "서식은 바로 적용되며 Markdown으로 저장됩니다."}</span>
+      </div> : null}
 
       {findOpen ? (
         <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-ui-divider bg-transparent px-3 py-3">
@@ -487,7 +501,18 @@ export function ScratchpadPage() {
       {localDraftError ? <p role="alert" className="shrink-0 border-b border-danger/30 px-3 py-2 text-xs text-danger">브라우저 임시 저장이 불가능합니다. 서버에 저장되기 전에는 페이지를 닫지 마세요.</p> : null}
       {error ? <div role="alert" className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-danger/30 bg-danger/[0.08] px-3 py-2 text-xs text-danger"><span>저장 또는 불러오기 실패: {error}</span><button type="button" className="btn-secondary text-xs" onClick={() => void (loadedRef.current ? saveNow() : loadScratchpad())}>{loadedRef.current ? "저장 재시도" : "불러오기 재시도"}</button></div> : null}
 
-      {sourceMode ? <textarea
+      {sourceMode && requiresRawScratchpadEditing(content) ? (
+        <div className="scratchpad-compat-notice" role="note">
+          표·HTML 등 원본 보존이 필요한 내용이 있어 안전한 Markdown 원본 편집을 사용합니다.
+          제목과 목록은 <strong>서식 미리보기</strong>에서 확인할 수 있으며, 원본은 변환하지 않습니다.
+        </div>
+      ) : null}
+      {sourceMode && sourcePreview ? (
+        <div className="scratchpad-source-preview min-h-0 flex-1 overflow-auto px-4 py-5 sm:px-8"
+          role="region" aria-label="낙서장 Markdown 서식 미리보기">
+          <MarkdownPreview value={content} className="scratchpad-rendered-preview mx-auto w-full max-w-[1080px] break-words" />
+        </div>
+      ) : sourceMode ? <textarea
         ref={editorRef}
         value={content}
         onChange={(event) => applyContent(event.target.value)}
