@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { BellRing, RefreshCw, Save } from "lucide-react";
 import { StatCard } from "../components/common/StatCard";
+import { PageHeader } from "../components/common/PageHeader";
 import { CalendarExportCard } from "../components/settings/CalendarExportCard";
 import { ExportPanel } from "../components/settings/ExportPanel";
 import { BackupRestoreCard } from "../components/settings/BackupRestoreCard";
@@ -83,13 +84,12 @@ export function SettingsPage({
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1180px] space-y-6">
-      <section>
-        <h2 className="text-2xl font-bold text-ink-100 sm:text-3xl">앱 정보</h2>
-        <p className="mt-2 text-sm text-ink-400">앱 연결 상태, 설치, 자동화와 알림 기준, 저장된 데이터 현황을 관리합니다.</p>
-      </section>
+    <div className="page-shell max-w-[1180px]">
+      <PageHeader title="설정" description="앱 연결 상태, 자동화·알림 기준, 백업과 저장된 데이터를 관리합니다."
+        meta={connected ? "서버 연결됨" : "연결 확인 필요"}
+      />
 
-      <nav className="flex flex-wrap gap-2 rounded-lg border border-ink-700/70 bg-ink-900/55 p-1.5" aria-label="설정 항목" role="tablist">
+      <nav className="page-tabs" aria-label="설정 항목" role="tablist">
         {([
           { id: "overview", label: "앱 및 연결 정보" },
           { id: "automation", label: "자동화 · 알림" },
@@ -97,7 +97,7 @@ export function SettingsPage({
         ] as const).map((item) => (
           <button key={item.id} type="button" role="tab" aria-selected={section === item.id}
             onClick={() => setSection(item.id)}
-            className={`min-h-10 flex-1 rounded-md px-3 text-xs font-bold transition sm:flex-initial sm:text-sm ${section === item.id ? "bg-ink-700 text-ink-100" : "text-ink-400 hover:bg-ink-800 hover:text-ink-100"}`}>
+            className="page-tab flex-1 sm:flex-initial">
             {item.label}
           </button>
         ))}
