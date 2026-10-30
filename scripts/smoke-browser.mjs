@@ -176,7 +176,7 @@ try {
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
 
   // Empty Today keeps its summary and add form, with one actionable empty-list message.
-  await page.getByRole("heading", { name: "오늘 남은 할 일", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "오늘 작업 현황", exact: true }).waitFor();
   await page.getByText("오늘 할 일을 정해 보세요.", { exact: true }).waitFor();
   assert.equal(await page.getByRole("heading", { name: "오늘의 핵심 작업" }).count(), 0, "Do not render empty focus card.");
   assert.equal(await page.getByText("미완료 Todo가 없습니다.", { exact: true }).count(), 0, "Do not repeat zero-state placeholders.");

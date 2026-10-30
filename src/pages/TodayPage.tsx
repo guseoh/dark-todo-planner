@@ -183,7 +183,7 @@ export function TodayPage({
       />
 
       <section className="border-b border-ui-divider pb-5" aria-labelledby="today-summary-title">
-        <h3 id="today-summary-title" className="sr-only">오늘 작업 현황</h3>
+        <h3 id="today-summary-title" className="mb-2 text-xs font-medium text-ui-muted">오늘 작업 현황</h3>
         <div className="flex flex-wrap items-baseline gap-x-7 gap-y-2">
           <p className="text-sm text-ui-secondary">남은 작업 <strong className="ml-1 text-2xl font-semibold tabular-nums text-ui-text">{stats.todayActive}</strong><span className="ml-1 text-xs">개</span></p>
           <p className="text-sm text-ui-secondary">완료 <strong className="ml-1 font-semibold tabular-nums text-ui-text">{stats.todayCompleted}</strong><span className="ml-1 text-xs">/ {stats.todayTotal}</span></p>
