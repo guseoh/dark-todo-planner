@@ -3,9 +3,10 @@ type ProgressBarProps = {
   label?: string;
   empty?: boolean;
   emptyLabel?: string;
+  ariaLabel?: string;
 };
 
-export function ProgressBar({ value, label, empty = false, emptyLabel = "등록된 Todo 없음" }: ProgressBarProps) {
+export function ProgressBar({ value, label, empty = false, emptyLabel = "등록된 Todo 없음", ariaLabel }: ProgressBarProps) {
   const normalized = Math.min(100, Math.max(0, value));
 
   if (empty) {
@@ -33,7 +34,7 @@ export function ProgressBar({ value, label, empty = false, emptyLabel = "등록�
       <div
         className="h-1.5 overflow-hidden rounded-full bg-ink-800"
         role="progressbar"
-        aria-label={label || "완료율"}
+        aria-label={ariaLabel || label || "완료율"}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={normalized}
