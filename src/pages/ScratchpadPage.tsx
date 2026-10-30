@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { api, jsonBody } from "../lib/api/client";
+import { SCRATCHPAD_DRAFT_KEY, isScratchpadRecoveryNeeded, parseScratchpadDraft, type ScratchpadDraft } from "../lib/scratchpadDraft";
 
 type ScratchpadResponse = {
   scratchpad: {
@@ -34,11 +35,16 @@ export function ScratchpadPage() {
   const historyRef = useRef<string[]>([""]);
   const historyIndexRef = useRef(0);
   const loadedRef = useRef(false);
+  const contentRef = useRef("");
+  const savedRef = useRef("");
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   const [content, setContent] = useState("");
   const [savedContent, setSavedContent] = useState("");
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("loading");
+  const [recoveryDraft, setRecoveryDraft] = useState<ScratchpadDraft | null>(null);
+  const [localDraftError, setLocalDraftError] = useState(false);
   const [error, setError] = useState("");
   const [wrap, setWrap] = useState(readWrap);
   const [zoom, setZoom] = useState(readZoom);
@@ -55,7 +61,13 @@ export function ScratchpadPage() {
   }, []);
 
   const applyContent = useCallback((next: string, recordHistory = true) => {
+    contentRef.current = next;
     setContent(next);
+    try {
+      localStorage.setItem(SCRATCHPAD_DRAFT_KEY, JSON.stringify({ content: next, savedAt: Date.now() }));
+      setLocalDraftError(false);
+    } catch { setLocalDraftError(true); }
+    setRecoveryDraft(null);
     if (!recordHistory) return;
     const current = historyRef.current[historyIndexRef.current];
     if (current === next) return;
@@ -81,9 +93,19 @@ export function ScratchpadPage() {
     try {
       const result = await api<ScratchpadResponse>("/api/scratchpad");
       const next = result.scratchpad.content || "";
+      const storedDraft = (() => {
+        try { return parseScratchpadDraft(localStorage.getItem(SCRATCHPAD_DRAFT_KEY)); }
+        catch { return null; }
+      })();
+      contentRef.current = next;
+      savedRef.current = next;
       setContent(next);
       setSavedContent(next);
       setUpdatedAt(result.scratchpad.updatedAt);
+      setRecoveryDraft(isScratchpadRecoveryNeeded(storedDraft, next) ? storedDraft : null);
+      if (storedDraft && storedDraft.content === next) {
+        try { localStorage.removeItem(SCRATCHPAD_DRAFT_KEY); } catch { /* no-op */ }
+      }
       resetHistory(next);
       loadedRef.current = true;
       setSaveState("saved");
@@ -94,25 +116,39 @@ export function ScratchpadPage() {
     }
   }, [resetHistory]);
 
-  const saveNow = useCallback(async (value = content) => {
+  const saveNow = useCallback(async (value = contentRef.current): Promise<boolean> => {
     if (!loadedRef.current) return false;
-    setSaveState("saving");
-    try {
-      const result = await api<ScratchpadResponse>("/api/scratchpad", {
-        method: "PUT",
-        ...jsonBody({ content: value }),
-      });
-      setSavedContent(result.scratchpad.content);
-      setUpdatedAt(result.scratchpad.updatedAt);
-      setSaveState(result.scratchpad.content === value ? "saved" : "dirty");
-      setError("");
-      return true;
-    } catch (err) {
-      setSaveState("error");
-      setError(err instanceof Error ? err.message : "낙서장을 저장하지 못했습니다.");
-      return false;
-    }
-  }, [content]);
+    // Queue requests to ensure a slower older response can never overwrite newer edits.
+    const pending = saveQueueRef.current.then(async () => {
+      if (value !== contentRef.current) return false;
+      if (value === savedRef.current) {
+        setSaveState("saved");
+        return true;
+      }
+      setSaveState("saving");
+      try {
+        const result = await api<ScratchpadResponse>("/api/scratchpad", {
+          method: "PUT", ...jsonBody({ content: value }),
+        });
+        savedRef.current = result.scratchpad.content;
+        setSavedContent(result.scratchpad.content);
+        setUpdatedAt(result.scratchpad.updatedAt);
+        const latestSaved = contentRef.current === result.scratchpad.content;
+        setSaveState(latestSaved ? "saved" : "dirty");
+        setError("");
+        if (latestSaved) {
+          try { localStorage.removeItem(SCRATCHPAD_DRAFT_KEY); } catch { /* no-op */ }
+        }
+        return true;
+      } catch (err) {
+        setSaveState("error");
+        setError(err instanceof Error ? err.message : "낙서장을 저장하지 못했습니다.");
+        return false;
+      }
+    });
+    saveQueueRef.current = pending.then(() => undefined, () => undefined);
+    return pending;
+  }, []);
 
   useEffect(() => { void loadScratchpad(); }, [loadScratchpad]);
 
@@ -193,7 +229,7 @@ export function ScratchpadPage() {
     if (historyIndexRef.current <= 0) return;
     historyIndexRef.current -= 1;
     const next = historyRef.current[historyIndexRef.current];
-    setContent(next);
+    applyContent(next, false);
     restoreSelection(next.length);
   };
 
@@ -242,7 +278,7 @@ export function ScratchpadPage() {
   };
 
   const newDocument = () => {
-    if (content.trim() && content !== savedContent && !window.confirm("저장되지 않은 내용이 있습니다. 새 낙서장으로 비울까요?")) return;
+    if (content.trim() && !window.confirm("낙서장 내용을 비울까요? 현재 내용은 서버에 자동 저장됩니다.")) return;
     applyContent("");
     restoreSelection(0);
   };
@@ -317,8 +353,11 @@ export function ScratchpadPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-[1500px] flex-col overflow-hidden rounded-lg border border-ink-700/70 bg-ink-950 shadow-soft">
-      <div className="flex shrink-0 items-center justify-between border-b border-ink-700/70 bg-ink-900 px-2 py-1">
+    <section aria-label="낙서장" className="mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-[1500px] flex-col overflow-hidden rounded-xl border border-ink-700/70 bg-ink-950 shadow-soft">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-ink-700/70 bg-ink-900 px-3 py-2">
+        <div className="flex items-center gap-2"><h2 className="text-sm font-bold text-ink-100">낙서장</h2><span className="text-xs text-ink-400">자동 저장되는 자유 편집 공간</span></div>
+      </div>
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-1 border-b border-ink-700/70 bg-ink-900/70 px-2 py-1">
         <div ref={menuBarRef} className="flex items-center gap-0.5">
           <div className="relative">
             <button type="button" className={menuButtonClass} aria-haspopup="menu" aria-expanded={openMenu === "file"} onClick={() => toggleMenu("file")}>파일</button>
@@ -397,7 +436,20 @@ export function ScratchpadPage() {
         </div>
       ) : null}
 
-      {error ? <div className="shrink-0 border-b border-danger/30 bg-danger/[0.08] px-3 py-2 text-xs text-red-100">{error}</div> : null}
+      {recoveryDraft ? (
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-warning/30 bg-warning/[0.06] px-3 py-2.5" role="status">
+          <p className="text-xs text-ink-200">서버 내용과 다른 브라우저 임시 초안이 있습니다. 내용을 비교한 뒤 복원할 수 있습니다.</p>
+          <div className="flex gap-2">
+            <button type="button" className="btn-secondary text-xs" onClick={() => { applyContent(recoveryDraft.content); resetHistory(recoveryDraft.content); }}>초안 복원</button>
+            <button type="button" className="btn-secondary text-xs" onClick={() => {
+              setRecoveryDraft(null);
+              try { localStorage.removeItem(SCRATCHPAD_DRAFT_KEY); } catch { /* no-op */ }
+            }}>초안 버리기</button>
+          </div>
+        </div>
+      ) : null}
+      {localDraftError ? <p role="alert" className="shrink-0 border-b border-danger/30 px-3 py-2 text-xs text-red-200">브라우저 임시 저장이 불가능합니다. 서버에 저장되기 전에는 페이지를 닫지 마세요.</p> : null}
+      {error ? <div role="alert" className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-danger/30 bg-danger/[0.08] px-3 py-2 text-xs text-red-100"><span>저장 또는 불러오기 실패: {error}</span><button type="button" className="btn-secondary text-xs" onClick={() => void (loadedRef.current ? saveNow() : loadScratchpad())}>{loadedRef.current ? "저장 재시도" : "불러오기 재시도"}</button></div> : null}
 
       <textarea
         ref={editorRef}
@@ -408,7 +460,7 @@ export function ScratchpadPage() {
         onClick={(event) => setSelectionStart(event.currentTarget.selectionStart)}
         spellCheck={false}
         wrap={wrap ? "soft" : "off"}
-        disabled={saveState === "loading"}
+        disabled={saveState === "loading" || (!loadedRef.current && saveState === "error")}
         className="min-h-0 flex-1 resize-none border-0 bg-[#202020] px-5 py-4 font-mono leading-7 text-ink-100 outline-none selection:bg-accent-500/35 disabled:opacity-60"
         style={{ fontSize: `${Math.round(15 * zoom / 100)}px`, whiteSpace: wrap ? "pre-wrap" : "pre" }}
         placeholder="아무 내용이나 바로 작성하세요. 내용은 자동으로 저장됩니다."
@@ -429,6 +481,6 @@ export function ScratchpadPage() {
       </div>
 
       <input ref={fileInputRef} type="file" className="hidden" accept=".txt,.md,text/plain,text/markdown" onChange={(event) => void openTextFile(event.target.files?.[0])} />
-    </div>
+    </section>
   );
 }
