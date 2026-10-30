@@ -320,7 +320,7 @@ export function ProjectPage({
                 <div className="flex flex-wrap items-center gap-2">
                   <FolderKanban size={20} className="text-accent-300" />
                   <h3 className="text-xl font-bold text-ink-100">{selected.name}</h3>
-                  <span className="rounded-full border border-ink-700 px-2 py-0.5 text-xs text-ink-300">{projectStatusLabel[selected.status]}</span>
+                  <span className="text-xs font-medium text-ink-400">{projectStatusLabel[selected.status]}</span>
                 </div>
                 <details className="mt-2 group">
                   <summary className="flex min-h-8 w-fit cursor-pointer items-center gap-2 rounded px-1 text-xs font-semibold text-ink-400 hover:bg-ink-800/65 hover:text-ink-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
