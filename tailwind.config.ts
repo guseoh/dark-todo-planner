@@ -49,6 +49,7 @@ export default {
         success: themedShade("semantic-success"),
         warning: themedShade("semantic-warning"),
         danger: themedShade("semantic-danger"),
+        info: themedShade("semantic-info"),
       },
       boxShadow: {
         soft: "none",
