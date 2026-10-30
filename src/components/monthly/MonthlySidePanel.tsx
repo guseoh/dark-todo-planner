@@ -81,7 +81,7 @@ export function MonthlySidePanel({
   const relatedEvents = selectedEvents.filter((event) => event.kind !== "todo");
   return (
     <aside className="scroll-mt-24" aria-label="선택한 날짜 상세">
-      <section className="app-card flex flex-col p-4 xl:max-h-[calc(100vh-7rem)] xl:overflow-hidden">
+      <section className="app-card flex flex-col border-l border-ui-divider px-4 py-3 xl:max-h-[calc(100vh-7rem)] xl:overflow-hidden">
         <div className="mb-4 flex items-start justify-between gap-2">
           <div className="min-w-0">
             <h3 className="truncate text-sm font-semibold text-ink-100">선택한 날짜</h3>

@@ -124,7 +124,7 @@ export function MonthlyCalendar({
   draggingDisabled = false,
 }: MonthlyCalendarProps) {
   return (
-    <section className="app-card min-w-0 p-2.5 sm:p-4" aria-label="월간 일정 캘린더">
+    <section className="app-card min-w-0 py-3" aria-label="월간 일정 캘린더">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <h3 className="text-base font-bold text-ink-100 sm:text-lg">
@@ -138,7 +138,7 @@ export function MonthlyCalendar({
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-ink-400 sm:gap-1.5">
+      <div className="grid grid-cols-7 text-center text-xs font-medium text-ui-secondary">
         {weekdayLabels.map((label, index) => (
           <div key={label} className={`py-2 ${index === 6 ? "text-danger/80" : ""}`}>{label}</div>
         ))}

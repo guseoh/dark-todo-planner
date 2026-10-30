@@ -15,7 +15,7 @@ export function PageHeader({ title, description, meta, icon, actions }: PageHead
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
           {icon ? <span className="page-header-icon" aria-hidden="true">{icon}</span> : null}
-          <h2 className="text-[23px] font-semibold tracking-tight text-ink-100">{title}</h2>
+          <h2 className="text-[23px] font-semibold tracking-tight text-ui-text">{title}</h2>
           {meta ? <span className="page-meta">{meta}</span> : null}
         </div>
         <p className="mt-1 max-w-3xl text-sm leading-6 text-ink-400">{description}</p>

@@ -121,12 +121,12 @@ export function AllTodosPage({
         }
       />
 
-      <div className="sticky top-[60px] z-20 rounded-xl border border-ink-700/50 bg-ink-950/95 p-1 backdrop-blur-md">
+      <div className="sticky top-[60px] z-20 border-b border-ui-divider bg-ui-canvas py-2">
         <TodoFilter filters={filters} onChange={setFilters} categories={categories} projects={projects} />
       </div>
 
       {selectionMode ? (
-        <section className="app-card p-3 sm:p-4" aria-label="Todo 선택 작업 도구">
+        <section className="app-card py-3 sm:py-4" aria-label="Todo 선택 작업 도구">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="relative pl-3">
               <span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 rounded-full bg-accent-500" />
@@ -146,7 +146,7 @@ export function AllTodosPage({
             </button>
           </div>
 
-          <details className="mt-3 rounded-md border border-danger/25 bg-danger/[0.025]">
+          <details className="mt-3 border-l-2 border-danger/50 bg-transparent">
             <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-xs font-semibold text-danger hover:bg-danger/[0.06]">
               <Trash2 size={14} />위험 작업 · 여러 Todo를 휴지통으로 이동
             </summary>
@@ -161,7 +161,7 @@ export function AllTodosPage({
             </div>
           </details>
 
-          <details className="mt-3 rounded-md border border-ink-700/55 bg-ink-950/25">
+          <details className="mt-3 border-t border-ui-divider bg-transparent">
             <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm font-semibold text-ink-300 hover:bg-ink-800/45 hover:text-ink-100">
               <Settings2 size={15} className="text-accent-300" />선택 항목 일괄 변경
             </summary>
