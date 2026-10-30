@@ -140,7 +140,7 @@ export function MonthlyView({
     if (!over || active.data.current?.kind !== "todo") return;
     const todoId = active.data.current.todoId;
     const target = String(over.id);
-    if (typeof todoId === "string" && /^\\d{4}-\\d{2}-\\d{2}$/.test(target)) {
+    if (typeof todoId === "string" && /^\d{4}-\d{2}-\d{2}$/.test(target)) {
       void moveTodo(todoId, target);
     }
   };
