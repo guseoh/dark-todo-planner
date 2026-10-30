@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from "react";
 import { PanelRightOpen } from "lucide-react";
-import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { TodoEditModal } from "../todo/TodoEditModal";
 import {
   buildCalendarEvents,
@@ -67,7 +66,6 @@ export function MonthlyView({
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
   const [movingTodoId, setMovingTodoId] = useState<string | null>(null);
   const [moveFeedback, setMoveFeedback] = useState<{ kind: "error" | "success"; message: string } | null>(null);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }), useSensor(KeyboardSensor));
   const [visibility, setVisibility] = useState<CalendarVisibility>(defaultCalendarVisibility);
   const selectedPanelRef = useRef<HTMLDivElement | null>(null);
   const monthDays = useMemo(() => getMonthGrid(currentMonth), [currentMonth]);
@@ -136,14 +134,6 @@ export function MonthlyView({
       setMovingTodoId(null);
     }
   };
-  const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    if (!over || active.data.current?.kind !== "todo") return;
-    const todoId = active.data.current.todoId;
-    const target = String(over.id);
-    if (typeof todoId === "string" && /^\d{4}-\d{2}-\d{2}$/.test(target)) {
-      void moveTodo(todoId, target);
-    }
-  };
 
   const changeMonth = (date: Date) => {
     setCurrentMonth(date);
@@ -182,7 +172,6 @@ export function MonthlyView({
 
       {moveFeedback ? <p role={moveFeedback.kind === "error" ? "alert" : "status"} className={`rounded-lg border px-3 py-2 text-xs ${moveFeedback.kind === "error" ? "border-danger/35 text-red-200" : "border-success/30 text-ink-300"}`}>{moveFeedback.message}</p> : null}
       <div className={`grid min-w-0 items-start gap-4 ${panelOpen ? "xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)]" : ""}`}>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <MonthlyCalendar
           currentMonth={currentMonth}
           monthDays={monthDays}
@@ -195,9 +184,9 @@ export function MonthlyView({
           onCycleDayStatus={cycleDayStatus}
           onQuickAdd={openQuickAdd}
           onOpenTodo={setEditingTodoId}
+          onMoveTodo={(id, date) => { void moveTodo(id, date); }}
           draggingDisabled={Boolean(movingTodoId)}
         />
-        </DndContext>
         {panelOpen ? (
           <div ref={selectedPanelRef} className="min-w-0 scroll-mt-24 xl:sticky xl:top-20 xl:self-start">
             <MonthlySidePanel
