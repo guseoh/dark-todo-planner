@@ -93,6 +93,9 @@ jobs:
       - name: Exercise Chromium browser UI and offline reconnect
         run: node scripts/smoke-browser.mjs
 
+      - name: G5 dual-theme responsive, keyboard and read-only D1 regression
+        run: node scripts/smoke-ui-v2-g5.mjs
+
       - name: Upload local responsive layout snapshots
         if: success()
         uses: actions/upload-artifact@v4
