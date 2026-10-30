@@ -393,8 +393,6 @@ button:disabled {
     border-left: 2px solid var(--accent);
   }
 
-  .today-focus-section .todo-row:last-child { border-bottom: 0; }
-
   .today-section-kicker {
     display: block;
     color: var(--text-muted);
@@ -482,8 +480,6 @@ button:disabled {
     font-weight: 650;
     font-variant-numeric: tabular-nums;
   }
-
-  .today-task-section .todo-row:last-child { border-bottom: 0; }
 
   .todo-row--today {
     padding-top: 1.05rem;
