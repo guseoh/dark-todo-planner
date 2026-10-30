@@ -109,14 +109,14 @@ export function SettingsPage({
           </button>
         ))}
       </nav>
-      {message ? <div className="rounded-lg border border-ink-700/70 bg-ink-900/75 px-3 py-2 text-sm font-semibold text-ink-200" role="status" aria-live="polite">{message}</div> : null}
+      {message ? <p className="border-l-2 border-ink-500 py-1 pl-3 text-sm text-ink-200" role="status" aria-live="polite">{message}</p> : null}
 
       {section === "overview" ? (
       <div id="settings-panel-overview" role="tabpanel" aria-labelledby="settings-tab-overview" tabIndex={0} className="space-y-4">
       <section className="app-card p-4 sm:p-5" aria-labelledby="operation-info-title">
         <div className="flex flex-col gap-3 border-b border-ink-700 pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div><h3 id="operation-info-title" className="text-base font-bold text-ink-100">운영 정보</h3><p className="mt-1 text-xs text-ink-400">개인 플래너의 고정 운영 기준입니다.</p></div>
-          <div className={`inline-flex min-h-9 items-center gap-2 self-start rounded-lg border px-3 py-2 text-xs font-semibold ${connected ? "border-success/30 bg-success/[0.07] text-emerald-100" : "border-danger/40 bg-danger/[0.07] text-red-100"}`} role="status">
+          <div className={`inline-flex min-h-9 items-center gap-2 self-start text-xs font-medium ${connected ? "text-ink-300" : "text-red-200"}`} role="status">
             <span className={`h-2 w-2 rounded-full ${connected ? "bg-success" : "bg-danger"}`} aria-hidden="true" />{connected ? "Cloudflare D1 연결됨" : "Cloudflare D1 연결 확인 필요"}
           </div>
         </div>
@@ -156,7 +156,7 @@ export function SettingsPage({
           <label className={optionCardClass(draft.reminderTodayEnabled)}><input type="checkbox" className="mt-1 h-4 w-4 accent-accent-500" checked={draft.reminderTodayEnabled} onChange={(event) => setDraft((current) => ({ ...current, reminderTodayEnabled: event.target.checked }))} /><span><span className="block text-sm font-bold text-ink-100">오늘 미완료 Todo</span><span className="mt-1 block text-xs text-ink-400">기존 오후 9시 알림 기준입니다.</span></span></label>
           <label className={optionCardClass(draft.reminderOverdueEnabled)}><input type="checkbox" className="mt-1 h-4 w-4 accent-accent-500" checked={draft.reminderOverdueEnabled} onChange={(event) => setDraft((current) => ({ ...current, reminderOverdueEnabled: event.target.checked }))} /><span><span className="block text-sm font-bold text-ink-100">마감 초과 Todo</span><span className="mt-1 block text-xs text-ink-400">due date가 지난 미완료 Todo를 함께 알립니다.</span></span></label>
           <label className={optionCardClass(draft.reminderDueSoonEnabled)}><input type="checkbox" className="mt-1 h-4 w-4 accent-accent-500" checked={draft.reminderDueSoonEnabled} onChange={(event) => setDraft((current) => ({ ...current, reminderDueSoonEnabled: event.target.checked }))} /><span><span className="block text-sm font-bold text-ink-100">곧 마감되는 Todo</span><span className="mt-1 block text-xs text-ink-400">오늘부터 지정한 기간 안에 마감되는 Todo를 포함합니다.</span></span></label>
-          <label className={`rounded-lg border p-3 text-sm font-bold text-ink-100 transition ${draft.reminderDueSoonEnabled ? "border-accent-500/35 bg-accent-500/[0.06]" : "border-ink-700/70 bg-ink-950/25"}`}>마감 임박 기간<input className="field mt-2" type="number" min="1" max="14" value={draft.reminderDueSoonDays} onChange={(event) => setDraft((current) => ({ ...current, reminderDueSoonDays: Math.min(14, Math.max(1, Number(event.target.value) || 1)) }))} disabled={!draft.reminderDueSoonEnabled} /><span className="mt-1 block text-xs font-normal text-ink-400">1~14일 사이에서 설정합니다.</span></label>
+          <label className={`flex flex-col justify-center border-b border-ink-700/40 px-1 py-3 text-sm font-medium text-ink-200 ${draft.reminderDueSoonEnabled ? "" : "opacity-65"}`}>마감 임박 기간<input className="field mt-2" type="number" min="1" max="14" value={draft.reminderDueSoonDays} onChange={(event) => setDraft((current) => ({ ...current, reminderDueSoonDays: Math.min(14, Math.max(1, Number(event.target.value) || 1)) }))} disabled={!draft.reminderDueSoonEnabled} /><span className="mt-1 block text-xs font-normal text-ink-400">1~14일 사이에서 설정합니다.</span></label>
         </div>
         <div className="mt-4 flex justify-end"><button type="button" className="btn-primary" onClick={() => void save()} disabled={saving}><Save size={16} />{saving ? "저장 중..." : "운영 설정 저장"}</button></div>
       </section>
