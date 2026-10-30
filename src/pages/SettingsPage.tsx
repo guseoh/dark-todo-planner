@@ -28,11 +28,7 @@ type SettingsPageProps = {
 };
 
 const optionCardClass = (enabled: boolean) =>
-  `flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition ${
-    enabled
-      ? "border-accent-500/35 bg-accent-500/[0.06]"
-      : "border-ink-700/70 bg-ink-950/25 hover:border-ink-600/80 hover:bg-ink-900/55"
-  }`;
+  `flex cursor-pointer items-start gap-3 border-b border-ink-700/40 px-1 py-3 transition-colors ${enabled ? "bg-ink-850/40" : "hover:bg-ink-850/45"}`;
 
 export function SettingsPage({
   categories,
@@ -125,10 +121,10 @@ export function SettingsPage({
           </div>
         </div>
         <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs font-semibold text-ink-500">사용 모드</dt><dd className="mt-1 text-sm font-bold text-ink-100">단일 사용자</dd></div>
-          <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs font-semibold text-ink-500">저장소</dt><dd className="mt-1 text-sm font-bold text-ink-100">Cloudflare D1</dd></div>
-          <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs font-semibold text-ink-500">하루 시작 시각</dt><dd className="mt-1 text-sm font-bold text-ink-100">오전 3시</dd></div>
-          <div className="rounded-lg border border-ink-800/70 bg-ink-950/25 p-3"><dt className="text-xs font-semibold text-ink-500">Discord Todo 알림</dt><dd className="mt-1 text-sm font-bold text-ink-100">매일 오후 9시 일괄 알림</dd><p className="mt-1 text-xs text-ink-400">현재 개별 시각 예약 알림은 지원하지 않습니다.</p></div>
+          <div className="border-b border-ink-700/35 px-1 py-3"><dt className="text-xs font-semibold text-ink-500">사용 모드</dt><dd className="mt-1 text-sm font-bold text-ink-100">단일 사용자</dd></div>
+          <div className="border-b border-ink-700/35 px-1 py-3"><dt className="text-xs font-semibold text-ink-500">저장소</dt><dd className="mt-1 text-sm font-bold text-ink-100">Cloudflare D1</dd></div>
+          <div className="border-b border-ink-700/35 px-1 py-3"><dt className="text-xs font-semibold text-ink-500">하루 시작 시각</dt><dd className="mt-1 text-sm font-bold text-ink-100">오전 3시</dd></div>
+          <div className="border-b border-ink-700/35 px-1 py-3"><dt className="text-xs font-semibold text-ink-500">Discord Todo 알림</dt><dd className="mt-1 text-sm font-bold text-ink-100">매일 오후 9시 일괄 알림</dd><p className="mt-1 text-xs text-ink-400">현재 개별 시각 예약 알림은 지원하지 않습니다.</p></div>
         </dl>
       </section>
 
