@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { RichScratchpadEditor, type RichScratchpadHandle, type RichAction } from "../components/editor/RichScratchpadEditor";
 import { api, jsonBody } from "../lib/api/client";
 import { SCRATCHPAD_DRAFT_KEY, isScratchpadRecoveryNeeded, parseScratchpadDraft, type ScratchpadDraft } from "../lib/scratchpadDraft";
 
@@ -26,10 +27,14 @@ const readZoom = () => {
 };
 
 const readWrap = () => typeof window === "undefined" || localStorage.getItem(WRAP_STORAGE_KEY) !== "false";
-const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");");
+// Unsupported structures are never passed through the WYSIWYG Markdown serializer.
+const needsSourceMode = (value: string) => /(?:^|\n)\s*\|.+\|\s*(?:\n|$)|(?:^|\n)\s*\$\$|(?:^|\n)---\s*\n\w[^\n]*:\s|<\/?[a-z][^>]*>|!\[[^\]]*\]\([^)]*\)|\[[^\]]+\]:\s*\S+/im.test(value);
 
 export function ScratchpadPage() {
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
+  const richEditorRef = useRef<RichScratchpadHandle | null>(null);
+  const [sourceMode, setSourceMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const menuBarRef = useRef<HTMLDivElement | null>(null);
   const historyRef = useRef<string[]>([""]);
@@ -101,6 +106,7 @@ export function ScratchpadPage() {
       contentRef.current = next;
       savedRef.current = next;
       setContent(next);
+      setSourceMode(needsSourceMode(next));
       setSavedContent(next);
       setUpdatedAt(result.scratchpad.updatedAt);
       setRecoveryDraft(isScratchpadRecoveryNeeded(storedDraft, next) ? storedDraft : null);
@@ -201,6 +207,11 @@ export function ScratchpadPage() {
   };
 
   const replaceSelection = (before: string, after = before, fallback = "텍스트") => {
+    if (!sourceMode && richEditorRef.current) {
+      const action: RichAction = before === "**" ? "bold" : before === "_" ? "italic" : before === "~~" ? "strike" : before === "[" ? "link" : "code";
+      richEditorRef.current.action(action);
+      return;
+    }
     const { start, end, text } = selection();
     const chosen = text || fallback;
     const next = `${content.slice(0, start)}${before}${chosen}${after}${content.slice(end)}`;
@@ -209,6 +220,11 @@ export function ScratchpadPage() {
   };
 
   const prefixSelectedLines = (prefix: string) => {
+    if (!sourceMode && richEditorRef.current) {
+      const action: RichAction = prefix === "# " ? "h1" : prefix === "## " ? "h2" : prefix === "1. " ? "ordered" : prefix === "- [ ] " ? "task" : prefix === "> " ? "quote" : "bullet";
+      richEditorRef.current.action(action);
+      return;
+    }
     const editor = editorRef.current;
     if (!editor) return;
     const start = content.lastIndexOf("\n", Math.max(0, editor.selectionStart - 1)) + 1;
@@ -227,6 +243,7 @@ export function ScratchpadPage() {
   };
 
   const undo = () => {
+    if (!sourceMode) { richEditorRef.current?.undo(); return; }
     if (historyIndexRef.current <= 0) return;
     historyIndexRef.current -= 1;
     const next = historyRef.current[historyIndexRef.current];
@@ -235,6 +252,7 @@ export function ScratchpadPage() {
   };
 
   const redo = () => {
+    if (!sourceMode) { richEditorRef.current?.redo(); return; }
     if (historyIndexRef.current >= historyRef.current.length - 1) return;
     historyIndexRef.current += 1;
     const next = historyRef.current[historyIndexRef.current];
@@ -244,6 +262,7 @@ export function ScratchpadPage() {
 
   const findNext = useCallback(() => {
     const keyword = findText.trim();
+    if (!sourceMode) { richEditorRef.current?.findNext(keyword); return; }
     const editor = editorRef.current;
     if (!keyword || !editor) return;
     const haystack = content.toLocaleLowerCase("ko");
@@ -253,11 +272,12 @@ export function ScratchpadPage() {
     if (index === -1 && from > 0) index = haystack.indexOf(needle, 0);
     if (index === -1) return;
     restoreSelection(index, index + keyword.length);
-  }, [content, findText, restoreSelection]);
+  }, [content, findText, restoreSelection, sourceMode]);
 
   const replaceOne = () => {
     const keyword = findText.trim();
     if (!keyword) return;
+    if (!sourceMode) { if (!richEditorRef.current?.replaceOne(keyword, replaceText)) findNext(); return; }
     const { start, end, text } = selection();
     if (text.toLocaleLowerCase("ko") !== keyword.toLocaleLowerCase("ko")) {
       findNext();
@@ -271,6 +291,7 @@ export function ScratchpadPage() {
   const replaceAll = () => {
     const keyword = findText.trim();
     if (!keyword) return;
+    if (!sourceMode) { richEditorRef.current?.replaceAll(keyword, replaceText); return; }
     const regex = new RegExp(escapeRegExp(keyword), "gi");
     const next = content.replace(regex, replaceText);
     if (next === content) return;
@@ -281,6 +302,7 @@ export function ScratchpadPage() {
   const newDocument = () => {
     if (content.trim() && !window.confirm("낙서장 내용을 비울까요? 현재 내용은 서버에 자동 저장됩니다.")) return;
     applyContent("");
+    setSourceMode(false);
     restoreSelection(0);
   };
 
@@ -288,21 +310,22 @@ export function ScratchpadPage() {
     if (!file) return;
     const text = await file.text();
     applyContent(text);
+    setSourceMode(needsSourceMode(text));
     restoreSelection(0);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const downloadText = () => {
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `scratchpad-${new Date().toISOString().slice(0, 10)}.txt`;
+    anchor.download = `scratchpad-${new Date().toISOString().slice(0, 10)}.md`;
     anchor.click();
     URL.revokeObjectURL(url);
   };
 
-  const handleEditorKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleEditorKeyDown = (event: KeyboardEvent<HTMLTextAreaElement | HTMLDivElement>) => {
     const command = event.ctrlKey || event.metaKey;
     if (!command) return;
     const key = event.key.toLowerCase();
@@ -365,9 +388,9 @@ export function ScratchpadPage() {
             {openMenu === "file" ? (
               <div role="menu" className="absolute left-0 top-full z-40 mt-1 w-44 rounded-md border border-ink-700 bg-ink-900 p-1 shadow-xl">
                 <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(newDocument)}>새 문서</button>
-                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => fileInputRef.current?.click())}>텍스트 파일 열기</button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => fileInputRef.current?.click())}>Markdown / 텍스트 열기</button>
                 <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => { void saveNow(content); })}>저장 <span className="float-right text-ink-500">Ctrl+S</span></button>
-                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(downloadText)}>텍스트로 다운로드</button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(downloadText)}>Markdown 다운로드</button>
               </div>
             ) : null}
           </div>
@@ -380,7 +403,7 @@ export function ScratchpadPage() {
                 <div className="my-1 border-t border-ink-700" />
                 <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => { setFindOpen(true); setReplaceOpen(false); })}>찾기 <span className="float-right text-ink-500">Ctrl+F</span></button>
                 <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => { setFindOpen(true); setReplaceOpen(true); })}>바꾸기 <span className="float-right text-ink-500">Ctrl+H</span></button>
-                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => { editorRef.current?.focus(); editorRef.current?.select(); })}>전체 선택</button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => { if (sourceMode) { editorRef.current?.focus(); editorRef.current?.select(); } else richEditorRef.current?.selectAll(); })}>전체 선택</button>
               </div>
             ) : null}
           </div>
@@ -390,6 +413,9 @@ export function ScratchpadPage() {
               <div role="menu" className="absolute left-0 top-full z-40 mt-1 w-48 rounded-md border border-ink-700 bg-ink-900 p-1 shadow-xl">
                 <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => prefixSelectedLines("# "))}>제목 H1</button>
                 <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => prefixSelectedLines("- "))}>글머리 목록</button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => prefixSelectedLines("1. "))}>번호 목록</button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => prefixSelectedLines("- [ ] "))}>체크리스트</button>
+                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => prefixSelectedLines("> "))}>인용</button>
                 <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => replaceSelection("**", "**"))}>굵게</button>
                 <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => replaceSelection("_", "_"))}>기울임</button>
                 <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => replaceSelection("~~", "~~"))}>취소선</button>
@@ -410,6 +436,7 @@ export function ScratchpadPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 px-2 text-[11px] text-ink-500">
+          <button type="button" className={menuButtonClass} disabled={sourceMode && needsSourceMode(content)} onClick={() => setSourceMode((v) => !v)} aria-pressed={sourceMode}>{sourceMode ? "시각 편집" : "Markdown 원본"}</button>
           <span>{saveLabel}</span>
           {lastSavedLabel && saveState === "saved" ? <span>{lastSavedLabel}</span> : null}
         </div>
@@ -418,12 +445,15 @@ export function ScratchpadPage() {
       <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-ui-divider bg-transparent px-2 py-1.5">
         <button type="button" className={toolButtonClass} title="제목 H1" onClick={() => prefixSelectedLines("# ")}>H1</button>
         <button type="button" className={toolButtonClass} title="글머리 목록" onClick={() => prefixSelectedLines("- ")}>• 목록</button>
+        <button type="button" className={toolButtonClass} title="번호 목록" onClick={() => prefixSelectedLines("1. ")}>1. 목록</button>
+        <button type="button" className={toolButtonClass} title="체크리스트" onClick={() => prefixSelectedLines("- [ ] ")}>☑ 체크</button>
+        <button type="button" className={toolButtonClass} title="인용" onClick={() => prefixSelectedLines("> ")}>인용</button>
         <span className="mx-1 h-5 w-px bg-ink-700" />
         <button type="button" className={`${toolButtonClass} text-sm font-black`} title="굵게" onClick={() => replaceSelection("**", "**")}>B</button>
         <button type="button" className={`${toolButtonClass} text-sm italic`} title="기울임" onClick={() => replaceSelection("_", "_")}>I</button>
         <button type="button" className={`${toolButtonClass} text-sm line-through`} title="취소선" onClick={() => replaceSelection("~~", "~~")}>S</button>
         <button type="button" className={toolButtonClass} title="링크" onClick={() => replaceSelection("[", "](https://)", "링크")}>링크</button>
-        <span className="ml-auto hidden text-[10px] text-ink-600 sm:block">가벼운 서식은 Markdown 문법으로 저장됩니다.</span>
+        <span className="ml-auto hidden text-[10px] text-ink-600 sm:block">{sourceMode ? "원본 Markdown 편집" : "서식은 바로 적용되며 Markdown으로 저장됩니다."}</span>
       </div>
 
       {findOpen ? (
@@ -433,7 +463,7 @@ export function ScratchpadPage() {
           <button type="button" className="btn-secondary min-h-8 px-2 py-1 text-xs" onClick={findNext}>다음 찾기</button>
           {replaceOpen ? <button type="button" className="btn-secondary min-h-8 px-2 py-1 text-xs" onClick={replaceOne}>바꾸기</button> : null}
           {replaceOpen ? <button type="button" className="btn-secondary min-h-8 px-2 py-1 text-xs" onClick={replaceAll}>모두 바꾸기</button> : null}
-          <button type="button" className="ml-auto min-h-8 rounded px-2 text-xs text-ink-500 hover:bg-ink-800 hover:text-ink-200" onClick={() => { setFindOpen(false); setReplaceOpen(false); editorRef.current?.focus(); }}>닫기</button>
+          <button type="button" className="ml-auto min-h-8 rounded px-2 text-xs text-ink-500 hover:bg-ink-800 hover:text-ink-200" onClick={() => { setFindOpen(false); setReplaceOpen(false); if (sourceMode) editorRef.current?.focus(); else richEditorRef.current?.focus(); }}>닫기</button>
         </div>
       ) : null}
 
@@ -441,7 +471,7 @@ export function ScratchpadPage() {
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-warning/30 bg-warning/[0.06] px-3 py-2.5" role="status">
           <p className="text-xs text-ink-200">서버 내용과 다른 브라우저 임시 초안이 있습니다. 내용을 비교한 뒤 복원할 수 있습니다.</p>
           <div className="flex gap-2">
-            <button type="button" className="btn-secondary text-xs" onClick={() => { applyContent(recoveryDraft.content); resetHistory(recoveryDraft.content); }}>초안 복원</button>
+            <button type="button" className="btn-secondary text-xs" onClick={() => { applyContent(recoveryDraft.content); setSourceMode(needsSourceMode(recoveryDraft.content)); resetHistory(recoveryDraft.content); }}>초안 복원</button>
             <button type="button" className="btn-secondary text-xs" onClick={() => {
               setRecoveryDraft(null);
               try { localStorage.removeItem(SCRATCHPAD_DRAFT_KEY); } catch { /* no-op */ }
@@ -452,7 +482,7 @@ export function ScratchpadPage() {
       {localDraftError ? <p role="alert" className="shrink-0 border-b border-danger/30 px-3 py-2 text-xs text-danger">브라우저 임시 저장이 불가능합니다. 서버에 저장되기 전에는 페이지를 닫지 마세요.</p> : null}
       {error ? <div role="alert" className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-danger/30 bg-danger/[0.08] px-3 py-2 text-xs text-danger"><span>저장 또는 불러오기 실패: {error}</span><button type="button" className="btn-secondary text-xs" onClick={() => void (loadedRef.current ? saveNow() : loadScratchpad())}>{loadedRef.current ? "저장 재시도" : "불러오기 재시도"}</button></div> : null}
 
-      <textarea
+      {sourceMode ? <textarea
         ref={editorRef}
         value={content}
         onChange={(event) => applyContent(event.target.value)}
@@ -466,7 +496,7 @@ export function ScratchpadPage() {
         style={{ fontSize: `${Math.round(15 * zoom / 100)}px`, whiteSpace: wrap ? "pre-wrap" : "pre" }}
         placeholder="아무 내용이나 바로 작성하세요. 내용은 자동으로 저장됩니다."
         aria-label="낙서장 편집기"
-      />
+      /> : <RichScratchpadEditor ref={richEditorRef} markdown={content} onChange={applyContent} readOnly={saveState === "loading" || (!loadedRef.current && saveState === "error")} zoom={zoom} wrap={wrap} onShortcut={handleEditorKeyDown} /> }
 
       <div className="flex shrink-0 items-center justify-between gap-3 border-t border-ui-divider bg-ui-canvas px-3 py-1.5 text-[11px] text-ui-muted">
         <div className="flex min-w-0 items-center gap-3">
