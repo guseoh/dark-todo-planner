@@ -155,10 +155,10 @@ export function MonthlyView({
               type="button"
               aria-pressed={visibility[key]}
               onClick={() => setVisibility((current) => ({ ...current, [key]: !current[key] }))}
-              className={`min-h-9 rounded-lg border px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/60 ${
+              className={`min-h-9 border-b-2 px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/60 ${
                 visibility[key]
-                  ? "border-ink-600 bg-ink-800 text-ink-100"
-                  : "border-ink-700/70 bg-ink-950/60 text-ink-500 hover:text-ink-200"
+                  ? "border-ink-200 bg-transparent text-ink-100"
+                  : "border-transparent bg-transparent text-ink-500 hover:text-ink-200"
               }`}
             >{label}</button>
           ))}
