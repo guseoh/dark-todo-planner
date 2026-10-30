@@ -146,7 +146,7 @@ export function TodoForm({
           <ChevronDown className={showDetails ? "rotate-180 transition-transform" : "transition-transform"} size={14} aria-hidden="true" />
           {showDetails ? "상세 옵션 닫기" : "상세 옵션"}
         </button>
-        {!showDetails && !showSyntaxHint ? <span className="todo-composer-form__hint">날짜 · 우선순위 · 프로젝트</span> : null}
+        {!showDetails && !showSyntaxHint ? <span className="todo-composer-form__hint">Enter로 추가 · 날짜 · 우선순위 · 프로젝트</span> : null}
       </div>
       <div id={detailsId} hidden={!showDetails}>
         {showDetails ? (

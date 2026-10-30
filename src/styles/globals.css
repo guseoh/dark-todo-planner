@@ -270,7 +270,7 @@ button:disabled {
   }
 
   .btn-danger.btn-danger {
-    @apply btn border-danger/30 bg-transparent text-red-200 hover:border-danger/65 hover:bg-danger/10;
+    @apply btn border-danger/30 bg-transparent text-danger hover:border-danger/65 hover:bg-danger/10;
   }
 
   .icon-btn.icon-btn {
@@ -520,7 +520,7 @@ button:disabled {
   .today-sidebar__caption { color: var(--text-muted); font-size: 0.72rem; }
   .today-sidebar__section [role="progressbar"] { height: 4px; }
   .today-sidebar__rate strong.text-success { color: var(--success); }
-  .todo-row__more > summary::-webkit-details-marker { display: none; }
+  details > summary::-webkit-details-marker { display: none; }
   .today-sidebar__overdue { padding: 0 0 0 0.7rem; border-left: 2px solid var(--danger); }
   .todo-row__actions { transition: opacity 150ms ease; }
   @media (hover: hover) and (pointer: fine) {
@@ -528,7 +528,7 @@ button:disabled {
     .todo-row:hover .todo-row__actions,
     .todo-row:focus-within .todo-row__actions { opacity: 1; }
   }
-  .calendar-day-action--quiet { opacity: 0; }
+  .calendar-day-action--quiet { opacity: 0; transition: opacity 150ms ease; }
   .calendar-day:hover .calendar-day-action--quiet,
   .calendar-day:focus-within .calendar-day-action--quiet,
   .calendar-day[data-selected="true"] .calendar-day-action--quiet { opacity: 1; }
