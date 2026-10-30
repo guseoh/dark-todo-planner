@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Archive, ArchiveRestore, CheckCircle2, ChevronDown, CircleDot, ExternalLink, FolderKanban, Link2, PauseCircle, Pencil, Plus, Save, Target, Trash2, X } from "lucide-react";
 import { ProjectDecisionLog } from "../components/project/ProjectDecisionLog";
+import { PageHeader } from "../components/common/PageHeader";
 import { ProjectKanban } from "../components/project/ProjectKanban";
 import { ProjectOverviewTools } from "../components/project/ProjectOverviewTools";
 import { TodoForm } from "../components/todo/TodoForm";
@@ -256,14 +257,11 @@ export function ProjectPage({
   };
 
   return (
-    <div className="space-y-5">
-      <section>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-2xl font-bold text-ink-100 sm:text-3xl">프로젝트</h2>
-            <p className="mt-2 text-sm text-ink-400">장기 작업을 마일스톤·Todo·의사결정 기록과 함께 관리합니다.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
+    <div className="page-shell">
+      <PageHeader title="프로젝트" description="프로젝트의 작업·마일스톤·의사결정 기록을 한곳에서 관리합니다."
+        meta={`진행 ${activeProjects.length}개`}
+        actions={<>
+
             {!showArchived ? (
               <button type="button" className="btn-primary" onClick={() => setShowCreateProject((value) => !value)}>
                 <Plus size={16} />{showCreateProject ? "추가 닫기" : "프로젝트 추가"}
@@ -273,9 +271,8 @@ export function ProjectPage({
               {showArchived ? <ArchiveRestore size={16} /> : <Archive size={16} />}
               {showArchived ? "진행 프로젝트" : `보관함 ${archivedProjects.length}`}
             </button>
-          </div>
-        </div>
-      </section>
+        </>}
+      />
 
       {showCreateProject && !showArchived ? (
         <form className="app-card grid gap-2 p-3 sm:grid-cols-[minmax(0,1fr)_11rem_auto]" onSubmit={createProject}>
@@ -285,7 +282,7 @@ export function ProjectPage({
         </form>
       ) : null}
 
-      <section className="app-card p-2" aria-label={showArchived ? "보관 프로젝트 선택" : "진행 프로젝트 선택"}>
+      <section className="app-card p-2.5" aria-label={showArchived ? "보관 프로젝트 선택" : "진행 프로젝트 선택"}>
         {visibleProjects.length ? (
           <div className="flex gap-1.5 overflow-x-auto pb-0.5">
             {visibleProjects.map((project) => (
@@ -293,9 +290,10 @@ export function ProjectPage({
                 key={project.id}
                 type="button"
                 onClick={() => setSelectedId(project.id)}
-                className={`flex min-h-10 min-w-44 max-w-64 shrink-0 items-center gap-2 rounded-lg border px-3 text-left text-sm font-semibold transition ${selectedId === project.id ? "border-accent-500/35 bg-accent-500/[0.08] text-ink-100" : "border-transparent text-ink-400 hover:border-ink-700 hover:bg-ink-800/65 hover:text-ink-100"}`}
+                aria-pressed={selectedId === project.id}
+                className={`flex min-h-10 min-w-44 max-w-64 shrink-0 items-center gap-2 rounded-lg border px-3 text-left text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/55 ${selectedId === project.id ? "border-accent-500/35 bg-accent-500/[0.08] text-ink-100" : "border-transparent text-ink-400 hover:border-ink-700 hover:bg-ink-800/65 hover:text-ink-100"}`}
               >
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: project.color || "#0b72d7" }} />
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: project.color || "#a7baab" }} />
                 <span className="min-w-0 flex-1 truncate">{project.name}</span>
                 <span className="shrink-0 text-xs text-ink-400">{projectStatusLabel[project.status]}</span>
               </button>
@@ -363,7 +361,7 @@ export function ProjectPage({
               </form>
             ) : null}
 
-            <div className="mt-4 h-2 overflow-hidden rounded-full bg-ink-800">
+            <div role="progressbar" aria-label="프로젝트 완료율" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="mt-4 h-2 overflow-hidden rounded-full bg-ink-800">
               <div className="h-full rounded-full bg-accent-500 transition-all" style={{ width: `${progress}%` }} />
             </div>
 
@@ -398,7 +396,7 @@ export function ProjectPage({
             </details>
           </section>
 
-          <nav className="flex flex-wrap gap-1.5 rounded-lg border border-ink-700/75 bg-ink-900/50 p-1.5" aria-label="프로젝트 세부 화면" role="tablist">
+          <nav className="page-tabs" aria-label="프로젝트 세부 화면" role="tablist">
             {([
               { id: "work", label: "작업·Kanban", count: projectTodos.length },
               { id: "milestones", label: "마일스톤", count: projectMilestones.length },
@@ -407,7 +405,7 @@ export function ProjectPage({
             ] as const).map((tab) => (
               <button type="button" role="tab" key={tab.id} aria-selected={projectTab === tab.id}
                 onClick={() => setProjectTab(tab.id)}
-                className={`min-h-10 rounded-md px-3 text-xs font-semibold transition sm:text-sm ${projectTab === tab.id ? "bg-ink-700 text-ink-100" : "text-ink-400 hover:bg-ink-800 hover:text-ink-100"}`}>
+                className="page-tab">
                 {tab.label}{tab.count !== null ? <span className="ml-1.5 text-xs opacity-80">{tab.count}</span> : null}
               </button>
             ))}
