@@ -131,7 +131,7 @@ export function AllTodosPage({
           }))}>{showingUnplanned ? "전체 보기" : `미계획 ${unplannedCount}개 보기`}</button>
         </div>
       ) : null}
-      <div className="sticky top-[60px] z-20 border-b border-ui-divider bg-ui-canvas py-2">
+      <div className="relative z-20 border-b border-ui-divider bg-ui-canvas py-2 lg:sticky lg:top-[60px]">
         <TodoFilter filters={filters} onChange={setFilters} categories={categories} projects={projects} />
       </div>
 
