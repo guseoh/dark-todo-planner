@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { PanelRightOpen } from "lucide-react";
+import { TodoEditModal } from "../todo/TodoEditModal";
 import {
   buildCalendarEvents,
   defaultCalendarVisibility,
@@ -23,7 +24,7 @@ type MonthlyViewProps = {
   onAdd: (todo: TodoInput) => Promise<Todo | undefined> | Todo | undefined;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
+  onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => Promise<Todo | undefined> | Todo | undefined;
   categories?: Category[];
   goals?: Goal[];
   onAddGoal: (input: Partial<Goal> & { title: string }) => void;
@@ -61,6 +62,10 @@ export function MonthlyView({
   const [currentMonth, setCurrentMonth] = useState(() => parseDateKey(todayKey()));
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [quickAdd, setQuickAdd] = useState(false);
+  const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+  const [movingTodoId, setMovingTodoId] = useState<string | null>(null);
+  const [moveFeedback, setMoveFeedback] = useState<{ kind: "error" | "success"; message: string } | null>(null);
   const [visibility, setVisibility] = useState<CalendarVisibility>(defaultCalendarVisibility);
   const selectedPanelRef = useRef<HTMLDivElement | null>(null);
   const monthDays = useMemo(() => getMonthGrid(currentMonth), [currentMonth]);
@@ -97,10 +102,36 @@ export function MonthlyView({
       setCurrentMonth(date);
     }
     setPanelOpen(true);
+    setQuickAdd(false);
     if (window.innerWidth < 1280) {
       window.requestAnimationFrame(() => {
         selectedPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
+    }
+  };
+
+  const openQuickAdd = (dateKey: string) => {
+    selectDate(dateKey);
+    setQuickAdd(true);
+  };
+  const moveTodo = async (id: string, dateKey: string): Promise<boolean> => {
+    const original = todos.find((todo) => todo.id === id);
+    if (!original || original.archived || original.date === dateKey || movingTodoId) return false;
+    setMovingTodoId(id);
+    setMoveFeedback(null);
+    try {
+      const result = await onUpdate(id, { date: dateKey, planningState: "SCHEDULED" });
+      if (!result) {
+        setMoveFeedback({ kind: "error", message: `“${original.title}”의 날짜 변경에 실패했습니다. 기존 날짜가 유지됩니다.` });
+        return false;
+      }
+      setMoveFeedback({ kind: "success", message: `“${original.title}”을 ${dateKey}로 이동했습니다.` });
+      return true;
+    } catch {
+      setMoveFeedback({ kind: "error", message: `“${original.title}”의 날짜 변경에 실패했습니다. 기존 날짜가 유지됩니다.` });
+      return false;
+    } finally {
+      setMovingTodoId(null);
     }
   };
 
@@ -139,6 +170,7 @@ export function MonthlyView({
         ) : null}
       </div>
 
+      {moveFeedback ? <p role={moveFeedback.kind === "error" ? "alert" : "status"} className={`rounded-lg border px-3 py-2 text-xs ${moveFeedback.kind === "error" ? "border-danger/35 text-red-200" : "border-success/30 text-ink-300"}`}>{moveFeedback.message}</p> : null}
       <div className={`grid min-w-0 items-start gap-4 ${panelOpen ? "xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)]" : ""}`}>
         <MonthlyCalendar
           currentMonth={currentMonth}
@@ -150,6 +182,10 @@ export function MonthlyView({
           onToday={goToToday}
           onSelectDate={selectDate}
           onCycleDayStatus={cycleDayStatus}
+          onQuickAdd={openQuickAdd}
+          onOpenTodo={setEditingTodoId}
+          onMoveTodo={(id, date) => { void moveTodo(id, date); }}
+          draggingDisabled={Boolean(movingTodoId)}
         />
         {panelOpen ? (
           <div ref={selectedPanelRef} className="min-w-0 scroll-mt-24 xl:sticky xl:top-20 xl:self-start">
@@ -159,7 +195,11 @@ export function MonthlyView({
               selectedTodos={selectedTodos}
               selectedEvents={selectedEvents}
               categories={categories}
-              onClose={() => setPanelOpen(false)}
+              quickAdd={quickAdd}
+              onCancelQuickAdd={() => setQuickAdd(false)}
+              movingTodoId={movingTodoId}
+              onMoveTodo={moveTodo}
+              onClose={() => { setPanelOpen(false); setQuickAdd(false); }}
               onAdd={onAdd}
               onToggle={onToggle}
               onDelete={onDelete}
@@ -171,6 +211,13 @@ export function MonthlyView({
           </div>
         ) : null}
       </div>
+      <TodoEditModal
+        todo={todos.find((todo) => todo.id === editingTodoId) ?? null}
+        categories={categories}
+        projects={projects}
+        onClose={() => setEditingTodoId(null)}
+        onSave={onUpdate}
+      />
     </div>
   );
 }
