@@ -256,7 +256,7 @@ try {
   await composerTrigger.click();
   const composer = page.getByRole("form", { name: "Todo 빠른 추가" });
   await composer.getByRole("textbox", { name: "Todo 제목" }).waitFor();
-  assert.equal(await composer.getByLabel("실행 날짜").inputValue().length, 10);
+  assert.equal((await composer.getByLabel("실행 날짜").inputValue()).length, 10);
   assert.equal(await composer.getByLabel("우선순위").inputValue(), "MEDIUM");
   // Esc keeps unsaved text locally; another click restores the draft.
   const draft = `Unsubmitted draft ${randomUUID().slice(0, 6)}`;
