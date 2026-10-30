@@ -53,7 +53,9 @@ describe("light/dark neutral design tokens", () => {
     expect(css).toContain(".today-page.page-shell");
     expect(css).not.toContain(".today-overview__stat");
     expect(css).toContain(".today-composer");
-    expect(css).toContain(".today-sidebar");
+    expect(css).toContain(".today-digest");
+    expect(css).not.toContain(".today-sidebar");
+    expect(css).toContain(".todo-row__menu-action");
     expect(css).not.toContain("#2563eb");
     expect(css).toContain("@apply rounded-none border-0 border-b");
   });
