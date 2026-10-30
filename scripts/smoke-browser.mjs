@@ -146,6 +146,9 @@ try {
   assert.ok(legacyCreate.status >= 200 && legacyCreate.status < 300,
     `Legacy fixture must be inserted only in isolated D1: ${JSON.stringify(legacyCreate)}`);
   await page.goto(new URL("/#/inbox", base).toString(), { waitUntil: "domcontentloaded" });
+  // Navigating to a different hash is same-document; reload to refetch the fixture from local D1.
+  await page.reload({ waitUntil: "domcontentloaded" });
+  assert.equal((await findServerTodo(legacyTitle))?.planningState, "INBOX", "Local D1 fixture should survive reload.");
   await page.getByRole("heading", { name: "전체 Todo", exact: true }).waitFor();
   assert.equal(new URL(page.url()).hash, "#/all", "Old Inbox bookmarks must redirect to All Todo.");
   // The view renders before asynchronous Todo hydration finishes.
