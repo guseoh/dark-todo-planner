@@ -36,8 +36,11 @@ page.setDefaultTimeout(20000);
 const tokenContrast = async () => page.evaluate(() => {
   const style = getComputedStyle(document.documentElement);
   const hex = (name) => {
-    const value = style.getPropertyValue(name).trim();
-    if (!/^#[0-9a-f]{6}$/i.test(value)) throw new Error("Invalid opaque theme token: " + name + "=" + value);
+    const raw = style.getPropertyValue(name).trim();
+    const value = /^#[0-9a-f]{3}$/i.test(raw)
+      ? "#" + [...raw.slice(1)].map((digit) => digit + digit).join("")
+      : raw;
+    if (!/^#[0-9a-f]{6}$/i.test(value)) throw new Error("Invalid opaque theme token: " + name + "=" + raw);
     return [1, 3, 5].map((offset) => parseInt(value.slice(offset, offset + 2), 16) / 255);
   };
   const luminance = (name) => hex(name).map((v) => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
