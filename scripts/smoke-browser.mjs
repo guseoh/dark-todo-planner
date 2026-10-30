@@ -334,24 +334,98 @@ try {
   await resourceDisclosure.locator("summary").click();
   assert.equal(await resourceDisclosure.evaluate((node) => node.open), true);
 
+  // Memo: browser drafts, Markdown preview, linked Todo metadata, and partial
+  // server-save failure must not create duplicate records.
+  await page.evaluate(() => { window.location.hash = "#/memo"; });
+  await page.getByRole("heading", { name: "메모", exact: true }).waitFor();
+  await page.getByRole("button", { name: "새 메모", exact: true }).click();
+  const memoDialog = page.getByRole("dialog", { name: "새 메모" });
+  const memoTitle = `Writer E2E ${randomUUID().slice(0, 8)}`;
+  await memoDialog.getByPlaceholder("메모 제목").fill(memoTitle);
+  await memoDialog.getByPlaceholder("- 떠오른 생각을 적어두세요").fill("# 작성 내용\\n- [ ] 검증하기");
+  await memoDialog.getByRole("button", { name: "미리보기" }).click();
+  await memoDialog.getByText("작성 내용", { exact: true }).waitFor();
+  await memoDialog.getByRole("button", { name: "편집" }).click();
+  await sleep(550);
+  await memoDialog.getByRole("button", { name: "새 메모 닫기" }).click();
+  await page.getByRole("button", { name: "새 메모", exact: true }).click();
+  const resumedMemo = page.getByRole("dialog", { name: "새 메모" });
+  assert.equal(await resumedMemo.getByPlaceholder("메모 제목").inputValue(), memoTitle, "Memo draft must restore after closing the editor.");
+  await resumedMemo.locator("details").filter({ hasText: "연결 · Todo" }).locator("summary").click();
+  await resumedMemo.getByPlaceholder("연결할 Todo 또는 프로젝트 검색").fill(edited);
+  await resumedMemo.getByText(edited, { exact: true }).first().click();
+  let failMemoLinksOnce = true;
+  await page.route("**/api/memos/*/links", async (route) => {
+    if (route.request().method() === "PUT" && failMemoLinksOnce) {
+      failMemoLinksOnce = false;
+      await route.fulfill({ status: 503, contentType: "application/json", body: '{"message":"memo links test failure"}' });
+    } else await route.continue();
+  });
+  await resumedMemo.getByRole("button", { name: "메모 저장", exact: true }).click();
+  await resumedMemo.getByRole("alert").waitFor();
+  assert.equal(await resumedMemo.getByPlaceholder("메모 제목").inputValue(), memoTitle);
+  await resumedMemo.getByRole("button", { name: "메모 저장", exact: true }).click();
+  await resumedMemo.waitFor({ state: "hidden" });
+  await page.unroute("**/api/memos/*/links");
+  const savedMemos = await page.evaluate(async () => {
+    const response = await fetch("/api/memos?limit=100", { credentials: "same-origin" });
+    return (await response.json()).memos;
+  });
+  assert.equal(savedMemos.filter((item) => item.title === memoTitle).length, 1, "Failed memo link save must not duplicate the memo.");
+  await page.getByRole("searchbox", { name: "메모 검색" }).fill(edited);
+  await page.getByRole("heading", { name: memoTitle, exact: true }).waitFor();
+  await page.getByRole("button", { name: "연결됨", exact: true }).click();
+  await page.getByRole("heading", { name: memoTitle, exact: true }).waitFor();
+
+  // Scratchpad: failed autosave retains a local copy; restoring it must
+  // persist the exact content once the server is reachable.
+  await page.evaluate(() => { window.location.hash = "#/scratchpad"; });
+  const scratch = page.getByRole("region", { name: "낙서장" });
+  const scratchEditor = scratch.getByRole("textbox", { name: "낙서장 편집기" });
+  await scratchEditor.waitFor();
+  const scratchContent = `Scratchpad E2E ${randomUUID().slice(0, 8)}\\n남아야 할 두 번째 줄`;
+  let failScratchOnce = true;
+  await page.route("**/api/scratchpad", async (route) => {
+    if (route.request().method() === "PUT" && failScratchOnce) {
+      failScratchOnce = false;
+      await route.fulfill({ status: 503, contentType: "application/json", body: '{"message":"scratchpad test save failure"}' });
+    } else await route.continue();
+  });
+  await scratchEditor.fill(scratchContent);
+  await scratch.getByRole("button", { name: "저장 재시도" }).waitFor();
+  assert.ok(await page.evaluate(() => localStorage.getItem("dark-todo-planner:scratchpad-recovery")?.includes("Scratchpad E2E")), "Local scratchpad draft must survive API failure.");
+  await page.unroute("**/api/scratchpad");
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "초안 복원" }).waitFor();
+  await page.getByRole("button", { name: "초안 복원" }).click();
+  await page.getByText("저장됨", { exact: true }).first().waitFor();
+  assert.equal(await scratchEditor.inputValue(), scratchContent);
+  const serverScratch = await page.evaluate(async () => {
+    const response = await fetch("/api/scratchpad", { credentials: "same-origin" });
+    return (await response.json()).scratchpad.content;
+  });
+  assert.equal(serverScratch, scratchContent, "Recovered scratchpad must persist to server.");
+
   // Layout probes at common mobile, tablet and desktop breakpoints.
   // Retain screenshots as review artifacts; geometry failure blocks deployment.
   await mkdir("test-artifacts", { recursive: true });
   for (const width of [320, 390, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });
-    for (const view of ["today", "calendar", "projects", "settings"]) {
+    for (const view of ["today", "calendar", "projects", "settings", "memo", "scratchpad"]) {
       await page.evaluate((next) => { window.location.hash = "#/" + next; }, view);
       if (view === "today") await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
       if (view === "calendar") await page.getByRole("heading", { name: "캘린더", exact: true }).waitFor();
       if (view === "projects") await page.getByRole("heading", { name: "프로젝트", exact: true }).waitFor();
       if (view === "settings") await page.getByRole("heading", { name: "설정", exact: true }).waitFor();
+      if (view === "memo") await page.getByRole("heading", { name: "메모", exact: true }).waitFor();
+      if (view === "scratchpad") await page.getByRole("textbox", { name: "낙서장 편집기" }).waitFor();
       const geometry = await page.evaluate(() => ({ viewport: window.innerWidth, document: document.documentElement.scrollWidth }));
       assert.ok(geometry.document <= geometry.viewport + 2, `Unexpected page overflow at ${width}px on ${view}: ${JSON.stringify(geometry)}`);
       await page.screenshot({ path: `test-artifacts/layout-${width}-${view}.png`, fullPage: true });
     }
   }
 
-  console.log("BROWSER E2E PASS: Today, history, settings tabs, projects tabs, keyboard/search, and 16 responsive layout snapshots.");
+  console.log("BROWSER E2E PASS: Today, history, settings tabs, projects tabs, keyboard/search, and 24 responsive layout snapshots.");
 } catch (error) {
   failed = true;
   await mkdir("test-artifacts", { recursive: true });
