@@ -137,11 +137,11 @@ export function MonthlyCalendar({
           <h3 className="text-base font-bold text-ink-100 sm:text-lg">
             {formatKoreanDate(currentMonth, "yyyy년 M월")}
           </h3>
-          <button type="button" className="btn-secondary min-h-8 px-2 text-xs" onClick={onToday}>오늘</button>
+          <button type="button" className="btn-secondary ui-button--sm min-h-8 px-2 text-xs" onClick={onToday}>오늘</button>
         </div>
         <div className="flex items-center gap-1" aria-label="달 이동">
-          <button type="button" className="icon-btn h-9 w-9" onClick={() => onMonthChange(getPrevMonth(currentMonth))} aria-label="이전 달"><ChevronLeft size={17} /></button>
-          <button type="button" className="icon-btn h-9 w-9" onClick={() => onMonthChange(getNextMonth(currentMonth))} aria-label="다음 달"><ChevronRight size={17} /></button>
+          <button type="button" className="icon-btn ui-icon-button--neutral h-9 w-9" onClick={() => onMonthChange(getPrevMonth(currentMonth))} aria-label="이전 달"><ChevronLeft size={17} /></button>
+          <button type="button" className="icon-btn ui-icon-button--neutral h-9 w-9" onClick={() => onMonthChange(getNextMonth(currentMonth))} aria-label="다음 달"><ChevronRight size={17} /></button>
         </div>
       </div>
 
@@ -178,7 +178,7 @@ export function MonthlyCalendar({
               data-selected={selected}
               className={`calendar-day group relative flex h-[6.25rem] min-w-0 flex-col overflow-hidden border-b border-r p-1.5 transition-colors sm:h-[7.25rem] sm:p-2 ${
                 selected
-                  ? "border-ink-600/85 bg-ui-selected ring-1 ring-inset ring-ink-500/35"
+                  ? "border-info/50 bg-info/10 ring-1 ring-inset ring-info/35"
                   : "border-ink-700/45 bg-transparent hover:border-ink-600/70 hover:bg-ink-850/60"
               } ${!inMonth ? "opacity-60" : ""} ${today && !selected ? "ring-1 ring-inset ring-ink-400/45" : ""}`}
             >

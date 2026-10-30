@@ -1,4 +1,5 @@
 import { AlertCircle, CalendarCheck2, Github, LogOut, Plus, Search, UserRound } from "lucide-react";
+import { Button } from "../ui/Button";
 
 const REPOSITORY_URL = "https://github.com/guseoh/dark-todo-planner";
 
@@ -39,21 +40,22 @@ export function Header({ storageStatus = "server", onLogout, onQuickAdd, onSearc
             </div>
           ) : null}
           {onSearch ? (
-            <button type="button" onClick={onSearch} className="btn-secondary px-2.5 lg:hidden" title="검색 및 명령 (Ctrl+K)">
-              <Search size={15} />
+            <Button variant="secondary" onClick={onSearch} className="app-search-button" title="검색 및 명령 (Ctrl+K)" aria-label="검색 및 명령">
+              <Search size={16} aria-hidden="true" />
               <span className="hidden sm:inline">검색</span>
-            </button>
+              <kbd className="hidden xl:inline">Ctrl K</kbd>
+            </Button>
           ) : null}
           {onQuickAdd ? (
-            <button type="button" onClick={onQuickAdd} className="btn-primary px-2.5" title="빠른 Todo 추가 (Ctrl+Shift+K)">
-              <Plus size={15} />
+            <Button variant="primary" onClick={onQuickAdd} title="빠른 Todo 추가 (Ctrl+Shift+K)" aria-label="빠른 추가">
+              <Plus size={16} aria-hidden="true" />
               <span className="hidden sm:inline">빠른 추가</span>
-            </button>
+            </Button>
           ) : null}
           <details className="relative">
-            <summary className="icon-btn h-9 w-9 list-none" aria-label="계정 메뉴" title="계정 메뉴"><UserRound size={17} /></summary>
+            <summary className="ui-icon-button ui-icon-button--neutral h-9 w-9 list-none cursor-pointer" aria-label="계정 메뉴" title="계정 메뉴"><UserRound size={17} /></summary>
             <div className="absolute right-0 top-full z-50 mt-2 min-w-40 rounded-md border border-ui-divider bg-ui-elevated p-1.5 shadow-lg">
-              <button type="button" onClick={() => void onLogout()} className="flex min-h-10 w-full items-center gap-2 rounded px-3 text-left text-sm text-ui-secondary hover:bg-ui-hover hover:text-ui-text">
+              <button type="button" onClick={() => void onLogout()} className="ui-button ui-button--ghost w-full justify-start px-3 text-left">
                 <LogOut size={15} />로그아웃
               </button>
             </div>

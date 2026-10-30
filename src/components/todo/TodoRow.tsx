@@ -71,7 +71,7 @@ export function TodoRow({
             <input type="checkbox" className="h-4 w-4 accent-accent-500" checked={selected} onChange={() => onSelect?.(todo.id)} aria-label={`"${todo.title}" 선택`} />
           </label>
         ) : (
-          <button type="button" onClick={() => onToggle(todo.id)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[4px] transition-colors hover:bg-ui-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus" aria-label={todo.completed ? `"${todo.title}" 미완료로 변경` : `"${todo.title}" 완료로 변경`} title={todo.completed ? "미완료로 변경" : "완료로 변경"}>
+          <button type="button" onClick={() => onToggle(todo.id)} className="todo-complete-button flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] transition-colors hover:bg-success/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus" aria-label={todo.completed ? `"${todo.title}" 미완료로 변경` : `"${todo.title}" 완료로 변경`} title={todo.completed ? "미완료로 변경" : "완료로 변경"}>
             <span className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${todo.completed ? "border-success bg-success text-ink-950" : "border-ink-600 text-transparent"}`} aria-hidden="true"><CheckCircle2 size={13} /></span>
           </button>
         )}
@@ -96,7 +96,7 @@ export function TodoRow({
 
         {!selectionMode && variant === "today" ? (
           <details className="todo-row__more relative z-10 shrink-0">
-            <summary className="icon-btn h-9 w-9 cursor-pointer list-none" aria-label={`"${todo.title}" 더보기`} title="작업 메뉴">
+            <summary className="ui-icon-button ui-icon-button--neutral h-9 w-9 cursor-pointer list-none" aria-label={`"${todo.title}" 더보기`} title="작업 메뉴">
               <MoreHorizontal size={17} />
             </summary>
             <div className="todo-row__menu absolute right-0 top-full z-40 mt-1 min-w-44 rounded-md border border-ui-divider bg-ui-elevated p-1.5 shadow-xl" role="group" aria-label={`"${todo.title}" 작업 메뉴`}>
@@ -113,7 +113,7 @@ export function TodoRow({
                 <Pencil size={14} />수정
               </button>
               {todo.referenceUrl ? <a href={todo.referenceUrl} target="_blank" rel="noreferrer" className="todo-row__menu-action" aria-label={`"${todo.title}" 관련 링크 열기`}><ExternalLink size={14} />관련 링크</a> : null}
-              <button type="button" className="todo-row__menu-action text-danger hover:bg-danger/10" onClick={handleDelete} aria-label={`"${todo.title}" Todo 삭제`}>
+              <button type="button" className="todo-row__menu-action ui-menu-action--danger text-danger hover:bg-danger/10" onClick={handleDelete} aria-label={`"${todo.title}" Todo 삭제`}>
                 <Trash2 size={14} />삭제
               </button>
             </div>

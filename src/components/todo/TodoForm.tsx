@@ -185,7 +185,7 @@ export function TodoForm({
             {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
           </select>
         ) : null}
-        {!collapsible ? <button type="submit" className="btn-primary todo-composer-form__submit" disabled={saving}>
+        {!collapsible ? <button type="submit" className="btn-primary ui-button--primary todo-composer-form__submit" disabled={saving}>
           <Plus size={16} aria-hidden="true" />{saving ? "저장 중..." : submitLabel}
         </button> : null}
       </div>
@@ -242,7 +242,7 @@ export function TodoForm({
         {collapsible ? (
           <div className="todo-composer-form__actions">
             <button type="button" className="todo-composer-form__toggle" onClick={closeComposer} disabled={saving}>취소</button>
-            <button type="submit" className="btn-primary todo-composer-form__submit" disabled={saving || !title.trim()}>
+            <button type="submit" className="btn-primary ui-button--primary todo-composer-form__submit" disabled={saving || !title.trim()}>
               <Plus size={15} aria-hidden="true" />{saving ? "저장 중..." : submitLabel}
             </button>
           </div>

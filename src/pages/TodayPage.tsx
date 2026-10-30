@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, History, MoonStar, Settings2, Star } from "lucide-react";
+import { Button } from "../components/ui/Button";
+import { IconButton } from "../components/ui/IconButton";
 import { IconRenderer } from "../components/common/IconRenderer";
 import { ProgressBar } from "../components/common/ProgressBar";
 import { TodayCategoryManager } from "../components/today/TodayCategoryManager";
@@ -47,7 +49,7 @@ type TodayPageProps = {
 type CategoryFilter = "all" | "uncategorized" | string;
 
 const categoryButtonClass = "inline-flex min-h-9 shrink-0 items-center gap-1.5 border-b-2 px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus";
-const activeCategoryButtonClass = "border-ui-text text-ui-text font-semibold";
+const activeCategoryButtonClass = "border-info text-info font-semibold";
 const idleCategoryButtonClass = "border-transparent text-ui-muted hover:border-ui-divider hover:text-ui-text";
 const FOCUS_STORAGE_PREFIX = "dark-todo-planner:focus:";
 const readFocusIds = (date: string): string[] => {
@@ -199,10 +201,10 @@ export function TodayPage({
           {highPriorityCount > 0 ? <span className="text-warning">높은 우선순위 {highPriorityCount}</span> : null}
           {deadlineAttentionCount > 0 ? <span className="text-danger">마감 주의 {deadlineAttentionCount}</span> : null}
           {stats.todayActive > 0 && onOpenDayClose ? (
-            <button type="button" className="today-header__action" onClick={onOpenDayClose}
+            <Button variant="warning" size="sm" className="today-header__action" onClick={onOpenDayClose}
               title="명시적으로 선택한 일정만 내일이나 언젠가로 이동합니다">
-              <MoonStar size={14} className="text-warning" />오늘 정리
-            </button>
+              <MoonStar size={15} aria-hidden="true" />오늘 정리
+            </Button>
           ) : null}
         </div>
       </header>
@@ -256,9 +258,9 @@ export function TodayPage({
                       ) : null}
                     </div>
                   </div>
-                  <button type="button" className="icon-btn h-9 w-9 shrink-0" onClick={() => setShowCategoryManager(true)} title="카테고리 관리" aria-label="카테고리 관리">
-                    <Settings2 size={15} />
-                  </button>
+                  <IconButton label="카테고리 관리" onClick={() => setShowCategoryManager(true)} title="카테고리 관리" size="md" className="shrink-0">
+                    <Settings2 size={16} />
+                  </IconButton>
                 </div>
               </div>
             ) : (
@@ -335,7 +337,7 @@ export function TodayPage({
               <History size={14} className="shrink-0 text-danger" aria-hidden="true" />
               <span id="overdue-summary-title">지난 일정 <strong className="text-danger">{overdueTodos.length}개</strong></span>
               {oldestOverdueDate ? <span className="text-ui-muted">· {formatKoreanDate(oldestOverdueDate, "M월 d일")}부터</span> : null}
-              <button type="button" className="today-digest__link" onClick={() => setShowOverdueImport(true)}>정리하기</button>
+              <Button variant="danger" size="sm" className="today-digest__link" onClick={() => setShowOverdueImport(true)}>정리하기</Button>
             </div>
           ) : null}
         </section>

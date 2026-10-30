@@ -89,8 +89,8 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
     const active = activeView === item.id;
     return (
       <button key={item.id} type="button" onClick={() => onChangeView(item.id)} aria-label={item.label} aria-current={active ? "page" : undefined} title={collapsed && !hoverExpanded ? item.label : undefined}
-        className={`relative flex min-h-10 w-full items-center rounded-[4px] text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${active ? "bg-ui-selected font-semibold text-ui-text" : "text-ui-secondary hover:bg-ui-hover hover:text-ui-text"} ${showExpandedContent ? "gap-3 px-3 text-left" : "justify-center px-2"}`}>
-        {active ? <span aria-hidden="true" className="absolute bottom-2 left-0 top-2 w-0.5 bg-ui-focus" /> : null}
+        className={`app-nav-button relative flex min-h-10 w-full items-center rounded-[6px] text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${active ? "bg-ui-selected font-semibold text-ui-text" : "text-ui-secondary hover:bg-ui-hover hover:text-ui-text"} ${showExpandedContent ? "gap-3 px-3 text-left" : "justify-center px-2"}`}>
+        {active ? <span aria-hidden="true" className="app-nav-indicator absolute bottom-2 left-0 top-2 w-0.5 bg-info" /> : null}
         <Icon size={17} className="shrink-0" />
         {showExpandedContent ? <span className="truncate">{item.label}</span> : null}
       </button>
@@ -108,7 +108,7 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
           </button>
 
           <button type="button" onClick={onSearch} aria-label="빠른 검색 및 명령" title={collapsed && !hoverExpanded ? "빠른 검색 (Ctrl+K)" : undefined}
-            className={`mb-3 flex min-h-10 shrink-0 w-full items-center rounded-[4px] border border-transparent bg-transparent text-sm text-ui-secondary transition-colors hover:bg-ui-hover hover:text-ui-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus ${showExpandedContent ? "gap-2.5 px-3 text-left" : "justify-center px-2"}`}>
+            className={`app-nav-button mb-3 flex min-h-10 shrink-0 w-full items-center rounded-[6px] border border-transparent bg-transparent text-sm text-ui-secondary transition-colors hover:bg-ui-hover hover:text-ui-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus ${showExpandedContent ? "gap-2.5 px-3 text-left" : "justify-center px-2"}`}>
             <Search size={17} className="shrink-0" />
             {showExpandedContent ? <><span className="min-w-0 flex-1 truncate">빠른 검색...</span><kbd className="shrink-0 border-l border-ui-divider pl-1.5 text-[11px] font-normal leading-4 text-ui-muted">Ctrl K</kbd></> : null}
           </button>
@@ -151,7 +151,7 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
                   const active = item.id === activeView;
                   return <button key={item.id} type="button" aria-current={active ? "page" : undefined}
                     onClick={() => { setMobileMenuOpen(false); onChangeView(item.id); }}
-                    className={`flex min-h-11 items-center gap-2 rounded-lg px-3 text-left text-xs font-semibold transition ${active ? "bg-ink-800 text-accent-200" : "text-ink-300 hover:bg-ink-800"}`}>
+                    className={`app-nav-button flex min-h-11 items-center gap-2 rounded-lg px-3 text-left text-xs font-semibold transition ${active ? "bg-info/10 text-info" : "text-ink-300 hover:bg-ink-800"}`}>
                     <Icon size={17} className="shrink-0" /><span className="truncate">{item.label}</span>
                   </button>;
                 })}
@@ -166,8 +166,8 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
               const Icon = item.icon;
               const active = activeView === item.id;
               return <button key={item.id} type="button" onClick={() => { setMobileMenuOpen(false); onChangeView(item.id); }} aria-current={active ? "page" : undefined}
-                className={`relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-[4px] px-1 text-xs font-medium transition ${active ? "bg-ui-selected text-ui-text" : "text-ui-secondary hover:bg-ui-hover hover:text-ui-text"}`}>
-                {active ? <span aria-hidden="true" className="absolute inset-x-3 top-0 h-0.5 bg-ui-focus" /> : null}<Icon size={18} /><span className="max-w-full truncate">{item.label}</span>
+                className={`app-nav-button relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-[6px] px-1 text-xs font-medium transition ${active ? "bg-info/10 text-info" : "text-ui-secondary hover:bg-ui-hover hover:text-ui-text"}`}>
+                {active ? <span aria-hidden="true" className="app-nav-indicator absolute inset-x-3 top-0 h-0.5 bg-info" /> : null}<Icon size={18} /><span className="max-w-full truncate">{item.label}</span>
               </button>;
             })}
             <button type="button" aria-expanded={mobileMenuOpen} aria-controls="mobile-more-menu" onClick={() => setMobileMenuOpen((v) => !v)}
