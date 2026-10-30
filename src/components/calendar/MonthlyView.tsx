@@ -61,7 +61,7 @@ export function MonthlyView({
 }: MonthlyViewProps) {
   const [currentMonth, setCurrentMonth] = useState(() => parseDateKey(todayKey()));
   const [selectedDate, setSelectedDate] = useState(todayKey);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1280);
   const [quickAdd, setQuickAdd] = useState(false);
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
   const [movingTodoId, setMovingTodoId] = useState<string | null>(null);
@@ -146,7 +146,7 @@ export function MonthlyView({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="mx-auto w-full max-w-[1180px] space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="캘린더 일정 필터">
           {filterOptions.map(({ key, label }) => (
@@ -171,7 +171,7 @@ export function MonthlyView({
       </div>
 
       {moveFeedback ? <p role={moveFeedback.kind === "error" ? "alert" : "status"} className={`border-l-2 py-2 pl-3 text-xs ${moveFeedback.kind === "error" ? "border-danger/60 text-danger" : "border-success/60 text-ui-secondary"}`}>{moveFeedback.message}</p> : null}
-      <div className={`grid min-w-0 items-start gap-4 ${panelOpen ? "xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)]" : ""}`}>
+      <div className={`grid min-w-0 items-start gap-4 ${panelOpen ? "xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]" : ""}`}>
         <MonthlyCalendar
           currentMonth={currentMonth}
           monthDays={monthDays}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ChevronDown, History, Settings2, Star, StarOff } from "lucide-react";
+import { ChevronDown, History, MoonStar, Settings2, Star, StarOff } from "lucide-react";
 import { IconRenderer } from "../components/common/IconRenderer";
 import { ProgressBar } from "../components/common/ProgressBar";
 import { TodayCategoryManager } from "../components/today/TodayCategoryManager";
@@ -16,6 +16,8 @@ import type { Todo, TodoInput } from "../types/todo";
 
 type TodayPageProps = {
   todayTodos: Todo[];
+  upcomingTodos?: Todo[];
+  onOpenDayClose?: () => void;
   stats: {
     todayTotal: number;
     todayCompleted: number;
@@ -59,6 +61,8 @@ const readFocusIds = (date: string): string[] => {
 
 export function TodayPage({
   todayTodos,
+  upcomingTodos = [],
+  onOpenDayClose,
   stats,
   onAdd,
   onToggle,
@@ -193,6 +197,12 @@ export function TodayPage({
           ) : null}
           {highPriorityCount > 0 ? <span className="text-warning">높은 우선순위 {highPriorityCount}</span> : null}
           {deadlineAttentionCount > 0 ? <span className="text-danger">마감 주의 {deadlineAttentionCount}</span> : null}
+          {stats.todayActive > 0 && onOpenDayClose ? (
+            <button type="button" className="today-header__action" onClick={onOpenDayClose}
+              title="명시적으로 선택한 일정만 내일이나 언젠가로 이동합니다">
+              <MoonStar size={14} className="text-warning" />오늘 정리
+            </button>
+          ) : null}
         </div>
       </header>
 
@@ -218,20 +228,6 @@ export function TodayPage({
               <h3 className="text-[17px] font-semibold tracking-tight text-ui-text">할 일</h3>
               <span className="today-task-count">{todayTodos.length}개</span>
             </div>
-            <div className="today-composer">
-              <TodoForm
-              onAdd={onAdd}
-              defaultDate={today}
-              defaultCategoryId={inlineCategoryId}
-              lockCategory={lockInlineCategory}
-              compact
-              submitLabel={lockInlineCategory ? `${activeCategoryName}에 추가` : "추가"}
-              categories={categories}
-              projects={activeProjects}
-              showSyntaxHint={false}
-              />
-            </div>
-
             {hasTodayTodos ? (
               <div className="today-category-nav sticky top-[60px] z-20 border-b border-ui-divider bg-ui-canvas py-1">
                 <div className="flex items-center gap-2">
@@ -292,17 +288,41 @@ export function TodayPage({
             ) : <div className="today-empty-state">
               <span className="today-empty-state__index">첫 작업</span>
               <p className="mt-2 text-base font-semibold text-ui-text">오늘 할 일을 정해 보세요.</p>
-              <p className="mt-1.5 text-sm text-ui-secondary">위 입력창에서 할 일을 추가하거나 캘린더에서 날짜를 지정할 수 있습니다.</p>
+              <p className="mt-1.5 text-sm text-ui-secondary">아래의 할 일 추가로 시작하거나 캘린더에서 날짜를 지정할 수 있습니다.</p>
             </div>}
 
+            <div className="today-composer">
+              <TodoForm onAdd={onAdd} defaultDate={today} defaultCategoryId={inlineCategoryId}
+                lockCategory={lockInlineCategory} compact collapsible
+                submitLabel={lockInlineCategory ? `${activeCategoryName}에 추가` : "추가"}
+                categories={categories} projects={activeProjects} showSyntaxHint={false} />
+            </div>
+
             {completedTodos.length ? (
-              <div className="border-t border-ink-800 pt-2">
+              <div className="border-t border-ui-divider pt-2">
                 <button type="button" className="flex min-h-9 w-full items-center justify-between rounded-md px-2 text-sm font-semibold text-ink-500 transition hover:bg-ink-900/70 hover:text-ink-200" onClick={() => setShowCompleted((value) => !value)} aria-expanded={showCompleted}>
-                  <span>완료 {completedTodos.length}개</span>
+                  <span className="inline-flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-success" />완료한 일 {completedTodos.length}개</span>
                   <ChevronDown size={15} className={`transition ${showCompleted ? "rotate-180" : ""}`} />
                 </button>
                 {showCompleted ? <div className="mt-1.5 space-y-1.5">{completedTodos.map(renderTodo)}</div> : null}
               </div>
+            ) : null}
+            {upcomingTodos.length > 0 ? (
+              <section className="today-upcoming border-t border-ui-divider pt-3" aria-labelledby="today-upcoming-heading">
+                <div className="flex items-baseline justify-between gap-3">
+                  <h3 id="today-upcoming-heading" className="text-sm font-semibold text-ui-text">다가오는 일정</h3>
+                  <span className="text-xs text-ui-muted">다음 작업 미리보기</span>
+                </div>
+                <div className="mt-2">
+                  {upcomingTodos.slice(0, 3).map((todo) => (
+                    <button key={todo.id} type="button" onClick={() => setEditingTodo(todo)}
+                      className="flex min-h-10 w-full items-center justify-between gap-3 border-b border-ui-divider/60 px-1 text-left text-sm hover:bg-ui-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus">
+                      <span className="min-w-0 truncate text-ui-secondary">{todo.title}</span>
+                      <span className="shrink-0 text-xs tabular-nums text-ui-muted">{formatKoreanDate(todo.date, "M월 d일")}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
             ) : null}
           </section>
         </div>

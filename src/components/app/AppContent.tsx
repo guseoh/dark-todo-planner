@@ -34,9 +34,10 @@ type AppContentProps = {
   focusedMemoId?: string | null;
   focusedProjectId?: string | null;
   onFocusedItemOpened?: (kind: "메모" | "프로젝트") => void;
+  onOpenDayClose?: () => void;
 };
 
-export function AppContent({ activeView, calendarMode, onCalendarModeChange, planner, onToggleTodo, onUpdateTodo, focusedMemoId, focusedProjectId, onFocusedItemOpened }: AppContentProps) {
+export function AppContent({ activeView, calendarMode, onCalendarModeChange, planner, onToggleTodo, onUpdateTodo, focusedMemoId, focusedProjectId, onFocusedItemOpened, onOpenDayClose }: AppContentProps) {
   const toggleTodo = onToggleTodo ?? planner.toggleTodo;
   const updateTodo = onUpdateTodo ?? planner.updateTodo;
 
@@ -94,7 +95,9 @@ export function AppContent({ activeView, calendarMode, onCalendarModeChange, pla
 
   switch (activeView) {
     case "today":
-      content = <TodayPage todayTodos={planner.getTodayTodos()} stats={planner.stats} onAdd={planner.addTodo} onToggle={toggleTodo} onDelete={planner.deleteTodo} onDeleteMany={planner.deleteTodos} onUpdate={updateTodo} categories={planner.categories} projects={planner.projects} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} onReorderCategories={planner.reorderCategories} overdueTodos={planner.getOverdueIncompleteTodos()} onBringOverdueTodos={bringOverdueTodosToToday} />;
+      content = <TodayPage todayTodos={planner.getTodayTodos()}
+        upcomingTodos={[...planner.todos].filter((todo) => !todo.archived && !todo.completed && todo.planningState === "SCHEDULED" && todo.date > getPlannerToday()).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3)}
+        onOpenDayClose={onOpenDayClose} stats={planner.stats} onAdd={planner.addTodo} onToggle={toggleTodo} onDelete={planner.deleteTodo} onDeleteMany={planner.deleteTodos} onUpdate={updateTodo} categories={planner.categories} projects={planner.projects} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} onReorderCategories={planner.reorderCategories} overdueTodos={planner.getOverdueIncompleteTodos()} onBringOverdueTodos={bringOverdueTodosToToday} />;
       break;
     case "calendar":
       content = (

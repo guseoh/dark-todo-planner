@@ -131,8 +131,8 @@ export function MonthlyCalendar({
   draggingDisabled = false,
 }: MonthlyCalendarProps) {
   return (
-    <section className="app-card min-w-0 py-3" aria-label="월간 일정 캘린더">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <section className="app-card min-w-0 py-2" aria-label="월간 일정 캘린더">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <h3 className="text-base font-bold text-ink-100 sm:text-lg">
             {formatKoreanDate(currentMonth, "yyyy년 M월")}
@@ -145,9 +145,9 @@ export function MonthlyCalendar({
         </div>
       </div>
 
-      <div className="grid grid-cols-7 text-center text-xs font-medium text-ui-secondary">
+      <div className="grid grid-cols-7 text-center text-[11px] font-medium text-ui-secondary">
         {weekdayLabels.map((label, index) => (
-          <div key={label} className={`py-2 ${index === 6 ? "text-danger/80" : ""}`}>{label}</div>
+          <div key={label} className={`py-1.5 ${index === 6 ? "text-danger/80" : ""}`}>{label}</div>
         ))}
       </div>
 
@@ -176,7 +176,7 @@ export function MonthlyCalendar({
             <CalendarDropCell key={dateKey} dateKey={dateKey} disabled={draggingDisabled} onMoveTodo={onMoveTodo}>
             <article
               data-selected={selected}
-              className={`calendar-day group relative flex min-h-[6.5rem] min-w-0 flex-col overflow-hidden border-b border-r p-1.5 transition-colors sm:min-h-[9rem] sm:p-2 ${
+              className={`calendar-day group relative flex h-[6.25rem] min-w-0 flex-col overflow-hidden border-b border-r p-1.5 transition-colors sm:h-[7.25rem] sm:p-2 ${
                 selected
                   ? "border-ink-600/85 bg-ui-selected ring-1 ring-inset ring-ink-500/35"
                   : "border-ink-700/45 bg-transparent hover:border-ink-600/70 hover:bg-ink-850/60"
@@ -198,13 +198,13 @@ export function MonthlyCalendar({
                 </div>
                 {holidayName ? <span className="mt-0.5 truncate text-[10px] text-danger/85" title={holidayName}>{holidayName}</span> : null}
                 <div className="mt-1 min-w-0 space-y-1">
-                  {events.slice(0, 3).map((event, index) => (
+                  {events.slice(0, 2).map((event, index) => (
                     <CalendarEventChip
                       key={event.id}
                       event={event}
                       draggingDisabled={draggingDisabled}
                       onClick={() => event.relatedTodoId ? onOpenTodo(event.relatedTodoId) : onSelectDate(dateKey)}
-                      hiddenClass={index === 1 ? "hidden sm:block" : index === 2 ? "hidden lg:block" : ""}
+                      hiddenClass={index === 1 ? "hidden sm:block" : ""}
                     />
                   ))}
                   {events.length > 1 ? (
@@ -213,13 +213,8 @@ export function MonthlyCalendar({
                     </button>
                   ) : null}
                   {events.length > 2 ? (
-                    <button type="button" onClick={() => onSelectDate(dateKey)} className="pointer-events-auto hidden max-w-full truncate text-left text-[10px] font-medium text-ink-400 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-500 sm:block lg:hidden">
+                    <button type="button" onClick={() => onSelectDate(dateKey)} className="pointer-events-auto hidden max-w-full truncate text-left text-[10px] font-medium text-ink-400 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-500 sm:block">
                       +{events.length - 2}개 더보기
-                    </button>
-                  ) : null}
-                  {events.length > 3 ? (
-                    <button type="button" onClick={() => onSelectDate(dateKey)} className="pointer-events-auto hidden max-w-full truncate text-left text-[10px] font-medium text-ink-400 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-500 lg:block">
-                      +{events.length - 3}개 더보기
                     </button>
                   ) : null}
                 </div>
@@ -238,7 +233,7 @@ export function MonthlyCalendar({
           );
         })}
       </div>
-      <p className="mt-3 text-xs text-ink-400">Todo를 끌어 다른 날짜로 이동하거나 제목을 선택해 수정하세요. 모바일에서는 상세 화면에서 날짜를 변경할 수 있습니다.</p>
+      <p className="mt-2 text-[11px] text-ui-muted">날짜를 선택하면 상세 목록을 열 수 있어요. Todo를 끌어서 날짜를 변경하거나, 모바일에서는 상세 목록에서 변경하세요.</p>
     </section>
   );
 }
