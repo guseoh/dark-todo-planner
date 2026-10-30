@@ -419,7 +419,7 @@ export function ScratchpadPage() {
             ) : null}
           </div>
           <div className="relative">
-            <button type="button" className={menuButtonClass} aria-haspopup="menu" aria-expanded={openMenu === "format"} onClick={() => toggleMenu("format")}>서식</button>
+            <button type="button" className={menuButtonClass} aria-haspopup="menu" disabled={sourcePreview} aria-expanded={openMenu === "format"} onClick={() => toggleMenu("format")}>서식</button>
             {openMenu === "format" ? (
               <div role="menu" className="absolute left-0 top-full z-40 mt-1 w-48 rounded-md border border-ink-700 bg-ink-900 p-1 shadow-xl">
                 <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => prefixSelectedLines("# "))}>제목 H1</button>
@@ -460,7 +460,7 @@ export function ScratchpadPage() {
         </div>
       </div>
 
-      <div className="scratchpad-toolbar flex shrink-0 items-center gap-1 overflow-x-auto border-b border-ui-divider bg-transparent px-2 py-1.5">
+      {!sourcePreview ? <div className="scratchpad-toolbar flex shrink-0 items-center gap-1 overflow-x-auto border-b border-ui-divider bg-transparent px-2 py-1.5">
         <button type="button" className={toolButtonClass} title="제목 H1" onClick={() => prefixSelectedLines("# ")}>H1</button>
         <button type="button" className={toolButtonClass} title="글머리 목록" onClick={() => prefixSelectedLines("- ")}>• 목록</button>
         <button type="button" className={toolButtonClass} title="번호 목록" onClick={() => prefixSelectedLines("1. ")}>1. 목록</button>
@@ -472,10 +472,10 @@ export function ScratchpadPage() {
         <button type="button" className={`${toolButtonClass} text-sm line-through`} title="취소선" onClick={() => replaceSelection("~~", "~~")}>S</button>
         <button type="button" className={toolButtonClass} title="링크" onClick={() => replaceSelection("[", "](https://)", "링크")}>링크</button>
         <span className="ml-auto hidden text-[10px] text-ink-600 sm:block">{sourceMode ? "원본 편집 · 서식 결과는 미리보기에서 확인" : "서식은 바로 적용되며 Markdown으로 저장됩니다."}</span>
-      </div>
+      </div> : null}
 
       {findOpen ? (
-        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-ui-divider bg-transparent px-3 py-3">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-ui-divider bg-transparent px-3 py-3"
           <input autoFocus className="field min-h-8 w-48 py-1 text-xs" value={findText} onChange={(event) => setFindText(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); findNext(); } }} placeholder="찾을 내용" />
           {replaceOpen ? <input className="field min-h-8 w-48 py-1 text-xs" value={replaceText} onChange={(event) => setReplaceText(event.target.value)} placeholder="바꿀 내용" /> : null}
           <button type="button" className="btn-secondary min-h-8 px-2 py-1 text-xs" onClick={findNext}>다음 찾기</button>
