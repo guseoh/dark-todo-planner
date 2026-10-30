@@ -33,7 +33,7 @@ describe("calendar events", () => {
   it("renders a scheduled Todo once when execution and deadline dates match", () => {
     const items = buildCalendarEvents([todo({ dueDate: "2026-10-12" })], [], []);
     expect(items).toHaveLength(1);
-    expect(items[0]).toMatchObject({ date: "2026-10-12", kind: "todo", title: "설계 문서 정리" });
+    expect(items[0]).toMatchObject({ date: "2026-10-12", kind: "todo", title: "설계 문서 정리", dueOnDate: true });
   });
 
   it("separates Todo execution dates from their actual due dates", () => {
