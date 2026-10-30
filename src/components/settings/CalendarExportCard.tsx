@@ -53,7 +53,7 @@ export function CalendarExportCard() {
       </div>
 
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className={`text-xs ${validation.valid ? "text-ink-500" : "font-semibold text-red-200"}`} role={validation.valid ? undefined : "alert"}>{validation.message}</p>
+        <p className={`text-xs ${validation.valid ? "text-ink-500" : "font-semibold text-danger"}`} role={validation.valid ? undefined : "alert"}>{validation.message}</p>
         {validation.valid ? (
           <a className="btn-primary min-h-10" href={href} download>
             <Download size={16} />ICS 다운로드

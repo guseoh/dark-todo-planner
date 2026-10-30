@@ -120,7 +120,7 @@ export function TodoForm({
         ) : null}
         <div className="flex"><button type="submit" className="btn-primary" disabled={saving}><Plus size={18} />{saving ? "저장 중..." : submitLabel}</button></div>
       </div>
-      {saveError ? <p role="alert" className="mt-2 text-xs font-semibold text-red-200">{saveError}</p> : null}
+      {saveError ? <p role="alert" className="mt-2 text-xs font-semibold text-danger">{saveError}</p> : null}
       {showSyntaxHint ? <p className="mt-1.5 px-1 text-[11px] text-ink-500">빠른 문법: 내일 · !high · @프로젝트 · +카테고리 · due:내일 · date:2026-08-20 · inbox/someday/waiting · 공백 이름은 @{"{"}프로젝트 이름{"}"} / +{"{"}카테고리 이름{"}"}</p> : null}
       <button type="button" className="mt-2 inline-flex items-center gap-1.5 rounded-[4px] px-2 py-1 text-xs font-semibold text-ink-400 transition hover:bg-ink-900/70 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40" onClick={() => setShowDetails((value) => !value)} aria-expanded={showDetails}>
         <ChevronDown className={`transition ${showDetails ? "rotate-180" : ""}`} size={15} />상세 옵션

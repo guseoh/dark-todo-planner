@@ -1,52 +1,58 @@
-# Design system — Minimal dark workspace
+# Dark Todo Planner — content-first UI design system
 
-This is the product's locked UI direction. Treat Hallmark's quality gates as review criteria, not as a preset theme. The planner is a dense personal workspace, **not a SaaS landing page**.
+This document is the **single source of truth** for all app UI. Hallmark is a review checklist, not an imported theme. This is a dense personal workspace, not a SaaS landing page. See [V2 implementation baseline](docs/ui-v2-baseline.md).
 
-## Direction
+## Design principles
+- Content before containers. Avoid nested cards, decorative outlines, shadows and redundant badges. Use typography, alignment, whitespace and hairline dividers.
+- Flat lists for Todo and memo rows; keep functional boundaries for inputs, calendar cells, modal dialogs and popovers.
+- Neutral grayscale only for chrome in both themes. Semantic success/warning/danger and **user-authored** memo, category and project colors are exceptions. Do not repurpose sage or charcoal as a branding accent.
+- Page titles 22–24px, section titles 14–16px, body 14px+, reading surfaces 15px, secondary metadata 12–13px.
+- Minimum 36px desktop controls, 44px on mobile navigation. Preserve a visible :focus-visible outline and a non-color state indicator.
+- No gradients, translucent glass panels or decorative animation. Honor reduced motion.
+- A single functional primary button per local decision context. Secondary actions should be quiet.
+- New UI must use semantic tokens; legacy `ink`/`accent` Tailwind shade APIs are compatibility layers only.
 
-- **Neutral, not charcoal/sage:** no green-tinted neutral surfaces and no thematic accent. Use black, graphite and neutral grays. Color is permitted for semantic states only (critical, warning, success) and user-authored colors on existing data.
-- **Content before containers:** page structure is carried by headings, whitespace, alignment and hairline dividers. No dashboard of nested rounded boxes. Avoid cards inside cards.
-- **One canvas:** main area and side navigation read as a single workspace. Toolbars, task lists, summaries and settings are sections, not tiles.
-- **One functional boundary at a time:** keep a clear border on input controls, dialogs, dropdowns and calendar cells where it communicates interaction. Do not outline every heading, card or badge.
-- **Type hierarchy:** page title 22–24px, section title 14–16px, body 14px+, supporting text 12–13px. Strong text only for actions and important titles. Avoid repeated explanatory paragraphs, bright borders or pill-shaped metadata.
-- **Functional hover and focus:** no decorative motion, glowing shadows, glass, or gradients. Keyboard focus rings must be visible; touch targets >= 36px (44px on mobile navigation).
-- **Responsive:** preserve 320px, 390px, 768px and 1280px layouts. Avoid sideways page scrolling. Controls can wrap, contextual metadata can simplify. The calendar's day cells are a genuine grid, not faux cards.
-- **State preservation:** changing colors/layout must not change routes, DOM semantics, keyboard shortcuts, Todo operations, D1 data, API, exports, or editor state.
+## Themes and source of truth
+- Default: **Dark**, preserving the existing appearance for current users.
+- Options: Dark, Light, System (responds to `prefers-color-scheme`). User preference is stored in `localStorage` only and does not alter D1 data.
+- CSS tokens: `src/styles/globals.css`. Tailwind variable bindings: `tailwind.config.ts`. Resolver: `src/lib/theme.ts`. Contrast/preferences tests: `src/lib/theme.test.ts`.
+- `data-theme` on `<html>` is the **resolved** theme; `data-theme-preference` stores the selected option.
+- Default CSS is dark; light variables apply under `:root[data-theme="light"]`. The client sets the resolved theme before rendering React. Preserve the CSP.
+- Semantic roles: `--ui-canvas`, `--ui-navigation`, `--ui-surface`, `--ui-inset`, `--ui-hover`, `--ui-selected`, `--ui-elevated`, `--ui-divider`, `--ui-control-border`, `--ui-text-primary`, `--ui-text-secondary`, `--ui-text-muted`, `--ui-focus`, `--ui-action-bg`, `--ui-action-text`.
+- Use `ui.*` Tailwind keys (for example `bg-ui-canvas text-ui-text`) for new work. Historical classes such as `bg-ink-950/95` follow RGB CSS variables and retain opacity support during incremental migration.
 
-## Tokens
-
-| Role | Value | Usage |
+| Role | Dark | Light |
 | --- | --- | --- |
-| Canvas | `#101011` | App background |
-| Navigation | `#121213` | Subtle navigation separation |
-| Inset | `#1b1b1d` | Inputs, editable areas, selected rows |
-| Hover | `#28282b` | Intentional hover feedback |
-| Hairline | `#323236` | One section boundary, list separators |
-| Strong divider | `#454549` | Forms and active state |
-| Primary text | `#efeff0` | Titles and active content |
-| Secondary text | `#bcbcc1` | Supporting content |
-| Muted text | `#99999f` | Metadata, hints |
-| Neutral interaction | `#d4d4d8` | Single primary action; focus affordance |
-| Danger/warning/success | reserved semantic tokens | Never broad surface colors |
+| Canvas | #101011 | #F7F7F8 |
+| Navigation | #121213 | #F3F3F4 |
+| Surface | #161617 | #FFFFFF |
+| Inset | #1B1B1D | #FFFFFF |
+| Hover | #28282B | #E9E9EC |
+| Selected | #303033 | #E5E5E8 |
+| Divider | #323236 | #DADADD |
+| Control border | #77777D | #8A8A90 |
+| Primary text | #EFEFF0 | #1B1B1E |
+| Secondary text | #BCBCC1 | #505056 |
+| Muted text | #99999F | #66666C |
+| Primary action | #D4D4D8 | #26262A |
+| Action text | #101011 | #F7F7F8 |
+| Focus | #D4D4D8 | #26262A |
+| Success | #8FB9A3 | #1B6844 |
+| Warning | #D9B47D | #805000 |
+| Danger | #D88D92 | #A22636 |
 
 ## Component contract
+1. `.app-card` remains a borderless legacy section; prefer `.work-section`. Do not stack nested cards.
+2. `.page-list-item` uses transparent backgrounds and row dividers; selected/hover states may have one neutral overlay.
+3. `.page-toolbar` uses no container border; tabs use active typography/underline, not colored chips.
+4. `.field` uses inset background, 4px corners and a distinguishable control border.
+5. `.btn-primary` is one deliberate CTA; `.btn-secondary` is quiet. Modal and popover surfaces may be elevated.
+6. User-selected memo/category/project colors are **data** and must be kept when changing themes.
 
-- `.app-card` is a *legacy structural wrapper*, now a borderless section with a bottom hairline. Prefer `.work-section` for new work.
-- `.page-list-item` and Todo rows are compact, flat list entries split by a single hairline.
-- `.page-toolbar` is a toolbar row, no container border; tabs are text with a small active underline or quiet neutral state.
-- Inputs have a discernible inset surface and restrained 4px radius. Primary action is light neutral on dark.
-- Use `.page-header` for title + one line of context + actions; metadata is plain text, not a framed pill.
-- Modals/popovers are exceptions: a contained elevated surface is required to separate layers.
-
-## UI review gates
-
-1. Can any nested border or card be removed without losing function? Remove it.
-2. Is the visual hierarchy apparent with colors disabled? Title / section / body / metadata should still read correctly.
-3. Are selected/disabled/loading/error/success states understandable without color alone?
-4. Does keyboard navigation show visible focus and preserve expected actions?
-5. Has every interactive workflow survived regression testing on desktop and mobile widths?
-6. Compare actual browser screenshots of **Today, Calendar, Projects, All Todo, Memo, Scratchpad, Settings**. Avoid declaring success from CSS-only review.
-
-## Scope boundaries
-
-- This pass is visual-system and presentation work. Do not change the persisted Todo `INBOX` state, remove a route or replace the Scratchpad editor engine as a side effect. Those require separately tested migrations and editing data preservation.
+## Accessibility / release gates
+- WCAG AA 4.5:1 for normal text and 3:1 for relevant control boundaries/graphic elements.
+- Selection, errors, disabled states and saved/saving status must not depend on color alone.
+- Keyboard focus, dialogs, task interactions and mobile navigation remain usable at 320, 390, 768 and 1280px.
+- Compare browser screenshots of Today, Calendar, Projects, All Todo, Memo, Scratchpad and Settings in **both** themes; test System preference changes separately.
+- Run typecheck, tests, build, isolated Worker/D1 browser smoke before merge.
+- Do not change routes, persisted Todo planning states, database schema, API, backup format or scratchpad editing engine in this design-system phase. Inbox removal and WYSIWYG are separate PRs.

@@ -140,7 +140,7 @@ export function TodoEditModal({ todo, categories = [], projects = [], onClose, o
               <input className="field" value={referenceLabel} onChange={(event) => setReferenceLabel(event.target.value)} placeholder="GitHub" aria-label="관련 링크 이름" />
               <input className="field" type="url" value={referenceUrl} onChange={(event) => { setReferenceUrl(event.target.value); setReferenceError(""); }} placeholder="https://..." aria-label="관련 링크 URL" />
             </div>
-            {referenceError ? <p className="text-xs font-semibold text-red-200" role="alert">{referenceError}</p> : null}
+            {referenceError ? <p className="text-xs font-semibold text-danger" role="alert">{referenceError}</p> : null}
           </div>
           <label className="flex min-h-11 items-center gap-3 rounded-lg bg-ink-950/45 px-3 text-sm text-ink-300 md:col-span-2"><input type="checkbox" checked={completed} onChange={(event) => setCompleted(event.target.checked)} className="h-4 w-4 accent-accent-500" />완료된 Todo로 표시</label>
         </div>

@@ -92,6 +92,27 @@ try {
   await page.keyboard.press("Home");
   assert.equal(await page.getByRole("tab", { name: "앱 및 연결 정보" }).getAttribute("aria-selected"), "true");
 
+  // G1: user-selectable theme and OS preference changes must not need a reload.
+  const themeControls = page.getByRole("group", { name: "화면 테마 선택" });
+  assert.equal(await page.locator("html").getAttribute("data-theme"), "dark");
+  assert.equal(await themeControls.getByRole("button", { name: "다크" }).getAttribute("aria-pressed"), "true");
+  await mkdir("test-artifacts", { recursive: true });
+  await page.screenshot({ path: "test-artifacts/layout-theme-dark-settings-390.png", fullPage: true });
+  await themeControls.getByRole("button", { name: "라이트" }).click();
+  assert.equal(await page.locator("html").getAttribute("data-theme"), "light");
+  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--app-bg").trim().toLowerCase()), "#f7f7f8");
+  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim().toLowerCase()), "#26262a");
+  assert.equal(await page.evaluate(() => localStorage.getItem("dark-todo-planner:theme")), "light");
+  await page.screenshot({ path: "test-artifacts/layout-theme-light-settings-390.png", fullPage: true });
+  await page.emulateMedia({ colorScheme: "light" });
+  await themeControls.getByRole("button", { name: "시스템" }).click();
+  assert.equal(await page.locator("html").getAttribute("data-theme"), "light");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
+  assert.equal(await page.locator("html").getAttribute("data-theme-preference"), "system");
+  await themeControls.getByRole("button", { name: "다크" }).click();
+  assert.equal(await page.locator("html").getAttribute("data-theme"), "dark");
+
   // Unscheduled Todo can be scheduled from Inbox. A failed update must
   // preserve it and keep the chosen date for a retry.
   await nav.getByRole("button", { name: "받은함", exact: true }).click();

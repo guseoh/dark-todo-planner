@@ -449,8 +449,8 @@ export function ScratchpadPage() {
           </div>
         </div>
       ) : null}
-      {localDraftError ? <p role="alert" className="shrink-0 border-b border-danger/30 px-3 py-2 text-xs text-red-200">브라우저 임시 저장이 불가능합니다. 서버에 저장되기 전에는 페이지를 닫지 마세요.</p> : null}
-      {error ? <div role="alert" className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-danger/30 bg-danger/[0.08] px-3 py-2 text-xs text-red-100"><span>저장 또는 불러오기 실패: {error}</span><button type="button" className="btn-secondary text-xs" onClick={() => void (loadedRef.current ? saveNow() : loadScratchpad())}>{loadedRef.current ? "저장 재시도" : "불러오기 재시도"}</button></div> : null}
+      {localDraftError ? <p role="alert" className="shrink-0 border-b border-danger/30 px-3 py-2 text-xs text-danger">브라우저 임시 저장이 불가능합니다. 서버에 저장되기 전에는 페이지를 닫지 마세요.</p> : null}
+      {error ? <div role="alert" className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-danger/30 bg-danger/[0.08] px-3 py-2 text-xs text-danger"><span>저장 또는 불러오기 실패: {error}</span><button type="button" className="btn-secondary text-xs" onClick={() => void (loadedRef.current ? saveNow() : loadScratchpad())}>{loadedRef.current ? "저장 재시도" : "불러오기 재시도"}</button></div> : null}
 
       <textarea
         ref={editorRef}
@@ -470,7 +470,7 @@ export function ScratchpadPage() {
 
       <div className="flex shrink-0 items-center justify-between gap-3 border-t border-ink-700/70 bg-ink-900 px-3 py-1.5 text-[10px] text-ink-500">
         <div className="flex min-w-0 items-center gap-3">
-          <span className={saveState === "error" ? "text-red-200" : saveState === "saved" ? "text-ink-400" : "text-amber-200"}>{saveLabel}</span>
+          <span className={saveState === "error" ? "text-danger" : saveState === "saved" ? "text-ink-400" : "text-warning"}>{saveLabel}</span>
           <span className="hidden sm:inline">줄 {cursor.line}, 열 {cursor.column}</span>
           <span className="hidden md:inline">{content.length.toLocaleString()}자</span>
         </div>

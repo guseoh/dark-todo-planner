@@ -216,8 +216,8 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
       </details>
 
       <div className="flex min-h-5 flex-wrap items-center justify-between gap-3" aria-live="polite">
-        {error ? <p role="alert" className="text-xs text-red-200">{error}</p> : <span />}
-        {draftError ? <p role="alert" className="text-xs text-red-200">{draftError}</p> : null}
+        {error ? <p role="alert" className="text-xs text-danger">{error}</p> : <span />}
+        {draftError ? <p role="alert" className="text-xs text-danger">{draftError}</p> : null}
         {draftSavedAt && !draftError ? <p className="text-xs text-ink-400" title="브라우저 로컬 초안입니다. 저장 버튼을 누르면 서버에 반영됩니다.">브라우저 초안 저장 · {new Date(draftSavedAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} · 서버 저장 전</p> : null}
       </div>
       <div className="flex flex-wrap justify-end gap-2 border-t border-ink-700/60 pt-3">
@@ -250,7 +250,7 @@ function MemoCard({ memo, onDelete, onTogglePin, onEdit, onCreateTodo, onCreateC
             <button type="button" className="icon-btn h-8 w-8" onClick={(event) => { event.stopPropagation(); void onCreateTodo(memo); }} aria-label={`${displayTitle} 메모를 Todo로 만들기`} title="Todo로 만들기"><ListPlus size={13} /></button>
             <button type="button" className="icon-btn h-8 w-8" onClick={(event) => { event.stopPropagation(); void onTogglePin(memo.id); }} aria-label={memo.pinned ? "고정 해제" : "메모 고정"} title={memo.pinned ? "고정 해제" : "메모 고정"}>{memo.pinned ? <PinOff size={13} /> : <Pin size={13} />}</button>
             <button type="button" className="icon-btn h-8 w-8" onClick={(event) => { event.stopPropagation(); onEdit(memo); }} aria-label="메모 수정" title="수정"><Pencil size={13} /></button>
-            <button type="button" className="icon-btn h-8 w-8 hover:border-danger hover:text-red-100" onClick={(event) => { event.stopPropagation(); if (window.confirm("메모를 삭제할까요? 삭제 후 6초 동안 실행 취소할 수 있습니다.")) void onDelete(memo.id); }} aria-label="메모 삭제" title="삭제"><Trash2 size={13} /></button>
+            <button type="button" className="icon-btn h-8 w-8 hover:border-danger hover:text-danger" onClick={(event) => { event.stopPropagation(); if (window.confirm("메모를 삭제할까요? 삭제 후 6초 동안 실행 취소할 수 있습니다.")) void onDelete(memo.id); }} aria-label="메모 삭제" title="삭제"><Trash2 size={13} /></button>
           </div>
         </div>
         <div className="-m-1 cursor-pointer rounded-md p-1" onClick={(event) => { if (event.target instanceof Element && event.target.closest("a")) return; onEdit(memo); }} title="메모 수정"><MarkdownPreview className="line-clamp-3 text-xs leading-5 text-ink-300" value={memo.content} /></div>
@@ -355,7 +355,7 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
         <span className="ml-auto text-xs text-ink-400" role="status">표시 ${filteredMemos.length}개</span>
       </div>
 
-      {conversionMessage ? <div className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-xs font-semibold text-emerald-100" role="status">{conversionMessage}</div> : null}
+      {conversionMessage ? <div className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-xs font-semibold text-success" role="status">{conversionMessage}</div> : null}
 
       {filteredMemos.length ? (
         <div className="space-y-4">

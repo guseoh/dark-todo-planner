@@ -1,5 +1,6 @@
 import { useEffect, useState, type KeyboardEvent } from "react";
-import { BellRing, RefreshCw, Save } from "lucide-react";
+import { BellRing, Moon, Monitor, RefreshCw, Save, Sun } from "lucide-react";
+import { readThemePreference, setThemePreference, type ThemePreference } from "../lib/theme";
 import { StatCard } from "../components/common/StatCard";
 import { PageHeader } from "../components/common/PageHeader";
 import { CalendarExportCard } from "../components/settings/CalendarExportCard";
@@ -43,6 +44,11 @@ export function SettingsPage({
   apiStatus = "online",
 }: SettingsPageProps) {
   const connected = apiStatus === "online";
+  const [themePreference, updateThemePreference] = useState<ThemePreference>(readThemePreference);
+  const chooseTheme = (next: ThemePreference) => {
+    setThemePreference(next);
+    updateThemePreference(next);
+  };
   const [draft, setDraft] = useState<PlannerSettingsInput>({
     carryOverEnabled: false,
     autoArchiveCompleted: false,
@@ -113,10 +119,26 @@ export function SettingsPage({
 
       {section === "overview" ? (
       <div id="settings-panel-overview" role="tabpanel" aria-labelledby="settings-tab-overview" tabIndex={0} className="space-y-4">
+      <section className="work-section px-1 py-4" aria-labelledby="appearance-title">
+        <h3 id="appearance-title" className="text-base font-semibold text-ui-text">화면 테마</h3>
+        <p className="mt-1 text-sm text-ui-secondary">선택한 테마는 이 브라우저에 저장됩니다. 시스템 설정은 운영체제의 밝기 모드를 따릅니다.</p>
+        <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="화면 테마 선택">
+          {([
+            { id: "dark", label: "다크", icon: Moon },
+            { id: "light", label: "라이트", icon: Sun },
+            { id: "system", label: "시스템", icon: Monitor },
+          ] as const).map(({ id, label, icon: Icon }) => (
+            <button type="button" key={id} aria-pressed={themePreference === id} onClick={() => chooseTheme(id)}
+              className={`btn-secondary min-w-24 gap-2 ${themePreference === id ? "border-ui-focus bg-ui-selected text-ui-text" : ""}`}>
+              <Icon size={15} aria-hidden="true" />{label}
+            </button>
+          ))}
+        </div>
+      </section>
       <section className="app-card p-4 sm:p-5" aria-labelledby="operation-info-title">
         <div className="flex flex-col gap-3 border-b border-ink-700 pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div><h3 id="operation-info-title" className="text-base font-bold text-ink-100">운영 정보</h3><p className="mt-1 text-xs text-ink-400">개인 플래너의 고정 운영 기준입니다.</p></div>
-          <div className={`inline-flex min-h-9 items-center gap-2 self-start text-xs font-medium ${connected ? "text-ink-300" : "text-red-200"}`} role="status">
+          <div className={`inline-flex min-h-9 items-center gap-2 self-start text-xs font-medium ${connected ? "text-ink-300" : "text-danger"}`} role="status">
             <span className={`h-2 w-2 rounded-full ${connected ? "bg-success" : "bg-danger"}`} aria-hidden="true" />{connected ? "Cloudflare D1 연결됨" : "Cloudflare D1 연결 확인 필요"}
           </div>
         </div>

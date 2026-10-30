@@ -69,15 +69,15 @@ export function TodoRow({
           {todo.memo ? <p className="mt-1 line-clamp-1 whitespace-pre-wrap text-xs text-ink-400">{todo.memo}</p> : null}
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-500">
             {!(hideMediumPriority && todo.priority === "MEDIUM") ? <PriorityBadge priority={todo.priority} compact /> : null}
-            {!todo.completed && (todo.workflowStatus === "IN_PROGRESS" || todo.workflowStatus === "BLOCKED") ? <span className={todo.workflowStatus === "BLOCKED" ? "font-medium text-red-200" : "text-ink-300"}>{workflowStatusLabels[todo.workflowStatus]}</span> : null}
+            {!todo.completed && (todo.workflowStatus === "IN_PROGRESS" || todo.workflowStatus === "BLOCKED") ? <span className={todo.workflowStatus === "BLOCKED" ? "font-medium text-danger" : "text-ink-300"}>{workflowStatusLabels[todo.workflowStatus]}</span> : null}
             {showCategoryBadge ? <span>{todo.category?.name || "미분류"}</span> : null}
             {todo.planningState !== "SCHEDULED" ? <span>{planningLabel[todo.planningState]}</span> : null}
             {todo.archived ? <span>보관됨</span> : null}
-            {duplicateCandidate ? <span className="font-medium text-amber-200">중복 후보</span> : null}
+            {duplicateCandidate ? <span className="font-medium text-warning">중복 후보</span> : null}
             {projectName ? <span className="font-semibold text-ink-400">{projectName}</span> : null}
             {showCategoryMeta && !showCategoryBadge ? <span>{todo.category?.name || "미분류"}</span> : null}
             {showDate && todo.planningState === "SCHEDULED" ? <span className="inline-flex items-center gap-1"><CalendarDays size={12} />{formatKoreanDate(todo.date, "M월 d일 E")}</span> : null}
-            {todo.dueDate ? <span className={`font-medium ${overdue ? "text-red-200" : dueSoon ? "text-amber-200" : "text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {getDdayLabel(todo.dueDate)}</span> : null}
+            {todo.dueDate ? <span className={`font-medium ${overdue ? "text-danger" : dueSoon ? "text-warning" : "text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {getDdayLabel(todo.dueDate)}</span> : null}
             {todo.referenceUrl ? <span className="inline-flex items-center gap-1 font-semibold text-accent-200"><ExternalLink size={11} />{todo.referenceLabel || "관련 링크"}</span> : null}
           </div>
         </button>
@@ -89,7 +89,7 @@ export function TodoRow({
             {todo.archived && onUnarchive ? <button type="button" className="icon-btn h-8 w-8" onClick={() => onUnarchive(todo.id)} aria-label={`"${todo.title}" 보관 해제`}><RotateCcw size={13} /></button> : null}
             {!todo.archived && todo.completed && onArchive ? <button type="button" className="icon-btn h-8 w-8" onClick={() => onArchive(todo.id)} aria-label={`"${todo.title}" Todo 보관`}><Archive size={13} /></button> : null}
             <button type="button" className="icon-btn h-8 w-8" onClick={() => onEdit(todo)} aria-label={`"${todo.title}" Todo 수정`}><Pencil size={13} /></button>
-            <button type="button" className="icon-btn h-8 w-8 hover:border-red-400 hover:text-red-200" onClick={handleDelete} aria-label={`"${todo.title}" Todo 삭제`}><Trash2 size={13} /></button>
+            <button type="button" className="icon-btn h-8 w-8 hover:border-danger hover:text-danger" onClick={handleDelete} aria-label={`"${todo.title}" Todo 삭제`}><Trash2 size={13} /></button>
           </div>
         ) : null}
       </div>

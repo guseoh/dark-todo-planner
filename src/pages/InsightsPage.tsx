@@ -92,7 +92,7 @@ export function InsightsPage({ todos, projects }: InsightsPageProps) {
       </header>
 
       {error ? (
-        <div className="flex flex-col gap-2 rounded-lg border border-warning/30 bg-warning/[0.05] px-3 py-2.5 text-sm text-amber-100 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 rounded-lg border border-warning/30 bg-warning/[0.05] px-3 py-2.5 text-sm text-warning sm:flex-row sm:items-center sm:justify-between">
           <span>{error} Todo 통계는 계속 표시합니다.</span>
           <button type="button" className="btn-secondary min-h-8 shrink-0 px-2.5 text-xs" onClick={() => void loadHistory()}><RefreshCw size={13} />다시 불러오기</button>
         </div>
@@ -128,7 +128,7 @@ export function InsightsPage({ todos, projects }: InsightsPageProps) {
                   <div className="mt-2"><ProgressBar value={project.completionRate} empty={project.total === 0} emptyLabel="Todo 없음" /></div>
                   <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-ink-500">
                     <span>완료율 {project.completionRate}%</span>
-                    {project.overdue ? <span className="font-semibold text-amber-200">밀림 {project.overdue}개</span> : <span>밀림 없음</span>}
+                    {project.overdue ? <span className="font-semibold text-warning">밀림 {project.overdue}개</span> : <span>밀림 없음</span>}
                   </div>
                 </article>
               ))}

@@ -140,7 +140,7 @@ export function MonthlyCalendar({
 
       <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-ink-400 sm:gap-1.5">
         {weekdayLabels.map((label, index) => (
-          <div key={label} className={`py-2 ${index === 6 ? "text-red-300/80" : ""}`}>{label}</div>
+          <div key={label} className={`py-2 ${index === 6 ? "text-danger/80" : ""}`}>{label}</div>
         ))}
       </div>
 
@@ -179,7 +179,7 @@ export function MonthlyCalendar({
               <div className="pointer-events-none relative z-10 flex h-full min-w-0 flex-1 flex-col">
                 <div className="flex min-w-0 items-center justify-between gap-1">
                   <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-[3px] text-xs font-semibold sm:text-sm ${
-                    today ? "bg-ink-200 text-ink-950" : holidayName || isSunday ? "text-red-300" : "text-ink-200"
+                    today ? "bg-ink-200 text-ink-950" : holidayName || isSunday ? "text-danger" : "text-ink-200"
                   }`}>{formatKoreanDate(day, "d")}</span>
                   <div className="pointer-events-auto flex shrink-0 items-center gap-0.5">
                     {events.length > 0 ? <span className="hidden truncate text-[10px] text-ink-400 sm:inline">{activeCount ? `${activeCount} 남음` : `${events.length} 완료`}</span> : null}
@@ -188,7 +188,7 @@ export function MonthlyCalendar({
                     </button>
                   </div>
                 </div>
-                {holidayName ? <span className="mt-0.5 truncate text-[10px] text-red-300/85" title={holidayName}>{holidayName}</span> : null}
+                {holidayName ? <span className="mt-0.5 truncate text-[10px] text-danger/85" title={holidayName}>{holidayName}</span> : null}
                 <div className="mt-1 min-w-0 space-y-1">
                   {events.slice(0, 3).map((event, index) => (
                     <CalendarEventChip
@@ -219,7 +219,7 @@ export function MonthlyCalendar({
                   <span className="hidden truncate text-[10px] text-ink-500 sm:block">{dayGoals.length ? `목표 ${dayGoals.length}` : ""}</span>
                   <button type="button" onClick={() => onCycleDayStatus(dateKey)} aria-label={statusActionLabel} title="일일 수행 상태 O → X → 미설정"
                     className={`pointer-events-auto ml-auto inline-flex min-h-6 min-w-6 items-center justify-center rounded border px-1 text-[10px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
-                      dayStatus === "O" ? "border-success/35 text-emerald-200" : dayStatus === "X" ? "border-danger/35 text-red-200" : "border-transparent text-ink-600 hover:border-ink-700 hover:text-ink-300"
+                      dayStatus === "O" ? "border-success/35 text-success" : dayStatus === "X" ? "border-danger/35 text-danger" : "border-transparent text-ink-600 hover:border-ink-700 hover:text-ink-300"
                     }`}>
                     {dayStatus ?? "–"}
                   </button>

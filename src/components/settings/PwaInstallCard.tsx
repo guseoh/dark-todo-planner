@@ -63,7 +63,7 @@ export function PwaInstallCard() {
         </div>
 
         {installed ? (
-          <span className="inline-flex min-h-9 shrink-0 items-center gap-2 self-start rounded-lg border border-success/30 bg-success/[0.07] px-3 py-2 text-xs font-semibold text-emerald-100">
+          <span className="inline-flex min-h-9 shrink-0 items-center gap-2 self-start rounded-lg border border-success/30 bg-success/[0.07] px-3 py-2 text-xs font-semibold text-success">
             <CheckCircle2 size={14} />설치됨
           </span>
         ) : installPrompt ? (
