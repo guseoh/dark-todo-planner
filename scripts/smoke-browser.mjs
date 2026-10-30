@@ -48,16 +48,16 @@ try {
   await page.locator('input[autocomplete="current-password"]').fill(process.env.SMOKE_PASSWORD);
   await page.getByRole("button", { name: "로그인" }).click();
   await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
-  // Design-system regression: Today remains content-first, but typography,
-  // the task composer and the editorial side rail must provide clear hierarchy.
+  // G2 follow-up: a task-focused Today header replaces the oversized KPI board.
   await page.setViewportSize({ width: 1440, height: 900 });
   const visualSystem = await page.evaluate(() => {
     const section = document.querySelector(".today-task-section");
     const composer = document.querySelector(".today-composer");
-    const overviewValue = document.querySelector(".today-overview__stat--primary strong");
+    const header = document.querySelector(".today-header");
+    const status = document.querySelector(".today-header__status");
     const sidebar = document.querySelector(".today-sidebar");
     const primary = document.querySelector(".btn-primary");
-    if (!section || !composer || !overviewValue || !sidebar || !primary) return null;
+    if (!section || !composer || !header || !status || !sidebar || !primary) return null;
     const sectionStyle = getComputedStyle(section);
     const composerStyle = getComputedStyle(composer);
     const rootStyle = getComputedStyle(document.documentElement);
@@ -66,25 +66,29 @@ try {
       sectionBackground: sectionStyle.backgroundColor,
       sectionBorderTop: sectionStyle.borderTopWidth,
       composerBackground: composerStyle.backgroundColor,
-      composerBorderLeft: composerStyle.borderLeftWidth,
-      overviewValueSize: parseFloat(getComputedStyle(overviewValue).fontSize),
+      headerHeight: header.getBoundingClientRect().height,
+      firstTaskOffset: section.getBoundingClientRect().top - header.getBoundingClientRect().top,
+      headerText: status.textContent,
+      oldDashboardCount: document.querySelectorAll(".today-overview__stat").length,
       sidebarBorderLeft: getComputedStyle(sidebar).borderLeftWidth,
       primaryBackground: getComputedStyle(primary).backgroundColor,
       accent: rootStyle.getPropertyValue("--accent").trim(),
       canvas: rootStyle.getPropertyValue("--app-bg").trim(),
     };
   });
-  assert.ok(visualSystem, "Today screen should contain its editorial sections and primary control.");
-  assert.equal(visualSystem.sectionRadius, "0px", "The task section must not become a rounded card.");
-  assert.equal(visualSystem.sectionBackground, "rgba(0, 0, 0, 0)", "The task section must remain on the workspace canvas.");
-  assert.equal(visualSystem.sectionBorderTop, "0px", "The task section must not be enclosed on every edge.");
-  assert.equal(visualSystem.composerBackground, "rgb(22, 22, 23)", "The quick composer should use one subtle inset surface.");
-  assert.equal(visualSystem.composerBorderLeft, "2px", "The quick composer should read as a distinct action band.");
-  assert.ok(visualSystem.overviewValueSize >= 44, "The primary daily metric must establish a clear typographic anchor.");
-  assert.equal(visualSystem.sidebarBorderLeft, "1px", "The desktop side rail must be separated by a quiet vertical rule.");
-  assert.equal(visualSystem.accent, "#d4d4d8", "Accent must remain achromatic rather than sage.");
-  assert.equal(visualSystem.canvas, "#101011", "The workspace canvas must use neutral near-black.");
-  assert.equal(visualSystem.primaryBackground, "rgb(226, 226, 229)", "Primary action should be neutral light gray.");
+  assert.ok(visualSystem, "Today must contain a compact status header and task entry.");
+  assert.equal(visualSystem.sectionRadius, "0px", "Tasks must not become a rounded card.");
+  assert.equal(visualSystem.sectionBackground, "rgba(0, 0, 0, 0)", "Tasks must stay on the workspace canvas.");
+  assert.equal(visualSystem.sectionBorderTop, "0px", "Task sections must not be enclosed.");
+  assert.equal(visualSystem.composerBackground, "rgb(22, 22, 23)", "Quick entry retains a quiet inset.");
+  assert.ok(visualSystem.headerHeight <= 90, "Today heading/status must be compact.");
+  assert.ok(visualSystem.firstTaskOffset <= 140, "Task entry should appear close to the header.");
+  assert.equal(visualSystem.oldDashboardCount, 0, "Old KPI grid must not return.");
+  assert.ok(visualSystem.headerText.includes("남은 작업"), "Remaining task count must remain visible.");
+  assert.equal(visualSystem.sidebarBorderLeft, "1px", "Context rail should keep a functional separator.");
+  assert.equal(visualSystem.accent, "#d4d4d8", "Accent must remain neutral.");
+  assert.equal(visualSystem.canvas, "#101011", "Canvas must stay near-black.");
+  assert.equal(visualSystem.primaryBackground, "rgb(226, 226, 229)", "Primary action should remain neutral.");
   await page.setViewportSize({ width: 390, height: 844 });
 
 
@@ -189,7 +193,7 @@ try {
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
 
   // Empty Today keeps its summary and add form, with one actionable empty-list message.
-  await page.getByRole("heading", { name: "오늘 작업 현황", exact: true }).waitFor();
+  await page.getByRole("group", { name: "오늘 작업 현황", exact: true }).waitFor();
   await page.getByText("오늘 할 일을 정해 보세요.", { exact: true }).waitFor();
   assert.equal(await page.getByRole("heading", { name: "오늘의 핵심 작업" }).count(), 0, "Do not render empty focus card.");
   assert.equal(await page.getByText("미완료 Todo가 없습니다.", { exact: true }).count(), 0, "Do not repeat zero-state placeholders.");
