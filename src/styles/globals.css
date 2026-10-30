@@ -630,19 +630,12 @@ button:disabled {
   .semantic-danger-tint { background: var(--danger-tint); }
   .semantic-info-tint { background: var(--info-tint); }
 
-  @media (max-width: 1279px) {
-    .today-sidebar {
-      padding: 0.8rem 0 0;
-      border-top: 1px solid var(--ui-divider);
-      border-left: 0;
-    }
-  }
   @media (max-width: 639px) {
     .today-header { gap: 0.45rem; }
     .today-header__action { min-height: 36px; }
     .today-header__status { width: 100%; gap: 0.4rem 0.75rem; }
     .today-header__meter { width: 65px; }
-    .today-composer { padding: 0.5rem 0.6rem; }
+    .today-composer:has(.todo-composer-form--inline) { padding: 0.5rem 0.6rem; }
     .today-task-heading { align-items: baseline; }
   }
 }
