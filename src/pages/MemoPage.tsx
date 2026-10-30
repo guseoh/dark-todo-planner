@@ -80,6 +80,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
   const [draftError, setDraftError] = useState("");
   const draftVersionRef = useRef(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previewMode, setPreviewMode] = useState(false);
   const submittingRef = useRef(false);
   const normalizedLinkQuery = linkQuery.trim().toLocaleLowerCase("ko-KR");
   const visibleTodos = todos.filter((todo) => !todo.archived && (!normalizedLinkQuery || todo.title.toLocaleLowerCase("ko-KR").includes(normalizedLinkQuery)));
@@ -113,8 +114,16 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
 
     submittingRef.current = true;
     setIsSubmitting(true);
-    // Invalidate any scheduled draft write before clearing a successful save.
+    // Write a synchronous recovery snapshot before any network request.
     draftVersionRef.current += 1;
+    try {
+      const snapshot: MemoDraft = {
+        title, content, color, pinned, todoIds, projectIds,
+        createdMemoId: createdMemoIdRef.current || undefined, savedAt: Date.now(),
+      };
+      localStorage.setItem(draftKey, JSON.stringify(snapshot));
+      setDraftSavedAt(snapshot.savedAt);
+    } catch { setDraftError("로컬 초안을 저장하지 못했습니다. 서버 저장 실패 시 창을 닫지 마세요."); }
     try {
       const input: MemoInput = { title: title.trim() || undefined, content: contentValue, color, pinned };
       const saved = !initial && createdMemoIdRef.current
@@ -136,7 +145,15 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
       setError("");
       onCancel?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "메모를 저장하지 못했습니다.");
+      // Server memo may be saved even when link synchronization fails.
+      // Keep its ID with the draft so retry updates, rather than creates.
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({
+          title, content, color, pinned, todoIds, projectIds,
+          createdMemoId: createdMemoIdRef.current || undefined, savedAt: Date.now(),
+        } satisfies MemoDraft));
+      } catch { setDraftError("브라우저 초안을 저장하지 못했습니다. 창을 닫지 말고 다시 시도해 주세요."); }
+      setError(err instanceof Error ? err.message : "메모 또는 연결 항목 저장에 실패했습니다. 내용을 유지했습니다.");
     } finally {
       submittingRef.current = false;
       setIsSubmitting(false);
@@ -151,7 +168,22 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
         <label className="flex min-h-9 items-center gap-2 rounded-md border border-ink-700/65 bg-ink-950/55 px-3 text-xs font-semibold text-ink-300"><input type="checkbox" checked={pinned} onChange={(event) => setPinned(event.target.checked)} className="h-4 w-4 accent-accent-500" />고정</label>
       </div>
 
-      <MarkdownEditor value={content} onChange={setContent} label="내용" placeholder="- 떠오른 생각을 적어두세요" textareaClassName={large ? "min-h-[300px] max-h-[55vh]" : "min-h-36"} />
+      <section aria-label="메모 내용" className="space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-ink-400">내용 · Markdown</span>
+          <div className="page-tabs" role="group" aria-label="메모 내용 보기">
+            <button type="button" className="page-tab min-h-8" aria-pressed={!previewMode} onClick={() => setPreviewMode(false)}>편집</button>
+            <button type="button" className="page-tab min-h-8" aria-pressed={previewMode} onClick={() => setPreviewMode(true)}>미리보기</button>
+          </div>
+        </div>
+        {previewMode ? (
+          <div className={`overflow-y-auto rounded-lg border border-ink-700 bg-ink-950/55 p-4 ${large ? "min-h-[300px] max-h-[55vh]" : "min-h-36"}`}>
+            {content.trim() ? <MarkdownPreview value={content} /> : <p className="text-sm text-ink-500">미리 볼 내용이 없습니다.</p>}
+          </div>
+        ) : (
+          <MarkdownEditor value={content} onChange={setContent} placeholder="- 떠오른 생각을 적어두세요" textareaClassName={large ? "min-h-[300px] max-h-[55vh]" : "min-h-36"} />
+        )}
+      </section>
 
       <details className="rounded-md border border-ink-700/60 bg-ink-950/30 p-3">
         <summary className="cursor-pointer list-none text-xs font-bold text-ink-300">
