@@ -23,11 +23,9 @@ describe("parseQuickTodoTitle", () => {
     });
   });
 
-  it("moves an item to Inbox without forcing a schedule date", () => {
-    expect(parseQuickTodoTitle("inbox 아이디어", "2026-08-16")).toEqual({
-      title: "아이디어",
-      planningState: "INBOX",
-    });
+  it("retains old Inbox keywords as plain titles instead of creating new INBOX records", () => {
+    expect(parseQuickTodoTitle("inbox 아이디어", "2026-08-16")).toEqual({ title: "inbox 아이디어" });
+    expect(parseQuickTodoTitle("수신함 메모", "2026-08-16")).toEqual({ title: "수신함 메모" });
   });
 
   it("supports Korean planning tokens and priority", () => {
