@@ -1,37 +1,38 @@
 import type { Config } from "tailwindcss";
 
+// Neutral-only UI scale. Semantic alerts retain their own accessible colors.
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        // Warm-neutral charcoal surfaces; accent is reserved for interactive states.
         ink: {
-          950: "#111315",
-          900: "#191b1f",
-          850: "#212428",
-          800: "#292d31",
-          700: "#41464b",
-          600: "#858d95",
-          500: "#aab0b6",
-          400: "#b9c0c6",
-          300: "#cbd1d6",
-          200: "#dce0e4",
-          100: "#e8e9ec",
+          950: "#101011",
+          900: "#161617",
+          850: "#1b1b1d",
+          800: "#28282b",
+          700: "#454549",
+          600: "#77777d",
+          500: "#99999f",
+          400: "#bcbcc1",
+          300: "#d1d1d5",
+          200: "#e2e2e5",
+          100: "#efeff0",
         },
+        // Keep accent API names for existing components; values are achromatic.
         accent: {
-          600: "#849e89",
-          500: "#a7baab",
-          400: "#b6c8b9",
-          300: "#c6d7ca",
-          200: "#d9e5dc",
+          600: "#a8a8ad",
+          500: "#d4d4d8",
+          400: "#e1e1e4",
+          300: "#ededf0",
+          200: "#f4f4f5",
         },
-        success: "#76c3a2",
-        warning: "#e3bd78",
-        danger: "#e48e92",
+        success: "#8fb9a3",
+        warning: "#d9b47d",
+        danger: "#d88d92",
       },
       boxShadow: {
-        soft: "0 4px 16px rgba(0, 0, 0, 0.12)",
+        soft: "none",
       },
     },
   },
