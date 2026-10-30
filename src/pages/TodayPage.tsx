@@ -180,7 +180,7 @@ export function TodayPage({
     <div className="page-shell today-page">
       <header className="today-header">
         <div className="today-header__identity">
-          <h2>오늘</h2>
+          <h1>오늘</h1>
           <span>{formatKoreanDate(today, "M월 d일 EEEE")}</span>
         </div>
         <div className="today-header__status" role="group" aria-label="오늘 작업 현황">

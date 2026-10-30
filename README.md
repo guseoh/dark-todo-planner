@@ -9,14 +9,14 @@
 
 ## 현재 사용 가능한 기능
 
-- **오늘 / Inbox:** 오늘의 Todo 관리, 핵심 작업 3개 고정(브라우저별 일일 저장), 미완료 작업 가져오기, 일정이 없는 Todo 수집 후 오늘·내일·Someday·Waiting으로 이동
+- **오늘:** 오늘의 Todo 관리, 핵심 작업 3개 고정(브라우저별 일일 저장), 미완료 작업 가져오기. 기존 `INBOX` 항목은 데이터 변경 없이 전체 Todo의 **미계획** 필터에서 관리
 - **캘린더 (월간 / 주간):** 하나의 메뉴에서 월간·주간 보기를 전환하고 날짜별 Todo 및 목표 확인·수정. 이전 `#/week`, `#/month` 링크도 지원
 - **프로젝트:** 작업·Kanban / 마일스톤 / 결정 기록 / 분석·관리로 나눈 탭에서 프로젝트별 작업과 자료 링크 관리
 - **모바일 탐색:** 주요 4개 화면 + 더보기 메뉴로 모든 활성 화면 접근
 - **URL 탐색:** `#/today`, `#/calendar/month`, `#/calendar/week`, `#/projects`처럼 각 화면의 링크와 브라우저 뒤로·앞으로 가기 지원
 - **검색:** Ctrl+K에서 검색한 Todo·메모·프로젝트를 해당 편집창·프로젝트 화면에서 바로 열기
 - **전체 Todo:** 검색, 카테고리·상태·우선순위 필터, 다중 선택 및 일괄 변경
-- **메모 / 낙서장:** 메모와 Todo·프로젝트 연결, 별도 낙서장 자동 저장
+- **메모 / 낙서장:** 메모와 Todo·프로젝트 연결, 낙서장 Tiptap WYSIWYG 직접 서식 편집 및 Markdown 원본 모드·자동 저장·로컬 초안 복원
 - **휴지통:** Todo 이동, 복원 미리보기, 복원·영구 삭제
 - **설정:** 앱 정보 / 자동화·알림 / 데이터·백업 탭에서 Routine Bundle, Discord, PWA, ICS/CSV/Markdown 내보내기, JSON 백업·복원 관리
 - **오프라인 변경 큐:** IndexedDB에 일부 Todo 변경을 보관한 뒤 온라인 복구 시 동기화합니다. 전체 화면의 오프라인 사용을 지원하는 것은 아닙니다.
@@ -67,6 +67,6 @@ npm run build
 npm audit --omit=dev
 ```
 
-PR에서는 타입 검사·단위 테스트·백업 암호화 검증·빌드·의존성 감사와 **로컬 Worker/D1 HTTP 스모크와 Chromium 브라우저 E2E**를 진행합니다. **`main`에 push 또는 PR 병합하면** 모두 통과한 뒤 **Production D1 migration → Worker 배포 → /api/health 확인**을 자동으로 수행합니다. Preview 원격 환경에서의 복원 훈련은 현재 필수 CI 단계가 아닙니다.
+PR에서는 타입 검사·단위 테스트·백업 암호화 검증·빌드·의존성 감사와 **로컬 Worker/D1 HTTP 스모크, Chromium 브라우저 E2E, G5 양 테마×4해상도×8화면 검증 및 데이터 무변경 회귀**를 진행합니다. **`main`에 push 또는 PR 병합하면** 모두 통과한 뒤 **Production D1 migration → Worker 배포 → /api/health 확인**을 자동으로 수행합니다. Preview 원격 환경에서의 복원 훈련은 현재 필수 CI 단계가 아닙니다.
 
 실제 운영 절차와 데이터 복구 주의사항은 [배포·롤백 Runbook](docs/runbook/deploy-rollback.md) 및 [D1 백업 Runbook](docs/runbook/d1-backup-restore.md)을 참고하세요.

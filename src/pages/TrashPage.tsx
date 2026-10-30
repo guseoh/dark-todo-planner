@@ -94,7 +94,7 @@ export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
     <div className="page-shell">
       <section className="page-header sm:items-end">
         <div>
-          <h2 className="text-[23px] font-semibold tracking-tight text-ink-100">휴지통</h2>
+          <h1 className="text-[23px] font-semibold tracking-tight text-ink-100">휴지통</h1>
           <p className="mt-1 text-sm text-ink-400">삭제된 Todo를 복원하기 전에 어떤 연결이 돌아오는지 미리 확인합니다.</p>
         </div>
         <button type="button" className="btn-danger min-h-10" onClick={() => void emptyTrash()} disabled={!items.length || working}>
