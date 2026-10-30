@@ -29,7 +29,7 @@ type SettingsPageProps = {
 };
 
 const optionCardClass = (enabled: boolean) =>
-  `flex cursor-pointer items-start gap-3 border-b border-ui-divider px-1 py-4 transition-colors ${enabled ? "bg-ui-selected/50" : "hover:bg-ui-hover"}`;
+  `flex cursor-pointer items-start gap-3 border-b border-ui-divider px-1 py-4 transition-colors ${enabled ? "bg-ui-selected" : "hover:bg-ui-hover"}`;
 
 export function SettingsPage({
   categories,

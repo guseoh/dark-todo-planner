@@ -477,7 +477,33 @@ try {
     }
   }
 
-  console.log("BROWSER E2E PASS: Today, history, settings tabs, projects tabs, keyboard/search, and 24 responsive layout snapshots.");
+
+  // G2 visual coverage: compare content-first screens in both themes at key widths.
+  const screenLabels = {
+    today: "오늘", all: "전체 Todo", calendar: "캘린더", projects: "프로젝트",
+    memo: "메모", scratchpad: "낙서장", settings: "설정", trash: "휴지통",
+  };
+  for (const theme of ["dark", "light"]) {
+    await page.evaluate(() => { window.location.hash = "#/settings"; });
+    await page.getByRole("heading", { name: "설정", exact: true }).waitFor();
+    await page.getByRole("button", { name: theme === "dark" ? "다크" : "라이트", exact: true }).click();
+    assert.equal(await page.locator("html").getAttribute("data-theme"), theme);
+    for (const width of [390, 1280]) {
+      await page.setViewportSize({ width, height: 844 });
+      for (const [view, heading] of Object.entries(screenLabels)) {
+        await page.evaluate((next) => { window.location.hash = "#/" + next; }, view);
+        if (view === "scratchpad") await page.getByRole("textbox", { name: "낙서장 편집기" }).waitFor();
+        else await page.getByRole("heading", { name: heading, exact: true }).first().waitFor();
+        const geometry = await page.evaluate(() => ({
+          viewport: window.innerWidth, document: document.documentElement.scrollWidth,
+        }));
+        assert.ok(geometry.document <= geometry.viewport + 2,
+          `G2 ${theme} ${view} overflow at ${width}px: ${JSON.stringify(geometry)}`);
+        await page.screenshot({ path: `test-artifacts/g2-${theme}-${width}-${view}.png`, fullPage: true });
+      }
+    }
+  }
+  console.log("BROWSER E2E PASS: functional flows, 24 responsive snapshots and 32 Dark/Light G2 screen snapshots.");
 } catch (error) {
   failed = true;
   await mkdir("test-artifacts", { recursive: true });

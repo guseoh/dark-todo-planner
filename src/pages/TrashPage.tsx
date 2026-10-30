@@ -108,7 +108,7 @@ export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
       {loading ? <div className="border-t border-ui-divider py-8 text-left text-sm text-ui-muted">휴지통을 불러오는 중...</div> : items.length ? (
         <section className="divide-y divide-ui-divider border-t border-ui-divider">
           {items.map((item) => (
-            <div key={item.id} className="flex flex-col gap-3 px-1 py-4 transition-colors hover:bg-ui-hover/50 sm:flex-row sm:items-center">
+            <div key={item.id} className="flex flex-col gap-3 px-1 py-4 transition-colors hover:bg-ui-hover sm:flex-row sm:items-center">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[15px] font-semibold text-ui-text">{item.title}</p>
                 <p className="mt-1 text-xs text-ink-500">삭제 {new Date(item.deletedAt).toLocaleString("ko-KR")}</p>

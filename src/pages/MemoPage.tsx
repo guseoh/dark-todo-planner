@@ -239,7 +239,7 @@ function MemoCard({ memo, onDelete, onTogglePin, onEdit, onCreateTodo, onCreateC
   const displayTitle = memoDisplayTitle(memo);
   const checklistTitles = uncheckedChecklistTitles(memo.content);
   return (
-    <article className={`group border-b border-ui-divider px-1 py-4 transition-colors hover:bg-ui-hover/50 ${colorClass(memo.color)}`}>
+    <article className={`group border-b border-ui-divider px-1 py-4 transition-colors hover:bg-ui-hover ${colorClass(memo.color)}`}>
       <div className="flex flex-col gap-2.5">
         <div className="flex items-start justify-between gap-2">
           <button type="button" className="min-w-0 flex-1 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/35" onClick={() => onEdit(memo)} aria-label={`${displayTitle} 메모 수정`}>
