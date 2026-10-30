@@ -61,6 +61,7 @@
   --ui-selected: var(--surface-hover);
   --ui-elevated: var(--surface-2);
   --ui-divider: var(--border-subtle);
+  --ui-row-divider: #454549;
   --ui-control-border: var(--border-strong);
   --ui-control-border-hover: var(--border-strong);
   --ui-text-primary: var(--text-primary);
@@ -122,6 +123,7 @@
   --accent-400: 58 58 62;
   --accent-300: 80 80 86;
   --accent-200: 51 51 55;
+  --ui-row-divider: #D1D1D5;
   --ui-control-border: #8A8A90;
   --ui-control-border-hover: #68686F;
 }
@@ -232,13 +234,16 @@ button:disabled {
     @apply rounded-none border-0 border-b border-ink-700/40 bg-transparent p-3 transition-colors hover:bg-ink-850/60;
   }
 
-  .field.field {
+  /* Let explicit sizing utilities override the default full-width field. */
+  .field {
     @apply min-h-9 w-full rounded-[4px] border bg-ink-850 px-3 py-1.5 text-sm text-ink-100 outline-none transition-colors duration-150 placeholder:text-ink-500 focus:ring-2 focus:ring-accent-500/35;
     border-color: var(--ui-control-border);
   }
 
-  .field.field:hover { border-color: var(--ui-control-border-hover); }
-  .field.field:focus { border-color: var(--ui-focus); }
+  .field:hover { border-color: var(--ui-control-border-hover); }
+  .field:focus { border-color: var(--ui-focus); }
+
+  .todo-row { border-bottom: 1px solid var(--ui-row-divider); }
 
   .btn {
     @apply inline-flex min-h-9 items-center justify-center gap-2 rounded-[4px] border border-transparent px-3 py-1.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950;
