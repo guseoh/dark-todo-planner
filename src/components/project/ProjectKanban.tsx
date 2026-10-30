@@ -4,7 +4,7 @@ import { ChevronDown, ChevronRight, GripVertical, LayoutGrid, List, Pencil, Plus
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { todayKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../../lib/todo";
-import { workflowStatusClassNames, workflowStatusLabels } from "../../lib/todoLabels";
+import { workflowStatusLabels } from "../../lib/todoLabels";
 import type { Category } from "../../types/category";
 import type { Milestone, Project } from "../../types/project";
 import type { Todo, TodoInput, TodoWorkflowStatus } from "../../types/todo";
@@ -75,16 +75,16 @@ function KanbanColumn({ status, label, count, wipLimit, onWipLimitChange, collap
   return (
     <section ref={setNodeRef} className={`min-h-[18rem] w-[17rem] shrink-0 border-r border-ink-700/50 px-3 py-2 transition sm:w-auto ${isOver ? "border-accent-500/55 bg-accent-500/[0.05]" : ""}`}>
       <div className="mb-3 flex items-center justify-between gap-2">
-        {onToggleCollapse ? <button type="button" className={`inline-flex min-h-8 items-center gap-1 rounded-md border px-2 text-sm font-bold ${workflowStatusClassNames[status]}`} onClick={onToggleCollapse} aria-expanded={!collapsed}>{collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}{label}</button> : <h4 className={`rounded-md border px-2 py-1 text-sm font-bold ${workflowStatusClassNames[status]}`}>{label}</h4>}
+        {onToggleCollapse ? <button type="button" className="inline-flex min-h-9 items-center gap-1 rounded-[4px] px-1 text-sm font-semibold text-ink-100 hover:bg-ink-850 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70" onClick={onToggleCollapse} aria-expanded={!collapsed}>{collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}{label}</button> : <h4 className="px-1 text-sm font-semibold text-ink-100">{label}</h4>}
         <div className="flex items-center gap-1.5">
           <label className="flex items-center gap-1 text-[10px] text-ink-500" title="0으로 설정하면 작업 수 제한이 없습니다.">
             <span>WIP</span>
             <input type="number" min={0} max={999} className="field h-7 min-h-7 w-12 px-1 py-0.5 text-center text-[11px]" value={wipLimit || ""} placeholder="—" aria-label={`${label} WIP 한도`} onChange={(event) => onWipLimitChange(status, Math.max(0, Math.min(999, Number.parseInt(event.target.value, 10) || 0)))} />
           </label>
-          <span className={`rounded-full border px-2 py-0.5 text-xs ${overLimit ? "border-danger/45 bg-danger/10 font-bold text-red-200" : "border-ink-800/70 bg-ink-950/45 text-ink-400"}`}>{count}{wipLimit !== undefined ? `/${wipLimit}` : ""}</span>
+          <span className={`text-xs tabular-nums ${overLimit ? "font-semibold text-red-200" : "text-ink-400"}`}>{count}{wipLimit !== undefined ? `/${wipLimit}` : ""}</span>
         </div>
       </div>
-      {overLimit ? <p className="mb-2 rounded-md border border-danger/25 bg-danger/[0.06] px-2 py-1 text-[11px] font-semibold text-red-200" role="status">WIP 한도 초과 · 작업을 먼저 마무리해 보세요.</p> : null}
+      {overLimit ? <p className="mb-2 border-l-2 border-danger/65 py-1 pl-2 text-[11px] font-medium text-red-200" role="status">WIP 한도 초과 · 작업을 먼저 마무리해 보세요.</p> : null}
       {collapsed ? <p className="border-t border-ink-700/35 px-2 py-5 text-center text-xs text-ink-500">완료 작업 {count}개 · 열을 펼쳐 확인하세요</p> : <div className="space-y-2">{children}</div>}
     </section>
   );
@@ -130,19 +130,19 @@ function ProjectKanbanCard({ project, todo, parent, childCount, milestone, miles
   return (
     <article ref={setNodeRef} style={{ transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.55 : 1 }} className="border-b border-ink-700/45 bg-transparent px-2 py-3 transition hover:bg-ink-850/60">
       <div className="flex items-start gap-2">
-        <button type="button" onClick={() => onToggleTodo(todo.id)} className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border ${todo.completed ? "border-success bg-success" : "border-ink-600"}`} aria-label="완료 토글" />
+        <button type="button" onClick={() => onToggleTodo(todo.id)} className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[4px] hover:bg-ink-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70" aria-label={`${todo.title} 완료 토글`}><span className={`h-4 w-4 rounded-full border ${todo.completed ? "border-success bg-success" : "border-ink-600"}`} aria-hidden="true" /></button>
         <div className="min-w-0 flex-1">
           {parent ? <p className="mb-1 truncate text-[10px] font-semibold text-accent-300">↳ {parent.title}</p> : null}
           <button type="button" className={`block break-words text-left text-sm font-semibold hover:text-accent-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 ${todo.completed ? "text-ink-500 line-through" : "text-ink-100"}`} onClick={() => onOpenDetails(todo)}>{todo.title}</button>
-          <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] text-ink-400">
-            <span className="rounded border border-ink-800/70 bg-ink-900/60 px-1.5 py-0.5">우선순위 {todo.priority === "HIGH" ? "높음" : todo.priority === "LOW" ? "낮음" : "보통"}</span>
-            {milestone ? <span className="rounded border border-accent-500/25 bg-accent-500/[0.06] px-1.5 py-0.5 text-accent-200">{milestone.title}</span> : null}
-            {childCount ? <span className="rounded border border-accent-500/25 bg-accent-500/[0.06] px-1.5 py-0.5 text-accent-200">하위 {childCount}</span> : null}
-            {todo.dueDate ? <span className={`rounded border px-1.5 py-0.5 ${overdue ? "border-danger/30 bg-danger/[0.07] text-red-100" : dueSoon ? "border-warning/30 bg-warning/[0.07] text-amber-100" : "border-ink-800/70 bg-ink-900/60"}`}>마감 {todo.dueDate}</span> : null}
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-400">
+            <span>우선순위 {todo.priority === "HIGH" ? "높음" : todo.priority === "LOW" ? "낮음" : "보통"}</span>
+            {milestone ? <span>{milestone.title}</span> : null}
+            {childCount ? <span>하위 {childCount}</span> : null}
+            {todo.dueDate ? <span className={overdue ? "font-medium text-red-200" : dueSoon ? "font-medium text-amber-200" : "text-ink-400"}>마감 {todo.dueDate}</span> : null}
           </div>
         </div>
         {!project.archived ? (
-          <button type="button" className="icon-btn h-8 w-8 shrink-0 cursor-grab active:cursor-grabbing" title="드래그하여 상태 변경" aria-label={`${todo.title} 상태 이동`} {...listeners} {...attributes}>
+          <button type="button" className="icon-btn min-h-9 min-w-9 shrink-0 cursor-grab active:cursor-grabbing" title="드래그하여 상태 변경" aria-label={`${todo.title} 상태 이동`} {...listeners} {...attributes}>
             <GripVertical size={15} />
           </button>
         ) : null}
@@ -286,7 +286,7 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
           </div>
         </div>
       </DndContext> : (
-        <div className="overflow-x-auto rounded-lg border border-ink-700/70 bg-ink-900/35">
+        <div className="overflow-x-auto border-t border-ink-700/50">
           <table className="w-full min-w-[58rem] text-left text-sm">
             <thead className="border-b border-ink-700/65 bg-ink-900/80 text-xs text-ink-400">
               <tr><th scope="col" className="px-3 py-2.5">작업</th><th scope="col" className="px-3 py-2.5">상태</th><th scope="col" className="px-3 py-2.5">우선순위</th><th scope="col" className="px-3 py-2.5">마일스톤</th><th scope="col" className="px-3 py-2.5">작업일</th><th scope="col" className="px-3 py-2.5">마감일</th><th scope="col" className="w-12 px-3 py-2.5"><span className="sr-only">작업 편집</span></th></tr>
