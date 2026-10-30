@@ -269,6 +269,7 @@ button:disabled {
 
 @layer components {
   /* Today: prioritize the task list. Stats are contextual, not a dashboard. */
+  .today-page.page-shell { max-width: 1120px; }
   .today-header {
     display: flex;
     flex-wrap: wrap;
