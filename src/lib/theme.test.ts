@@ -53,6 +53,9 @@ describe("light/dark neutral design tokens", () => {
     expect(css).toContain(".today-page.page-shell");
     expect(css).not.toContain(".today-overview__stat");
     expect(css).toContain(".today-composer");
+    expect(css).toContain(".todo-composer-form__chips");
+    expect(css).toContain(".todo-composer-chip-menu__panel");
+    expect(css).toContain(".todo-composer-form__footer--inline");
     expect(css).toContain(".today-digest");
     expect(css).not.toContain(".today-sidebar");
     expect(css).toContain(".todo-row__menu-action");
