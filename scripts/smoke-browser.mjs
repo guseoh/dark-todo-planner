@@ -615,6 +615,33 @@ try {
   assert.equal(await scratchEditor.getAttribute("contenteditable"), "true", "Scratchpad must be a rich contenteditable editor.");
   await scratch.getByText("저장됨", { exact: true }).first().waitFor();
 
+  // G4: toolbar formatting is semantic WYSIWYG, serialized back as Markdown.
+  const richHeading = "서식 검증 한글 제목";
+  await scratchEditor.click();
+  await page.keyboard.press("Control+End");
+  await page.keyboard.press("Enter");
+  await page.keyboard.insertText(richHeading);
+  await page.getByRole("button", { name: "H1", exact: true }).click();
+  await scratchEditor.locator("h1").filter({ hasText: richHeading }).waitFor();
+  await page.waitForFunction(async (title) => {
+    const response = await fetch("/api/scratchpad", { credentials: "same-origin" });
+    return (await response.json()).scratchpad?.content.includes("# " + title);
+  }, richHeading);
+
+  // An unsupported legacy Markdown table must be edited as raw source,
+  // without forcing a round-trip through the beta Markdown rich parser.
+  const advancedMarkdown = "| 이름 | 값 |\n| --- | --- |\n| 기존 | 보존 |";
+  await page.locator('input[type="file"][accept*=".md"]').setInputFiles({
+    name: "legacy.md", mimeType: "text/markdown", buffer: Buffer.from(advancedMarkdown),
+  });
+  const rawEditor = page.getByRole("textbox", { name: "낙서장 편집기" });
+  await page.waitForFunction(() => document.querySelector('[aria-label="낙서장 편집기"]')?.tagName === "TEXTAREA");
+  assert.equal(await rawEditor.inputValue(), advancedMarkdown, "Unsupported Markdown must remain byte-for-byte editable in source mode.");
+  await page.waitForFunction(async (value) => {
+    const response = await fetch("/api/scratchpad", { credentials: "same-origin" });
+    return (await response.json()).scratchpad?.content === value;
+  }, advancedMarkdown);
+
   // Layout probes at common mobile, tablet and desktop breakpoints.
   // Retain screenshots as review artifacts; geometry failure blocks deployment.
   await mkdir("test-artifacts", { recursive: true });
