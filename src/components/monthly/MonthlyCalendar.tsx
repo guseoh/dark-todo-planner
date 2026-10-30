@@ -1,7 +1,5 @@
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import type { ReactNode } from "react";
-import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
+import { useState, type DragEvent, type ReactNode } from "react";
 import {
   formatKoreanDate,
   getDayIndex,
@@ -29,6 +27,7 @@ type MonthlyCalendarProps = {
   onCycleDayStatus: (date: string) => void;
   onQuickAdd: (date: string) => void;
   onOpenTodo: (id: string) => void;
+  onMoveTodo: (id: string, date: string) => void;
   draggingDisabled?: boolean;
 };
 
@@ -46,10 +45,33 @@ const eventPrefix: Record<CalendarEvent["kind"], string> = {
 };
 
 
-function CalendarDropCell({ dateKey, disabled, children }: { dateKey: string; disabled: boolean; children: ReactNode }) {
-  const { setNodeRef, isOver } = useDroppable({ id: dateKey, disabled, data: { dateKey } });
+function CalendarDropCell({ dateKey, disabled, onMoveTodo, children }: {
+  dateKey: string;
+  disabled: boolean;
+  onMoveTodo: (id: string, date: string) => void;
+  children: ReactNode;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const clear = () => setHovered(false);
   return (
-    <div ref={setNodeRef} data-calendar-date={dateKey} className={`min-w-0 ${isOver ? "rounded-lg ring-2 ring-accent-500/80" : ""}`}>
+    <div
+      data-calendar-date={dateKey}
+      className={`min-w-0 ${hovered && !disabled ? "rounded-lg ring-2 ring-accent-500/80" : ""}`}
+      onDragOver={(event: DragEvent<HTMLDivElement>) => {
+        if (disabled || !event.dataTransfer.types.includes("text/plain")) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        setHovered(true);
+      }}
+      onDragLeave={clear}
+      onDrop={(event: DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        clear();
+        if (disabled) return;
+        const todoId = event.dataTransfer.getData("text/plain");
+        if (todoId) onMoveTodo(todoId, dateKey);
+      }}
+    >
       {children}
     </div>
   );
@@ -61,25 +83,25 @@ function CalendarEventChip({ event, onClick, draggingDisabled, hiddenClass }: {
   draggingDisabled: boolean;
   hiddenClass: string;
 }) {
-  const draggable = event.kind === "todo" && Boolean(event.relatedTodoId);
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: event.id,
-    disabled: !draggable || draggingDisabled,
-    data: { todoId: event.relatedTodoId, date: event.date, kind: event.kind },
-  });
+  const draggable = event.kind === "todo" && Boolean(event.relatedTodoId) && !draggingDisabled;
+  const [dragging, setDragging] = useState(false);
   const prefix = event.kind === "todo" && event.dueOnDate ? "마감 · " : eventPrefix[event.kind];
   return (
     <button
-      ref={setNodeRef}
       type="button"
-      {...(draggable ? attributes : {})}
-      {...(draggable ? listeners : {})}
+      draggable={draggable}
+      onDragStart={(e: DragEvent<HTMLButtonElement>) => {
+        if (!draggable || !event.relatedTodoId) { e.preventDefault(); return; }
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", event.relatedTodoId);
+        setDragging(true);
+      }}
+      onDragEnd={() => setDragging(false)}
       onClick={onClick}
       data-calendar-event={event.id}
       title={`${prefix}${event.title}${event.projectName ? ` · ${event.projectName}` : ""}`}
       aria-label={event.title}
-      style={{ transform: CSS.Translate.toString(transform), touchAction: "pan-y", zIndex: isDragging ? 50 : undefined }}
-      className={`pointer-events-auto relative block min-h-5 w-full min-w-0 truncate rounded-[4px] border-l-[3px] px-1 py-0.5 text-left text-[10px] leading-4 transition-colors hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${eventTone[event.kind]} ${event.completed ? "opacity-50 line-through" : ""} ${isDragging ? "cursor-grabbing shadow-lg opacity-70" : draggable ? "cursor-grab" : "cursor-pointer"} ${hiddenClass}`}
+      className={`pointer-events-auto relative block min-h-5 w-full min-w-0 truncate rounded-[4px] border-l-[3px] px-1 py-0.5 text-left text-[10px] leading-4 transition-colors hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${eventTone[event.kind]} ${event.completed ? "opacity-50 line-through" : ""} ${dragging ? "cursor-grabbing opacity-60" : draggable ? "cursor-grab" : "cursor-pointer"} ${hiddenClass}`}
     >
       {prefix}{event.title}
     </button>
@@ -98,6 +120,7 @@ export function MonthlyCalendar({
   onCycleDayStatus,
   onQuickAdd,
   onOpenTodo,
+  onMoveTodo,
   draggingDisabled = false,
 }: MonthlyCalendarProps) {
   return (
@@ -143,7 +166,7 @@ export function MonthlyCalendar({
               ? `${formattedDate}, 현재 미수행. 클릭하면 미설정으로 변경`
               : `${formattedDate}, 현재 미설정. 클릭하면 수행 완료로 변경`;
           return (
-            <CalendarDropCell key={dateKey} dateKey={dateKey} disabled={draggingDisabled}>
+            <CalendarDropCell key={dateKey} dateKey={dateKey} disabled={draggingDisabled} onMoveTodo={onMoveTodo}>
             <article
               className={`group relative flex min-h-[6.5rem] min-w-0 flex-col overflow-hidden rounded-lg border p-1.5 transition-colors sm:min-h-[9rem] sm:p-2 ${
                 selected
