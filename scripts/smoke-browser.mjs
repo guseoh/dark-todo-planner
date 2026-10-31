@@ -890,7 +890,7 @@ try {
   const memoCreateAppearance = await newMemoButton.evaluate((button) => ({
     radius: getComputedStyle(button).borderTopLeftRadius,
     background: getComputedStyle(button).backgroundColor,
-    primary: getComputedStyle(document.querySelector("header .ui-button--primary")).backgroundColor,
+    primary: getComputedStyle(document.querySelector("header .app-quick-add-button")).backgroundColor,
   }));
   assert.equal(memoCreateAppearance.radius, "2px", "New memo should have sharp corners.");
   assert.notEqual(memoCreateAppearance.background, memoCreateAppearance.primary, "New memo should be an outline action, not a second bright CTA.");
