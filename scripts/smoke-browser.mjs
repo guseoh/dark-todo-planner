@@ -495,12 +495,10 @@ try {
   await composer.getByRole("group", { name: "분류" }).getByLabel("우선순위").selectOption("HIGH");
   await composer.getByRole("button", { name: "상세 옵션 닫기", exact: true }).click();
   assert.equal(await composer.getByRole("group", { name: "Todo 상세 옵션" }).count(), 0);
-  await composerToggle.click();
   assert.equal(await composer.locator('[data-composer-selection="우선순위"]').getAttribute("data-selected-value"), "HIGH",
     "Collapsing details must not discard the current form state.");
   await priorityChip.click();
   await priorityOptions.getByRole("button", { name: "보통" }).click();
-  await composer.getByRole("button", { name: "상세 옵션 닫기", exact: true }).click();
 
   // IME composition must not submit a half-written Korean title.
   const quickTitleField = composer.getByRole("textbox", { name: "Todo 제목" });
