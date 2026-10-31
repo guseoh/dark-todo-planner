@@ -771,7 +771,8 @@ button:disabled {
   @media (max-width: 720px) {
     .todo-composer-form--inline .todo-composer-form__main { grid-template-columns: minmax(0, 1fr) auto; }
     .todo-composer-form--inline .todo-composer-form__title { grid-column: auto; }
-    .todo-composer-form--inline .todo-composer-form__submit--quiet { grid-column: auto; justify-self: end; }
+    .todo-composer-form--inline .todo-composer-form__main:has(> .todo-composer-form__title + .todo-composer-form__submit)
+      .todo-composer-form__submit--quiet { grid-column: auto; justify-self: end; }
     .todo-composer-form__meta-row { align-items: flex-start; }
   }
   @media (max-width: 450px) {
