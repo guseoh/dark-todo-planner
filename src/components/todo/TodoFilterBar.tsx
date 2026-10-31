@@ -1,4 +1,4 @@
-import { BookmarkPlus, RotateCcw, Trash2 } from "lucide-react";
+import { BookmarkPlus, RotateCcw, Trash2, SlidersHorizontal } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { defaultFilters } from "../../hooks/useTodos";
 import type { Category } from "../../types/category";
@@ -34,7 +34,7 @@ function readSavedViews(): SavedTodoView[] {
 }
 
 const filterButtonClassName =
-  "inline-flex min-h-9 items-center justify-center whitespace-nowrap rounded-md border px-2.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/35";
+  "inline-flex min-h-9 items-center justify-center whitespace-nowrap rounded-[3px] border px-2.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/35";
 
 export function TodoFilterBar({ filters, onChange, categories = [], projects = [] }: TodoFilterBarProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -82,47 +82,50 @@ export function TodoFilterBar({ filters, onChange, categories = [], projects = [
 
   const buttonTone = (active: boolean) =>
     active
-      ? "border-accent-500 bg-accent-500 text-ink-950"
-      : "border-ink-700/70 bg-ink-950/50 text-ink-400 hover:border-accent-500/55 hover:text-ink-100";
+      ? "border-ui-divider bg-ui-selected text-ui-text"
+      : "border-transparent bg-transparent text-ui-secondary hover:bg-ui-hover hover:text-ui-text";
+  const filtersActive = filters.status !== "ACTIVE" || filters.priority !== "ALL" ||
+    filters.duplicatesOnly || Boolean(filters.query || filters.date || filters.categoryId || filters.projectId) ||
+    (filters.planningState !== "ALL" && Boolean(filters.planningState)) ||
+    filters.workflowStatus !== "ALL" || filters.archived !== "ACTIVE" || filters.sort !== "DATE_ASC";
 
   return (
-    <div className="rounded-lg bg-ink-900/70 p-2.5 sm:p-3">
-      <div className="flex flex-col gap-2 2xl:flex-row 2xl:items-center">
-        <div className="min-w-0 flex-1">
-          <TodoSearchInput value={filters.query} onChange={(query) => changeFilters({ ...filters, query })} />
-        </div>
-
-        <div className="flex flex-wrap gap-1.5" aria-label="완료 상태 필터">
-          {statusFilters.map((filter) => (
-            <button key={filter.value} type="button" onClick={() => changeFilters({ ...filters, status: filter.value })} aria-pressed={filters.status === filter.value} className={`${filterButtonClassName} ${buttonTone(filters.status === filter.value)}`}>
-              {filter.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap gap-1.5" aria-label="우선순위 필터">
-          {priorityFilters.map((filter) => (
-            <button key={filter.value} type="button" onClick={() => changeFilters({ ...filters, priority: filter.value })} aria-pressed={filters.priority === filter.value} className={`${filterButtonClassName} ${buttonTone(filters.priority === filter.value)}`}>
-              {filter.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        <button type="button" className={`${filterButtonClassName} ${buttonTone(filters.duplicatesOnly)}`} onClick={() => changeFilters({ ...filters, duplicatesOnly: !filters.duplicatesOnly })} aria-pressed={filters.duplicatesOnly}>
-          중복 후보만
-        </button>
-        <button type="button" className="btn-secondary min-h-8 px-2.5 py-1 text-xs" onClick={() => setShowAdvanced((value) => !value)} aria-expanded={showAdvanced}>
-          {showAdvanced ? "고급 필터 닫기" : "고급 필터"}
-        </button>
-        <button type="button" className="btn-secondary min-h-8 px-2.5 py-1 text-xs" onClick={() => changeFilters(defaultFilters)}>
-          <RotateCcw size={14} />초기화
+    <div className="todo-filter-workspace">
+      <div className="todo-filter-workspace__primary">
+        <div className="todo-filter-workspace__search"><TodoSearchInput value={filters.query} onChange={(query) => changeFilters({ ...filters, query })} /></div>
+        <select className="field todo-filter-workspace__status" aria-label="완료 상태 필터"
+          value={filters.status} onChange={(event) => changeFilters({ ...filters, status: event.target.value as TodoStatusFilter })}>
+          {statusFilters.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
+        </select>
+        <button type="button" className="btn-secondary todo-filter-workspace__expand"
+          onClick={() => setShowAdvanced((value) => !value)} aria-expanded={showAdvanced} aria-controls="todo-advanced-filters">
+          <SlidersHorizontal size={15} aria-hidden="true" />{showAdvanced ? "필터 닫기" : "고급 필터"}
         </button>
       </div>
-
-      <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-ink-700/55 pt-2" aria-label="저장된 보기">
-        <>
+      {filtersActive ? (
+        <div className="todo-filter-workspace__active">
+          <span>검색 조건이 적용되어 있습니다.</span>
+          <button type="button" className="todo-filter-workspace__reset" onClick={() => changeFilters({ ...defaultFilters, status: "ACTIVE" })}>
+            <RotateCcw size={13} aria-hidden="true" />초기화
+          </button>
+        </div>
+      ) : null}
+      {showAdvanced ? (
+        <div id="todo-advanced-filters" className="todo-filter-workspace__advanced">
+          <div className="todo-filter-workspace__priority" role="group" aria-label="우선순위 필터">
+            <span className="todo-filter-workspace__label">우선순위</span>
+            {priorityFilters.map((filter) => (
+              <button key={filter.value} type="button" onClick={() => changeFilters({ ...filters, priority: filter.value })}
+                aria-pressed={filters.priority === filter.value} className={`${filterButtonClassName} ${buttonTone(filters.priority === filter.value)}`}>
+                {filter.label}
+              </button>
+            ))}
+            <button type="button" className={`${filterButtonClassName} ${buttonTone(filters.duplicatesOnly)}`}
+              onClick={() => changeFilters({ ...filters, duplicatesOnly: !filters.duplicatesOnly })} aria-pressed={filters.duplicatesOnly}>
+              중복 후보만
+            </button>
+          </div>
+          <div className="todo-filter-workspace__saved" aria-label="저장된 보기">
             <select className="field h-9 min-h-9 w-full py-1 sm:w-52" aria-label="저장된 보기" value={selectedViewId} onChange={(event) => {
               const view = savedViews.find((item) => item.id === event.target.value);
               if (view) { onChange(view.filters); setSelectedViewId(view.id); }
@@ -131,17 +134,16 @@ export function TodoFilterBar({ filters, onChange, categories = [], projects = [
               {savedViews.map((view) => <option key={view.id} value={view.id}>{view.name}</option>)}
             </select>
             <button type="button" className="icon-btn h-9 w-9" onClick={deleteSelectedView} disabled={!selectedViewId} aria-label="선택한 보기 삭제" title="선택한 보기 삭제"><Trash2 size={14} /></button>
-        </>
-        <form onSubmit={saveView} className="flex min-w-0 flex-1 gap-1.5 sm:ml-auto sm:max-w-sm">
-          <input className="field h-9 min-h-9 min-w-0 py-1" value={viewName} onChange={(event) => setViewName(event.target.value)} placeholder="현재 조건을 저장할 이름" aria-label="저장된 보기 이름" maxLength={48} />
-          <button type="submit" className="btn-secondary min-h-9 shrink-0 px-2.5 py-1 text-xs" disabled={!viewName.trim() || (savedViews.length >= MAX_SAVED_VIEWS && !savedViews.some((view) => view.name.toLocaleLowerCase() === viewName.trim().toLocaleLowerCase()))}>
-            <BookmarkPlus size={14} />저장
-          </button>
-        </form>
-      </div>
-
-      {showAdvanced ? (
-        <div className="mt-2 flex flex-wrap gap-1.5 border-t border-ink-700/55 pt-2">
+            <form onSubmit={saveView} className="flex min-w-0 flex-1 gap-1.5 sm:ml-auto sm:max-w-sm">
+              <input className="field h-9 min-h-9 min-w-0 py-1" value={viewName} onChange={(event) => setViewName(event.target.value)}
+                placeholder="현재 조건을 저장할 이름" aria-label="저장된 보기 이름" maxLength={48} />
+              <button type="submit" className="btn-secondary min-h-9 shrink-0 px-2.5 py-1 text-xs"
+                disabled={!viewName.trim() || (savedViews.length >= MAX_SAVED_VIEWS && !savedViews.some((view) => view.name.toLocaleLowerCase() === viewName.trim().toLocaleLowerCase()))}>
+                <BookmarkPlus size={14} />저장
+              </button>
+            </form>
+          </div>
+          <div className="todo-filter-workspace__fields">
           <input className="field h-9 min-h-9 w-full py-1 sm:w-40" type="date" value={filters.date} onChange={(event) => changeFilters({ ...filters, date: event.target.value })} aria-label="날짜 필터" />
           <select className="field h-9 min-h-9 w-full py-1 sm:w-44" value={filters.categoryId} onChange={(event) => changeFilters({ ...filters, categoryId: event.target.value })} aria-label="카테고리 필터">
             <option value="">모든 카테고리</option><option value="uncategorized">미분류</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
@@ -161,6 +163,7 @@ export function TodoFilterBar({ filters, onChange, categories = [], projects = [
           <select className="field h-9 min-h-9 w-full py-1 sm:w-44" value={filters.sort} onChange={(event) => changeFilters({ ...filters, sort: event.target.value as TodoFilters["sort"] })} aria-label="정렬">
             <option value="DATE_ASC">날짜 가까운순</option><option value="NEWEST">최신순</option><option value="OLDEST">오래된순</option><option value="PRIORITY">우선순위 높은순</option>
           </select>
+          </div>
         </div>
       ) : null}
     </div>
