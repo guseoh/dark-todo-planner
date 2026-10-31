@@ -115,6 +115,87 @@ try {
   if (buttonSystem.warningBackground) {
     assert.notEqual(buttonSystem.warningBackground, visualSystem.primaryBackground, "Day cleanup must use warning tone.");
   }
+
+  // G6.7: overdue review uses flat date rows, and bulk trash must only remove selected IDs.
+  // Fixture dates are deliberately long before today, using an isolated local D1 account.
+  const overduePrefix = "G67 Overdue " + randomUUID().slice(0, 8);
+  const overdueNames = [0, 1, 2, 3].map((index) => overduePrefix + "-" + index);
+  const overdueFixture = await page.evaluate(async (titles) => {
+    const results = [];
+    for (let index = 0; index < titles.length; index += 1) {
+      const response = await fetch("/api/todos", {
+        method: "POST", credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          title: titles[index], date: index < 2 ? "2025-05-13" : "2025-05-12",
+          planningState: "SCHEDULED", priority: "MEDIUM",
+        }),
+      });
+      const payload = await response.json();
+      results.push({ status: response.status, payload });
+    }
+    return results;
+  }, overdueNames);
+  assert.ok(overdueFixture.every((item) => item.status >= 200 && item.status < 300),
+    "Local D1 overdue fixtures should be created: " + JSON.stringify(overdueFixture));
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "정리하기", exact: true }).click();
+  const overdueDialog = page.getByRole("dialog", { name: "지난 일정 정리" });
+  await overdueDialog.getByRole("button", { name: "전체 선택", exact: true }).click();
+  assert.ok((await overdueDialog.getByRole("button", { name: "선택 4개 삭제" }).count()) === 1,
+    "All-selection must expose one clear bulk delete control.");
+  await overdueDialog.getByRole("button", { name: "선택 해제" }).click();
+  const dateA = overdueDialog.locator(".overdue-review__date").filter({ hasText: "5월 13일" });
+  const dateB = overdueDialog.locator(".overdue-review__date").filter({ hasText: "5월 12일" });
+  await dateA.getByRole("checkbox", { name: /Todo 전체 선택/ }).check();
+  await dateB.locator(".overdue-review__task").first().getByRole("checkbox").check();
+  const selectedDelete = overdueDialog.getByRole("button", { name: "선택 3개 삭제" });
+  assert.equal(await selectedDelete.isDisabled(), false);
+  const flatRows = await overdueDialog.evaluate((el) => ({
+    rowRadius: getComputedStyle(el.querySelector(".overdue-review__date")).borderTopLeftRadius,
+    footer: !!el.querySelector(".overdue-review__footer"),
+    oldNestedCards: el.querySelectorAll(".rounded-md.border.border-ink-700\\/55").length,
+  }));
+  assert.equal(flatRows.rowRadius, "0px", "Overdue date list must be flat rather than a rounded card stack.");
+  assert.equal(flatRows.footer, true, "Actions should stay grouped in the modal footer.");
+  assert.equal(flatRows.oldNestedCards, 0, "Old nested bulk-selection cards must be removed.");
+  // Dismissal must never change data.
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await selectedDelete.click();
+  assert.ok(await findServerTodo(overdueNames[0]), "Cancel must preserve overdue Todo.");
+  // Simulate a failing API; no offline queue or false success should be reported.
+  let rejectBulkOnce = true;
+  await page.route("**/api/todos/bulk-trash", async (route) => {
+    if (rejectBulkOnce) {
+      rejectBulkOnce = false;
+      await route.fulfill({ status: 503, contentType: "application/json", body: '{"message":"isolated bulk rejection"}' });
+    } else await route.continue();
+  });
+  page.once("dialog", (dialog) => dialog.accept());
+  await selectedDelete.click();
+  await overdueDialog.getByRole("alert").waitFor();
+  assert.ok(await findServerTodo(overdueNames[0]), "Failed bulk delete must retain server records.");
+  await page.unroute("**/api/todos/bulk-trash");
+  page.once("dialog", (dialog) => dialog.accept());
+  await selectedDelete.click();
+  await overdueDialog.getByText("3개를 휴지통으로 이동했습니다.", { exact: false }).waitFor();
+  await page.waitForFunction(async (titles) => {
+    const response = await fetch("/api/todos?archived=all&limit=100", { credentials: "same-origin" });
+    const payload = await response.json();
+    const remaining = (payload.todos || []).map((item) => item.title);
+    return !remaining.includes(titles[0]) && !remaining.includes(titles[1]) &&
+      !remaining.includes(titles[2]) && remaining.includes(titles[3]);
+  }, overdueNames);
+  const deletedTrashRecords = await page.evaluate(async (titles) => {
+    const response = await fetch("/api/trash/todos", { credentials: "same-origin" });
+    const payload = await response.json();
+    return { status: response.status, matches: (payload.trashTodos || []).filter((row) => titles.includes(row.title)) };
+  }, overdueNames);
+  assert.equal(deletedTrashRecords.status, 200);
+  assert.equal(deletedTrashRecords.matches.length, 3,
+    "Only the selected Todo items must be recoverable in local D1 trash.");
+  await overdueDialog.getByRole("button", { name: "닫기", exact: true }).click();
+
   await page.setViewportSize({ width: 390, height: 844 });
 
 
