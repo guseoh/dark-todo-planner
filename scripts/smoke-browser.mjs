@@ -699,7 +699,7 @@ try {
   const search = page.getByRole("dialog", { name: "검색 및 명령" });
   const commandInput = search.getByPlaceholder("검색하거나 실행할 명령 입력");
   await commandInput.fill(title);
-  const wantedResult = search.getByRole("button").filter({ has: search.getByText(title, { exact: true }) });
+  const wantedResult = search.getByRole("button", { name: new RegExp(title) });
   await wantedResult.waitFor();
   await commandInput.press("ArrowDown");
   for (let index = 0; index < 16 && await wantedResult.getAttribute("aria-current") !== "true"; index += 1) {
