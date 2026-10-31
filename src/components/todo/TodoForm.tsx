@@ -1,4 +1,5 @@
-import { FormEvent, ReactNode, RefObject, useEffect, useId, useRef, useState } from "react";
+import { FormEvent, useEffect, useId, useRef, useState } from "react";
+import type { ReactNode, RefObject } from "react";
 import { CalendarDays, Check, ChevronDown, Flag, FolderKanban, Plus, SlidersHorizontal, Tags } from "lucide-react";
 import { addDays } from "date-fns";
 import { parseDateKey, todayKey, toDateKey } from "../../lib/date";
@@ -25,7 +26,8 @@ function InlineSelectMenu({
   onOpen: (current: HTMLDetailsElement | null) => void;
   onChange: (value: string) => void;
 }) {
-  const currentLabel = options.find((option) => option.value === value)?.label ?? options[0]?.label ?? label;
+  const currentLabel = value ? (options.find((option) => option.value === value)?.label ?? label)
+    : (label === "카테고리" ? "카테고리" : (options[0]?.label ?? label));
 
   return (
     <details ref={menuRef} className={`todo-composer-chip-menu todo-composer-chip-menu--select ${className}`}
