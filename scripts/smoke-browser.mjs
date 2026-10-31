@@ -699,13 +699,20 @@ try {
   const search = page.getByRole("dialog", { name: "검색 및 명령" });
   const commandInput = search.getByPlaceholder("검색하거나 실행할 명령 입력");
   await commandInput.fill(title);
+  const wantedResult = search.getByRole("button").filter({ has: search.getByText(title, { exact: true }) });
+  await wantedResult.waitFor();
   await commandInput.press("ArrowDown");
+  for (let index = 0; index < 16 && await wantedResult.getAttribute("aria-current") !== "true"; index += 1) {
+    await commandInput.press("ArrowDown");
+  }
+  assert.equal(await wantedResult.getAttribute("aria-current"), "true",
+    "Keyboard navigation must select the exact Todo search result.");
   await commandInput.press("Enter");
   const edit = page.getByRole("dialog", { name: "Todo 수정" });
   await edit.getByPlaceholder("Todo 제목").fill(edited);
   await edit.getByRole("button", { name: "저장", exact: true }).click();
   await edit.waitFor({ state: "hidden" });
-  assert.ok(await findServerTodo(edited), "Command Palette should open the right Todo for editing.");
+  await waitForServerTodo(edited); // Persistence may settle after the edit modal closes.
 
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
   const offlineTitle = `Offline Browser Todo ${randomUUID().slice(0, 8)}`;
