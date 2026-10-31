@@ -551,6 +551,9 @@ try {
   // Readability regression: a task is a distinct text-first row, not a barely
   // visible line or a nested rounded card.
   const createdRow = page.locator(".todo-row").filter({ has: page.getByRole("heading", { name: title, exact: true }) });
+  const mobileRowHeight = await createdRow.evaluate((row) => row.getBoundingClientRect().height);
+  assert.ok(mobileRowHeight <= 105, `Mobile rows can wrap metadata without unbounded height: ${mobileRowHeight}px`);
+  await page.setViewportSize({ width: 1440, height: 900 });
   const todoVisual = await createdRow.evaluate((row) => {
     const heading = row.querySelector("h4");
     if (!heading) throw new Error("Todo title heading missing");
@@ -559,16 +562,21 @@ try {
     return {
       size: parseFloat(titleStyle.fontSize),
       lineHeight: parseFloat(titleStyle.lineHeight),
+      height: row.getBoundingClientRect().height,
       divider: rowStyle.borderBottomWidth,
       dividerColor: rowStyle.borderBottomColor,
       todayVariant: row.classList.contains("todo-row--today"),
       leadingAction: !!row.querySelector('button[aria-label*="핵심 작업으로 고정"]') && !row.querySelector("details"),
     };
   });
-  assert.ok(todoVisual.size >= 16 && todoVisual.lineHeight >= 24, "Today Todo titles need a legible 16px/24px hierarchy.");
+  assert.ok(todoVisual.size >= 14.5 && todoVisual.size <= 15.5 && todoVisual.lineHeight >= 22,
+    "Today task titles should read at a restrained but legible 15px/22px.");
+  assert.ok(todoVisual.height >= 48 && todoVisual.height <= 70,
+    `Today list rows should stay comfortably compact: ${todoVisual.height}px`);
   assert.equal(todoVisual.divider, "1px", "Todo rows must have a real separator.");
   assert.equal(todoVisual.todayVariant, true, "Today Todo rows must use the dedicated editorial presentation.");
   assert.equal(todoVisual.leadingAction, false, "G6.2: Todo row should not show a permanent pin button.");
+  await page.setViewportSize({ width: 390, height: 844 });
   // G6: reviewing today's tasks must never reschedule them by default.
   const dayCloseBefore = (await findServerTodo(title))?.date;
   await page.getByRole("button", { name: /오늘 정리/ }).click();
@@ -584,8 +592,15 @@ try {
   await page.getByRole("heading", { name: "캘린더", exact: true }).waitFor();
   const monthGrid = page.getByRole("region", { name: "월간 일정 캘린더" });
   await monthGrid.getByRole("button", { name: title, exact: true }).waitFor();
-  const desktopCell = await monthGrid.locator(".calendar-day").first().evaluate((cell) => cell.getBoundingClientRect().height);
-  assert.ok(desktopCell <= 122, `G6.1 compact calendar must not exceed 122px: ${desktopCell}`);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const monthDensity = await monthGrid.locator(".monthly-calendar-grid").evaluate((grid) => ({
+    weeks: Number(grid.getAttribute("data-weeks")),
+    height: grid.querySelector(".calendar-day")?.getBoundingClientRect().height ?? 0,
+  }));
+  const expectedMonthHeight = { 4: 136, 5: 128, 6: 116 }[monthDensity.weeks];
+  assert.ok(expectedMonthHeight && Math.abs(monthDensity.height - expectedMonthHeight) <= 1,
+    `Calendar cells must be sized for ${monthDensity.weeks} weeks, not compressed to the viewport: ${JSON.stringify(monthDensity)}`);
+  await page.setViewportSize({ width: 390, height: 844 });
   const todoFilter = page.getByRole("button", { name: "Todo", exact: true });
   await todoFilter.click();
   assert.equal(await todoFilter.getAttribute("aria-pressed"), "false");
@@ -684,13 +699,20 @@ try {
   const search = page.getByRole("dialog", { name: "검색 및 명령" });
   const commandInput = search.getByPlaceholder("검색하거나 실행할 명령 입력");
   await commandInput.fill(title);
+  const wantedResult = search.getByRole("button", { name: new RegExp(title) });
+  await wantedResult.waitFor();
   await commandInput.press("ArrowDown");
+  for (let index = 0; index < 16 && await wantedResult.getAttribute("aria-current") !== "true"; index += 1) {
+    await commandInput.press("ArrowDown");
+  }
+  assert.equal(await wantedResult.getAttribute("aria-current"), "true",
+    "Keyboard navigation must select the exact Todo search result.");
   await commandInput.press("Enter");
   const edit = page.getByRole("dialog", { name: "Todo 수정" });
   await edit.getByPlaceholder("Todo 제목").fill(edited);
   await edit.getByRole("button", { name: "저장", exact: true }).click();
   await edit.waitFor({ state: "hidden" });
-  assert.ok(await findServerTodo(edited), "Command Palette should open the right Todo for editing.");
+  await waitForServerTodo(edited); // Persistence may settle after the edit modal closes.
 
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
   const offlineTitle = `Offline Browser Todo ${randomUUID().slice(0, 8)}`;
