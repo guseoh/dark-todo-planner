@@ -404,8 +404,6 @@ try {
   assert.equal(await page.locator(".today-composer form").count(), 0);
   await composerTrigger.click();
   assert.equal(await composer.getByRole("textbox", { name: "Todo 제목" }).inputValue(), draft);
-  assert.equal(await composer.locator('[data-composer-selection="카테고리"]').getAttribute("data-selected-value"),
-    menuFixtures.category.id, "Esc must retain the selected category and draft.");
   // Date input lives inside the compact date popover; project/priority stay visible.
   await dateChip.click();
   await composer.getByLabel("실행 날짜").waitFor();
@@ -439,6 +437,13 @@ try {
   await categoryChip.click();
   await composer.getByRole("textbox", { name: "Todo 제목" }).click();
   assert.equal(await composer.locator('[data-composer-selection="카테고리"]').getAttribute("open"), null);
+  // Once a category has been selected, Esc should preserve that selection and the text draft.
+  await composer.getByRole("textbox", { name: "Todo 제목" }).press("Escape");
+  await composerTrigger.waitFor();
+  await composerTrigger.click();
+  assert.equal(await composer.getByRole("textbox", { name: "Todo 제목" }).inputValue(), draft);
+  assert.equal(await composer.locator('[data-composer-selection="카테고리"]').getAttribute("data-selected-value"),
+    menuFixtures.category.id, "Esc must retain selected category after it was chosen.");
 
   const composerToggle = composer.getByRole("button", { name: "상세 옵션", exact: true });
   await composerToggle.waitFor();
