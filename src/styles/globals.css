@@ -558,6 +558,12 @@ button:disabled {
     gap: .45rem;
     border-top: 0;
   }
+  .todo-composer-form__meta-row .todo-composer-form__footer--inline {
+    min-height: 32px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
   .todo-composer-form__actions { display: inline-flex; align-items: center; gap: .35rem; }
   .todo-composer-form__cancel { color: var(--text-muted); }
 
