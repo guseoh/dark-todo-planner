@@ -353,6 +353,27 @@ try {
   assert.equal(await page.locator('section[aria-label="오늘 Todo"]').count(), 1, "Todo entry must remain available while empty.");
 
 
+  // Isolated D1 fixtures exercise real project/category selection and persistence.
+  const menuFixtures = await page.evaluate(async () => {
+    const post = async (path, name) => {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ name }),
+      });
+      if (!response.ok) throw new Error(`Fixture ${path} failed: ${response.status}`);
+      return response.json();
+    };
+    const suffix = Date.now().toString(36);
+    const category = await post("/api/categories", `Inline category ${suffix}`);
+    const project = await post("/api/projects", `Inline project ${suffix}`);
+    return { category: category.category, project: project.project };
+  });
+  assert.ok(menuFixtures.category?.id && menuFixtures.project?.id, "Local category/project fixtures should exist.");
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
+
   // G6.1: Today starts as one inline add action, without a permanent form card.
   const composerTrigger = page.locator(".today-composer").getByRole("button", { name: "할 일 추가" });
   await composerTrigger.waitFor();
@@ -362,8 +383,8 @@ try {
   await composer.getByRole("textbox", { name: "Todo 제목" }).waitFor();
   // G6.3: compact chips replace the permanent date/priority/project input boxes.
   assert.equal(await composer.locator(".todo-composer-form__chips").count(), 1);
-  assert.equal(await composer.getByLabel("우선순위").inputValue(), "MEDIUM");
-  const dateChip = composer.locator(".todo-composer-chip-menu > summary");
+  assert.equal(await composer.locator('[data-composer-selection="우선순위"]').getAttribute("data-selected-value"), "MEDIUM");
+  const dateChip = composer.locator(".todo-composer-chip-menu--date > summary");
   assert.ok((await dateChip.innerText()).includes("오늘"));
   await dateChip.click();
   assert.equal((await composer.getByLabel("실행 날짜").inputValue()).length, 10);
@@ -383,11 +404,42 @@ try {
   assert.equal(await page.locator(".today-composer form").count(), 0);
   await composerTrigger.click();
   assert.equal(await composer.getByRole("textbox", { name: "Todo 제목" }).inputValue(), draft);
+  assert.equal(await composer.locator('[data-composer-selection="카테고리"]').getAttribute("data-selected-value"),
+    menuFixtures.category.id, "Esc must retain the selected category and draft.");
   // Date input lives inside the compact date popover; project/priority stay visible.
   await dateChip.click();
   await composer.getByLabel("실행 날짜").waitFor();
   await dateChip.click();
-  await composer.getByLabel("프로젝트 선택").waitFor();
+  // Each chip is a custom visible menu, not an inconsistent native select.
+  const priorityChip = composer.locator('[data-composer-selection="우선순위"] > summary');
+  await priorityChip.click();
+  const priorityOptions = composer.getByRole("group", { name: "우선순위 선택 항목" });
+  await priorityOptions.getByRole("button", { name: "높음" }).click();
+  assert.equal(await composer.locator('[data-composer-selection="우선순위"]').getAttribute("data-selected-value"), "HIGH");
+  assert.equal(await composer.locator('[data-composer-selection="우선순위"]').getAttribute("open"), null,
+    "Choosing an option closes its menu.");
+  await priorityChip.click();
+  await priorityOptions.getByRole("button", { name: "보통" }).click();
+
+  const projectChip = composer.locator('[data-composer-selection="프로젝트"] > summary');
+  await projectChip.click();
+  await composer.getByRole("group", { name: "프로젝트 선택 항목" })
+    .getByRole("button", { name: menuFixtures.project.name }).click();
+  assert.equal(await composer.locator('[data-composer-selection="프로젝트"]').getAttribute("data-selected-value"),
+    menuFixtures.project.id, "Selected project should remain visible in inline metadata.");
+
+  const categoryChip = composer.locator('[data-composer-selection="카테고리"] > summary');
+  await categoryChip.click();
+  await composer.getByRole("group", { name: "카테고리 선택 항목" })
+    .getByRole("button", { name: menuFixtures.category.name }).click();
+  assert.equal(await composer.locator('[data-composer-selection="카테고리"]').getAttribute("data-selected-value"),
+    menuFixtures.category.id, "Selected category should remain visible in inline metadata.");
+
+  // Outside click closes the active menu without discarding text or selections.
+  await categoryChip.click();
+  await composer.getByRole("textbox", { name: "Todo 제목" }).click();
+  assert.equal(await composer.locator('[data-composer-selection="카테고리"]').getAttribute("open"), null);
+
   const composerToggle = composer.getByRole("button", { name: "상세 옵션", exact: true });
   await composerToggle.waitFor();
   assert.equal(await composerToggle.getAttribute("aria-expanded"), "false");
@@ -439,9 +491,10 @@ try {
   await composer.getByRole("button", { name: "상세 옵션 닫기", exact: true }).click();
   assert.equal(await composer.getByRole("group", { name: "Todo 상세 옵션" }).count(), 0);
   await composerToggle.click();
-  assert.equal(await composer.getByLabel("우선순위").inputValue(), "HIGH",
+  assert.equal(await composer.locator('[data-composer-selection="우선순위"]').getAttribute("data-selected-value"), "HIGH",
     "Collapsing details must not discard the current form state.");
-  await composer.getByLabel("우선순위").selectOption("MEDIUM");
+  await priorityChip.click();
+  await priorityOptions.getByRole("button", { name: "보통" }).click();
   await composer.getByRole("button", { name: "상세 옵션 닫기", exact: true }).click();
 
   // IME composition must not submit a half-written Korean title.
@@ -461,7 +514,11 @@ try {
   await composerTrigger.waitFor();
   assert.equal(await page.locator(".today-composer form").count(), 0, "Successful inline add should return to quiet state.");
   await page.getByText(title, { exact: true }).first().waitFor();
-  assert.ok(await findServerTodo(title), "Todo create should persist to local D1.");
+  const savedInlineTodo = await findServerTodo(title);
+  assert.ok(savedInlineTodo, "Todo create should persist to local D1.");
+  assert.equal(savedInlineTodo.categoryId, menuFixtures.category.id, "Inline category selection must be persisted.");
+  assert.equal(savedInlineTodo.projectId, menuFixtures.project.id, "Inline project selection must be persisted.");
+  assert.equal(savedInlineTodo.priority, "MEDIUM", "Inline priority selection must be persisted.");
   // Readability regression: a task is a distinct text-first row, not a barely
   // visible line or a nested rounded card.
   const createdRow = page.locator(".todo-row").filter({ has: page.getByRole("heading", { name: title, exact: true }) });
