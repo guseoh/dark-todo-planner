@@ -148,13 +148,13 @@ try {
   const dateA = overdueDialog.locator(".overdue-review__date").filter({ hasText: "5월 13일" });
   const dateB = overdueDialog.locator(".overdue-review__date").filter({ hasText: "5월 12일" });
   await dateA.getByRole("checkbox", { name: /Todo 전체 선택/ }).check();
-  await dateB.locator(".overdue-review__task").first().getByRole("checkbox").check();
+  await dateB.locator(".overdue-review__task").filter({ hasText: overdueNames[2] }).getByRole("checkbox").check();
   const selectedDelete = overdueDialog.getByRole("button", { name: "선택 3개 삭제" });
   assert.equal(await selectedDelete.isDisabled(), false);
   const flatRows = await overdueDialog.evaluate((el) => ({
     rowRadius: getComputedStyle(el.querySelector(".overdue-review__date")).borderTopLeftRadius,
     footer: !!el.querySelector(".overdue-review__footer"),
-    oldNestedCards: el.querySelectorAll(".rounded-md.border.border-ink-700\\/55").length,
+    oldNestedCards: el.querySelectorAll(".overdue-review__date.rounded-md").length,
   }));
   assert.equal(flatRows.rowRadius, "0px", "Overdue date list must be flat rather than a rounded card stack.");
   assert.equal(flatRows.footer, true, "Actions should stay grouped in the modal footer.");
