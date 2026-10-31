@@ -56,7 +56,7 @@ try {
     const header = document.querySelector(".today-header");
     const status = document.querySelector(".today-header__status");
     const digest = document.querySelector(".today-digest");
-    const primary = document.querySelector("header .ui-button--primary");
+    const primary = document.querySelector("header .app-quick-add-button");
     if (!section || !composer || !header || !status || !digest || !primary) return null;
     const sectionStyle = getComputedStyle(section);
     const composerStyle = getComputedStyle(composer);
@@ -92,7 +92,7 @@ try {
   assert.ok(visualSystem.todayWidth <= 890, "Today content should stay within the readable single-column width.");
   assert.equal(visualSystem.accent, "#d4d4d8", "Accent must remain neutral.");
   assert.equal(visualSystem.canvas, "#101011", "Canvas must stay near-black.");
-  assert.equal(visualSystem.primaryBackground, "rgb(226, 226, 229)", "Primary action should remain neutral.");
+  assert.notEqual(visualSystem.primaryBackground, "rgb(226, 226, 229)", "Global Quick Add should not outshine task content.");
   // G6.4: primary, search, active navigation and warning stay visually distinct.
   const buttonSystem = await page.evaluate(() => {
     const search = document.querySelector("header .app-search-button");
@@ -206,6 +206,19 @@ try {
   await page.getByRole("heading", { name: "설정", exact: true }).waitFor();
   await page.getByRole("tab", { name: "자동화 · 알림" }).click();
   await page.getByRole("heading", { name: "Discord 리마인더" }).waitFor();
+  // G7: settings are neutral switch rows with explicit unsaved-change feedback.
+  const carryOverSwitch = page.getByRole("checkbox", { name: /미완료 작업 자동 이월/ });
+  await carryOverSwitch.waitFor();
+  const settingsAppearance = await carryOverSwitch.evaluate((el) => ({
+    appearance: getComputedStyle(el).appearance,
+    rowBackground: getComputedStyle(el.closest(".settings-option-row")).backgroundColor,
+  }));
+  assert.equal(settingsAppearance.appearance, "none", "Settings use a compact switch appearance.");
+  assert.equal(settingsAppearance.rowBackground, "rgba(0, 0, 0, 0)", "Settings no longer fill a selected card.");
+  await carryOverSwitch.click();
+  await page.getByText("변경 사항이 아직 저장되지 않았습니다.").waitFor();
+  await carryOverSwitch.click();
+  await page.getByText("설정이 저장되어 있습니다.").waitFor();
   await page.getByRole("tab", { name: "데이터 · 백업" }).click();
   await page.getByText("전체 데이터 백업·복원").first().waitFor();
 
@@ -267,7 +280,11 @@ try {
   await legacyRow.waitFor();
   await legacyRow.getByText("미계획", { exact: true }).waitFor();
   assert.equal((await findServerTodo(legacyTitle))?.planningState, "INBOX");
+  assert.equal(await page.getByRole("combobox", { name: "저장된 보기" }).count(), 0,
+    "Advanced filters are not shown before expanding the toolbar.");
   await page.getByRole("button", { name: "고급 필터", exact: true }).click();
+  assert.equal(await page.getByRole("combobox", { name: "저장된 보기" }).count(), 1,
+    "Advanced and saved filters remain available in the disclosure.");
   assert.equal(await page.getByRole("combobox", { name: "계획 상태 필터" }).inputValue(), "INBOX");
   // Advanced filters stay expanded on mobile: Todo actions must still be reachable.
   await legacyRow.evaluate((row) => row.scrollIntoView({ block: "center", inline: "nearest" }));
@@ -315,6 +332,13 @@ try {
   await nav.getByRole("button", { name: "캘린더", exact: true }).click();
   await page.getByRole("heading", { name: "캘린더", exact: true }).waitFor();
   assert.equal(new URL(page.url()).hash, "#/calendar/month");
+  const calendarAlignment = await page.evaluate(() => {
+    const header = document.querySelector(".calendar-page .page-header");
+    const month = document.querySelector(".calendar-month-workspace");
+    return header && month ? { headerX: header.getBoundingClientRect().left, monthX: month.getBoundingClientRect().left } : null;
+  });
+  assert.ok(calendarAlignment && Math.abs(calendarAlignment.headerX - calendarAlignment.monthX) < 4,
+    "Calendar header and month grid must share one alignment axis.");
   assert.equal(await page.getByRole("tab", { name: "월간", exact: true }).getAttribute("aria-selected"), "true");
   await page.getByRole("tab", { name: "주간", exact: true }).click();
   assert.equal(new URL(page.url()).hash, "#/calendar/week");
@@ -747,6 +771,11 @@ try {
   await newProjectInput.fill("UX Regression Project");
   await newProjectInput.locator("xpath=..").getByRole("button", { name: "추가", exact: true }).click();
   await page.getByRole("tab", { name: /작업·Kanban/ }).waitFor();
+  const projectManageMenu = page.locator(".project-actions-menu");
+  await projectManageMenu.locator("summary").click();
+  assert.equal(await projectManageMenu.getAttribute("open"), "", "Project management actions should expand on demand.");
+  await projectManageMenu.getByRole("button", { name: "삭제", exact: true }).waitFor();
+  await projectManageMenu.locator("summary").click();
   await page.getByRole("tab", { name: /마일스톤/ }).click();
   await page.getByRole("heading", { name: "마일스톤" }).waitFor();
   await page.getByRole("tab", { name: /결정 기록/ }).click();
