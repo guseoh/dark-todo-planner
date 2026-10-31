@@ -49,7 +49,7 @@ type TodayPageProps = {
 type CategoryFilter = "all" | "uncategorized" | string;
 
 const categoryButtonClass = "inline-flex min-h-9 shrink-0 items-center gap-1.5 border-b-2 px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus";
-const activeCategoryButtonClass = "border-info text-info font-semibold";
+const activeCategoryButtonClass = "border-ui-text text-ui-text font-semibold";
 const idleCategoryButtonClass = "border-transparent text-ui-muted hover:border-ui-divider hover:text-ui-text";
 const FOCUS_STORAGE_PREFIX = "dark-todo-planner:focus:";
 const readFocusIds = (date: string): string[] => {
@@ -188,10 +188,8 @@ export function TodayPage({
         </div>
         <div className="today-header__status" role="group" aria-label="오늘 작업 현황">
           <span><strong>{stats.todayTotal}개</strong> 중 {stats.todayCompleted}개 완료</span>
-          {hasTodayTodos ? (
-            <>
-              <div className="today-header__meter"><ProgressBar value={stats.todayRate} ariaLabel="오늘 완료율" /></div>
-            </>
+          {hasTodayTodos && stats.todayTotal > 1 ? (
+            <div className="today-header__meter"><ProgressBar value={stats.todayRate} ariaLabel="오늘 완료율" /></div>
           ) : null}
           {highPriorityCount > 0 ? <span className="text-warning">높은 우선순위 {highPriorityCount}</span> : null}
           {deadlineAttentionCount > 0 ? <span className="text-danger">마감 주의 {deadlineAttentionCount}</span> : null}
@@ -222,7 +220,7 @@ export function TodayPage({
           <section className="today-task-section space-y-2" aria-label="오늘 Todo">
             <div className="today-task-heading">
               <h3 className="text-[17px] font-semibold tracking-tight text-ui-text">할 일</h3>
-              <span className="today-task-count">{activeTodos.length}개 남음</span>
+              {activeTodos.length > 1 ? <span className="today-task-count">{activeTodos.length}개 남음</span> : null}
             </div>
             {hasTodayTodos ? (
               <div className="today-category-nav border-b border-ui-divider bg-ui-canvas py-1">
