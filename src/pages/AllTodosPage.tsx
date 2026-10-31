@@ -107,8 +107,8 @@ export function AllTodosPage({
   };
 
   return (
-    <div className="page-shell">
-      <PageHeader title="전체 Todo" description="필터로 찾고, 필요한 항목을 골라 한 번에 정리하세요."
+    <div className="page-shell all-todos-page">
+      <PageHeader title="전체 Todo" description="검색하고, 필요한 작업을 골라 정리합니다."
         meta={`검색 결과 ${filteredTodos.length}개`}
         actions={
           <button

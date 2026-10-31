@@ -81,13 +81,12 @@ export function MonthlySidePanel({
   const relatedEvents = selectedEvents.filter((event) => event.kind !== "todo");
   return (
     <aside className="scroll-mt-24" aria-label="선택한 날짜 상세">
-      <section className="app-card flex flex-col border-l border-ui-divider px-4 py-3 xl:max-h-[calc(100vh-7rem)] xl:overflow-hidden">
+      <section className="calendar-selected-panel flex flex-col border-l border-ui-divider px-4 py-3 xl:max-h-[calc(100vh-7rem)] xl:overflow-hidden">
         <div className="mb-4 flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h3 className="truncate text-sm font-semibold text-ink-100">날짜별 할 일</h3>
+            <h3 className="truncate text-base font-semibold text-ink-100">{formatKoreanDate(selectedDate)}</h3>
             <p className="mt-1 truncate text-xs text-ink-400">
-              {formatKoreanDate(selectedDate)}
-              {monthEndLabel ? ` · ${monthEndLabel}` : ""}
+              {selectedTodos.length}개 작업{monthEndLabel ? ` · ${monthEndLabel}` : ""}
             </p>
           </div>
           <button type="button" className="icon-btn h-9 w-9 shrink-0" onClick={onClose} aria-label="날짜 상세 닫기"><X size={16} /></button>

@@ -28,8 +28,7 @@ type SettingsPageProps = {
   apiStatus?: "online" | "offline";
 };
 
-const optionCardClass = (enabled: boolean) =>
-  `flex cursor-pointer items-start gap-3 border-b border-ui-divider px-1 py-4 transition-colors ${enabled ? "bg-ui-selected" : "hover:bg-ui-hover"}`;
+const optionCardClass = (_enabled: boolean) => "settings-option-row";
 
 export function SettingsPage({
   categories,
@@ -82,6 +81,11 @@ export function SettingsPage({
     });
   }, [plannerSettings]);
 
+  const hasUnsavedChanges = ([
+    "carryOverEnabled", "autoArchiveCompleted", "reminderTodayEnabled",
+    "reminderOverdueEnabled", "reminderDueSoonEnabled", "reminderDueSoonDays",
+  ] as const).some((key) => draft[key] !== plannerSettings[key]);
+
   const save = async () => {
     if (saving) return;
     setSaving(true);
@@ -96,7 +100,7 @@ export function SettingsPage({
   };
 
   return (
-    <div className="page-shell max-w-[1180px]">
+    <div className="page-shell settings-page">
       <PageHeader title="설정" description="앱 연결 상태, 자동화·알림 기준, 백업과 저장된 데이터를 관리합니다."
         meta={connected ? "서버 연결됨" : "연결 확인 필요"}
       />
@@ -159,13 +163,13 @@ export function SettingsPage({
       <section className="app-card py-4" aria-labelledby="automation-settings-title">
         <div className="flex items-center gap-2"><RefreshCw size={18} className="text-accent-300" /><h3 id="automation-settings-title" className="text-base font-bold text-ink-100">Todo 자동화</h3></div>
         <p className="mt-1 text-xs text-ink-400">기본값은 꺼짐입니다. 필요한 자동화만 직접 켤 수 있습니다.</p>
-        <div className="mt-4 space-y-3">
+        <div className="mt-3 settings-option-list">
           <label className={optionCardClass(draft.carryOverEnabled)}>
-            <input type="checkbox" className="mt-1 h-4 w-4 accent-accent-500" checked={draft.carryOverEnabled} onChange={(event) => setDraft((current) => ({ ...current, carryOverEnabled: event.target.checked }))} />
-            <span><span className="block text-sm font-bold text-ink-100">미완료 Todo 자동 Carry Over</span><span className="mt-1 block text-xs text-ink-400">지난 실행일의 미완료·비반복 Scheduled Todo를 앱을 열 때 오늘로 이동합니다. 마감일은 바꾸지 않습니다.</span></span>
+            <input type="checkbox" className="settings-toggle" checked={draft.carryOverEnabled} onChange={(event) => setDraft((current) => ({ ...current, carryOverEnabled: event.target.checked }))} />
+            <span><span className="block text-sm font-bold text-ink-100">미완료 작업 자동 이월</span><span className="mt-1 block text-xs text-ink-400">지난 날짜의 미완료 작업을 앱을 열 때 오늘로 옮깁니다. 마감일은 변경하지 않습니다.</span></span>
           </label>
           <label className={optionCardClass(draft.autoArchiveCompleted)}>
-            <input type="checkbox" className="mt-1 h-4 w-4 accent-accent-500" checked={draft.autoArchiveCompleted} onChange={(event) => setDraft((current) => ({ ...current, autoArchiveCompleted: event.target.checked }))} />
+            <input type="checkbox" className="settings-toggle" checked={draft.autoArchiveCompleted} onChange={(event) => setDraft((current) => ({ ...current, autoArchiveCompleted: event.target.checked }))} />
             <span><span className="block text-sm font-bold text-ink-100">완료 Todo 자동 보관</span><span className="mt-1 block text-xs text-ink-400">완료 처리된 Todo를 자동으로 보관합니다. 설정을 켠 뒤 앱을 열면 기존 완료 Todo도 정리합니다.</span></span>
           </label>
         </div>
@@ -174,13 +178,18 @@ export function SettingsPage({
       <section className="app-card py-4" aria-labelledby="reminder-settings-title">
         <div className="flex items-center gap-2"><BellRing size={18} className="text-accent-300" /><h3 id="reminder-settings-title" className="text-base font-bold text-ink-100">Discord 리마인더</h3></div>
         <p className="mt-1 text-xs text-ink-400">아래 조건은 매일 오후 9시(한국 시간) 일괄 알림에 사용됩니다.</p>
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <label className={optionCardClass(draft.reminderTodayEnabled)}><input type="checkbox" className="mt-1 h-4 w-4 accent-accent-500" checked={draft.reminderTodayEnabled} onChange={(event) => setDraft((current) => ({ ...current, reminderTodayEnabled: event.target.checked }))} /><span><span className="block text-sm font-bold text-ink-100">오늘 미완료 Todo</span><span className="mt-1 block text-xs text-ink-400">기존 오후 9시 알림 기준입니다.</span></span></label>
-          <label className={optionCardClass(draft.reminderOverdueEnabled)}><input type="checkbox" className="mt-1 h-4 w-4 accent-accent-500" checked={draft.reminderOverdueEnabled} onChange={(event) => setDraft((current) => ({ ...current, reminderOverdueEnabled: event.target.checked }))} /><span><span className="block text-sm font-bold text-ink-100">마감 초과 Todo</span><span className="mt-1 block text-xs text-ink-400">due date가 지난 미완료 Todo를 함께 알립니다.</span></span></label>
-          <label className={optionCardClass(draft.reminderDueSoonEnabled)}><input type="checkbox" className="mt-1 h-4 w-4 accent-accent-500" checked={draft.reminderDueSoonEnabled} onChange={(event) => setDraft((current) => ({ ...current, reminderDueSoonEnabled: event.target.checked }))} /><span><span className="block text-sm font-bold text-ink-100">곧 마감되는 Todo</span><span className="mt-1 block text-xs text-ink-400">오늘부터 지정한 기간 안에 마감되는 Todo를 포함합니다.</span></span></label>
-          <label className={`flex flex-col justify-center border-b border-ink-700/40 px-1 py-3 text-sm font-medium text-ink-200 ${draft.reminderDueSoonEnabled ? "" : "opacity-65"}`}>마감 임박 기간<input className="field mt-2" type="number" min="1" max="14" value={draft.reminderDueSoonDays} onChange={(event) => setDraft((current) => ({ ...current, reminderDueSoonDays: Math.min(14, Math.max(1, Number(event.target.value) || 1)) }))} disabled={!draft.reminderDueSoonEnabled} /><span className="mt-1 block text-xs font-normal text-ink-400">1~14일 사이에서 설정합니다.</span></label>
+        <div className="mt-3 settings-option-list">
+          <label className={optionCardClass(draft.reminderTodayEnabled)}><input type="checkbox" className="settings-toggle" checked={draft.reminderTodayEnabled} onChange={(event) => setDraft((current) => ({ ...current, reminderTodayEnabled: event.target.checked }))} /><span><span className="block text-sm font-bold text-ink-100">오늘 미완료 Todo</span><span className="mt-1 block text-xs text-ink-400">기존 오후 9시 알림 기준입니다.</span></span></label>
+          <label className={optionCardClass(draft.reminderOverdueEnabled)}><input type="checkbox" className="settings-toggle" checked={draft.reminderOverdueEnabled} onChange={(event) => setDraft((current) => ({ ...current, reminderOverdueEnabled: event.target.checked }))} /><span><span className="block text-sm font-bold text-ink-100">마감 초과 Todo</span><span className="mt-1 block text-xs text-ink-400">마감일이 지난 미완료 작업도 함께 알립니다.</span></span></label>
+          <label className={optionCardClass(draft.reminderDueSoonEnabled)}><input type="checkbox" className="settings-toggle" checked={draft.reminderDueSoonEnabled} onChange={(event) => setDraft((current) => ({ ...current, reminderDueSoonEnabled: event.target.checked }))} /><span><span className="block text-sm font-bold text-ink-100">곧 마감되는 Todo</span><span className="mt-1 block text-xs text-ink-400">오늘부터 지정한 기간 안에 마감되는 Todo를 포함합니다.</span></span></label>
+          <label className={`settings-option-range ${draft.reminderDueSoonEnabled ? "" : "opacity-65"}`}>마감 임박 기간<input className="field mt-2" type="number" min="1" max="14" value={draft.reminderDueSoonDays} onChange={(event) => setDraft((current) => ({ ...current, reminderDueSoonDays: Math.min(14, Math.max(1, Number(event.target.value) || 1)) }))} disabled={!draft.reminderDueSoonEnabled} /><span className="mt-1 block text-xs font-normal text-ink-400">1~14일 사이에서 설정합니다.</span></label>
         </div>
-        <div className="mt-4 flex justify-end"><button type="button" className="btn-primary" onClick={() => void save()} disabled={saving}><Save size={16} />{saving ? "저장 중..." : "운영 설정 저장"}</button></div>
+        <div className="settings-save-row">
+          <span className="text-xs text-ui-secondary" role="status">{hasUnsavedChanges ? "변경 사항이 아직 저장되지 않았습니다." : "설정이 저장되어 있습니다."}</span>
+          <button type="button" className="btn-primary" onClick={() => void save()} disabled={saving || !hasUnsavedChanges}>
+            <Save size={16} />{saving ? "저장 중..." : "운영 설정 저장"}
+          </button>
+        </div>
       </section>
 
       <RoutinePanel categories={categories} projects={projects} onTodosCreated={onTodosCreated} />

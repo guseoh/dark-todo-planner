@@ -402,7 +402,7 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
 
   return (
     <div className="page-shell memo-page">
-      <PageHeader title="메모" description="아이디어와 작업 맥락을 기록하고 관련 Todo·프로젝트를 연결하세요."
+      <PageHeader title="메모" description="생각과 작업 기록을 모아 봅니다."
         meta={`전체 ${memos.length}개`}
         actions={<Button variant="secondary" className="memo-action-button" onClick={() => setCreating(true)}><Plus size={16} aria-hidden="true" />새 메모</Button>}
       />

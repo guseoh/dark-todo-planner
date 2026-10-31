@@ -178,8 +178,8 @@ export function MonthlyCalendar({
               data-selected={selected}
               className={`calendar-day group relative flex h-[6.25rem] min-w-0 flex-col overflow-hidden border-b border-r p-1.5 transition-colors sm:h-[7.25rem] sm:p-2 ${
                 selected
-                  ? "border-info/50 bg-info/10 ring-1 ring-inset ring-info/35"
-                  : "border-ink-700/45 bg-transparent hover:border-ink-600/70 hover:bg-ink-850/60"
+                  ? "border-ink-500/70 bg-ink-800/25 ring-1 ring-inset ring-ink-400/35"
+                  : "border-ink-700/45 bg-transparent hover:border-ink-600/70 hover:bg-ink-850/35"
               } ${!inMonth ? "opacity-60" : ""} ${today && !selected ? "ring-1 ring-inset ring-ink-400/45" : ""}`}
             >
               <button type="button" className="absolute inset-0 z-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500/60"
@@ -233,7 +233,7 @@ export function MonthlyCalendar({
           );
         })}
       </div>
-      <p className="mt-2 text-[11px] text-ui-muted">날짜를 선택하면 상세 목록을 열 수 있어요. Todo를 끌어서 날짜를 변경하거나, 모바일에서는 상세 목록에서 변경하세요.</p>
+      <p className="mt-2 text-xs text-ui-muted">날짜 선택 · 드래그로 일정 이동 · 모바일에서는 날짜 상세에서 변경</p>
     </section>
   );
 }
