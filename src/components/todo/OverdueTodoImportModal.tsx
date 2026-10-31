@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, CopyPlus, MoveRight, Trash2 } from "lucide-react";
+import { Button } from "../ui/Button";
 import { formatKoreanDate } from "../../lib/date";
 import {
   getDuplicateTodoIds,
@@ -25,6 +26,7 @@ export function OverdueTodoImportModal({ todos, onImport, onDeleteMany, onClose 
   const [deletingDate, setDeletingDate] = useState<string | null>(null);
   const [result, setResult] = useState<OverdueTodoImportResult | null>(null);
   const [deleteError, setDeleteError] = useState("");
+  const [deleteNotice, setDeleteNotice] = useState("");
   const duplicateTodoIds = useMemo(() => getDuplicateTodoIds(todos), [todos]);
   const groupedTodos = useMemo(() => {
     const groups = new Map<string, Todo[]>();
@@ -43,6 +45,19 @@ export function OverdueTodoImportModal({ todos, onImport, onDeleteMany, onClose 
     () => new Set(groupedTodos.slice(0, 2).map(([date]) => date)),
   );
   const busy = submitting || deletingDate !== null;
+  const visibleIds = useMemo(() => new Set(todos.map((todo) => todo.id)), [todos]);
+  const selectedVisibleIds = useMemo(
+    () => [...selectedIds].filter((id) => visibleIds.has(id)),
+    [selectedIds, visibleIds],
+  );
+  // Parent refreshes after a failed/partial request. Never keep vanished IDs selected.
+  useEffect(() => {
+    setSelectedIds((current) => {
+      if ([...current].every((id) => visibleIds.has(id))) return current;
+      return new Set([...current].filter((id) => visibleIds.has(id)));
+    });
+  }, [visibleIds]);
+
 
   const toggleTodo = (id: string) => {
     if (busy) return;
@@ -82,34 +97,41 @@ export function OverdueTodoImportModal({ todos, onImport, onDeleteMany, onClose 
     });
   };
 
-  const deleteDateTodos = async (date: string, dateTodos: Todo[]) => {
-    if (busy || !dateTodos.length) return;
-    const label = formatKoreanDate(date, "M월 d일 EEEE");
-    if (!window.confirm(`${label}의 Todo ${dateTodos.length}개를 휴지통으로 이동할까요?`)) return;
-
-    setDeletingDate(date);
+  const deleteSelected = async (ids: string[], label: string, date: string | null = null) => {
+    if (busy) return;
+    const targets = [...new Set(ids)].filter((id) => visibleIds.has(id));
+    if (!targets.length) return;
+    if (!window.confirm(label + " " + targets.length + "개를 휴지통으로 이동할까요? 휴지통에서 복원할 수 있습니다.")) return;
+    setDeletingDate(date || "selected");
     setResult(null);
+    setDeleteNotice("");
     setDeleteError("");
-    const ids = dateTodos.map((todo) => todo.id);
     try {
-      const deleted = await Promise.resolve(onDeleteMany(ids));
+      const deleted = await Promise.resolve(onDeleteMany(targets));
       if (!deleted) {
-        setDeleteError(`${label} Todo를 삭제하지 못했습니다.`);
+        setDeleteError("일괄 삭제를 완료하지 못했습니다. 일부 항목이 처리되었을 수 있으니 최신 목록을 확인해주세요.");
         return;
       }
       setSelectedIds((current) => {
         const next = new Set(current);
-        ids.forEach((id) => next.delete(id));
+        targets.forEach((id) => next.delete(id));
         return next;
       });
+      setDeleteNotice(targets.length + "개를 휴지통으로 이동했습니다. 휴지통에서 복원할 수 있습니다.");
     } catch (error) {
-      setDeleteError(error instanceof Error ? error.message : `${label} Todo를 삭제하지 못했습니다.`);
+      setDeleteError(error instanceof Error ? error.message : "선택한 Todo를 휴지통으로 이동하지 못했습니다.");
     } finally {
       setDeletingDate(null);
     }
   };
 
+  const deleteDateTodos = async (date: string, dateTodos: Todo[]) => {
+    const label = formatKoreanDate(date, "M월 d일 EEEE");
+    await deleteSelected(dateTodos.map((todo) => todo.id), label + "의 Todo");
+  };
+
   const selectAll = () => {
+    setDeleteNotice("");
     if (busy) return;
     setResult(null);
     setDeleteError("");
@@ -130,6 +152,7 @@ export function OverdueTodoImportModal({ todos, onImport, onDeleteMany, onClose 
   };
 
   const clearSelection = () => {
+    setDeleteNotice("");
     if (busy) return;
     setResult(null);
     setDeleteError("");
@@ -137,19 +160,19 @@ export function OverdueTodoImportModal({ todos, onImport, onDeleteMany, onClose 
   };
 
   const runImport = async (mode: OverdueTodoImportMode) => {
-    if (!selectedIds.size || busy) return;
+    if (!selectedVisibleIds.length || busy) return;
     setSubmitting(true);
     setResult(null);
     setDeleteError("");
     try {
-      setResult(await onImport(selectedIds, mode));
+      setResult(await onImport(new Set(selectedVisibleIds), mode));
       setSelectedIds(new Set());
     } catch {
       setResult({
-        total: selectedIds.size,
+        total: selectedVisibleIds.length,
         success: 0,
         skipped: 0,
-        failed: selectedIds.size,
+        failed: selectedVisibleIds.length,
         mode,
       });
     } finally {
