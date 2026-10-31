@@ -267,7 +267,7 @@ export function ProjectPage({
   };
 
   return (
-    <div className="page-shell">
+    <div className="page-shell project-page">
       <PageHeader title="프로젝트" description="프로젝트의 작업·마일스톤·의사결정 기록을 한곳에서 관리합니다."
         meta={`진행 ${activeProjects.length}개`}
         actions={<>
@@ -314,21 +314,21 @@ export function ProjectPage({
 
       {selected ? (
         <div className="min-w-0 space-y-4">
-          <section className="project-overview app-card py-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <section className="project-overview app-card py-3">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <FolderKanban size={19} className="text-ui-secondary" />
-                  <h3 className="text-xl font-semibold tracking-tight text-ink-100">{selected.name}</h3>
+                  <h3 className="text-lg font-semibold tracking-tight text-ink-100">{selected.name}</h3>
                   <span className="text-xs font-medium text-ink-400">{projectStatusLabel[selected.status]}</span>
                 </div>
-                <details className="mt-2 group">
+                <details className="mt-1 group">
                   <summary className="flex min-h-8 w-fit cursor-pointer items-center gap-2 rounded px-1 text-xs font-semibold text-ink-400 hover:bg-ink-800/65 hover:text-ink-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
                     프로젝트 설명 <ChevronDown size={14} className="transition-transform group-open:rotate-180" />
                   </summary>
                   <p className="max-w-4xl px-1 pt-1 text-sm leading-6 text-ink-300">{selected.description || "설명이 없습니다."}</p>
                 </details>
-                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-400">
+                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-400">
                   <span><strong className="font-medium text-ui-text">{completed}/{projectTodos.length}개 완료</strong> · {progress}%</span>
                   {selected.startDate ? <span>시작일 {selected.startDate}</span> : null}
                   {selected.targetDate ? <span>목표일 {selected.targetDate}</span> : null}

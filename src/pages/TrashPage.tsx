@@ -91,7 +91,7 @@ export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
   };
 
   return (
-    <div className="page-shell">
+    <div className="page-shell trash-page">
       <section className="page-header sm:items-end">
         <div>
           <h1 className="text-[23px] font-semibold tracking-tight text-ink-100">휴지통</h1>
@@ -108,7 +108,7 @@ export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
       {loading ? <div className="border-t border-ui-divider py-8 text-left text-sm text-ui-muted">휴지통을 불러오는 중...</div> : items.length ? (
         <section className="divide-y divide-ui-divider border-t border-ui-divider">
           {items.map((item) => (
-            <div key={item.id} className="flex flex-col gap-3 px-1 py-4 transition-colors hover:bg-ui-hover sm:flex-row sm:items-center">
+            <div key={item.id} className="trash-row flex flex-col gap-3 px-1 py-3 transition-colors hover:bg-ui-hover sm:flex-row sm:items-center">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[15px] font-semibold text-ui-text">{item.title}</p>
                 <p className="mt-1 text-xs text-ink-500">삭제 {new Date(item.deletedAt).toLocaleString("ko-KR")}</p>
@@ -118,7 +118,7 @@ export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
                   <SearchCheck size={14} />
                   복원 검토
                 </button>
-                <button type="button" className="btn-danger min-h-9 px-3 py-1 text-xs" onClick={() => void removePermanently(item)} disabled={working}>
+                <button type="button" className="btn-danger trash-row__delete min-h-9 px-3 py-1 text-xs" onClick={() => void removePermanently(item)} disabled={working}>
                   <Trash2 size={14} />
                   영구 삭제
                 </button>

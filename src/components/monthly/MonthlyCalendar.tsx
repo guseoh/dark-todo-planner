@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { useState, type DragEvent, type ReactNode } from "react";
+import { useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import {
   formatKoreanDate,
   getDayIndex,
@@ -151,7 +151,7 @@ export function MonthlyCalendar({
         ))}
       </div>
 
-      <div className="grid grid-cols-7 overflow-hidden border-l border-t border-ink-700/45">
+      <div className="monthly-calendar-grid grid grid-cols-7 overflow-hidden border-l border-t border-ink-700/45" style={{ "--calendar-weeks": Math.ceil(monthDays.length / 7) } as CSSProperties}>
         {monthDays.map((day) => {
           const dateKey = toDateKey(day);
           const events = eventsByDate.get(dateKey) ?? [];

@@ -1592,3 +1592,67 @@ button:disabled {
 }
 .app-topbar .app-search-button { background: var(--surface-1); }
 .app-topbar details[open] > summary { background: var(--surface-2); }
+
+/* G8 visual polish — no task, project, navigation or persistence behavior changes. */
+/* Flat category headings keep list content above management chrome. */
+.todo-category-header { min-width: 0; border-radius: 0; }
+.todo-category-header > div:first-child { min-width: 0; }
+.todo-category-header__actions .icon-btn { color: var(--text-muted); }
+.todo-category-header__actions .icon-btn:hover,
+.todo-category-header__actions .icon-btn:focus-visible { color: var(--text-primary); }
+.todo-category-header__actions .icon-btn[aria-label$="삭제"]:hover,
+.todo-category-header__actions .icon-btn[aria-label$="삭제"]:focus-visible { color: var(--danger); }
+
+/* The selected-date rail favors full category names over constant action buttons. */
+.calendar-selected-panel .todo-category-header { padding-block: .55rem; }
+.calendar-selected-panel .todo-category-header > div:first-child { flex-wrap: wrap; gap: .25rem; }
+.calendar-selected-panel .todo-category-header > div:first-child > button:first-child { flex: 1 1 100%; }
+.calendar-selected-panel .todo-category-header__actions { margin-left: auto; }
+.calendar-selected-panel .todo-category-header h3 { font-size: .82rem; }
+@media (hover: hover) and (pointer: fine) {
+  .calendar-selected-panel .todo-category-header__actions {
+    position: absolute; top: calc(100% - 2px); right: .25rem; z-index: 5;
+    display: flex; padding: 2px; border: 1px solid var(--ui-divider);
+    border-radius: 3px; background: var(--ui-elevated);
+    opacity: 0; pointer-events: none;
+    transition: opacity 120ms ease;
+  }
+  .calendar-selected-panel .todo-category-header:hover .todo-category-header__actions,
+  .calendar-selected-panel .todo-category-header:focus-within .todo-category-header__actions {
+    opacity: 1; pointer-events: auto;
+  }
+}
+.calendar-selected-panel .todo-row { padding-inline: .15rem; }
+.calendar-selected-panel .todo-row h4 { font-weight: 550; }
+
+/* Fit the real number of month rows into a desktop-height workspace. */
+@media (min-width: 1024px) {
+  .monthly-calendar-grid .calendar-day {
+    height: clamp(5rem, calc((100dvh - 395px) / var(--calendar-weeks)), 7.25rem);
+  }
+}
+.calendar-page .monthly-calendar-grid { border-color: var(--ui-divider); }
+.calendar-page .calendar-day[data-selected="true"] { box-shadow: inset 0 0 0 1px var(--ui-control-border); }
+.calendar-page .calendar-day:focus-within { outline: 1px solid var(--ui-focus); outline-offset: -1px; }
+
+/* A project is a workspace: compact its secondary information, not its controls. */
+.page-shell.project-page { max-width: 1320px; }
+.project-page > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
+.project-page .project-overview { padding-block: .55rem .8rem; }
+.project-page .project-overview__progress { margin-top: .65rem; }
+.project-page .project-overview .btn-secondary,
+.project-page .project-overview .field { min-height: 36px; }
+.project-page .page-tabs.page-tabs { gap: .2rem; }
+.project-page .page-tab.page-tab { min-height: 38px; padding-inline: .85rem; }
+.project-page .project-overview .text-ink-400 { line-height: 1.55; }
+
+/* Destructive actions are still labeled and confirmed, but do not dominate every row. */
+.trash-page .trash-row__delete.btn-danger {
+  color: var(--text-secondary); border-color: var(--ui-divider); background: transparent;
+  font-weight: 500;
+}
+.trash-page .trash-row__delete.btn-danger:hover,
+.trash-page .trash-row__delete.btn-danger:focus-visible {
+  color: var(--danger); border-color: var(--danger); background: var(--danger-tint);
+}
+.trash-page .trash-row .btn-secondary { font-weight: 500; }
