@@ -263,11 +263,17 @@ export function useTodos() {
     setAllTodos((current) => current.filter((todo) => !targetIds.has(todo.id)));
     setSaving(true);
     try {
+      // Destructive bulk actions require server acknowledgement. Offline queuing would
+      // otherwise claim "deleted" while the items are still present on the server.
+      if (shouldQueueTodoMutation()) throw new Error("일괄 삭제는 온라인 상태에서만 가능합니다. 연결을 확인한 뒤 다시 시도해주세요.");
       for (let index = 0; index < uniqueIds.length; index += BULK_TRASH_CHUNK_SIZE) {
         const chunk = uniqueIds.slice(index, index + BULK_TRASH_CHUNK_SIZE);
-        const body = { ids: chunk };
-        const mutation: QueueMutationInput = { kind: "BULK_TRASH", method: "POST", path: "/api/todos/bulk-trash", body };
-        await runQueueableMutation(mutation, () => api(mutation.path, { method: "POST", ...jsonBody(body) }));
+        const response = await api<{ ok: boolean; trashed: number }>("/api/todos/bulk-trash", {
+          method: "POST", ...jsonBody({ ids: chunk }),
+        });
+        if (!response.ok || response.trashed !== chunk.length) {
+          throw new Error("일부 Todo가 처리되지 않았습니다. 최신 목록을 확인한 뒤 다시 시도해주세요.");
+        }
       }
       setError("");
       return true;
