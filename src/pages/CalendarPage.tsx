@@ -21,13 +21,11 @@ export function CalendarPage({ mode, onModeChange, children }: CalendarPageProps
   };
 
   return (
-    <div className="page-shell max-w-[1500px]">
+    <div className="page-shell calendar-page">
       <header className="page-header">
         <div>
           <h1 className="text-[23px] font-semibold tracking-tight text-ui-text">캘린더</h1>
-          <p className="mt-1 text-sm text-ink-400">
-            {mode === "month" ? "한 달의 작업 분포와 목표를 확인하고 날짜별 Todo를 관리합니다." : "한 주의 작업과 목표를 살펴보고 날짜별 Todo를 관리합니다."}
-          </p>
+          <p className="mt-1 text-sm text-ink-400">날짜별 작업과 마감 일정을 확인합니다.</p>
         </div>
         <div role="tablist" aria-label="캘린더 보기" className="page-tabs inline-flex shrink-0 self-start sm:self-auto">
           {modes.map((item) => (
