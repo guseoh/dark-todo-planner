@@ -559,13 +559,17 @@ try {
     return {
       size: parseFloat(titleStyle.fontSize),
       lineHeight: parseFloat(titleStyle.lineHeight),
+      height: row.getBoundingClientRect().height,
       divider: rowStyle.borderBottomWidth,
       dividerColor: rowStyle.borderBottomColor,
       todayVariant: row.classList.contains("todo-row--today"),
       leadingAction: !!row.querySelector('button[aria-label*="핵심 작업으로 고정"]') && !row.querySelector("details"),
     };
   });
-  assert.ok(todoVisual.size >= 16 && todoVisual.lineHeight >= 24, "Today Todo titles need a legible 16px/24px hierarchy.");
+  assert.ok(todoVisual.size >= 14.5 && todoVisual.size <= 15.5 && todoVisual.lineHeight >= 22,
+    "Today task titles should read at a restrained but legible 15px/22px.");
+  assert.ok(todoVisual.height >= 48 && todoVisual.height <= 70,
+    `Today list rows should stay comfortably compact: ${todoVisual.height}px`);
   assert.equal(todoVisual.divider, "1px", "Todo rows must have a real separator.");
   assert.equal(todoVisual.todayVariant, true, "Today Todo rows must use the dedicated editorial presentation.");
   assert.equal(todoVisual.leadingAction, false, "G6.2: Todo row should not show a permanent pin button.");
@@ -584,8 +588,13 @@ try {
   await page.getByRole("heading", { name: "캘린더", exact: true }).waitFor();
   const monthGrid = page.getByRole("region", { name: "월간 일정 캘린더" });
   await monthGrid.getByRole("button", { name: title, exact: true }).waitFor();
-  const desktopCell = await monthGrid.locator(".calendar-day").first().evaluate((cell) => cell.getBoundingClientRect().height);
-  assert.ok(desktopCell <= 122, `G6.1 compact calendar must not exceed 122px: ${desktopCell}`);
+  const monthDensity = await monthGrid.locator(".monthly-calendar-grid").evaluate((grid) => ({
+    weeks: Number(grid.getAttribute("data-weeks")),
+    height: grid.querySelector(".calendar-day")?.getBoundingClientRect().height ?? 0,
+  }));
+  const expectedMonthHeight = { 4: 136, 5: 128, 6: 116 }[monthDensity.weeks];
+  assert.ok(expectedMonthHeight && Math.abs(monthDensity.height - expectedMonthHeight) <= 1,
+    `Calendar cells must be sized for ${monthDensity.weeks} weeks, not compressed to the viewport: ${JSON.stringify(monthDensity)}`);
   const todoFilter = page.getByRole("button", { name: "Todo", exact: true });
   await todoFilter.click();
   assert.equal(await todoFilter.getAttribute("aria-pressed"), "false");
