@@ -21,16 +21,7 @@ export function Header({ storageStatus = "server", onLogout, onQuickAdd, onSearc
             </div>
             <h1 className="hidden truncate text-base font-bold text-ink-100 sm:block">Todo Planner</h1>
           </div>
-          <a
-            href={REPOSITORY_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex min-h-9 items-center gap-2 rounded-[4px] px-2 text-xs font-medium text-ui-secondary transition-colors hover:bg-ui-hover hover:text-ui-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus"
-            title="GitHub 저장소 열기"
-          >
-            <Github size={15} />
-            <span className="hidden md:inline">guseoh/dark-todo-planner</span>
-          </a>
+          <span className="hidden text-sm font-semibold tracking-tight text-ui-text lg:inline">Todo Planner</span>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
           {storageStatus === "offline" ? (
@@ -47,7 +38,7 @@ export function Header({ storageStatus = "server", onLogout, onQuickAdd, onSearc
             </Button>
           ) : null}
           {onQuickAdd ? (
-            <Button variant="primary" onClick={onQuickAdd} title="빠른 Todo 추가 (Ctrl+Shift+K)" aria-label="빠른 추가">
+            <Button variant="secondary" className="app-quick-add-button" onClick={onQuickAdd} title="빠른 Todo 추가 (Ctrl+Shift+K)" aria-label="빠른 추가">
               <Plus size={16} aria-hidden="true" />
               <span className="hidden sm:inline">빠른 추가</span>
             </Button>
@@ -55,6 +46,10 @@ export function Header({ storageStatus = "server", onLogout, onQuickAdd, onSearc
           <details className="relative">
             <summary className="ui-icon-button ui-icon-button--neutral h-9 w-9 list-none cursor-pointer" aria-label="계정 메뉴" title="계정 메뉴"><UserRound size={17} /></summary>
             <div className="absolute right-0 top-full z-50 mt-2 min-w-40 rounded-md border border-ui-divider bg-ui-elevated p-1.5 shadow-lg">
+              <a href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer"
+                className="ui-button ui-button--ghost w-full justify-start px-3 text-left text-xs" title="GitHub 저장소 열기">
+                <Github size={15} />GitHub 저장소
+              </a>
               <button type="button" onClick={() => void onLogout()} className="ui-button ui-button--ghost w-full justify-start px-3 text-left">
                 <LogOut size={15} />로그아웃
               </button>
