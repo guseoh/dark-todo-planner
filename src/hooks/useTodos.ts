@@ -260,9 +260,10 @@ export function useTodos() {
     setPendingDelete((current) => current && uniqueIds.includes(current.id) ? null : current);
     const previous = allTodos;
     const targetIds = new Set(uniqueIds);
-    setAllTodos((current) => current.filter((todo) => !targetIds.has(todo.id)));
     setSaving(true);
     try {
+      // Keep data visible until the server confirms. Otherwise an optimistic
+      // removal prunes the modal selection even when the request fails.
       // Destructive bulk actions require server acknowledgement. Offline queuing would
       // otherwise claim "deleted" while the items are still present on the server.
       if (shouldQueueTodoMutation()) throw new Error("일괄 삭제는 온라인 상태에서만 가능합니다. 연결을 확인한 뒤 다시 시도해주세요.");
@@ -275,6 +276,7 @@ export function useTodos() {
           throw new Error("일부 Todo가 처리되지 않았습니다. 최신 목록을 확인한 뒤 다시 시도해주세요.");
         }
       }
+      setAllTodos((current) => current.filter((todo) => !targetIds.has(todo.id)));
       setError("");
       return true;
     } catch (err) {
