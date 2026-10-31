@@ -111,7 +111,7 @@ export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
             <div key={item.id} className="trash-row flex flex-col gap-3 px-1 py-3 transition-colors hover:bg-ui-hover sm:flex-row sm:items-center">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[15px] font-semibold text-ui-text">{item.title}</p>
-                <p className="mt-1 text-xs text-ink-500">삭제 {new Date(item.deletedAt).toLocaleString("ko-KR")}</p>
+                <p className="mt-1 text-xs text-ink-500">삭제 {new Date(item.deletedAt).toLocaleString("ko-KR", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
               </div>
               <div className="flex gap-2">
                 <button type="button" className="btn-secondary min-h-9 px-3 py-1 text-xs" onClick={() => void openPreview(item.id)} disabled={working}>
