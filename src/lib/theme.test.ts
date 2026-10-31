@@ -61,6 +61,9 @@ describe("light/dark neutral design tokens", () => {
     expect(css).toContain(".ui-icon-button--danger");
     expect(css).toContain('.app-nav-button[aria-current="page"]');
     expect(css).toContain("--button-primary-bg");
+    expect(css).toContain(".overdue-review__date-header");
+    expect(css).toContain(".overdue-review__bulk-delete");
+    expect(css).toContain(".overdue-review__footer");
     expect(css).toContain(".memo-note::before");
     expect(css).toContain(".memo-actions__panel");
     expect(css).toContain(".memo-page .memo-action-button.ui-button");
