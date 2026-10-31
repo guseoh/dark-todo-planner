@@ -188,7 +188,7 @@ export function TodayPage({
         </div>
         <div className="today-header__status" role="group" aria-label="오늘 작업 현황">
           <span><strong>{stats.todayTotal}개</strong> 중 {stats.todayCompleted}개 완료</span>
-          {hasTodayTodos && stats.todayTotal > 1 ? (
+          {hasTodayTodos ? (
             <div className="today-header__meter"><ProgressBar value={stats.todayRate} ariaLabel="오늘 완료율" /></div>
           ) : null}
           {highPriorityCount > 0 ? <span className="text-warning">높은 우선순위 {highPriorityCount}</span> : null}
