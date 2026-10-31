@@ -1256,3 +1256,135 @@ button:disabled {
 .scratchpad-rich .ProseMirror hr { border: 0; border-top: 1px solid var(--ui-divider); margin: 1.5em 0; }
 .scratchpad-rich .ProseMirror ::selection { background: var(--ui-selected); }
 @media (max-width: 640px) { .scratchpad-rich .ProseMirror { max-width: 100%; } }
+
+
+/* Today inline composer: slim neutral controls with consistent, visible choice menus. */
+.today-composer:has(.todo-composer-form--inline) {
+  background: transparent;
+}
+.todo-composer-form--inline .todo-composer-form__main {
+  padding-block: .55rem .12rem;
+}
+.todo-composer-form--inline .todo-composer-form__meta-row {
+  padding-block: .16rem .38rem;
+}
+.todo-composer-form--inline .todo-composer-form__chips {
+  gap: .12rem .2rem;
+  overflow: visible;
+}
+.todo-composer-form--inline .todo-composer-chip-menu {
+  z-index: 1;
+}
+.todo-composer-form--inline .todo-composer-chip-menu[open] {
+  z-index: 100;
+}
+.todo-composer-form--inline .todo-composer-chip {
+  min-height: 32px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: .28rem .42rem;
+  font-size: .79rem;
+  color: var(--text-secondary);
+}
+.todo-composer-form--inline .todo-composer-chip > svg:first-child {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+}
+.todo-composer-form--inline .todo-composer-chip-menu[open] > .todo-composer-chip,
+.todo-composer-form--inline .todo-composer-chip:hover,
+.todo-composer-form--inline .todo-composer-chip:focus-within {
+  border-color: var(--border-subtle);
+  background: var(--surface-1);
+  color: var(--text-primary);
+}
+.todo-composer-form--inline .todo-composer-chip-menu--urgent > .todo-composer-chip > svg:first-child {
+  color: var(--warning);
+}
+.todo-composer-form--inline .todo-composer-chip__value {
+  display: block;
+  max-width: 128px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.todo-composer-form--inline .todo-composer-chip__chevron {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  transition: transform 120ms ease;
+}
+.todo-composer-form--inline .todo-composer-chip-menu[open] .todo-composer-chip__chevron {
+  transform: rotate(180deg);
+}
+.todo-composer-form--inline .todo-composer-chip-menu--select > summary[aria-disabled="true"] {
+  opacity: .58;
+  cursor: default;
+}
+.todo-composer-form--inline .todo-composer-chip-menu__panel {
+  width: min(216px, calc(100vw - 36px));
+  max-height: min(280px, 60dvh);
+  overflow-y: auto;
+  border-color: var(--border-default);
+  border-radius: 4px;
+  background: var(--surface-2);
+  box-shadow: 0 8px 20px rgb(0 0 0 / .2);
+  padding: .3rem;
+}
+.todo-composer-form--inline .todo-composer-chip-menu--project .todo-composer-chip-menu__panel,
+.todo-composer-form--inline .todo-composer-chip-menu--category .todo-composer-chip-menu__panel {
+  left: auto;
+  right: 0;
+}
+.todo-composer-form--inline .todo-composer-chip-menu__panel--options {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.todo-composer-form--inline .todo-composer-chip-menu__panel--options > .todo-composer-chip-menu__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+  width: 100%;
+  min-height: 36px;
+  padding: .43rem .55rem;
+  text-align: left;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: .79rem;
+  line-height: 1.4;
+}
+.todo-composer-form--inline .todo-composer-chip-menu__option-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.todo-composer-form--inline .todo-composer-chip-menu__panel--options > .todo-composer-chip-menu__option[aria-pressed="true"] {
+  background: var(--surface-3);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.todo-composer-form--inline .todo-composer-chip-menu__panel--options > .todo-composer-chip-menu__option:hover,
+.todo-composer-form--inline .todo-composer-chip-menu__panel--options > .todo-composer-chip-menu__option:focus-visible {
+  background: var(--surface-3);
+  color: var(--text-primary);
+}
+.todo-composer-form--inline .todo-composer-chip-menu__check {
+  opacity: 0;
+  flex-shrink: 0;
+}
+.todo-composer-form--inline .todo-composer-chip-menu__check--visible {
+  opacity: 1;
+  flex-shrink: 0;
+  color: var(--text-primary);
+}
+@media (max-width: 480px) {
+  .todo-composer-form--inline .todo-composer-form__chips {
+    flex: 1 1 100%;
+    row-gap: .15rem;
+  }
+  .todo-composer-form--inline .todo-composer-chip__value { max-width: min(110px, 25vw); }
+  .todo-composer-form--inline .todo-composer-form__meta-row { row-gap: .1rem; }
+}

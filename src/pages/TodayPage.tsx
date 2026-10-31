@@ -131,13 +131,8 @@ export function TodayPage({
     [today, todayTodos],
   );
 
-  const activeCategoryName = activeCategoryId === "all"
-    ? "오늘"
-    : activeCategoryId === "uncategorized"
-      ? "미분류"
-      : categories.find((category) => category.id === activeCategoryId)?.name || "카테고리";
+  // Preselect the active filter, but allow an explicit category choice in the inline composer.
   const inlineCategoryId = activeCategoryId === "all" || activeCategoryId === "uncategorized" ? "" : activeCategoryId;
-  const lockInlineCategory = activeCategoryId !== "all";
 
   useEffect(() => {
     if (!hasTodayTodos && activeCategoryId !== "all") {
@@ -288,8 +283,7 @@ export function TodayPage({
 
             <div className="today-composer">
               <TodoForm onAdd={onAdd} defaultDate={today} defaultCategoryId={inlineCategoryId}
-                lockCategory={lockInlineCategory} compact collapsible
-                submitLabel={lockInlineCategory ? `${activeCategoryName}에 추가` : "추가"}
+                compact collapsible submitLabel="추가"
                 categories={categories} projects={activeProjects} showSyntaxHint={false} />
             </div>
 
