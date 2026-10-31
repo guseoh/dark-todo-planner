@@ -1706,7 +1706,7 @@ button:disabled {
   background: transparent; min-height: 30px; padding: .25rem .6rem; font-weight: 500;
 }
 .today-page .today-task-heading h3 { font-size: 1rem; font-weight: 600; }
-.today-page .todo-row--today h4 { font-weight: 520; font-size: .9rem; }
+.today-page .todo-row--today h4 { font-weight: 520; font-size: 1rem; }
 .today-page .todo-row--today { padding-block: .55rem; }
 
 /* All Todo: flat categories with calm, discoverable keyboard and hover actions. */
