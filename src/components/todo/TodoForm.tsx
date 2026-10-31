@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useId, useRef, useState } from "react";
-import { CalendarDays, ChevronDown, Flag, FolderKanban, Plus, SlidersHorizontal } from "lucide-react";
+import { FormEvent, ReactNode, RefObject, useEffect, useId, useRef, useState } from "react";
+import { CalendarDays, Check, ChevronDown, Flag, FolderKanban, Plus, SlidersHorizontal, Tags } from "lucide-react";
 import { addDays } from "date-fns";
 import { parseDateKey, todayKey, toDateKey } from "../../lib/date";
 import { parseQuickTodoTitle } from "../../lib/quickAdd";
@@ -9,6 +9,60 @@ import type { Todo, TodoInput, TodoPlanningState, TodoPriority } from "../../typ
 import { TodoDetailFields } from "./TodoDetailFields";
 
 const UNSCHEDULED_DATE = "9999-12-31";
+
+type InlineMenuOption = { value: string; label: string };
+
+function InlineSelectMenu({
+  label, value, options, icon, menuRef, className = "", disabled = false, onOpen, onChange,
+}: {
+  label: string;
+  value: string;
+  options: InlineMenuOption[];
+  icon: ReactNode;
+  menuRef: RefObject<HTMLDetailsElement | null>;
+  className?: string;
+  disabled?: boolean;
+  onOpen: (current: HTMLDetailsElement | null) => void;
+  onChange: (value: string) => void;
+}) {
+  const currentLabel = options.find((option) => option.value === value)?.label ?? options[0]?.label ?? label;
+
+  return (
+    <details ref={menuRef} className={`todo-composer-chip-menu todo-composer-chip-menu--select ${className}`}
+      data-composer-selection={label} data-selected-value={value}>
+      <summary className="todo-composer-chip" aria-label={`${label} 선택`}
+        aria-disabled={disabled} title={`${label}: ${currentLabel}`}
+        onClick={(event) => {
+          if (disabled) { event.preventDefault(); return; }
+          onOpen(menuRef.current);
+        }}>
+        {icon}
+        <span className="todo-composer-chip__value" title={currentLabel}>{currentLabel}</span>
+        <ChevronDown size={12} className="todo-composer-chip__chevron" aria-hidden="true" />
+      </summary>
+      <div className="todo-composer-chip-menu__panel todo-composer-chip-menu__panel--options"
+        role="group" aria-label={`${label} 선택 항목`}>
+        {options.map((option) => (
+          <button key={option.value} type="button"
+            className="todo-composer-chip-menu__option"
+            aria-pressed={option.value === value} disabled={disabled}
+            onClick={() => {
+              onChange(option.value);
+              if (menuRef.current) {
+                menuRef.current.open = false;
+                menuRef.current.querySelector("summary")?.focus();
+              }
+            }}>
+            <span className="todo-composer-chip-menu__option-label">{option.label}</span>
+            <Check size={13} aria-hidden="true"
+              className={option.value === value ? "todo-composer-chip-menu__check--visible" : "todo-composer-chip-menu__check"} />
+          </button>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 
 type TodoFormProps = {
   onAdd: (todo: TodoInput) => Promise<Todo | undefined> | Todo | undefined;
@@ -42,6 +96,9 @@ export function TodoForm({
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const dateMenuRef = useRef<HTMLDetailsElement | null>(null);
+  const priorityMenuRef = useRef<HTMLDetailsElement | null>(null);
+  const projectMenuRef = useRef<HTMLDetailsElement | null>(null);
+  const categoryMenuRef = useRef<HTMLDetailsElement | null>(null);
   const detailsId = useId();
   const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
@@ -62,6 +119,19 @@ export function TodoForm({
   useEffect(() => { setCategoryId(defaultCategoryId); }, [defaultCategoryId]);
   useEffect(() => { setProjectId(defaultProjectId); }, [defaultProjectId]);
   useEffect(() => { setPlanningState(defaultPlanningState); }, [defaultPlanningState]);
+  useEffect(() => {
+    if (!collapsible || !expanded) return;
+    const handleOutsidePointer = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      const menus = [dateMenuRef, priorityMenuRef, projectMenuRef, categoryMenuRef];
+      if (menus.some((menu) => menu.current?.open) && !menus.some((menu) => menu.current?.contains(target))) {
+        menus.forEach((menu) => { if (menu.current) menu.current.open = false; });
+      }
+    };
+    document.addEventListener("pointerdown", handleOutsidePointer);
+    return () => document.removeEventListener("pointerdown", handleOutsidePointer);
+  }, [collapsible, expanded]);
 
   const reset = () => {
     setTitle("");
@@ -124,19 +194,24 @@ export function TodoForm({
     : planningState === "WAITING" ? "대기"
       : date === today ? "오늘" : date === tomorrow ? "내일"
         : date ? `${Number(date.slice(5, 7))}월 ${Number(date.slice(8, 10))}일` : "날짜 선택";
+  const closeMenus = (except?: HTMLDetailsElement | null) => {
+    [dateMenuRef, priorityMenuRef, projectMenuRef, categoryMenuRef].forEach((menu) => {
+      if (menu.current && menu.current !== except) menu.current.open = false;
+    });
+  };
   const chooseDate = (nextDate: string) => {
     setDate(nextDate);
     setPlanningState("SCHEDULED");
-    if (dateMenuRef.current) dateMenuRef.current.open = false;
+    closeMenus();
   };
   const choosePlanning = (next: TodoPlanningState) => {
     setPlanningState(next);
-    if (dateMenuRef.current) dateMenuRef.current.open = false;
+    closeMenus();
   };
   const closeComposer = () => {
     setExpanded(false);
     setShowDetails(false);
-    if (dateMenuRef.current) dateMenuRef.current.open = false;
+    closeMenus();
     window.requestAnimationFrame(() => triggerRef.current?.focus());
   };
 
@@ -160,7 +235,7 @@ export function TodoForm({
         }
         if (event.key === "Escape" && collapsible && !saving && !event.nativeEvent.isComposing && !composing) {
           event.preventDefault();
-          if (dateMenuRef.current?.open) dateMenuRef.current.open = false;
+          if ([dateMenuRef, priorityMenuRef, projectMenuRef, categoryMenuRef].some((menu) => menu.current?.open)) closeMenus();
           else closeComposer();
         }
       }}>
@@ -197,8 +272,8 @@ export function TodoForm({
       <div className={collapsible ? "todo-composer-form__meta-row" : "todo-composer-form__meta-row--standard"}>
       {collapsible && !showDetails ? (
         <div className="todo-composer-form__chips" role="group" aria-label="빠른 일정 및 분류">
-          <details className="todo-composer-chip-menu" ref={dateMenuRef}>
-            <summary className="todo-composer-chip" aria-label="날짜 선택" title="실행 날짜 및 계획 상태 지정">
+          <details className="todo-composer-chip-menu todo-composer-chip-menu--date" ref={dateMenuRef}>
+            <summary className="todo-composer-chip" aria-label="날짜 선택" title="실행 날짜 및 계획 상태 지정" onClick={() => closeMenus(dateMenuRef.current)}>
               <CalendarDays size={14} aria-hidden="true" />
               <span>{dateLabel}</span>
               <ChevronDown size={12} aria-hidden="true" />
@@ -217,29 +292,28 @@ export function TodoForm({
               <button type="button" onClick={() => choosePlanning("WAITING")}>대기</button>
             </div>
           </details>
-          <label className={`todo-composer-chip todo-composer-chip--select ${priority === "HIGH" ? "todo-composer-chip--urgent" : ""}`}>
-            <Flag size={14} aria-hidden="true" />
-            <select value={priority} aria-label="우선순위" onChange={(event) => setPriority(event.target.value as TodoPriority)} disabled={saving}>
-              <option value="MEDIUM">보통</option>
-              <option value="HIGH">높음</option>
-              <option value="LOW">낮음</option>
-            </select>
-            <ChevronDown size={12} aria-hidden="true" />
-          </label>
-          <label className="todo-composer-chip todo-composer-chip--select todo-composer-chip--project">
-            <FolderKanban size={14} aria-hidden="true" />
-            <select value={projectId} aria-label="프로젝트 선택" onChange={(event) => setProjectId(event.target.value)} disabled={saving}>
-              <option value="">프로젝트</option>
-              {projects.filter((project) => !project.archived || project.id === projectId).map((project) =>
-                <option key={project.id} value={project.id}>{project.name}</option>)}
-            </select>
-            <ChevronDown size={12} aria-hidden="true" />
-          </label>
+          <InlineSelectMenu label="우선순위" value={priority} menuRef={priorityMenuRef}
+            icon={<Flag size={14} aria-hidden="true" />}
+            className={priority === "HIGH" ? "todo-composer-chip-menu--urgent" : ""}
+            options={[{ value: "LOW", label: "낮음" }, { value: "MEDIUM", label: "보통" }, { value: "HIGH", label: "높음" }]}
+            disabled={saving} onOpen={closeMenus} onChange={(value) => setPriority(value as TodoPriority)} />
+          <InlineSelectMenu label="프로젝트" value={projectId} menuRef={projectMenuRef}
+            icon={<FolderKanban size={14} aria-hidden="true" />} className="todo-composer-chip-menu--project"
+            options={[{ value: "", label: "프로젝트" }, ...projects
+              .filter((project) => !project.archived || project.id === projectId)
+              .map((project) => ({ value: project.id, label: project.name }))]}
+            disabled={saving} onOpen={closeMenus} onChange={setProjectId} />
+          <InlineSelectMenu label="카테고리" value={categoryId} menuRef={categoryMenuRef}
+            icon={<Tags size={14} aria-hidden="true" />} className="todo-composer-chip-menu--category"
+            options={[{ value: "", label: "미분류" }, ...categories.map((category) => ({
+              value: category.id, label: category.name,
+            }))]}
+            disabled={saving || lockCategory} onOpen={closeMenus} onChange={setCategoryId} />
         </div>
       ) : null}
       <div className={`todo-composer-form__footer ${collapsible ? "todo-composer-form__footer--inline" : ""}`}>
         <button type="button" className="todo-composer-form__toggle"
-          onClick={() => setShowDetails((value) => !value)} aria-expanded={showDetails} aria-controls={detailsId}>
+          onClick={() => { closeMenus(); setShowDetails((value) => !value); }} aria-expanded={showDetails} aria-controls={detailsId}>
           {collapsible ? <SlidersHorizontal size={14} aria-hidden="true" /> : <ChevronDown className={showDetails ? "rotate-180 transition-transform" : "transition-transform"} size={14} aria-hidden="true" />}
           {showDetails ? "상세 옵션 닫기" : "상세 옵션"}
         </button>
