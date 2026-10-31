@@ -146,7 +146,6 @@ export function TodoForm({
         aria-label="할 일 추가" aria-expanded={false} data-todo-composer-trigger="true">
         <Plus size={17} aria-hidden="true" />
         <span>할 일 추가</span>
-        <span className="ml-auto text-xs text-ui-muted">클릭하여 입력</span>
       </button>
     );
   }
@@ -175,10 +174,16 @@ export function TodoForm({
             onChange={(event) => { setTitle(event.target.value); if (saveError) setSaveError(""); }}
             onCompositionStart={() => setComposing(true)}
             onCompositionEnd={() => setComposing(false)}
-            placeholder={collapsible ? "할 일을 입력하세요..." : "무엇을 할 예정인가요?"}
+            placeholder={collapsible ? "할 일 이름" : "무엇을 할 예정인가요?"}
             aria-label="Todo 제목"
           />
         </div>
+        {collapsible ? (
+          <button type="submit" className="todo-composer-form__submit todo-composer-form__submit--quiet"
+            disabled={saving || composing || !title.trim()} aria-label={submitLabel}>
+            {saving ? "저장 중..." : submitLabel}
+          </button>
+        ) : null}
         {!lockCategory && !collapsible ? (
           <select className="todo-composer-form__category" value={categoryId} onChange={(event) => setCategoryId(event.target.value)} aria-label="카테고리 선택">
             <option value="">미분류</option>
@@ -189,6 +194,7 @@ export function TodoForm({
           <Plus size={16} aria-hidden="true" />{saving ? "저장 중..." : submitLabel}
         </button> : null}
       </div>
+      <div className={collapsible ? "todo-composer-form__meta-row" : "todo-composer-form__meta-row--standard"}>
       {collapsible && !showDetails ? (
         <div className="todo-composer-form__chips" role="group" aria-label="빠른 일정 및 분류">
           <details className="todo-composer-chip-menu" ref={dateMenuRef}>
@@ -231,8 +237,6 @@ export function TodoForm({
           </label>
         </div>
       ) : null}
-      {saveError ? <p role="alert" className="mt-2 text-xs font-semibold text-danger">{saveError}</p> : null}
-      {showSyntaxHint ? <p className="mt-2 text-[11px] leading-5 text-ui-muted">빠른 문법: 내일 · !high · @프로젝트 · +카테고리 · due:내일 · date:2026-08-20 · someday/waiting · 공백 이름은 @{"{"}프로젝트 이름{"}"} / +{"{"}카테고리 이름{"}"}</p> : null}
       <div className={`todo-composer-form__footer ${collapsible ? "todo-composer-form__footer--inline" : ""}`}>
         <button type="button" className="todo-composer-form__toggle"
           onClick={() => setShowDetails((value) => !value)} aria-expanded={showDetails} aria-controls={detailsId}>
@@ -241,13 +245,13 @@ export function TodoForm({
         </button>
         {collapsible ? (
           <div className="todo-composer-form__actions">
-            <button type="button" className="todo-composer-form__toggle" onClick={closeComposer} disabled={saving}>취소</button>
-            <button type="submit" className="btn-primary ui-button--primary todo-composer-form__submit" disabled={saving || !title.trim()}>
-              <Plus size={15} aria-hidden="true" />{saving ? "저장 중..." : submitLabel}
-            </button>
+            <button type="button" className="todo-composer-form__toggle todo-composer-form__cancel" onClick={closeComposer} disabled={saving}>취소</button>
           </div>
         ) : !showDetails && !showSyntaxHint ? <span className="todo-composer-form__hint">Enter로 추가 · Esc로 닫기</span> : null}
       </div>
+      </div>
+      {saveError ? <p role="alert" className="mt-2 text-xs font-semibold text-danger">{saveError}</p> : null}
+      {showSyntaxHint ? <p className="mt-2 text-[11px] leading-5 text-ui-muted">빠른 문법: 내일 · !high · @프로젝트 · +카테고리 · due:내일 · date:2026-08-20 · someday/waiting · 공백 이름은 @{"{"}프로젝트 이름{"}"} / +{"{"}카테고리 이름{"}"}</p> : null}
       <div id={detailsId} hidden={!showDetails}>
         {showDetails ? (
           <TodoDetailFields

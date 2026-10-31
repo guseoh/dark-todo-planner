@@ -345,7 +345,8 @@ try {
 
   // Empty Today keeps its summary and add form, with one actionable empty-list message.
   await page.getByRole("group", { name: "오늘 작업 현황", exact: true }).waitFor();
-  await page.getByText("오늘 할 일을 정해 보세요.", { exact: true }).waitFor();
+  await page.getByText("오늘 예정된 일이 없습니다.", { exact: true }).waitFor();
+  assert.equal(await page.getByText("첫 작업", { exact: true }).count(), 0, "Empty state should be a single calm line.");
   assert.equal(await page.getByRole("heading", { name: "오늘의 핵심 작업" }).count(), 0, "Do not render empty focus card.");
   assert.equal(await page.getByText("미완료 Todo가 없습니다.", { exact: true }).count(), 0, "Do not repeat zero-state placeholders.");
   assert.equal(await page.getByRole("button", { name: "카테고리 관리" }).count(), 1, "Keep category management discoverable even when Today is empty.");
@@ -396,22 +397,38 @@ try {
     const footer = el.querySelector(".todo-composer-form__footer--inline");
     const chips = el.querySelector(".todo-composer-form__chips");
     const titleSurface = el.querySelector(".todo-composer-form__title");
+    const submit = main?.querySelector('button[type="submit"]');
+    const meta = el.querySelector(".todo-composer-form__meta-row");
     if (!(input instanceof HTMLElement) || !(main instanceof HTMLElement) ||
         !(footer instanceof HTMLElement) || !(chips instanceof HTMLElement) ||
-        !(titleSurface instanceof HTMLElement)) return null;
+        !(titleSurface instanceof HTMLElement) || !(submit instanceof HTMLButtonElement) ||
+        !(meta instanceof HTMLElement)) return null;
     return {
       titleWidth: input.getBoundingClientRect().width,
       formWidth: el.getBoundingClientRect().width,
       titleBorder: getComputedStyle(titleSurface).borderTopWidth,
-      submitInsideMain: !!main.querySelector('button[type="submit"]'),
-      footerBelowChips: footer.getBoundingClientRect().top >= chips.getBoundingClientRect().bottom - 1,
+      submitInTitleRow: Math.abs(submit.getBoundingClientRect().top - input.getBoundingClientRect().top) < 12,
+      submitRadius: getComputedStyle(submit).borderTopLeftRadius,
+      submitHasPlusIcon: Boolean(submit.querySelector("svg")),
+      metaHasActions: meta.contains(footer) && meta.contains(chips),
+      footerNoDivider: getComputedStyle(footer).borderTopWidth === "0px",
+      footerSameRowAsChips: Math.abs(footer.getBoundingClientRect().top - chips.getBoundingClientRect().top) < 12,
+      composerWidth: el.closest(".today-composer")?.getBoundingClientRect().width,
     };
   });
   assert.ok(mainLayout && mainLayout.titleWidth > mainLayout.formWidth * 0.72,
-    "G6.3: title must occupy most of the composer width.");
+    "G6.8: title should be the dominant first-row input.");
   assert.equal(mainLayout.titleBorder, "0px", "Title must not look like a nested input box.");
-  assert.equal(mainLayout.submitInsideMain, false, "Submit belongs in the separate action footer.");
-  assert.equal(mainLayout.footerBelowChips, true, "Chips must sit below the title but above actions.");
+  assert.equal(mainLayout.submitInTitleRow, true, "Small Add button belongs next to the title.");
+  assert.equal(mainLayout.submitHasPlusIcon, false, "Add button no longer duplicates the entry plus icon.");
+  assert.equal(mainLayout.submitRadius, "3px", "Submit should use sharp restrained corners.");
+  assert.equal(mainLayout.metaHasActions, true, "Metadata, details and cancel must share the same row.");
+  assert.equal(mainLayout.footerNoDivider, true, "Avoid a separated card-like footer.");
+  assert.ok(mainLayout.formWidth < 600 || mainLayout.footerSameRowAsChips,
+    "On desktop metadata and secondary actions share a line; mobile may wrap without clipping.");
+  assert.ok(mainLayout.composerWidth <= 765, "The composer should have a practical desktop max width.");
+  assert.equal(await composer.getByRole("button", { name: "추가", exact: true }).isDisabled(), false,
+    "Entered draft enables the compact Add button.");
   await composerToggle.click();
   await composer.getByRole("group", { name: "Todo 상세 옵션" }).waitFor();
   for (const name of ["일정", "분류", "메모"]) {

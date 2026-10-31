@@ -339,6 +339,8 @@ button:disabled {
   .today-task-count { color: var(--text-muted); font-size: 0.76rem; }
   .today-category-nav { margin: 0.1rem 0 0.3rem; }
   .today-composer {
+    width: 100%;
+    max-width: 760px;
     padding: 0;
     background: transparent;
     border: 0;
@@ -346,8 +348,9 @@ button:disabled {
   .today-composer:has(.todo-composer-form--inline) {
     padding: 0;
     background: var(--surface-1);
-    border: 1px solid var(--border-default);
-    border-radius: 6px;
+    border-block: 1px solid var(--ui-divider);
+    border-inline: 0;
+    border-radius: 0;
   }
   .today-composer form { padding: 0; border-bottom: 0; }
   .todo-composer-trigger {
@@ -365,18 +368,23 @@ button:disabled {
     font-size: 0.84rem;
     transition: color 150ms, background 150ms;
   }
-  .todo-composer-trigger:hover { color: var(--info); background: var(--info-tint); }
+  .todo-composer-trigger:hover { color: var(--text-primary); background: var(--surface-1); }
+  .todo-composer-trigger:hover svg { color: var(--info); }
   .todo-composer-trigger:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 2px; }
   .today-upcoming button:last-child { border-bottom: 0; }
   .today-composer .field { background: var(--surface-2); }
   .today-composer .btn-primary { white-space: nowrap; }
 
-  /* G6.3: one active surface around the composer, not four nested input boxes. */
+  /* G6.8: two quiet inline rows, with title and submit sharing the first row. */
   .todo-composer-form--inline .todo-composer-form__main {
-    display: block;
-    padding: 0.65rem 0.8rem 0.25rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: .6rem;
+    padding: .55rem .7rem .16rem;
   }
   .todo-composer-form--inline .todo-composer-form__title {
+    grid-column: auto;
     min-height: 38px;
     border: 0;
     border-radius: 0;
@@ -384,20 +392,57 @@ button:disabled {
     box-shadow: none;
   }
   .todo-composer-form--inline .todo-composer-form__title:hover,
-  .todo-composer-form--inline .todo-composer-form__title:focus-within {
-    border: 0;
-    box-shadow: none;
-  }
+  .todo-composer-form--inline .todo-composer-form__title:focus-within { border: 0; box-shadow: none; }
   .todo-composer-form--inline .todo-composer-form__input {
     min-height: 38px;
-    padding: 0.35rem 0.15rem;
-    font-size: 0.98rem;
+    padding: .35rem .15rem;
+    font-size: .94rem;
     font-weight: 500;
   }
   .todo-composer-form--inline .todo-composer-form__input:focus-visible {
     outline: 2px solid var(--ui-focus);
     outline-offset: 2px;
     border-radius: 2px;
+  }
+  .todo-composer-form--inline .todo-composer-form__submit--quiet {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 65px;
+    min-height: 34px;
+    padding: .3rem .85rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    background: var(--surface-2);
+    color: var(--text-primary);
+    font-size: .8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+  }
+  .todo-composer-form--inline .todo-composer-form__submit--quiet:hover:not(:disabled) {
+    background: var(--surface-3);
+    border-color: var(--info);
+  }
+  .todo-composer-form--inline .todo-composer-form__submit--quiet:disabled {
+    background: transparent;
+    border-color: var(--ui-divider);
+    color: var(--text-muted);
+    opacity: .65;
+    cursor: not-allowed;
+  }
+  .todo-composer-form--inline .todo-composer-form__submit--quiet:focus-visible {
+    outline: 2px solid var(--info);
+    outline-offset: 2px;
+  }
+  .todo-composer-form__meta-row--standard { display: block; }
+  .todo-composer-form__meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .1rem .5rem;
+    padding: .15rem .6rem .5rem;
   }
   .todo-composer-form__chips {
     display: flex;
@@ -406,6 +451,12 @@ button:disabled {
     gap: 0.2rem;
     min-width: 0;
     margin: 0.05rem 0.7rem 0.55rem;
+  }
+  .todo-composer-form__meta-row .todo-composer-form__chips {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    gap: .1rem;
   }
   .todo-composer-chip {
     display: inline-flex;
@@ -500,18 +551,21 @@ button:disabled {
   .todo-composer-chip--select select option { color: var(--text-primary); background: var(--surface-2); }
   .todo-composer-chip--project select { width: clamp(4.2rem, 13vw, 8.5rem); text-overflow: ellipsis; }
   .todo-composer-form__footer--inline {
-    min-height: 46px;
-    margin-top: 0;
-    padding: 0.35rem 0.7rem;
-    border-top: 1px solid var(--border-subtle);
+    flex: 0 0 auto;
+    min-height: 32px;
+    margin: 0;
+    padding: 0;
+    gap: .45rem;
+    border-top: 0;
   }
-  .todo-composer-form__actions { display: inline-flex; align-items: center; gap: 0.4rem; }
-  .todo-composer-form__footer--inline .todo-composer-form__submit.btn-primary {
-    min-height: 34px;
-    padding: 0.28rem 0.8rem;
-    font-size: 0.78rem;
+  .todo-composer-form__meta-row .todo-composer-form__footer--inline {
+    min-height: 32px;
+    margin: 0;
+    padding: 0;
+    border: 0;
   }
-  .todo-composer-form__footer--inline .todo-composer-form__submit:disabled { opacity: 0.55; cursor: not-allowed; }
+  .todo-composer-form__actions { display: inline-flex; align-items: center; gap: .35rem; }
+  .todo-composer-form__cancel { color: var(--text-muted); }
 
 
   /* Task-first composer: one quiet functional surface, with a prominent input. */
@@ -707,10 +761,24 @@ button:disabled {
   .todo-row--today h4 { font-size: 1rem; line-height: 1.5; letter-spacing: -0.01em; }
   .todo-row--today .text-xs.text-ui-secondary { font-size: 0.73rem; line-height: 1.5; }
   .today-empty-state {
-    padding: 1.25rem 0.25rem;
-    border-top: 1px solid var(--ui-divider);
+    padding: .55rem .25rem .45rem;
+    border: 0;
+    color: var(--text-secondary);
+    font-size: .83rem;
+    line-height: 1.55;
   }
   .today-empty-state__index { color: var(--text-muted); font-size: 0.7rem; }
+  @media (max-width: 720px) {
+    .todo-composer-form--inline .todo-composer-form__main { grid-template-columns: minmax(0, 1fr) auto; }
+    .todo-composer-form--inline .todo-composer-form__title { grid-column: auto; }
+    .todo-composer-form--inline .todo-composer-form__main:has(> .todo-composer-form__title + .todo-composer-form__submit)
+      .todo-composer-form__submit--quiet { grid-column: auto; justify-self: end; }
+    .todo-composer-form__meta-row { align-items: flex-start; }
+  }
+  @media (max-width: 450px) {
+    .todo-composer-form__meta-row .todo-composer-form__chips { flex-basis: 100%; }
+    .todo-composer-form__meta-row .todo-composer-form__footer--inline { margin-left: auto; }
+  }
 
   .today-digest {
     display: flex;

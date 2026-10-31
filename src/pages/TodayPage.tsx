@@ -284,11 +284,7 @@ export function TodayPage({
                   <p className={`border-t border-ink-700/35 px-1 py-5 text-sm ${activeCategoryId === "all" && !stats.todayActive ? "text-ink-200" : "text-ink-300"}`}>{activeCategoryId === "all" && !stats.todayActive ? "오늘의 할 일을 모두 완료했습니다." : "선택한 카테고리에 미완료 Todo가 없습니다."}</p>
                 )}
               </>
-            ) : <div className="today-empty-state">
-              <span className="today-empty-state__index">첫 작업</span>
-              <p className="mt-2 text-base font-semibold text-ui-text">오늘 할 일을 정해 보세요.</p>
-              <p className="mt-1.5 text-sm text-ui-secondary">아래의 할 일 추가로 시작하거나 캘린더에서 날짜를 지정할 수 있습니다.</p>
-            </div>}
+            ) : <div className="today-empty-state" role="status">오늘 예정된 일이 없습니다.</div>}
 
             <div className="today-composer">
               <TodoForm onAdd={onAdd} defaultDate={today} defaultCategoryId={inlineCategoryId}
