@@ -171,7 +171,7 @@ export function MonthlyView({
       </div>
 
       {moveFeedback ? <p role={moveFeedback.kind === "error" ? "alert" : "status"} className={`border-l-2 py-2 pl-3 text-xs ${moveFeedback.kind === "error" ? "border-danger/60 text-danger" : "border-success/60 text-ui-secondary"}`}>{moveFeedback.message}</p> : null}
-      <div className={`grid min-w-0 items-start gap-4 ${panelOpen ? "xl:grid-cols-[minmax(0,1fr)_300px]" : ""}`}>
+      <div className={`grid min-w-0 items-start gap-4 ${panelOpen ? "xl:grid-cols-[minmax(0,1fr)_340px]" : ""}`}>
         <MonthlyCalendar
           currentMonth={currentMonth}
           monthDays={monthDays}

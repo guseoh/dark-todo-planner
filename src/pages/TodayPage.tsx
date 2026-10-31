@@ -203,6 +203,21 @@ export function TodayPage({
       </header>
 
       <div className="today-workspace">
+        <section className="today-digest" aria-label="일정 요약">
+          <div className="today-digest__week" aria-labelledby="week-summary-title">
+            <span id="week-summary-title" className="font-medium text-ui-secondary">이번 주</span>
+            <strong className={stats.weekRate > 0 ? "text-success" : "text-ui-secondary"}>{formatCompletionRate(stats.weekTotal, stats.weekRate)}</strong>
+            <span className="text-ui-muted">· {stats.weekTotal}개 일정 기준</span>
+          </div>
+          {overdueTodos.length > 0 ? (
+            <div className="today-digest__overdue" aria-labelledby="overdue-summary-title">
+              <History size={14} className="shrink-0 text-warning" aria-hidden="true" />
+              <span id="overdue-summary-title">지난 일정 <strong className="text-warning">{overdueTodos.length}개</strong></span>
+              {oldestOverdueDate ? <span className="text-ui-muted">· {formatKoreanDate(oldestOverdueDate, "M월 d일")}부터</span> : null}
+              <Button variant="secondary" size="sm" className="today-digest__link" onClick={() => setShowOverdueImport(true)}>정리하기</Button>
+            </div>
+          ) : null}
+        </section>
         <div className="min-w-0 space-y-3">
 
           {focusedTodos.length ? (
@@ -314,21 +329,7 @@ export function TodayPage({
           </section>
         </div>
 
-        <section className="today-digest" aria-label="일정 요약">
-          <div className="today-digest__week" aria-labelledby="week-summary-title">
-            <span id="week-summary-title" className="font-medium text-ui-secondary">이번 주</span>
-            <strong className={stats.weekRate > 0 ? "text-success" : "text-ui-secondary"}>{formatCompletionRate(stats.weekTotal, stats.weekRate)}</strong>
-            <span className="text-ui-muted">· {stats.weekTotal}개 일정 기준</span>
-          </div>
-          {overdueTodos.length > 0 ? (
-            <div className="today-digest__overdue" aria-labelledby="overdue-summary-title">
-              <History size={14} className="shrink-0 text-danger" aria-hidden="true" />
-              <span id="overdue-summary-title">지난 일정 <strong className="text-danger">{overdueTodos.length}개</strong></span>
-              {oldestOverdueDate ? <span className="text-ui-muted">· {formatKoreanDate(oldestOverdueDate, "M월 d일")}부터</span> : null}
-              <Button variant="danger" size="sm" className="today-digest__link" onClick={() => setShowOverdueImport(true)}>정리하기</Button>
-            </div>
-          ) : null}
-        </section>
+
       </div>
 
       <TodoEditModal todo={editingTodo} categories={categories} projects={activeProjects} onClose={() => setEditingTodo(null)} onSave={onUpdate} />

@@ -425,7 +425,7 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
             <button type="button" key={tab.id} className="page-tab memo-filter-tab" aria-pressed={memoView === tab.id} onClick={() => setMemoView(tab.id)}>{tab.label}</button>
           ))}
         </div>
-        <span className="memo-toolbar__count ml-auto text-xs text-ink-400" role="status">표시 ${filteredMemos.length}개</span>
+        <span className="memo-toolbar__count ml-auto text-xs text-ink-400" role="status">표시 {filteredMemos.length}개</span>
       </div>
 
       {conversionMessage ? <div className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-xs font-semibold text-success" role="status">{conversionMessage}</div> : null}

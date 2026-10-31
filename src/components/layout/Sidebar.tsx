@@ -90,7 +90,7 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
     return (
       <button key={item.id} type="button" onClick={() => onChangeView(item.id)} aria-label={item.label} aria-current={active ? "page" : undefined} title={collapsed && !hoverExpanded ? item.label : undefined}
         className={`app-nav-button relative flex min-h-10 w-full items-center rounded-[6px] text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${active ? "bg-ui-selected font-semibold text-ui-text" : "text-ui-secondary hover:bg-ui-hover hover:text-ui-text"} ${showExpandedContent ? "gap-3 px-3 text-left" : "justify-center px-2"}`}>
-        {active ? <span aria-hidden="true" className="app-nav-indicator absolute bottom-2 left-0 top-2 w-0.5 bg-info" /> : null}
+        {active ? <span aria-hidden="true" className="app-nav-indicator absolute bottom-2 left-0 top-2 w-0.5 bg-ui-focus" /> : null}
         <Icon size={17} className="shrink-0" />
         {showExpandedContent ? <span className="truncate">{item.label}</span> : null}
       </button>
@@ -103,7 +103,7 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
         <nav className="flex h-full min-h-0 w-full flex-col border-r border-ink-700/50 bg-[var(--sidebar-bg)] px-2 py-2.5" onMouseEnter={openHoverPanel} onMouseLeave={closeHoverPanel} onFocusCapture={openHoverPanel} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) closeHoverPanel(); }}>
           <button type="button" onClick={() => onChangeView("today")} aria-label="Todo Planner 홈" title={collapsed && !hoverExpanded ? "Todo Planner" : undefined}
             className={`mb-2 flex min-h-10 shrink-0 items-center rounded-lg text-left transition-colors hover:bg-ink-800/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${showExpandedContent ? "gap-2.5 px-2.5" : "justify-center px-2"}`}>
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-ink-200 text-ink-950"><CalendarCheck size={18} /></span>
+            <span className="sidebar-brand-mark flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] border border-ui-divider bg-ui-surface text-ui-text"><CalendarCheck size={18} /></span>
             {showExpandedContent ? <span className="min-w-0"><span className="block truncate text-sm font-bold text-ink-100">Todo Planner</span><span className="block truncate text-xs text-ink-500">개인 작업 관리</span></span> : null}
           </button>
 

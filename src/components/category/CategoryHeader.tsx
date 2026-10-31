@@ -34,7 +34,7 @@ export function CategoryHeader({
   const color = category?.color || "#64748b";
 
   return (
-    <div className="rounded-md border border-ink-700/60 bg-ink-900/55 p-2">
+    <div className="todo-category-header relative border-b border-ui-divider bg-transparent px-1 py-2.5">
       <div className="flex min-w-0 items-center gap-2">
         {dragHandle}
         <button type="button" className="flex min-w-0 flex-1 items-center gap-2 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/35" onClick={onToggleCollapse} aria-expanded={!collapsed}>
@@ -42,21 +42,21 @@ export function CategoryHeader({
           <CategoryIcon icon={category?.icon} color={color} name={name} className={category?.icon ? "h-7 w-7" : "h-2.5 w-2.5"} />
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-2">
-              <h3 className="truncate text-sm font-bold text-ink-100" title={name}>{name}</h3>
+              <h3 className="truncate text-sm font-semibold text-ink-100" title={name}>{name}</h3>
               <span className="shrink-0 text-[10px] font-semibold text-ink-500">{completedCount}/{totalCount}</span>
-              <span className="hidden shrink-0 text-[10px] font-semibold text-accent-300 sm:inline">{formatCompletionRate(totalCount, completionRate)}</span>
+              {completionRate > 0 ? <span className="hidden shrink-0 text-[10px] font-medium text-ink-400 sm:inline">{formatCompletionRate(totalCount, completionRate)}</span> : null}
             </div>
             {category?.description ? <p className="mt-0.5 truncate text-[10px] text-ink-600" title={category.description}>{category.description}</p> : null}
           </div>
         </button>
 
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="todo-category-header__actions flex shrink-0 items-center gap-0.5">
           {onAddTodo ? <button type="button" className="icon-btn h-8 w-8" onClick={onAddTodo} aria-label={`${name}에 Todo 추가`}><Plus size={13} /></button> : null}
           {category && onEdit ? <button type="button" className="icon-btn h-8 w-8" onClick={onEdit} aria-label={`${name} 수정`}><Pencil size={13} /></button> : null}
           {category && onDelete ? <button type="button" className="icon-btn h-8 w-8 hover:border-danger hover:text-danger" onClick={onDelete} aria-label={`${name} 삭제`}><Trash2 size={13} /></button> : null}
         </div>
       </div>
-      {!collapsed && totalCount > 0 ? <div className="mt-1.5"><ProgressBar value={completionRate} label="" empty={false} /></div> : null}
+      {!collapsed && completionRate > 0 ? <div className="mt-1.5"><ProgressBar value={completionRate} label="" empty={false} /></div> : null}
     </div>
   );
 }

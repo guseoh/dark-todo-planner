@@ -267,7 +267,7 @@ export function ProjectPage({
   };
 
   return (
-    <div className="page-shell">
+    <div className="page-shell project-page">
       <PageHeader title="프로젝트" description="프로젝트의 작업·마일스톤·의사결정 기록을 한곳에서 관리합니다."
         meta={`진행 ${activeProjects.length}개`}
         actions={<>
@@ -301,11 +301,11 @@ export function ProjectPage({
                 type="button"
                 onClick={() => setSelectedId(project.id)}
                 aria-pressed={selectedId === project.id}
+                aria-label={`${project.name} (${projectStatusLabel[project.status]})`}
                 className={`flex min-h-10 min-w-44 max-w-64 shrink-0 items-center gap-2 rounded-[4px] border-b-2 px-3 text-left text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/55 ${selectedId === project.id ? "border-ui-focus bg-transparent text-ui-text" : "border-transparent text-ui-secondary hover:bg-ui-hover hover:text-ui-text"}`}
               >
                 <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: project.color || "#9b9ba0" }} />
                 <span className="min-w-0 flex-1 truncate">{project.name}</span>
-                <span className="shrink-0 text-xs text-ink-400">{projectStatusLabel[project.status]}</span>
               </button>
             ))}
           </div>
@@ -313,23 +313,22 @@ export function ProjectPage({
       </section>
 
       {selected ? (
-        <div className="min-w-0 space-y-4">
-          <section className="project-overview app-card py-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="project-detail min-w-0 space-y-3">
+          <section className="project-overview app-card py-3">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <FolderKanban size={19} className="text-ui-secondary" />
-                  <h3 className="text-xl font-semibold tracking-tight text-ink-100">{selected.name}</h3>
-                  <span className="text-xs font-medium text-ink-400">{projectStatusLabel[selected.status]}</span>
+                  <h3 className="text-lg font-semibold tracking-tight text-ink-100">{selected.name}</h3>
                 </div>
-                <details className="mt-2 group">
+                <details className="mt-1 group">
                   <summary className="flex min-h-8 w-fit cursor-pointer items-center gap-2 rounded px-1 text-xs font-semibold text-ink-400 hover:bg-ink-800/65 hover:text-ink-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
                     프로젝트 설명 <ChevronDown size={14} className="transition-transform group-open:rotate-180" />
                   </summary>
                   <p className="max-w-4xl px-1 pt-1 text-sm leading-6 text-ink-300">{selected.description || "설명이 없습니다."}</p>
                 </details>
-                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-400">
-                  <span><strong className="font-medium text-ui-text">{completed}/{projectTodos.length}개 완료</strong> · {progress}%</span>
+                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-400">
+                  <span><strong className="font-medium text-ui-text">{completed}/{projectTodos.length}개 완료</strong>{projectTodos.length > 0 ? ` · ${progress}%` : ""}</span>
                   {selected.startDate ? <span>시작일 {selected.startDate}</span> : null}
                   {selected.targetDate ? <span>목표일 {selected.targetDate}</span> : null}
                   <span>마일스톤 {projectMilestones.length}개</span>
@@ -339,7 +338,7 @@ export function ProjectPage({
 
               <div className="flex flex-wrap gap-2">
                 {!selected.archived ? <button type="button" className="btn-secondary" onClick={beginProjectEdit}><Pencil size={15} />정보 수정</button> : null}
-                <select className="field min-h-10 w-auto py-1.5 text-sm" value={selected.status} onChange={(event) => void onUpdateProject(selected.id, { status: event.target.value as ProjectStatus })} disabled={selected.archived || deletingProject}>
+                <select aria-label="프로젝트 상태" className="field min-h-10 w-auto py-1.5 text-sm" value={selected.status} onChange={(event) => void onUpdateProject(selected.id, { status: event.target.value as ProjectStatus })} disabled={selected.archived || deletingProject}>
                   <option value="PLANNING">계획</option>
                   <option value="ACTIVE">진행 중</option>
                   <option value="ON_HOLD">보류</option>
@@ -381,12 +380,12 @@ export function ProjectPage({
               </form>
             ) : null}
 
-            <div role="progressbar" aria-label="프로젝트 완료율" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="project-overview__progress mt-4 h-1 overflow-hidden bg-ink-800">
+            {projectTodos.length > 0 ? <div role="progressbar" aria-label="프로젝트 완료율" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="project-overview__progress mt-4 h-1 overflow-hidden bg-ink-800">
               <div className="h-full bg-accent-500 transition-[width]" style={{ width: `${progress}%` }} />
-            </div>
+            </div> : null}
 
-            <details className="mt-4 border-t border-ink-800/80 pt-3" key={selected.id}>
-              <summary className="flex min-h-10 cursor-pointer list-none flex-wrap items-center justify-between gap-2 rounded-md px-1 text-sm font-bold text-ink-200 hover:bg-ink-800/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
+            <details className="project-resources mt-2 border-t border-ink-800/80 pt-2" key={selected.id}>
+              <summary className="flex min-h-9 cursor-pointer list-none flex-wrap items-center justify-between gap-2 rounded-sm px-1 text-xs font-medium text-ink-300 hover:bg-ink-800/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
                 <span className="flex items-center gap-2"><Link2 size={16} className="text-accent-300" />자료 링크 <span className="text-xs font-medium text-ink-400">{(selected.resources || []).length}/12</span></span>
                 <span className="flex items-center gap-1 text-xs font-medium text-ink-400">GitHub · 배포 · 문서 <ChevronDown size={15} /></span>
               </summary>

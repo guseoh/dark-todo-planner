@@ -70,7 +70,8 @@ try {
       firstTaskOffset: section.getBoundingClientRect().top - header.getBoundingClientRect().top,
       headerText: status.textContent,
       oldDashboardCount: document.querySelectorAll(".today-overview__stat").length,
-      digestBorderTop: getComputedStyle(digest).borderTopWidth,
+      digestBorderBottom: getComputedStyle(digest).borderBottomWidth,
+      digestBeforeTasks: Boolean(digest.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING),
       todayWidth: document.querySelector(".today-page").getBoundingClientRect().width,
       hasSidebar: Boolean(document.querySelector(".today-sidebar")),
       primaryBackground: getComputedStyle(primary).backgroundColor,
@@ -87,7 +88,8 @@ try {
   assert.ok(visualSystem.firstTaskOffset <= 140, "Task entry should appear close to the header.");
   assert.equal(visualSystem.oldDashboardCount, 0, "Old KPI grid must not return.");
   assert.ok(visualSystem.headerText.includes("중"), "Concise completion summary must remain visible.");
-  assert.equal(visualSystem.digestBorderTop, "1px", "Weekly and overdue summary should have a quiet separator.");
+  assert.equal(visualSystem.digestBorderBottom, "1px", "The review summary should separate cleanly from the task list.");
+  assert.equal(visualSystem.digestBeforeTasks, true, "Existing weekly and overdue review must be visible before the task list.");
   assert.equal(visualSystem.hasSidebar, false, "Today must not retain a disconnected right rail.");
   assert.ok(visualSystem.todayWidth <= 890, "Today content should stay within the readable single-column width.");
   assert.equal(visualSystem.accent, "#d4d4d8", "Accent must remain neutral.");
