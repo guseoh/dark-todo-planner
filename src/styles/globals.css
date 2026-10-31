@@ -1580,3 +1580,15 @@ button:disabled {
   .scratchpad-command-strip__menus { flex: 1 1 100%; }
   .scratchpad-command-strip .scratchpad-toolbar { flex-basis: 100%; }
 }
+
+/* G7 global chrome: quick add remains discoverable without competing with the work. */
+.app-topbar .app-quick-add-button {
+  min-height: 36px; border-radius: 3px;
+  background: var(--surface-3); border-color: var(--border-default);
+  color: var(--text-primary); font-weight: 550;
+}
+.app-topbar .app-quick-add-button:hover {
+  background: var(--surface-hover); border-color: var(--border-strong);
+}
+.app-topbar .app-search-button { background: var(--surface-1); }
+.app-topbar details[open] > summary { background: var(--surface-2); }
