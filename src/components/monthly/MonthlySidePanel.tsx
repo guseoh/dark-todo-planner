@@ -82,7 +82,7 @@ export function MonthlySidePanel({
   return (
     <aside className="scroll-mt-24" aria-label="선택한 날짜 상세">
       <section className="calendar-selected-panel flex flex-col border-l border-ui-divider px-4 py-3 xl:max-h-[calc(100vh-7rem)] xl:overflow-hidden">
-        <div className="mb-4 flex items-start justify-between gap-2">
+        <div className="mb-3 flex items-start justify-between gap-2 border-b border-ui-divider pb-3">
           <div className="min-w-0">
             <h3 className="truncate text-base font-semibold text-ink-100">{formatKoreanDate(selectedDate)}</h3>
             <p className="mt-1 truncate text-xs text-ink-400">
@@ -91,7 +91,7 @@ export function MonthlySidePanel({
           </div>
           <button type="button" className="icon-btn h-9 w-9 shrink-0" onClick={onClose} aria-label="날짜 상세 닫기"><X size={16} /></button>
         </div>
-        <div className="min-h-0 space-y-4 xl:overflow-y-auto xl:overscroll-contain xl:pr-1 [&_.icon-btn]:!min-h-9 [&_.icon-btn]:!min-w-9">
+        <div className="min-h-0 space-y-3 xl:overflow-y-auto xl:overscroll-contain xl:pr-1 [&_.icon-btn]:!min-h-9 [&_.icon-btn]:!min-w-9">
           {relatedEvents.length ? (
             <section aria-label="마감 및 프로젝트 일정" className="space-y-2">
               <h4 className="text-xs font-semibold text-ink-300">마감·프로젝트 일정</h4>
