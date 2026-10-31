@@ -1625,11 +1625,12 @@ button:disabled {
 .calendar-selected-panel .todo-row { padding-inline: .15rem; }
 .calendar-selected-panel .todo-row h4 { font-weight: 550; }
 
-/* Fit the real number of month rows into a desktop-height workspace. */
+/* G9: month cells are content-sized, never squeezed into the viewport height.
+   Scrolling the page is preferable to hiding the second and third tasks. */
 @media (min-width: 1024px) {
-  .monthly-calendar-grid .calendar-day {
-    height: clamp(5rem, calc((100dvh - 395px) / var(--calendar-weeks)), 7.25rem);
-  }
+  .calendar-page .monthly-calendar-grid[data-weeks="4"] .calendar-day { height: 136px; }
+  .calendar-page .monthly-calendar-grid[data-weeks="5"] .calendar-day { height: 128px; }
+  .calendar-page .monthly-calendar-grid[data-weeks="6"] .calendar-day { height: 116px; }
 }
 .calendar-page .monthly-calendar-grid { border-color: var(--ui-divider); }
 .calendar-page .calendar-day[data-selected="true"] { box-shadow: inset 0 0 0 1px var(--ui-control-border); }
@@ -1706,8 +1707,22 @@ button:disabled {
   background: transparent; min-height: 30px; padding: .25rem .6rem; font-weight: 500;
 }
 .today-page .today-task-heading h3 { font-size: 1rem; font-weight: 600; }
-.today-page .todo-row--today h4 { font-weight: 520; font-size: 1rem; }
-.today-page .todo-row--today { padding-block: .55rem; }
+.today-page .todo-row--today h4 {
+  font-size: 15px;
+  line-height: 22.5px;
+  font-weight: 510;
+}
+.today-page .todo-row--today { padding-block: .42rem; }
+.today-page .todo-row--today .todo-row__content { padding-block: .125rem; }
+.today-page .todo-row--today .todo-row__meta {
+  margin-top: .2rem;
+  column-gap: .7rem;
+  row-gap: .15rem;
+  font-size: 11.5px;
+  line-height: 17px;
+}
+.today-page .todo-row--today .todo-row__meta svg { width: 11px; height: 11px; }
+.today-page .todo-row--today .todo-complete-button > span { width: 19px; height: 19px; }
 
 /* All Todo: flat categories with calm, discoverable keyboard and hover actions. */
 .all-todos-page .todo-category-header {
