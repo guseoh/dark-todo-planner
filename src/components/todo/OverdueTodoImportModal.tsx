@@ -186,186 +186,111 @@ export function OverdueTodoImportModal({ todos, onImport, onDeleteMany, onClose 
 
   return (
     <Modal
-      title="미처리 Todo 가져오기"
-      description="필요한 날짜나 Todo만 선택하세요. 이동은 기존 일정을 오늘로 옮기고, 복사는 원래 일정을 유지합니다."
-      onClose={() => {
-        if (!busy) onClose();
-      }}
+      title="지난 일정 정리"
+      description="필요한 작업을 선택해 오늘로 이동하거나 복사할 수 있습니다. 삭제한 Todo는 휴지통에서 복원할 수 있습니다."
+      onClose={() => { if (!busy) onClose(); }}
       size="lg"
     >
-      <div className="space-y-3">
-        <div className="rounded-md border border-ink-700/55 bg-ink-950/35 p-3">
-          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-sm font-bold text-ink-100">{selectedIds.size}개 선택됨</p>
-              <p className="mt-0.5 text-[11px] leading-5 text-ink-500">
-                날짜를 펼치면 그 날짜 전체를 한 번에 선택하거나 휴지통으로 이동할 수 있습니다.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              <button type="button" className="btn-secondary px-2.5 text-xs" onClick={selectAll} disabled={!todos.length || busy}>
-                전체 선택
-              </button>
-              <button type="button" className="btn-secondary px-2.5 text-xs" onClick={selectExpanded} disabled={!expandedDates.size || busy}>
-                펼친 날짜 선택
-              </button>
-              <button type="button" className="btn-secondary px-2.5 text-xs" onClick={clearSelection} disabled={!selectedIds.size || busy}>
-                전체 해제
-              </button>
-            </div>
+      <div className="overdue-review" aria-busy={busy}>
+        <div className="overdue-review__toolbar">
+          <div className="overdue-review__summary" role="status" aria-live="polite">
+            <strong>{selectedVisibleIds.length}</strong>개 선택
+            <span> · {groupedTodos.length}개 날짜</span>
           </div>
-          <div className="mt-2 flex flex-wrap gap-1.5 border-t border-ink-700/45 pt-2">
-            <button
-              type="button"
-              className="rounded-md px-2 py-1 text-xs font-semibold text-ink-400 transition hover:bg-ink-800 hover:text-ink-100"
-              onClick={() => setExpandedDates(new Set(groupedTodos.map(([date]) => date)))}
-              disabled={!groupedTodos.length || busy}
-            >
-              모두 펼치기
-            </button>
-            <button
-              type="button"
-              className="rounded-md px-2 py-1 text-xs font-semibold text-ink-400 transition hover:bg-ink-800 hover:text-ink-100"
-              onClick={() => setExpandedDates(new Set())}
-              disabled={!expandedDates.size || busy}
-            >
-              모두 접기
-            </button>
-            <span className="self-center text-[11px] text-ink-600">최근 날짜 2개만 기본으로 펼쳐집니다.</span>
+          <div className="overdue-review__selection-actions">
+            <button type="button" className="overdue-review__text-action" onClick={selectAll}
+              disabled={!todos.length || busy}>전체 선택</button>
+            <button type="button" className="overdue-review__text-action" onClick={selectExpanded}
+              disabled={!expandedDates.size || busy}>펼친 날짜 선택</button>
+            <button type="button" className="overdue-review__text-action" onClick={clearSelection}
+              disabled={!selectedVisibleIds.length || busy}>선택 해제</button>
           </div>
         </div>
+        <div className="overdue-review__expand-actions">
+          <button type="button" onClick={() => setExpandedDates(new Set(groupedTodos.map(([date]) => date)))}
+            disabled={!groupedTodos.length || busy}>모두 펼치기</button>
+          <span aria-hidden="true">·</span>
+          <button type="button" onClick={() => setExpandedDates(new Set())}
+            disabled={!expandedDates.size || busy}>모두 접기</button>
+          <span className="overdue-review__hint">최근 날짜 2개만 기본으로 펼쳐집니다.</span>
+        </div>
 
-        <div className="max-h-[52vh] space-y-2 overflow-y-auto pr-1">
+        <div className="overdue-review__list" role="region" aria-label="날짜별 미처리 Todo 목록">
           {groupedTodos.map(([date, dateTodos]) => {
             const expanded = expandedDates.has(date);
             const selectedCount = dateTodos.filter((todo) => selectedIds.has(todo.id)).length;
-            const wholeDateSelected = selectedCount === dateTodos.length && dateTodos.length > 0;
+            const allSelected = dateTodos.length > 0 && selectedCount === dateTodos.length;
+            const dateLabel = formatKoreanDate(date, "M월 d일 EEEE");
             return (
-              <section key={date} className="overflow-hidden rounded-md border border-ink-700/55 bg-ink-900/45" aria-labelledby={`overdue-${date}`}>
-                <div className="flex items-center gap-1 px-1.5 py-1.5">
-                  <button
-                    type="button"
-                    className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 text-left transition hover:bg-ink-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500/35"
-                    onClick={() => toggleDate(date)}
-                    aria-expanded={expanded}
-                    aria-controls={`overdue-list-${date}`}
-                    disabled={busy}
-                  >
-                    {expanded ? <ChevronDown size={16} className="shrink-0 text-ink-400" /> : <ChevronRight size={16} className="shrink-0 text-ink-500" />}
-                    <span id={`overdue-${date}`} className="min-w-0 flex-1 text-sm font-bold text-ink-200">
-                      {formatKoreanDate(date, "M월 d일 EEEE")}
-                    </span>
-                    <span className="shrink-0 text-xs text-ink-500">{dateTodos.length}개</span>
-                    {selectedCount ? (
-                      <span className="shrink-0 rounded-full border border-accent-500/35 bg-accent-500/10 px-2 py-0.5 text-[10px] font-bold text-accent-200">
-                        {selectedCount}개 선택
-                      </span>
-                    ) : null}
+              <section key={date} className="overdue-review__date" aria-labelledby={"overdue-" + date}>
+                <div className="overdue-review__date-header">
+                  <input type="checkbox" className="overdue-review__check"
+                    aria-label={dateLabel + " Todo 전체 선택"}
+                    checked={allSelected}
+                    ref={(input) => { if (input) input.indeterminate = selectedCount > 0 && !allSelected; }}
+                    onChange={() => toggleDateSelection(dateTodos)} disabled={busy} />
+                  <button type="button" className="overdue-review__date-toggle" onClick={() => toggleDate(date)}
+                    aria-expanded={expanded} aria-controls={"overdue-list-" + date} disabled={busy}>
+                    <span id={"overdue-" + date} className="overdue-review__date-title">{dateLabel}</span>
+                    <span className="overdue-review__date-count">{dateTodos.length}개</span>
+                    {selectedCount > 0 ? <span className="overdue-review__date-selected">{selectedCount}개 선택</span> : null}
+                    {expanded ? <ChevronDown size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />}
                   </button>
-                  {expanded ? (
-                    <>
-                      <button
-                        type="button"
-                        className="btn-secondary min-h-8 shrink-0 px-2 py-1 text-[11px]"
-                        onClick={() => toggleDateSelection(dateTodos)}
-                        disabled={busy}
-                      >
-                        {wholeDateSelected ? "날짜 선택 해제" : "날짜 전체 선택"}
-                      </button>
-                      <button
-                        type="button"
-                        className="icon-btn h-8 w-8 shrink-0 rounded-md hover:text-danger"
-                        onClick={() => void deleteDateTodos(date, dateTodos)}
-                        disabled={busy}
-                        aria-label={`${formatKoreanDate(date, "M월 d일")} Todo 전체 삭제`}
-                        title="이 날짜 Todo 전체 삭제"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </>
-                  ) : null}
+                  <button type="button" className="overdue-review__date-delete"
+                    onClick={() => void deleteDateTodos(date, dateTodos)}
+                    disabled={busy} aria-label={formatKoreanDate(date, "M월 d일") + " Todo 전체 삭제"}
+                    title="이 날짜의 Todo를 휴지통으로 이동">
+                    <Trash2 size={15} aria-hidden="true" />
+                  </button>
                 </div>
-
                 {expanded ? (
-                  <div id={`overdue-list-${date}`} className="space-y-1.5 border-t border-ink-700/45 p-2">
-                    {dateTodos.map((todo) => {
-                      const checked = selectedIds.has(todo.id);
-                      return (
-                        <label
-                          key={todo.id}
-                          className={`flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2.5 transition ${
-                            checked
-                              ? "border-accent-500/55 bg-accent-500/10"
-                              : "border-ink-700/55 bg-ink-950/35 hover:border-ink-600 hover:bg-ink-900/80"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            className="mt-0.5 h-4 w-4 shrink-0 accent-accent-500"
-                            checked={checked}
-                            onChange={() => toggleTodo(todo.id)}
-                            disabled={busy}
-                          />
-                          <span className="min-w-0 flex-1">
-                            <span className="flex flex-wrap items-center gap-1.5">
-                              <span className={`break-words text-sm font-semibold ${todo.completed ? "text-ink-500 line-through" : "text-ink-100"}`}>{todo.title}</span>
-                              {duplicateTodoIds.has(todo.id) ? (
-                                <span className="rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-[10px] font-semibold text-warning">
-                                  중복 후보
-                                </span>
-                              ) : null}
-                              {todo.completed ? <span className="text-[10px] font-semibold text-ink-600">완료</span> : null}
-                            </span>
-                            <span className="mt-0.5 block text-[11px] text-ink-500">
-                              {todo.category?.name || "미분류"} · 원래 일정 {formatKoreanDate(todo.date, "M월 d일")}
-                            </span>
+                  <div id={"overdue-list-" + date} className="overdue-review__tasks">
+                    {dateTodos.map((todo) => (
+                      <label key={todo.id}
+                        className={selectedIds.has(todo.id) ? "overdue-review__task is-selected" : "overdue-review__task"}>
+                        <input type="checkbox" className="overdue-review__check" checked={selectedIds.has(todo.id)}
+                          onChange={() => toggleTodo(todo.id)} disabled={busy} />
+                        <span className="overdue-review__task-info">
+                          <span className={todo.completed ? "overdue-review__task-title is-completed" : "overdue-review__task-title"}>{todo.title}</span>
+                          <span className="overdue-review__task-meta">
+                            {todo.category?.name || "미분류"} · 원래 일정 {formatKoreanDate(todo.date, "M월 d일")}
+                            {duplicateTodoIds.has(todo.id) ? <span className="overdue-review__duplicate"> · 중복 후보</span> : null}
                           </span>
-                        </label>
-                      );
-                    })}
+                        </span>
+                      </label>
+                    ))}
                   </div>
                 ) : null}
               </section>
             );
           })}
+          {!groupedTodos.length ? <p className="overdue-review__empty">정리할 지난 일정이 없습니다.</p> : null}
         </div>
 
-        {deleteError ? <p role="alert" className="rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">{deleteError}</p> : null}
+        {deleteError ? <p role="alert" className="overdue-review__notice is-error">{deleteError}</p> : null}
+        {deleteNotice ? <p role="status" className="overdue-review__notice is-success">{deleteNotice}</p> : null}
         {resultMessage ? (
-          <p
-            role="status"
-            className={`rounded-md border px-3 py-2 text-sm ${
-              result?.failed
-                ? "border-danger/40 bg-danger/10 text-danger"
-                : "border-success/30 bg-success/10 text-success"
-            }`}
-          >
-            {resultMessage}
-          </p>
+          <p role="status" className={result?.failed ? "overdue-review__notice is-error" : "overdue-review__notice is-success"}>{resultMessage}</p>
         ) : null}
 
-        <div className="flex flex-col-reverse gap-2 border-t border-ink-700/55 pt-3 sm:flex-row sm:justify-end">
-          <button type="button" className="btn-secondary justify-center" onClick={onClose} disabled={busy}>
-            닫기
-          </button>
-          <button
-            type="button"
-            className="btn-secondary justify-center"
-            onClick={() => runImport("copy")}
-            disabled={!selectedIds.size || busy}
-          >
-            <CopyPlus size={16} />
-            선택 {selectedIds.size}개 복사
-          </button>
-          <button
-            type="button"
-            className="btn-primary justify-center"
-            onClick={() => runImport("move")}
-            disabled={!selectedIds.size || busy}
-          >
-            <MoveRight size={16} />
-            {submitting ? "처리 중..." : `선택 ${selectedIds.size}개 이동`}
-          </button>
+        <div className="overdue-review__footer">
+          <Button variant="danger" size="sm" className="overdue-review__bulk-delete"
+            onClick={() => void deleteSelected(selectedVisibleIds, "선택한 Todo")}
+            disabled={!selectedVisibleIds.length || busy}>
+            <Trash2 size={15} aria-hidden="true" />선택 {selectedVisibleIds.length}개 삭제
+          </Button>
+          <div className="overdue-review__footer-actions">
+            <Button variant="ghost" size="sm" onClick={onClose} disabled={busy}>닫기</Button>
+            <Button variant="secondary" size="sm" onClick={() => void runImport("copy")}
+              disabled={!selectedVisibleIds.length || busy}>
+              <CopyPlus size={15} aria-hidden="true" />선택 {selectedVisibleIds.length}개 복사
+            </Button>
+            <Button variant="primary" size="sm" onClick={() => void runImport("move")}
+              disabled={!selectedVisibleIds.length || busy}>
+              <MoveRight size={15} aria-hidden="true" />
+              {submitting ? "처리 중..." : "선택 " + selectedVisibleIds.length + "개 이동"}
+            </Button>
+          </div>
         </div>
       </div>
     </Modal>
