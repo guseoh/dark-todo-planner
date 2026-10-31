@@ -63,6 +63,7 @@ export function OverdueTodoImportModal({ todos, onImport, onDeleteMany, onClose 
     if (busy) return;
     setResult(null);
     setDeleteError("");
+    setDeleteNotice("");
     setSelectedIds((current) => {
       const next = new Set(current);
       if (next.has(id)) next.delete(id);
@@ -85,6 +86,7 @@ export function OverdueTodoImportModal({ todos, onImport, onDeleteMany, onClose 
     if (busy) return;
     setResult(null);
     setDeleteError("");
+    setDeleteNotice("");
     setSelectedIds((current) => {
       const ids = dateTodos.map((todo) => todo.id);
       const allSelected = ids.every((id) => current.has(id));
@@ -142,6 +144,7 @@ export function OverdueTodoImportModal({ todos, onImport, onDeleteMany, onClose 
     if (busy) return;
     setResult(null);
     setDeleteError("");
+    setDeleteNotice("");
     setSelectedIds(
       new Set(
         groupedTodos
