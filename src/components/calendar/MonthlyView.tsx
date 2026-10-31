@@ -146,7 +146,7 @@ export function MonthlyView({
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1180px] space-y-3">
+    <div className="calendar-month-workspace w-full min-w-0 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="캘린더 일정 필터">
           {filterOptions.map(({ key, label }) => (
@@ -171,7 +171,7 @@ export function MonthlyView({
       </div>
 
       {moveFeedback ? <p role={moveFeedback.kind === "error" ? "alert" : "status"} className={`border-l-2 py-2 pl-3 text-xs ${moveFeedback.kind === "error" ? "border-danger/60 text-danger" : "border-success/60 text-ui-secondary"}`}>{moveFeedback.message}</p> : null}
-      <div className={`grid min-w-0 items-start gap-4 ${panelOpen ? "xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]" : ""}`}>
+      <div className={`grid min-w-0 items-start gap-4 ${panelOpen ? "xl:grid-cols-[minmax(0,1fr)_300px]" : ""}`}>
         <MonthlyCalendar
           currentMonth={currentMonth}
           monthDays={monthDays}
@@ -188,7 +188,7 @@ export function MonthlyView({
           draggingDisabled={Boolean(movingTodoId)}
         />
         {panelOpen ? (
-          <div ref={selectedPanelRef} className="min-w-0 scroll-mt-24 xl:sticky xl:top-20 xl:self-start">
+          <div ref={selectedPanelRef} className="calendar-month-panel min-w-0 scroll-mt-24 xl:sticky xl:top-20 xl:self-start">
             <MonthlySidePanel
               selectedDate={selectedDate}
               monthEndLabel={selectedMonthEndLabel}
