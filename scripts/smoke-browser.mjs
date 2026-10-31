@@ -424,7 +424,8 @@ try {
   assert.equal(mainLayout.submitRadius, "3px", "Submit should use sharp restrained corners.");
   assert.equal(mainLayout.metaHasActions, true, "Metadata, details and cancel must share the same row.");
   assert.equal(mainLayout.footerNoDivider, true, "Avoid a separated card-like footer.");
-  assert.equal(mainLayout.footerSameRowAsChips, true, "On desktop metadata and secondary actions stay aligned.");
+  assert.ok(mainLayout.formWidth < 600 || mainLayout.footerSameRowAsChips,
+    "On desktop metadata and secondary actions share a line; mobile may wrap without clipping.");
   assert.ok(mainLayout.composerWidth <= 765, "The composer should have a practical desktop max width.");
   assert.equal(await composer.getByRole("button", { name: "추가", exact: true }).isDisabled(), false,
     "Entered draft enables the compact Add button.");
