@@ -1016,6 +1016,140 @@ button:disabled {
   .scratchpad-rendered-preview pre { overflow-x: auto; }
 }
 
+
+/* G6.7 — content-first overdue review; semantic actions without nested cards. */
+@layer components {
+  .overdue-review {
+    display: flex;
+    flex-direction: column;
+    gap: .65rem;
+    min-width: 0;
+  }
+  .overdue-review__toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .55rem 1.25rem;
+    padding: .1rem 0 .7rem;
+    border-bottom: 1px solid var(--ui-divider);
+  }
+  .overdue-review__summary {
+    font-size: .81rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+  }
+  .overdue-review__summary strong { font-size: 1.2rem; font-weight: 650; color: var(--text-primary); }
+  .overdue-review__summary span { color: var(--text-muted); font-size: .72rem; }
+  .overdue-review__selection-actions {
+    display: flex; align-items: center; flex-wrap: wrap; gap: .2rem .6rem;
+  }
+  .overdue-review__text-action,
+  .overdue-review__expand-actions button {
+    display: inline-flex; align-items: center;
+    min-height: 32px; padding: .25rem .4rem;
+    background: transparent; border: 0; border-radius: 3px;
+    color: var(--text-secondary); font-size: .76rem; font-weight: 500;
+    transition: color 150ms, background-color 150ms;
+  }
+  .overdue-review__text-action:hover,
+  .overdue-review__expand-actions button:hover { color: var(--text-primary); background: var(--surface-2); }
+  .overdue-review__text-action:focus-visible,
+  .overdue-review__expand-actions button:focus-visible {
+    outline: 2px solid var(--info); outline-offset: 2px;
+  }
+  .overdue-review__text-action:disabled,
+  .overdue-review__expand-actions button:disabled { opacity: .44; cursor: not-allowed; }
+  .overdue-review__expand-actions {
+    display: flex; align-items: center; gap: .25rem;
+    color: var(--text-muted);
+    padding: 0 0 .2rem;
+  }
+  .overdue-review__hint { margin-left: auto; color: var(--text-muted); font-size: .7rem; }
+  .overdue-review__list {
+    min-height: 0; max-height: min(50vh, 470px);
+    overflow-y: auto; overscroll-behavior: contain;
+    border-top: 1px solid var(--ui-divider);
+  }
+  .overdue-review__date { border-bottom: 1px solid var(--ui-divider); }
+  .overdue-review__date-header { display: flex; align-items: center; gap: .5rem; min-height: 54px; padding: .35rem .25rem; }
+  .overdue-review__check {
+    width: 17px; height: 17px; flex: 0 0 17px;
+    accent-color: var(--info); cursor: pointer;
+  }
+  .overdue-review__check:focus-visible { outline: 2px solid var(--info); outline-offset: 3px; }
+  .overdue-review__date-toggle {
+    flex: 1; display: flex; align-items: center; gap: .55rem;
+    min-width: 0; min-height: 40px; padding: .3rem .4rem;
+    background: transparent; color: var(--text-secondary);
+    text-align: left; border: 0; border-radius: 3px;
+  }
+  .overdue-review__date-toggle:hover { color: var(--text-primary); background: var(--surface-1); }
+  .overdue-review__date-toggle:focus-visible,
+  .overdue-review__date-delete:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
+  .overdue-review__date-title { color: var(--text-primary); font-weight: 600; font-size: .86rem; }
+  .overdue-review__date-count { margin-left: auto; color: var(--text-muted); font-size: .73rem; white-space: nowrap; }
+  .overdue-review__date-selected { color: var(--info); font-size: .72rem; white-space: nowrap; }
+  .overdue-review__date-delete {
+    display: flex; align-items: center; justify-content: center;
+    flex: 0 0 34px; width: 34px; height: 34px;
+    background: transparent; color: var(--text-muted);
+    border: 0; border-radius: 4px;
+  }
+  .overdue-review__date-delete:hover { background: var(--danger-tint); color: var(--danger); }
+  .overdue-review__tasks { padding: .15rem 0 .65rem 1.9rem; }
+  .overdue-review__task {
+    display: flex; align-items: flex-start; gap: .8rem;
+    padding: .6rem .55rem; cursor: pointer; border-radius: 3px;
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background-color 150ms;
+  }
+  .overdue-review__task:last-child { border-bottom: 0; }
+  .overdue-review__task:hover { background: var(--surface-1); }
+  .overdue-review__task.is-selected { background: var(--info-tint); }
+  .overdue-review__task-info { display: flex; min-width: 0; flex-direction: column; gap: .15rem; }
+  .overdue-review__task-title {
+    overflow-wrap: anywhere; color: var(--text-primary);
+    font-size: .82rem; line-height: 1.5; font-weight: 500;
+  }
+  .overdue-review__task-title.is-completed { text-decoration: line-through; color: var(--text-muted); }
+  .overdue-review__task-meta { font-size: .7rem; color: var(--text-muted); line-height: 1.5; }
+  .overdue-review__duplicate { color: var(--warning); }
+  .overdue-review__empty { padding: 2rem .5rem; color: var(--text-muted); font-size: .82rem; text-align: center; }
+  .overdue-review__notice {
+    border-left: 2px solid var(--info); padding: .55rem .7rem;
+    background: var(--info-tint); color: var(--text-primary);
+    font-size: .78rem; line-height: 1.6;
+  }
+  .overdue-review__notice.is-error { border-left-color: var(--danger); background: var(--danger-tint); color: var(--danger); }
+  .overdue-review__notice.is-success { border-left-color: var(--success); background: var(--success-tint); color: var(--success); }
+  .overdue-review__footer {
+    position: sticky; bottom: -1rem; z-index: 1;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+    gap: .7rem; margin: .35rem -1rem -1rem; padding: .85rem 1rem;
+    border-top: 1px solid var(--ui-divider);
+    background: var(--surface-1);
+  }
+  .overdue-review__footer-actions { display: flex; flex-wrap: wrap; gap: .45rem; justify-content: flex-end; }
+  .overdue-review__footer .ui-button { border-radius: 4px; min-height: 36px; }
+  .overdue-review__bulk-delete { margin-right: auto; }
+  @media (max-width: 639px) {
+    .overdue-review__toolbar { align-items: flex-start; }
+    .overdue-review__selection-actions { width: 100%; justify-content: space-between; gap: .2rem; }
+    .overdue-review__text-action, .overdue-review__expand-actions button { min-height: 40px; }
+    .overdue-review__hint { display: none; }
+    .overdue-review__list { max-height: 43dvh; }
+    .overdue-review__date-header { gap: .3rem; }
+    .overdue-review__date-selected { display: none; }
+    .overdue-review__date-title { font-size: .8rem; }
+    .overdue-review__tasks { padding-left: 1.15rem; }
+    .overdue-review__footer { flex-direction: column; align-items: stretch; }
+    .overdue-review__footer-actions { justify-content: space-between; }
+    .overdue-review__footer .ui-button { min-height: 44px; }
+    .overdue-review__bulk-delete { margin-right: 0; align-self: flex-start; }
+  }
+}
+
 /* Universal focus affordance for non-component controls. */
 :where(button, a, input, select, textarea, summary):focus-visible {
   outline: 2px solid var(--accent);
