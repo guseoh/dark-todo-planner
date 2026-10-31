@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState, type KeyboardEvent } from "react";
-import { Archive, ArchiveRestore, CheckCircle2, ChevronDown, CircleDot, ExternalLink, FolderKanban, Link2, PauseCircle, Pencil, Plus, Save, Target, Trash2, X } from "lucide-react";
+import { Archive, ArchiveRestore, CheckCircle2, ChevronDown, CircleDot, ExternalLink, FolderKanban, Link2, MoreHorizontal, PauseCircle, Pencil, Plus, Save, Target, Trash2, X } from "lucide-react";
 import { ProjectDecisionLog } from "../components/project/ProjectDecisionLog";
 import { PageHeader } from "../components/common/PageHeader";
 import { ProjectKanban } from "../components/project/ProjectKanban";
@@ -314,12 +314,12 @@ export function ProjectPage({
 
       {selected ? (
         <div className="min-w-0 space-y-4">
-          <section className="app-card py-5">
+          <section className="project-overview app-card py-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <FolderKanban size={20} className="text-accent-300" />
-                  <h3 className="text-xl font-bold text-ink-100">{selected.name}</h3>
+                  <FolderKanban size={19} className="text-ui-secondary" />
+                  <h3 className="text-xl font-semibold tracking-tight text-ink-100">{selected.name}</h3>
                   <span className="text-xs font-medium text-ink-400">{projectStatusLabel[selected.status]}</span>
                 </div>
                 <details className="mt-2 group">
@@ -329,11 +329,10 @@ export function ProjectPage({
                   <p className="max-w-4xl px-1 pt-1 text-sm leading-6 text-ink-300">{selected.description || "설명이 없습니다."}</p>
                 </details>
                 <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-400">
-                  <span>진행률 {progress}% ({completed}/{projectTodos.length})</span>
+                  <span><strong className="font-medium text-ui-text">{completed}/{projectTodos.length}개 완료</strong> · {progress}%</span>
                   {selected.startDate ? <span>시작일 {selected.startDate}</span> : null}
                   {selected.targetDate ? <span>목표일 {selected.targetDate}</span> : null}
                   <span>마일스톤 {projectMilestones.length}개</span>
-                  <span>자료 {(selected.resources || []).length}개</span>
                   <span>결정 {projectDecisions.length}개</span>
                 </div>
               </div>
@@ -346,14 +345,25 @@ export function ProjectPage({
                   <option value="ON_HOLD">보류</option>
                   <option value="DONE">완료</option>
                 </select>
-                <button type="button" className="btn-secondary hover:border-danger/50 hover:text-danger" onClick={() => void deleteSelectedProject()} disabled={deletingProject}>
-                  <Trash2 size={15} />{deletingProject ? "삭제 중" : "삭제"}
-                </button>
-                {selected.archived ? (
-                  <button type="button" className="btn-secondary" onClick={() => void onUnarchiveProject(selected.id)} disabled={deletingProject}><ArchiveRestore size={15} />복원</button>
-                ) : (
-                  <button type="button" className="btn-secondary" onClick={() => void onArchiveProject(selected.id)} disabled={deletingProject}><Archive size={15} />보관</button>
-                )}
+                <details className="project-actions-menu">
+                  <summary className="btn-secondary" aria-label="프로젝트 관리 메뉴" title="프로젝트 관리 메뉴">
+                    <MoreHorizontal size={17} aria-hidden="true" />
+                  </summary>
+                  <div className="project-actions-menu__panel" role="group" aria-label="프로젝트 관리">
+                    {selected.archived ? (
+                      <button type="button" onClick={() => void onUnarchiveProject(selected.id)} disabled={deletingProject}>
+                        <ArchiveRestore size={15} />복원
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => void onArchiveProject(selected.id)} disabled={deletingProject}>
+                        <Archive size={15} />보관
+                      </button>
+                    )}
+                    <button type="button" className="project-actions-menu__danger" onClick={() => void deleteSelectedProject()} disabled={deletingProject}>
+                      <Trash2 size={15} />{deletingProject ? "삭제 중" : "삭제"}
+                    </button>
+                  </div>
+                </details>
               </div>
             </div>
 
@@ -371,7 +381,7 @@ export function ProjectPage({
               </form>
             ) : null}
 
-            <div role="progressbar" aria-label="프로젝트 완료율" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="mt-4 h-1 overflow-hidden bg-ink-800">
+            <div role="progressbar" aria-label="프로젝트 완료율" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="project-overview__progress mt-4 h-1 overflow-hidden bg-ink-800">
               <div className="h-full bg-accent-500 transition-[width]" style={{ width: `${progress}%` }} />
             </div>
 
