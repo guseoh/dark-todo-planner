@@ -20,7 +20,7 @@ function InlineSelectMenu({
   value: string;
   options: InlineMenuOption[];
   icon: ReactNode;
-  menuRef: RefObject<HTMLDetailsElement | null>;
+  menuRef: RefObject<HTMLDetailsElement>;
   className?: string;
   disabled?: boolean;
   onOpen: (current: HTMLDetailsElement | null) => void;
