@@ -1388,3 +1388,195 @@ button:disabled {
   .todo-composer-form--inline .todo-composer-chip__value { max-width: min(110px, 25vw); }
   .todo-composer-form--inline .todo-composer-form__meta-row { row-gap: .1rem; }
 }
+/* G7 · Quiet Editorial Workspace
+   Content drives emphasis; neutral surfaces and clear, restrained controls.
+   Shared rules intentionally follow the older page-specific overrides. */
+:root {
+  --editorial-column: 1160px;
+  --editorial-divider: var(--ui-divider);
+  --editorial-muted: var(--text-secondary);
+}
+.page-shell.all-todos-page { max-width: var(--editorial-column); }
+.page-shell.calendar-page { max-width: 1400px; }
+.page-shell.settings-page { max-width: 1024px; }
+.memo-page.page-shell { max-width: 1180px; }
+.page-shell .page-header { gap: .9rem 1.2rem; padding-bottom: 1rem; }
+.page-shell .page-header h1 { font-size: 1.4rem; line-height: 1.3; font-weight: 650; }
+.page-shell .page-header p { max-width: 62ch; font-size: .83rem; line-height: 1.55; }
+.page-shell .page-meta { font-size: .73rem; color: var(--text-muted); }
+.page-shell .page-tab { font-weight: 500; }
+.page-shell .page-tab[aria-selected="true"],
+.page-shell .page-tab[aria-pressed="true"] {
+  color: var(--text-primary); border-bottom-color: var(--text-primary);
+}
+.page-shell .page-toolbar { gap: .65rem; }
+.page-shell .btn-secondary { border-radius: 3px; }
+.page-shell :where(.field, input, select, textarea):focus-visible {
+  outline-offset: 2px;
+}
+/* Today is a task list, not a filled dashboard. Hover is feedback, not a card. */
+.todo-row--today { border-bottom-color: var(--ui-row-divider); }
+.todo-row--today:hover {
+  background-color: color-mix(in srgb, var(--ui-hover) 35%, transparent) !important;
+}
+.todo-row--today h4 { font-weight: 560; }
+.todo-row--today .todo-complete-button { border-radius: 3px; }
+.today-task-section .today-task-heading { padding-bottom: .15rem; }
+.today-category-nav .border-info { border-color: var(--text-primary); }
+.today-category-nav .text-info { color: var(--text-primary); }
+.today-composer:has(.todo-composer-form--inline) { border-block-color: var(--ui-divider); }
+.today-composer .todo-composer-trigger { min-height: 38px; }
+.today-digest { font-size: .77rem; }
+@media (hover: none) {
+  .todo-row--today:hover { background-color: transparent !important; }
+}
+/* All Todo: search and status stay visible. Complex criteria are a disclosure. */
+.todo-filter-workspace { padding: .3rem 0 .7rem; }
+.todo-filter-workspace__primary {
+  display: flex; align-items: center; flex-wrap: wrap; gap: .45rem;
+}
+.todo-filter-workspace__search { min-width: min(100%, 200px); flex: 1 1 350px; }
+.todo-filter-workspace__status {
+  width: 110px; min-width: 110px; flex: 0 0 auto; min-height: 36px;
+  font-size: .8rem; border-color: var(--border-default);
+}
+.todo-filter-workspace__expand {
+  flex: 0 0 auto; min-height: 36px; padding-inline: .75rem; font-size: .8rem;
+}
+.todo-filter-workspace__active {
+  display: flex; align-items: center; gap: .7rem; flex-wrap: wrap;
+  margin-top: .45rem; color: var(--text-muted); font-size: .75rem;
+}
+.todo-filter-workspace__reset {
+  display: inline-flex; gap: .25rem; align-items: center;
+  color: var(--text-secondary); text-decoration: underline; text-underline-offset: 3px;
+  padding: .25rem; font-size: .76rem;
+}
+.todo-filter-workspace__reset:hover { color: var(--text-primary); }
+.todo-filter-workspace__advanced {
+  display: grid; gap: .65rem; margin-top: .65rem;
+  border-top: 1px solid var(--ui-divider); padding-top: .7rem;
+}
+.todo-filter-workspace__priority { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; }
+.todo-filter-workspace__label {
+  min-width: 57px; font-size: .76rem; font-weight: 600; color: var(--text-secondary);
+}
+.todo-filter-workspace__saved {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .4rem;
+  border-top: 1px solid var(--ui-divider); padding-top: .6rem;
+}
+.todo-filter-workspace__fields { display: flex; flex-wrap: wrap; gap: .4rem; }
+.todo-filter-workspace__fields > :is(input,select) { max-width: 200px; }
+.all-todos-page .app-card[aria-label="Todo 선택 작업 도구"] {
+  padding-block: .6rem; background: transparent; border-bottom: 1px solid var(--ui-divider);
+}
+.all-todos-page .todo-row { padding-block: .55rem; }
+.all-todos-page .todo-row:hover { background-color: color-mix(in srgb, var(--ui-hover) 40%, transparent); }
+/* Calendar: one aligned wide workspace, with a subordinate date rail. */
+.calendar-page .calendar-month-workspace { margin-inline: 0; max-width: none; }
+.calendar-page .calendar-month-panel { border-left: 1px solid var(--ui-divider); }
+.calendar-page .calendar-selected-panel { padding-left: 1rem; border: 0; }
+.calendar-page .calendar-day[data-selected="true"] { background: var(--ui-selected); }
+.calendar-page .calendar-day { transition: background-color 130ms ease, border-color 130ms ease; }
+.calendar-page .calendar-day:hover { background-color: color-mix(in srgb, var(--ui-hover) 46%, transparent); }
+/* Project: compact operational header, with destructive management behind one menu. */
+.project-overview { position: relative; }
+.project-overview__progress { height: 3px; background: var(--surface-3); }
+.project-actions-menu { position: relative; flex: 0 0 auto; z-index: 15; }
+.project-actions-menu[open] { z-index: 55; }
+.project-actions-menu > summary { display: flex; align-items: center; justify-content: center; list-style: none; min-width: 36px; padding-inline: .45rem; cursor: pointer; }
+.project-actions-menu > summary::-webkit-details-marker { display: none; }
+.project-actions-menu__panel {
+  position: absolute; top: calc(100% + 5px); right: 0;
+  display: grid; width: 166px; gap: 1px; padding: 4px;
+  border: 1px solid var(--border-default); border-radius: 3px;
+  background: var(--surface-2); box-shadow: 0 8px 24px rgb(0 0 0 / .18);
+}
+.project-actions-menu__panel button {
+  display: flex; align-items: center; gap: .55rem; min-height: 36px;
+  padding: .45rem .65rem; text-align: left; border-radius: 2px;
+  color: var(--text-secondary); font-size: .8rem;
+}
+.project-actions-menu__panel button:hover,
+.project-actions-menu__panel button:focus-visible { color: var(--text-primary); background: var(--surface-3); }
+.project-actions-menu__panel .project-actions-menu__danger { color: var(--danger); }
+/* Settings: settings are rows, not selectable giant tiles. */
+.settings-page .settings-option-list { display: grid; gap: 0; max-width: 850px; }
+.settings-option-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1.25rem; padding: .95rem .25rem;
+  min-height: 64px; cursor: pointer; border-bottom: 1px solid var(--ui-divider);
+  background: transparent; color: var(--text-primary);
+}
+.settings-option-row:hover { background: color-mix(in srgb, var(--ui-hover) 30%, transparent); }
+.settings-option-row > span { flex: 1 1 auto; order: 0; min-width: 0; }
+.settings-option-row > span > span:first-child { font-weight: 550; }
+.settings-option-row > span > span + span { font-weight: 400; line-height: 1.55; }
+.settings-option-row > input.settings-toggle {
+  order: 1; flex: 0 0 auto; appearance: none; -webkit-appearance: none;
+  width: 40px; height: 23px; border: 1px solid var(--border-default);
+  border-radius: 999px; background: var(--surface-3);
+  position: relative; margin: 0; cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+.settings-toggle::before {
+  content: ""; position: absolute; top: 3px; left: 3px;
+  width: 15px; height: 15px; border-radius: 50%;
+  background: var(--text-muted); transition: transform 150ms ease, background-color 150ms ease;
+}
+.settings-option-row > input.settings-toggle:checked {
+  background: var(--text-secondary); border-color: var(--text-secondary);
+}
+.settings-toggle:checked::before { transform: translateX(17px); background: var(--app-bg); }
+.settings-option-row > input.settings-toggle:focus-visible {
+  outline: 2px solid var(--ui-focus); outline-offset: 3px;
+}
+.settings-option-range {
+  display: grid; gap: .45rem; padding: 1rem .25rem;
+  border-bottom: 1px solid var(--ui-divider); font-size: .82rem; font-weight: 550;
+  color: var(--text-primary);
+}
+.settings-option-range > input { max-width: 150px; }
+.settings-option-range > span { font-size: .75rem; font-weight: 400; color: var(--text-secondary); }
+.settings-save-row {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: .85rem; flex-wrap: wrap; margin-top: 1rem;
+  border-top: 1px solid var(--ui-divider); padding: 1rem 0;
+}
+.settings-page .app-card { border-radius: 0; }
+/* Memo: keep meaningful per-note accent colors; constrain reading width. */
+.memo-page .memo-note { padding: 15px 14px; }
+.memo-page .memo-note__excerpt { max-height: 4.35rem; line-height: 1.65; }
+.memo-page .memo-note__body { gap: .45rem; }
+.memo-page .memo-note-grid { column-gap: 22px; }
+/* Scratchpad: consolidate menu + formatting tools; retain source-safe editing. */
+.scratchpad-command-strip {
+  display: flex; align-items: center; min-width: 0; gap: .4rem;
+  flex-wrap: wrap; border-bottom: 1px solid var(--ui-divider);
+}
+.scratchpad-command-strip__menus {
+  display: flex; min-width: 0; flex: 0 0 auto;
+  flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .25rem;
+  padding: .2rem .4rem;
+}
+.scratchpad-command-strip .scratchpad-toolbar {
+  min-width: 0; flex: 1 1 490px; border-bottom: 0; padding-block: .2rem;
+}
+.scratchpad-command-strip .scratchpad-toolbar > span:last-child { display: none; }
+.scratchpad-workspace textarea[aria-label="낙서장 편집기"] {
+  width: 100%; max-width: 1100px; margin-inline: auto;
+}
+@media (max-width: 800px) {
+  .todo-filter-workspace__search { flex-basis: 100%; }
+  .todo-filter-workspace__fields > :is(input,select) { flex: 1 1 140px; max-width: none; }
+  .calendar-page .calendar-month-panel { border-left: 0; border-top: 1px solid var(--ui-divider); padding-top: .8rem; }
+  .calendar-page .calendar-selected-panel { padding-left: 0; }
+}
+@media (max-width: 520px) {
+  .page-shell .page-header { padding-bottom: .8rem; }
+  .todo-filter-workspace__status { min-width: 100px; width: 100px; }
+  .settings-option-row { gap: .75rem; }
+  .settings-save-row { justify-content: space-between; }
+  .scratchpad-command-strip__menus { flex: 1 1 100%; }
+  .scratchpad-command-strip .scratchpad-toolbar { flex-basis: 100%; }
+}
