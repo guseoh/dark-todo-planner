@@ -551,6 +551,9 @@ try {
   // Readability regression: a task is a distinct text-first row, not a barely
   // visible line or a nested rounded card.
   const createdRow = page.locator(".todo-row").filter({ has: page.getByRole("heading", { name: title, exact: true }) });
+  const mobileRowHeight = await createdRow.evaluate((row) => row.getBoundingClientRect().height);
+  assert.ok(mobileRowHeight <= 105, `Mobile rows can wrap metadata without unbounded height: ${mobileRowHeight}px`);
+  await page.setViewportSize({ width: 1440, height: 900 });
   const todoVisual = await createdRow.evaluate((row) => {
     const heading = row.querySelector("h4");
     if (!heading) throw new Error("Todo title heading missing");
@@ -573,6 +576,7 @@ try {
   assert.equal(todoVisual.divider, "1px", "Todo rows must have a real separator.");
   assert.equal(todoVisual.todayVariant, true, "Today Todo rows must use the dedicated editorial presentation.");
   assert.equal(todoVisual.leadingAction, false, "G6.2: Todo row should not show a permanent pin button.");
+  await page.setViewportSize({ width: 390, height: 844 });
   // G6: reviewing today's tasks must never reschedule them by default.
   const dayCloseBefore = (await findServerTodo(title))?.date;
   await page.getByRole("button", { name: /오늘 정리/ }).click();
@@ -588,6 +592,7 @@ try {
   await page.getByRole("heading", { name: "캘린더", exact: true }).waitFor();
   const monthGrid = page.getByRole("region", { name: "월간 일정 캘린더" });
   await monthGrid.getByRole("button", { name: title, exact: true }).waitFor();
+  await page.setViewportSize({ width: 1440, height: 900 });
   const monthDensity = await monthGrid.locator(".monthly-calendar-grid").evaluate((grid) => ({
     weeks: Number(grid.getAttribute("data-weeks")),
     height: grid.querySelector(".calendar-day")?.getBoundingClientRect().height ?? 0,
@@ -595,6 +600,7 @@ try {
   const expectedMonthHeight = { 4: 136, 5: 128, 6: 116 }[monthDensity.weeks];
   assert.ok(expectedMonthHeight && Math.abs(monthDensity.height - expectedMonthHeight) <= 1,
     `Calendar cells must be sized for ${monthDensity.weeks} weeks, not compressed to the viewport: ${JSON.stringify(monthDensity)}`);
+  await page.setViewportSize({ width: 390, height: 844 });
   const todoFilter = page.getByRole("button", { name: "Todo", exact: true });
   await todoFilter.click();
   assert.equal(await todoFilter.getAttribute("aria-pressed"), "false");
