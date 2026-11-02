@@ -1822,3 +1822,36 @@ button:disabled {
 @media (prefers-reduced-motion: reduce) {
   .todo-category-header__actions, .all-todos-page .todo-row__actions { transition: none; }
 }
+
+
+/* Drag ordering is available without making the list look like a draggable dashboard. */
+.today-page .today-drag-handle { opacity: .23; transition: opacity 120ms ease, color 120ms ease; }
+.today-page .todo-row:hover .today-drag-handle,
+.today-page .today-drag-handle:focus-visible,
+.today-page .today-drag-handle:active { opacity: 1; }
+@media (hover: none) { .today-page .today-drag-handle { opacity: .7; } }
+
+/* Calendar day rail: category hierarchy first, simple rows and one action menu. */
+.calendar-selected-panel .calendar-day-group__heading {
+  display: flex; align-items: center; gap: .45rem; min-height: 35px;
+  padding: .4rem .15rem; font-size: .82rem; font-weight: 620; color: var(--text-primary);
+}
+.calendar-selected-panel .calendar-day-group__list { border-top: 1px solid var(--ui-divider); }
+.calendar-selected-panel .todo-row--today {
+  padding: .4rem .05rem; border-bottom: 1px solid var(--ui-divider);
+}
+.calendar-selected-panel .todo-row--today .todo-row__content { padding: .2rem .1rem; }
+.calendar-selected-panel .todo-row--today h4 {
+  font-size: .86rem; font-weight: 510; line-height: 1.45;
+  letter-spacing: -.015em; overflow-wrap: anywhere;
+}
+.calendar-selected-panel .todo-row--today .todo-row__meta {
+  margin-top: .18rem; gap: .3rem .55rem; font-size: .69rem; line-height: 1.45;
+}
+.calendar-selected-panel .todo-row--today .todo-complete-button {
+  width: 30px; height: 34px; flex-shrink: 0;
+}
+.calendar-selected-panel .todo-row--today .todo-row__more > summary {
+  width: 30px; height: 34px; min-width: 30px; min-height: 34px;
+}
+.calendar-selected-panel .calendar-date-move > summary { list-style-position: inside; }
