@@ -97,7 +97,7 @@ export function AppContent({ activeView, calendarMode, onCalendarModeChange, pla
     case "today":
       content = <TodayPage todayTodos={planner.getTodayTodos()}
         upcomingTodos={[...planner.todos].filter((todo) => !todo.archived && !todo.completed && todo.planningState === "SCHEDULED" && todo.date > getPlannerToday()).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3)}
-        onOpenDayClose={onOpenDayClose} stats={planner.stats} onAdd={planner.addTodo} onToggle={toggleTodo} onDelete={planner.deleteTodo} onDeleteMany={planner.deleteTodos} onUpdate={updateTodo} categories={planner.categories} projects={planner.projects} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} onReorderCategories={planner.reorderCategories} overdueTodos={planner.getOverdueIncompleteTodos()} onBringOverdueTodos={bringOverdueTodosToToday} />;
+        onOpenDayClose={onOpenDayClose} stats={planner.stats} onAdd={planner.addTodo} onToggle={toggleTodo} onDelete={planner.deleteTodo} onDeleteMany={planner.deleteTodos} onUpdate={updateTodo} onReorderTodos={planner.reorderTodos} categories={planner.categories} projects={planner.projects} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} onReorderCategories={planner.reorderCategories} overdueTodos={planner.getOverdueIncompleteTodos()} onBringOverdueTodos={bringOverdueTodosToToday} />;
       break;
     case "calendar":
       content = (
