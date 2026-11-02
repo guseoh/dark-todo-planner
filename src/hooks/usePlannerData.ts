@@ -209,6 +209,7 @@ export function usePlannerData() {
     ensureDeferredData: loadDeferredData,
     addTodo: todosState.addTodo,
     updateTodo: todosState.updateTodo,
+    reorderTodos: todosState.reorderTodos,
     deleteTodo: todosState.deleteTodo,
     undoDeleteTodo: todosState.undoDeleteTodo,
     deleteTodos: todosState.deleteTodos,

@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { InlineTodoAdd } from "../todo/InlineTodoAdd";
 import type { Category } from "../../types/category";
 import type { Todo, TodoInput } from "../../types/todo";
 import type { CalendarEvent } from "../../lib/calendarEvents";
 import { formatKoreanDate } from "../../lib/date";
-import { GroupedTodoList } from "../todo/GroupedTodoList";
+import { IconRenderer } from "../common/IconRenderer";
+import { TodoRow } from "../todo/TodoRow";
+import { TodoEditModal } from "../todo/TodoEditModal";
 
 type MonthlySidePanelProps = {
   selectedDate: string;
@@ -15,6 +17,7 @@ type MonthlySidePanelProps = {
   categories: Category[];
   quickAdd: boolean;
   onCancelQuickAdd: () => void;
+  onStartQuickAdd: () => void;
   movingTodoId: string | null;
   onMoveTodo: (id: string, dateKey: string) => Promise<boolean>;
   onClose: () => void;
@@ -67,6 +70,7 @@ export function MonthlySidePanel({
   categories,
   quickAdd,
   onCancelQuickAdd,
+  onStartQuickAdd,
   movingTodoId,
   onMoveTodo,
   onClose,
@@ -78,7 +82,20 @@ export function MonthlySidePanel({
   onUpdateCategory,
   onDeleteCategory,
 }: MonthlySidePanelProps) {
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const relatedEvents = selectedEvents.filter((event) => event.kind !== "todo");
+  const completedCount = selectedTodos.filter((todo) => todo.completed).length;
+  const categoryIds = new Set(categories.map((category) => category.id));
+  const groups: Array<{ key: string; category: Category | undefined; todos: Todo[] }> = categories
+    .filter((category) => selectedTodos.some((todo) => todo.categoryId === category.id))
+    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, "ko"))
+    .map((category) => ({
+      key: category.id,
+      category,
+      todos: selectedTodos.filter((todo) => todo.categoryId === category.id),
+    }));
+  const uncategorized = selectedTodos.filter((todo) => !todo.categoryId || !categoryIds.has(todo.categoryId));
+  if (uncategorized.length) groups.push({ key: "uncategorized", category: undefined, todos: uncategorized });
   return (
     <aside className="scroll-mt-24" aria-label="선택한 날짜 상세">
       <section className="calendar-selected-panel flex flex-col border-l border-ui-divider px-4 py-3 xl:max-h-[calc(100vh-7rem)] xl:overflow-hidden">
@@ -86,12 +103,12 @@ export function MonthlySidePanel({
           <div className="min-w-0">
             <h3 className="truncate text-base font-semibold text-ink-100">{formatKoreanDate(selectedDate)}</h3>
             <p className="mt-1 truncate text-xs text-ink-400">
-              {selectedTodos.length}개 작업{monthEndLabel ? ` · ${monthEndLabel}` : ""}
+              {selectedTodos.length}개 작업 · {completedCount}개 완료{monthEndLabel ? ` · ${monthEndLabel}` : ""}
             </p>
           </div>
           <button type="button" className="icon-btn h-9 w-9 shrink-0" onClick={onClose} aria-label="날짜 상세 닫기"><X size={16} /></button>
         </div>
-        <div className="min-h-0 space-y-3 xl:overflow-y-auto xl:overscroll-contain xl:pr-1 [&_.icon-btn]:!min-h-9 [&_.icon-btn]:!min-w-9">
+        <div className="min-h-0 space-y-4 xl:overflow-y-auto xl:overscroll-contain xl:pr-1">
           {relatedEvents.length ? (
             <section aria-label="마감 및 프로젝트 일정" className="space-y-2">
               <h4 className="text-xs font-semibold text-ink-300">마감·프로젝트 일정</h4>
@@ -106,44 +123,70 @@ export function MonthlySidePanel({
               </ul>
             </section>
           ) : null}
-          <section aria-label="선택한 날짜 실행 Todo" className="space-y-2">
+          <section aria-label="선택한 날짜 실행 Todo" className="space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <h4 className="text-xs font-semibold text-ink-300">실행 Todo</h4>
-              <span className="px-1 py-0.5 text-xs text-ink-400">{selectedTodos.length}개</span>
+              <h4 className="text-sm font-semibold text-ink-200">할 일</h4>
+              <button type="button" className="inline-flex min-h-8 items-center gap-1 border border-ui-divider px-2 text-xs text-ui-secondary hover:border-ui-control-border hover:text-ui-text" onClick={onStartQuickAdd}>
+                <Plus size={14} aria-hidden="true" /> 추가
+              </button>
             </div>
             {quickAdd ? (
               <InlineTodoAdd key={selectedDate} defaultDate={selectedDate} placeholder="이 날짜에 추가할 Todo" onAdd={onAdd} onCancel={onCancelQuickAdd} />
             ) : null}
             {selectedTodos.length ? (
-              <details className="border-t border-ink-700/50 p-2.5">
-                <summary className="cursor-pointer text-xs font-semibold text-ink-300">빠른 날짜 변경 · {selectedTodos.length}개</summary>
-                <div className="mt-3 space-y-2">
-                  {selectedTodos.map((todo) => (
-                    <CalendarDateMoveRow key={todo.id} todo={todo} busy={movingTodoId !== null} onMove={onMoveTodo} />
-                  ))}
-                </div>
-              </details>
-            ) : null}
-            <GroupedTodoList
-              todos={selectedTodos}
-              categories={categories}
-              onAddTodo={onAdd}
-              onToggle={onToggle}
-              onDelete={onDelete}
-              onUpdate={onUpdate}
-              onAddCategory={onAddCategory}
-              onUpdateCategory={onUpdateCategory}
-              onDeleteCategory={onDeleteCategory}
-              emptyTitle="이 날짜에 실행할 Todo가 없습니다."
-              emptyDescription="날짜별 Todo를 추가하거나 계획을 이동할 수 있습니다."
-              showDate={false}
-              defaultDate={selectedDate}
-              showCategoryCreator={false}
-              layout="list"
-            />
+              <>
+                {groups.map((group) => {
+                  const done = group.todos.filter((todo) => todo.completed).length;
+                  return (
+                    <div key={group.key} className="calendar-day-group">
+                      <div className="calendar-day-group__heading">
+                        {group.category ? (
+                          <IconRenderer
+                            icon={group.category.icon}
+                            color={group.category.color || "#a0a0a6"}
+                            name={group.category.name}
+                            className={group.category.icon ? "h-6 w-6 border-0 bg-transparent" : "h-2 w-2"}
+                            iconClassName="h-4 w-4"
+                            fallback="dot"
+                          />
+                        ) : null}
+                        <span className="min-w-0 truncate">{group.category?.name || "미분류"}</span>
+                        <span className="ml-auto text-xs font-normal tabular-nums text-ui-muted">{done}/{group.todos.length}</span>
+                      </div>
+                      <div className="calendar-day-group__list">
+                        {group.todos.map((todo) => (
+                          <TodoRow
+                            key={todo.id}
+                            todo={todo}
+                            variant="today"
+                            onToggle={onToggle}
+                            onDelete={onDelete}
+                            onEdit={setEditingTodo}
+                            showDate={false}
+                            showCategoryBadge={false}
+                            hideMediumPriority
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+                <details className="calendar-date-move border-t border-ui-divider pt-2">
+                  <summary className="cursor-pointer py-2 text-xs text-ui-secondary hover:text-ui-text">날짜 빠르게 변경</summary>
+                  <div className="mt-1 space-y-1">
+                    {selectedTodos.filter((todo) => !todo.completed).map((todo) => (
+                      <CalendarDateMoveRow key={todo.id} todo={todo} busy={movingTodoId !== null} onMove={onMoveTodo} />
+                    ))}
+                  </div>
+                </details>
+              </>
+            ) : (
+              <p className="border-t border-ui-divider py-5 text-sm text-ui-muted">이 날짜에 예정된 할 일이 없습니다.</p>
+            )}
           </section>
         </div>
       </section>
+      <TodoEditModal todo={editingTodo} categories={categories} onClose={() => setEditingTodo(null)} onSave={onUpdate} />
     </aside>
   );
 }

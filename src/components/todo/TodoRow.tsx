@@ -1,5 +1,5 @@
 import { Archive, CalendarDays, CheckCircle2, ExternalLink, FolderKanban, MoreHorizontal, Pencil, RotateCcw, Star, StarOff, Tag, Trash2 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { formatKoreanDate, getDdayLabel, todayKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../../lib/todo";
 import { planningStateLabels, workflowStatusLabels } from "../../lib/todoLabels";
@@ -57,10 +57,34 @@ export function TodoRow({
   const handleDelete = () => {
     if (window.confirm(`"${todo.title}" Todo를 삭제할까요?`)) onDelete(todo.id);
   };
+  const menuRef = useRef<HTMLDetailsElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const dismissOutside = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+    const dismissEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", dismissOutside);
+    document.addEventListener("keydown", dismissEscape);
+    return () => {
+      document.removeEventListener("pointerdown", dismissOutside);
+      document.removeEventListener("keydown", dismissEscape);
+    };
+  }, [menuOpen]);
+
   const today = todayKey();
   const overdue = isOverdueByDeadline(todo, today);
   const dueSoon = isDueSoon(todo, today);
   const openOrSelect = () => selectionMode ? onSelect?.(todo.id) : onEdit(todo);
+  const showMeta = (todo.priority !== "MEDIUM" || !hideMediumPriority)
+    || (!todo.completed && (todo.workflowStatus === "IN_PROGRESS" || todo.workflowStatus === "BLOCKED"))
+    || showCategoryBadge || (showCategoryMeta && Boolean(todo.category))
+    || todo.planningState !== "SCHEDULED" || todo.archived || duplicateCandidate
+    || Boolean(projectName) || (showDate && todo.planningState === "SCHEDULED")
+    || Boolean(todo.dueDate) || Boolean(todo.referenceUrl);
 
   return (
     <article className={`todo-row ${variant === "today" ? "todo-row--today" : ""} group px-1 py-3 transition-colors sm:px-2 ${selected && selectionMode ? "bg-ui-selected" : "bg-transparent hover:bg-ui-hover"}`}>
@@ -79,7 +103,7 @@ export function TodoRow({
         <button type="button" className="todo-row__content min-w-0 flex-1 rounded-[4px] px-1 py-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus" onClick={openOrSelect} aria-pressed={selectionMode ? selected : undefined}>
           <h4 className={`min-w-0 break-words text-[15px] font-medium leading-6 tracking-[-0.01em] text-ui-text ${todo.completed ? "text-ui-muted line-through" : ""}`}>{todo.title}</h4>
           {todo.memo ? <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-[13px] leading-5 text-ui-secondary">{todo.memo}</p> : null}
-          <div className="todo-row__meta mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ui-secondary">
+          {showMeta ? <div className="todo-row__meta mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ui-secondary">
             {!(hideMediumPriority && todo.priority === "MEDIUM") ? <PriorityBadge priority={todo.priority} compact /> : null}
             {!todo.completed && (todo.workflowStatus === "IN_PROGRESS" || todo.workflowStatus === "BLOCKED") ? <span className={todo.workflowStatus === "BLOCKED" ? "font-medium text-danger" : "text-ink-300"}>{workflowStatusLabels[todo.workflowStatus]}</span> : null}
             {showCategoryBadge ? <span>{todo.category?.name || "미분류"}</span> : null}
@@ -91,17 +115,17 @@ export function TodoRow({
             {showDate && todo.planningState === "SCHEDULED" ? <span className="inline-flex items-center gap-1"><CalendarDays size={12} />{formatKoreanDate(todo.date, "M월 d일 E")}</span> : null}
             {todo.dueDate ? <span className={`font-medium ${overdue ? "text-danger" : dueSoon ? "text-warning" : "text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {getDdayLabel(todo.dueDate)}</span> : null}
             {todo.referenceUrl ? <span className="inline-flex items-center gap-1 font-semibold text-accent-200"><ExternalLink size={11} />{todo.referenceLabel || "관련 링크"}</span> : null}
-          </div>
+          </div> : null}
         </button>
 
         {!selectionMode && variant === "today" ? (
-          <details className="todo-row__more relative z-10 shrink-0">
+          <details ref={menuRef} open={menuOpen} onToggle={(event) => setMenuOpen(event.currentTarget.open)} className="todo-row__more relative z-10 shrink-0">
             <summary className="ui-icon-button ui-icon-button--neutral h-9 w-9 cursor-pointer list-none" aria-label={`"${todo.title}" 더보기`} title="작업 메뉴">
               <MoreHorizontal size={17} />
             </summary>
             <div className="todo-row__menu absolute right-0 top-full z-40 mt-1 min-w-44 rounded-md border border-ui-divider bg-ui-elevated p-1.5 shadow-xl" role="group" aria-label={`"${todo.title}" 작업 메뉴`}>
               {onToggleFocus ? (
-                <button type="button" className="todo-row__menu-action" onClick={() => onToggleFocus(todo.id)}
+                <button type="button" className="todo-row__menu-action" onClick={() => { onToggleFocus(todo.id); setMenuOpen(false); }}
                   disabled={focusDisabled} aria-label={`${todo.title} ${focusPinned ? "핵심 작업에서 제외" : "핵심 작업으로 고정"}`}
                   title={focusDisabled ? "핵심 작업은 최대 3개까지 지정할 수 있습니다." : undefined}>
                   {focusPinned ? <StarOff size={14} /> : <Star size={14} />}
@@ -109,11 +133,11 @@ export function TodoRow({
                 </button>
               ) : null}
               <div className="todo-row__menu-action"><QuickSnoozeMenu todo={todo} /><span>빠른 미루기</span></div>
-              <button type="button" className="todo-row__menu-action" onClick={() => onEdit(todo)} aria-label={`"${todo.title}" Todo 수정`}>
+              <button type="button" className="todo-row__menu-action" onClick={() => { onEdit(todo); setMenuOpen(false); }} aria-label={`"${todo.title}" Todo 수정`}>
                 <Pencil size={14} />수정
               </button>
               {todo.referenceUrl ? <a href={todo.referenceUrl} target="_blank" rel="noreferrer" className="todo-row__menu-action" aria-label={`"${todo.title}" 관련 링크 열기`}><ExternalLink size={14} />관련 링크</a> : null}
-              <button type="button" className="todo-row__menu-action ui-menu-action--danger text-danger hover:bg-danger/10" onClick={handleDelete} aria-label={`"${todo.title}" Todo 삭제`}>
+              <button type="button" className="todo-row__menu-action ui-menu-action--danger text-danger hover:bg-danger/10" onClick={() => { handleDelete(); setMenuOpen(false); }} aria-label={`"${todo.title}" Todo 삭제`}>
                 <Trash2 size={14} />삭제
               </button>
             </div>
