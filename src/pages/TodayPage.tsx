@@ -1,5 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, History, MoonStar, Settings2, Star } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { ChevronDown, GripVertical, History, MoonStar, Settings2, Star } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { IconButton } from "../components/ui/IconButton";
 import { IconRenderer } from "../components/common/IconRenderer";
@@ -33,6 +36,7 @@ type TodayPageProps = {
   onDelete: (id: string) => void;
   onDeleteMany: (ids: string[]) => Promise<boolean> | boolean;
   onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
+  onReorderTodos: (ids: string[]) => Promise<boolean>;
   categories?: Category[];
   projects?: Project[];
   onAddCategory: (input: { name: string; description?: string; color?: string; icon?: string }) => void | Promise<void>;
@@ -61,6 +65,31 @@ const readFocusIds = (date: string): string[] => {
   }
 };
 
+function SortableTodayRow({ todo, render }: {
+  todo: Todo;
+  render: (todo: Todo, handle?: ReactNode) => ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: todo.id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+  const handle = (
+    <button
+      type="button"
+      {...attributes}
+      {...listeners}
+      className="today-drag-handle inline-flex h-9 w-7 cursor-grab items-center justify-center text-ui-muted hover:text-ui-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus active:cursor-grabbing"
+      aria-label={`"${todo.title}" 순서 변경`}
+      title="드래그하거나 방향키로 순서 변경"
+    >
+      <GripVertical size={15} aria-hidden="true" />
+    </button>
+  );
+  return (
+    <div ref={setNodeRef} style={style} className={isDragging ? "relative z-20 bg-ui-elevated opacity-90" : ""}>
+      {render(todo, handle)}
+    </div>
+  );
+}
+
 export function TodayPage({
   todayTodos,
   upcomingTodos = [],
@@ -71,6 +100,7 @@ export function TodayPage({
   onDelete,
   onDeleteMany,
   onUpdate,
+  onReorderTodos,
   categories = [],
   projects = [],
   onAddCategory,
@@ -80,6 +110,10 @@ export function TodayPage({
   overdueTodos,
   onBringOverdueTodos,
 }: TodayPageProps) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
   const [showOverdueImport, setShowOverdueImport] = useState(false);
   const [activeCategoryId, setActiveCategoryId] = useState<CategoryFilter>("all");
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
@@ -160,10 +194,11 @@ export function TodayPage({
     });
   };
 
-  const renderTodo = (todo: Todo) => (
+  const renderTodo = (todo: Todo, dragHandle?: ReactNode) => (
     <TodoRow
       key={todo.id}
       todo={todo}
+      leadingAction={dragHandle}
       variant="today"
       focusPinned={focusSet.has(todo.id)}
       focusDisabled={!focusSet.has(todo.id) && focusedTodos.length >= 3}
@@ -178,6 +213,15 @@ export function TodayPage({
       hideMediumPriority
     />
   );
+
+  const handleTodoDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    const ids = remainingTodos.map((todo) => todo.id);
+    const from = ids.indexOf(String(active.id));
+    const to = ids.indexOf(String(over.id));
+    if (from < 0 || to < 0) return;
+    void onReorderTodos(arrayMove(ids, from, to));
+  };
 
   return (
     <div className="page-shell today-page">
@@ -228,7 +272,7 @@ export function TodayPage({
                 </div>
                 <span className="text-xs font-medium tabular-nums text-ui-muted">{focusedTodos.length} / 3 선택</span>
               </div>
-              {focusedTodos.map(renderTodo)}
+              {focusedTodos.map((todo) => renderTodo(todo))}
             </section>
           ) : null}
 
@@ -285,7 +329,15 @@ export function TodayPage({
               <>
 
                 {remainingTodos.length ? (
-                  <div className="border-t border-[var(--ui-row-divider)]">{remainingTodos.map(renderTodo)}</div>
+                  <div className="border-t border-[var(--ui-row-divider)]">
+                    {remainingTodos.length > 1 ? (
+                      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleTodoDragEnd}>
+                        <SortableContext items={remainingTodos.map((todo) => todo.id)} strategy={verticalListSortingStrategy}>
+                          {remainingTodos.map((todo) => <SortableTodayRow key={todo.id} todo={todo} render={renderTodo} />)}
+                        </SortableContext>
+                      </DndContext>
+                    ) : remainingTodos.map((todo) => renderTodo(todo))}
+                  </div>
                 ) : activeTodos.length ? (
                   <p className="py-2 text-xs text-ink-400">미완료 Todo는 상단 핵심 작업에 모두 표시되어 있습니다.</p>
                 ) : (
@@ -306,7 +358,7 @@ export function TodayPage({
                   <span className="inline-flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-success" />완료한 일 {completedTodos.length}개</span>
                   <ChevronDown size={15} className={`transition ${showCompleted ? "rotate-180" : ""}`} />
                 </button>
-                {showCompleted ? <div className="mt-1.5 space-y-1.5">{completedTodos.map(renderTodo)}</div> : null}
+                {showCompleted ? <div className="mt-1.5 space-y-1.5">{completedTodos.map((todo) => renderTodo(todo))}</div> : null}
               </div>
             ) : null}
             {upcomingTodos.length > 0 ? (
