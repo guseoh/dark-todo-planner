@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { InlineTodoAdd } from "../todo/InlineTodoAdd";
 import type { Category } from "../../types/category";
 import type { Todo, TodoInput } from "../../types/todo";
@@ -17,6 +17,7 @@ type MonthlySidePanelProps = {
   categories: Category[];
   quickAdd: boolean;
   onCancelQuickAdd: () => void;
+  onStartQuickAdd: () => void;
   movingTodoId: string | null;
   onMoveTodo: (id: string, dateKey: string) => Promise<boolean>;
   onClose: () => void;
@@ -69,6 +70,7 @@ export function MonthlySidePanel({
   categories,
   quickAdd,
   onCancelQuickAdd,
+  onStartQuickAdd,
   movingTodoId,
   onMoveTodo,
   onClose,
@@ -124,7 +126,9 @@ export function MonthlySidePanel({
           <section aria-label="선택한 날짜 실행 Todo" className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <h4 className="text-sm font-semibold text-ink-200">할 일</h4>
-              <span className="px-1 py-0.5 text-xs text-ink-400">{selectedTodos.length}개</span>
+              <button type="button" className="inline-flex min-h-8 items-center gap-1 border border-ui-divider px-2 text-xs text-ui-secondary hover:border-ui-control-border hover:text-ui-text" onClick={onStartQuickAdd}>
+                <Plus size={14} aria-hidden="true" /> 추가
+              </button>
             </div>
             {quickAdd ? (
               <InlineTodoAdd key={selectedDate} defaultDate={selectedDate} placeholder="이 날짜에 추가할 Todo" onAdd={onAdd} onCancel={onCancelQuickAdd} />
