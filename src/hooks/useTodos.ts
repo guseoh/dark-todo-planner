@@ -320,6 +320,35 @@ export function useTodos() {
     }
   }, [allTodos]);
 
+  // Reorder only the visible subset; retain the relative position of every other Todo.
+  // Normalize all saved order values in one request so category/date views stay consistent.
+  const reorderTodos = useCallback(async (visibleIds: string[]): Promise<boolean> => {
+    if (new Set(visibleIds).size !== visibleIds.length || visibleIds.length < 2) return false;
+    const ordered = [...allTodos].sort((a, b) =>
+      (a.order ?? 0) - (b.order ?? 0) || b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id));
+    const target = new Set(visibleIds);
+    if (ordered.filter((todo) => target.has(todo.id)).length !== visibleIds.length) return false;
+
+    let nextIndex = 0;
+    const ids = ordered.map((todo) => target.has(todo.id) ? visibleIds[nextIndex++] : todo.id);
+    const before = allTodos;
+    const byId = new Map(allTodos.map((todo) => [todo.id, todo]));
+    setAllTodos(ids.map((id, index) => ({ ...byId.get(id)!, order: index })));
+    setSaving(true);
+    try {
+      if (shouldQueueTodoMutation()) throw new Error("순서 변경은 온라인에서만 저장할 수 있습니다.");
+      await api("/api/todos/reorder", { method: "PATCH", ...jsonBody({ ids }) });
+      setError("");
+      return true;
+    } catch (err) {
+      setAllTodos(before);
+      setError(getMessage(err));
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }, [allTodos]);
+
   const toggleTodo = useCallback(async (id: string) => {
     const existing = allTodos.find((todo) => todo.id === id);
     if (!existing) return false;
@@ -430,7 +459,7 @@ export function useTodos() {
 
   return {
     allTodos, todos, archivedTodos, inboxTodos, duplicateTodoIds, stats, loading, saving, error, pendingDelete,
-    loadTodos, addTodo, updateTodo, deleteTodo, undoDeleteTodo, deleteTodos, bulkUpdateTodos, toggleTodo, archiveTodo, unarchiveTodo,
+    loadTodos, addTodo, updateTodo, reorderTodos, deleteTodo, undoDeleteTodo, deleteTodos, bulkUpdateTodos, toggleTodo, archiveTodo, unarchiveTodo,
     syncCategory, removeCategoryFromTodos, getTodosByDate, getTodayTodos, getOverdueIncompleteTodos, getWeekTodos, getMonthTodos, filterTodos, bringOverdueTodosToToday,
   };
 }
