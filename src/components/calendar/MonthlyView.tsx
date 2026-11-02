@@ -197,6 +197,7 @@ export function MonthlyView({
               categories={categories}
               quickAdd={quickAdd}
               onCancelQuickAdd={() => setQuickAdd(false)}
+              onStartQuickAdd={() => openQuickAdd(selectedDate)}
               movingTodoId={movingTodoId}
               onMoveTodo={moveTodo}
               onClose={() => { setPanelOpen(false); setQuickAdd(false); }}
