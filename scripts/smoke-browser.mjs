@@ -1092,6 +1092,30 @@ try {
       }
     }
   }
+  // Project-management workflow: searching trash never changes the underlying items.
+  const trashSearchFixtureTitle = "Trash search fixture " + randomUUID().slice(0, 8);
+  const trashSearchFixture = await page.evaluate(async (title) => {
+    const created = await fetch("/api/todos", {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, date: "2026-11-07", planningState: "SCHEDULED", priority: "MEDIUM" }),
+    });
+    if (!created.ok) return { ok: false, stage: "create", code: created.status };
+    const payload = await created.json();
+    const id = payload.todo?.id;
+    if (!id) return { ok: false, stage: "missing-id" };
+    const trashed = await fetch(`/api/todos/${id}/trash`, { method: "POST", credentials: "same-origin" });
+    return { ok: trashed.ok, stage: "trash", code: trashed.status };
+  }, trashSearchFixtureTitle);
+  assert.equal(trashSearchFixture.ok, true, "Create and trash a local-only search fixture: " + JSON.stringify(trashSearchFixture));
+  await page.evaluate(() => { window.location.hash = "#/trash"; });
+  await page.getByRole("heading", { name: "휴지통", exact: true }).waitFor();
+  const trashSearch = page.getByRole("searchbox", { name: "휴지통 검색" });
+  await trashSearch.waitFor();
+  await trashSearch.fill("no-match-" + randomUUID());
+  await page.getByText("검색 조건에 맞는 삭제된 Todo가 없습니다.", { exact: true }).waitFor();
+  await trashSearch.fill(trashSearchFixtureTitle);
+  await page.getByText(trashSearchFixtureTitle, { exact: true }).waitFor();
   console.log("BROWSER E2E PASS: functional flows, 24 responsive snapshots and 32 Dark/Light G2 screen snapshots.");
 } catch (error) {
   failed = true;
