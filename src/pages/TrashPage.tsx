@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, RotateCcw, SearchCheck, Trash2 } from "lucide-react";
+import { AlertTriangle, RotateCcw, Search, SearchCheck, Trash2 } from "lucide-react";
 import { EmptyState } from "../components/common/EmptyState";
 import { Modal } from "../components/common/Modal";
 import { api } from "../lib/api/client";
@@ -19,6 +19,9 @@ export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLocaleLowerCase("ko-KR");
+  const visibleItems = items.filter((item) => !normalizedQuery || item.title.toLocaleLowerCase("ko-KR").includes(normalizedQuery));
 
   const loadTrash = useCallback(async () => {
     setLoading(true);
@@ -105,9 +108,19 @@ export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
 
       {error ? <div className="rounded-lg border border-danger/40 bg-danger/[0.08] px-3 py-2 text-sm text-danger" role="alert">{error}</div> : null}
 
+      {items.length > 0 ? (
+        <div className="trash-toolbar flex flex-wrap items-center gap-3 border-b border-ui-divider py-2.5">
+          <label className="relative min-w-[12rem] flex-1 sm:max-w-sm">
+            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ui-muted" aria-hidden="true" />
+            <input className="field min-h-9 pl-9" type="search" aria-label="휴지통 검색" placeholder="삭제된 Todo 검색" value={query} onChange={(event) => setQuery(event.target.value)} />
+          </label>
+          <span className="text-xs tabular-nums text-ui-muted" role="status">표시 {visibleItems.length}/{items.length}개</span>
+        </div>
+      ) : null}
+
       {loading ? <div className="border-t border-ui-divider py-8 text-left text-sm text-ui-muted">휴지통을 불러오는 중...</div> : items.length ? (
         <section className="divide-y divide-ui-divider border-t border-ui-divider">
-          {items.map((item) => (
+          {visibleItems.map((item) => (
             <div key={item.id} className="trash-row flex flex-col gap-3 px-1 py-3 transition-colors hover:bg-ui-hover sm:flex-row sm:items-center">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[15px] font-semibold text-ui-text">{item.title}</p>
@@ -125,6 +138,7 @@ export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
               </div>
             </div>
           ))}
+          {visibleItems.length === 0 ? <p className="px-1 py-10 text-sm text-ui-muted" role="status">검색 조건에 맞는 삭제된 Todo가 없습니다.</p> : null}
         </section>
       ) : <EmptyState title="휴지통이 비어 있습니다." description="삭제 후 실행 취소 시간이 지나면 Todo가 이곳으로 이동합니다." />}
 

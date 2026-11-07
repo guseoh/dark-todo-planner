@@ -1953,3 +1953,64 @@ button:disabled {
 @media (prefers-reduced-motion: reduce) {
   .project-kanban-column .project-kanban-card { transition: none; }
 }
+
+/* Workspace renewal / phases 3–5: functional pages retain their own purpose.
+   These are content and navigation refinements, not a second layer of cards. */
+.weekly-workspace .weekly-days-grid { border-color: var(--ui-divider); }
+.weekly-workspace .weekly-day { min-height: 116px; padding: .9rem .85rem; }
+.weekly-workspace .weekly-day:hover { background: var(--ui-hover); }
+.weekly-workspace .weekly-day[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--ui-focus) 8%, var(--ui-surface));
+  box-shadow: inset 0 3px 0 0 var(--ui-focus);
+}
+.weekly-workspace .weekly-day[aria-pressed="true"] > div:first-child span:first-child { color: var(--text-primary); }
+.weekly-workspace .weekly-day > div:last-child { line-height: 1.6; }
+.weekly-workspace [aria-labelledby="selected-day-title"] {
+  padding-top: 1rem; border-top: 1px solid var(--ui-divider);
+}
+.calendar-page .calendar-month-workspace { gap: 1.2rem; }
+.calendar-page .calendar-selected-panel { padding-inline-start: 1rem; }
+.calendar-page .calendar-day { transition: background-color 120ms ease; }
+.calendar-page .calendar-day:hover { background: var(--ui-hover); }
+.all-todos-page .page-toolbar, .all-todos-page .todo-filter-workspace {
+  border-color: var(--ui-divider);
+}
+.all-todos-page .todo-row { transition: background-color 120ms ease; }
+.all-todos-page .todo-category-header { border-bottom: 1px solid var(--ui-divider); }
+.memo-page .memo-toolbar .memo-search { max-width: 32rem; }
+.memo-page .memo-note { border-left: 2px solid var(--memo-accent, var(--ui-divider)); }
+.memo-page .memo-note-grid { gap: .3rem 1.1rem; }
+.memo-page .memo-note__title { font-size: .9rem; font-weight: 600; }
+.memo-page .memo-note__excerpt { line-height: 1.65; }
+.memo-page .memo-section__heading { border-bottom: 1px solid var(--ui-divider); }
+.scratchpad-workspace .scratchpad-toolbar { gap: .15rem; }
+.scratchpad-workspace .scratchpad-toolbar > button {
+  border-radius: 2px; min-height: 32px;
+}
+.scratchpad-workspace .scratchpad-toolbar > button:hover {
+  background: var(--ui-hover); color: var(--ui-text-primary);
+}
+.scratchpad-workspace .scratchpad-rendered-preview {
+  max-width: 88ch; line-height: 1.8;
+}
+.settings-page [role="tabpanel"] { max-width: 100%; }
+.settings-page .settings-option-row {
+  padding-block: .85rem; border-bottom: 1px solid var(--ui-divider);
+}
+.settings-page .settings-option-row > span { max-width: 80ch; }
+.settings-page .settings-save-row { border-top: 1px solid var(--ui-divider); }
+.trash-page .trash-toolbar { max-width: none; }
+.trash-page .trash-row { padding-block: .85rem; }
+.trash-page .trash-row:hover { background: var(--ui-hover); }
+.trash-page .trash-row__delete { border-color: var(--ui-divider); }
+@media (min-width: 1200px) {
+  .weekly-workspace .weekly-day { min-height: 142px; }
+  .weekly-workspace .weekly-day > div:last-child { margin-top: .8rem; }
+}
+@media (max-width: 1100px) {
+  .calendar-page .calendar-selected-panel { padding-inline-start: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .weekly-workspace .weekly-day, .calendar-page .calendar-day,
+  .all-todos-page .todo-row { transition: none; }
+}
