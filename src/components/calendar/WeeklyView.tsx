@@ -110,7 +110,7 @@ export function WeeklyView({
   }, [selectedDate]);
 
   return (
-    <div className="space-y-4">
+    <div className="weekly-workspace space-y-4">
       <section className="app-card py-3" aria-labelledby="week-summary-title">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-3">
@@ -161,7 +161,7 @@ export function WeeklyView({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-0 border-l border-t border-ui-divider sm:grid-cols-4 lg:grid-cols-7">
+        <div className="weekly-days-grid grid grid-cols-2 gap-0 border-l border-t border-ui-divider sm:grid-cols-4 lg:grid-cols-7">
           {daySummaries.map(({ date, day, index, active, completed, high }) => {
             const selected = date === selectedDate;
             const isToday = date === today;
@@ -169,7 +169,7 @@ export function WeeklyView({
               <button
                 key={date}
                 type="button"
-                className={`min-w-0 border-b border-r border-ui-divider px-3 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus ${
+                className={`weekly-day min-w-0 border-b border-r border-ui-divider px-3 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus ${
                   selected
                     ? "bg-ui-selected text-ui-text"
                     : "bg-transparent hover:bg-ui-hover"

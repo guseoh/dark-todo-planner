@@ -91,7 +91,7 @@ try {
   assert.equal(visualSystem.digestBorderBottom, "1px", "The review summary should separate cleanly from the task list.");
   assert.equal(visualSystem.digestBeforeTasks, true, "Existing weekly and overdue review must be visible before the task list.");
   assert.equal(visualSystem.hasSidebar, false, "Today must not retain a disconnected right rail.");
-  assert.ok(visualSystem.todayWidth <= 890, "Today content should stay within the readable single-column width.");
+  assert.ok(visualSystem.todayWidth <= 1010, "Today must use a comfortable desktop reading column without stretching edge to edge.");
   assert.equal(visualSystem.accent, "#d4d4d8", "Accent must remain neutral.");
   assert.equal(visualSystem.canvas, "#101011", "Canvas must stay near-black.");
   assert.notEqual(visualSystem.primaryBackground, "rgb(226, 226, 229)", "Global Quick Add should not outshine task content.");
@@ -794,7 +794,7 @@ try {
   const newProjectInput = page.getByPlaceholder("새 프로젝트 이름");
   await newProjectInput.fill("UX Regression Project");
   await newProjectInput.locator("xpath=..").getByRole("button", { name: "추가", exact: true }).click();
-  await page.getByRole("tab", { name: /작업·Kanban/ }).waitFor();
+  await page.getByRole("tab", { name: /작업/ }).waitFor();
   const projectManageMenu = page.locator(".project-actions-menu");
   await projectManageMenu.locator("summary").click();
   assert.equal(await projectManageMenu.getAttribute("open"), "", "Project management actions should expand on demand.");
@@ -803,9 +803,9 @@ try {
   await page.getByRole("tab", { name: /마일스톤/ }).click();
   await page.getByRole("heading", { name: "마일스톤" }).waitFor();
   await page.getByRole("tab", { name: /결정 기록/ }).click();
-  await page.getByRole("tab", { name: /분석·관리/ }).click();
+  await page.getByRole("tab", { name: /프로젝트 관리/ }).click();
   await page.getByRole("heading", { name: "프로젝트 상태" }).waitFor();
-  await page.getByRole("tab", { name: /작업·Kanban/ }).click();
+  await page.getByRole("tab", { name: /작업/ }).click();
   await page.getByText("아직 등록한 프로젝트 작업이 없습니다.", { exact: true }).waitFor();
   // Inputs previously expanded across the entire desktop toolbar because
   // .field.field overrode explicit Tailwind width utilities.
@@ -933,6 +933,10 @@ try {
   const scratch = page.getByRole("region", { name: "낙서장" });
   const scratchEditor = scratch.getByRole("textbox", { name: "낙서장 편집기" });
   await scratchEditor.waitFor();
+  await page.waitForFunction(() => {
+    const element = document.querySelector('[aria-label="낙서장 편집기"]');
+    return element instanceof HTMLElement && (element.isContentEditable || (element instanceof HTMLTextAreaElement && !element.disabled));
+  });
   const scratchContent = `Scratchpad E2E ${randomUUID().slice(0, 8)}\n남아야 할 두 번째 줄`;
   let failScratchOnce = true;
   await page.route("**/api/scratchpad", async (route) => {
@@ -1092,6 +1096,32 @@ try {
       }
     }
   }
+  // Project-management workflow: searching trash never changes the underlying items.
+  const trashSearchFixtureTitle = "Trash search fixture " + randomUUID().slice(0, 8);
+  const trashSearchFixture = await page.evaluate(async (title) => {
+    const created = await fetch("/api/todos", {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, date: "2026-11-07", planningState: "SCHEDULED", priority: "MEDIUM" }),
+    });
+    if (!created.ok) return { ok: false, stage: "create", code: created.status };
+    const payload = await created.json();
+    const id = payload.todo?.id;
+    if (!id) return { ok: false, stage: "missing-id" };
+    const trashed = await fetch(`/api/todos/${id}/trash`, { method: "POST", credentials: "same-origin" });
+    return { ok: trashed.ok, stage: "trash", code: trashed.status };
+  }, trashSearchFixtureTitle);
+  assert.equal(trashSearchFixture.ok, true, "Create and trash a local-only search fixture: " + JSON.stringify(trashSearchFixture));
+  // The responsive screenshot loop may already be on #/trash: reload to refresh the list.
+  await page.evaluate(() => { window.location.hash = "#/trash"; });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "휴지통", exact: true }).waitFor();
+  const trashSearch = page.getByRole("searchbox", { name: "휴지통 검색" });
+  await trashSearch.waitFor();
+  await trashSearch.fill("no-match-" + randomUUID());
+  await page.getByText("검색 조건에 맞는 삭제된 Todo가 없습니다.", { exact: true }).waitFor();
+  await trashSearch.fill(trashSearchFixtureTitle);
+  await page.getByText(trashSearchFixtureTitle, { exact: true }).waitFor();
   console.log("BROWSER E2E PASS: functional flows, 24 responsive snapshots and 32 Dark/Light G2 screen snapshots.");
 } catch (error) {
   failed = true;

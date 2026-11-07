@@ -33,7 +33,7 @@ describe("light/dark neutral design tokens", () => {
   it("shares RGB compatibility tokens and semantic roles across themes", () => {
     expect(css).toContain(':root[data-theme="light"]');
     expect(css).toContain("--ink-950: 16 16 17;");
-    expect(css).toContain("--surface-2: #252529;");
+    expect(css).toContain("--surface-2: #242a33;");
     expect(css).toContain("--ink-950: 247 247 248;");
     expect(css).toContain("--accent-500: 212 212 216;");
     expect(css).toContain("--accent-500: 38 38 42;");
@@ -45,6 +45,13 @@ describe("light/dark neutral design tokens", () => {
     expect(tailwind).toContain('themedShade("semantic-danger")');
     expect(css).toContain("--semantic-danger: 190 18 60;");
     expect(css).toContain("--semantic-info: 147 180 255;");
+    expect(css).toContain("--workflow-planned: #8b9cac;");
+    expect(css).toContain("--workflow-active: #83aee3;");
+    expect(css).toContain("--workflow-blocked: #e1b26f;");
+    expect(css).toContain("--workflow-done: #82c4a4;");
+    expect(css).toContain('data-status="IN_PROGRESS"');
+    expect(css).toContain('data-status="BLOCKED"');
+    expect(css).toContain('data-status="DONE"');
     expect(tailwind).toContain('themedShade("semantic-info")');
     expect(css).toContain("--success: #4ade80;");
     expect(css).toContain("--success: #15803d;");
@@ -93,6 +100,12 @@ describe("light/dark neutral design tokens", () => {
     expect(contrast("#BE123C", "#F7F7F8")).toBeGreaterThanOrEqual(4.5);
     expect(contrast("#92400E", "#F7F7F8")).toBeGreaterThanOrEqual(4.5);
     expect(contrast("#1D4ED8", "#F7F7F8")).toBeGreaterThanOrEqual(4.5);
+    for (const token of ["#8b9cac", "#83aee3", "#e1b26f", "#82c4a4"]) {
+      expect(contrast(token, "#1B2027")).toBeGreaterThanOrEqual(4.5);
+    }
+    for (const token of ["#5a6775", "#275e9e", "#90601f", "#176a4d"]) {
+      expect(contrast(token, "#FFFFFF")).toBeGreaterThanOrEqual(4.5);
+    }
   });
 
   it("provides visible focus, OS theme support, and reduced motion", () => {

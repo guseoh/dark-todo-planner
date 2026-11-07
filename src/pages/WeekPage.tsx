@@ -33,7 +33,7 @@ export function WeekPage({
   goals = [],
 }: WeekPageProps) {
   return (
-    <div className="mx-auto w-full max-w-[1120px] space-y-4">
+    <div className="weekly-page mx-auto w-full max-w-[1320px] space-y-4">
       {!embedded ? (
         <section>
           <h2 className="text-2xl font-bold text-ink-100">주간</h2>

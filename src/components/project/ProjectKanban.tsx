@@ -73,7 +73,7 @@ function KanbanColumn({ status, label, count, wipLimit, onWipLimitChange, collap
   const { setNodeRef, isOver } = useDroppable({ id: `column:${status}` });
   const overLimit = wipLimit !== undefined && count > wipLimit;
   return (
-    <section ref={setNodeRef} className={`min-h-[10rem] w-[17rem] shrink-0 border-b border-r border-ui-divider px-3 py-3 transition sm:w-auto ${isOver ? "border-accent-500/55 bg-accent-500/[0.05]" : ""}`}>
+    <section ref={setNodeRef} data-status={status} data-drag-over={isOver ? "true" : "false"} className="project-kanban-column min-h-[10rem] w-[17rem] shrink-0 border-b border-r border-ui-divider px-3 py-3 transition sm:w-auto">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         {onToggleCollapse ? <button type="button" className="inline-flex min-h-9 items-center gap-1 rounded-[4px] px-1 text-sm font-semibold text-ink-100 hover:bg-ink-850 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70" onClick={onToggleCollapse} aria-expanded={!collapsed}>{collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}{label}</button> : <h4 className="px-1 text-sm font-semibold text-ink-100">{label}</h4>}
         <span className="mr-auto text-xs tabular-nums text-ui-muted" aria-label={`${label} 작업 ${count}개`}>{count}</span>
@@ -129,7 +129,7 @@ function ProjectKanbanCard({ project, todo, parent, childCount, milestone, miles
   };
 
   return (
-    <article ref={setNodeRef} style={{ transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.55 : 1 }} className="border-b border-ink-700/45 bg-transparent px-2 py-3 transition hover:bg-ink-850/60">
+    <article ref={setNodeRef} style={{ transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.55 : 1 }} className="project-kanban-card border-b border-ink-700/45 bg-transparent px-2 py-3 transition hover:bg-ink-850/60">
       <div className="flex items-start gap-2">
         <button type="button" onClick={() => onToggleTodo(todo.id)} className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[4px] hover:bg-ink-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70" aria-label={`${todo.title} 완료 토글`}><span className={`h-4 w-4 rounded-full border ${todo.completed ? "border-success bg-success" : "border-ink-600"}`} aria-hidden="true" /></button>
         <div className="min-w-0 flex-1">

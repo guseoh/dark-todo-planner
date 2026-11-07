@@ -6,19 +6,19 @@
   color-scheme: dark;
 
   --app-bg: #101011;
-  --sidebar-bg: #151517;
-  --surface-1: #1b1b1e;
-  --surface-2: #252529;
-  --surface-3: #303034;
-  --surface-hover: #353539;
+  --sidebar-bg: #151820;
+  --surface-1: #1b2027;
+  --surface-2: #242a33;
+  --surface-3: #303842;
+  --surface-hover: #39414c;
 
-  --border-subtle: #303036;
-  --border-default: #48484e;
+  --border-subtle: #343b45;
+  --border-default: #4c5765;
   --border-strong: #77777d;
 
   --text-primary: #f1f1f3;
-  --text-secondary: #b9b9c0;
-  --text-muted: #99999f;
+  --text-secondary: #bfc6d0;
+  --text-muted: #a2abb7;
   --text-disabled: #77777d;
 
   --accent: #d4d4d8;
@@ -79,7 +79,7 @@
   --button-primary-hover: #f1f1f3;
   --button-secondary-bg: #1b1b1e;
   --button-secondary-hover: #29292e;
-  --button-secondary-border: #3a3a42;
+  --button-secondary-border: #4c5665;
   --button-radius: 6px;
   --ui-action-bg: var(--accent);
   --ui-action-text: var(--app-bg);
@@ -1675,7 +1675,7 @@ button:disabled {
 .page-shell.project-page { max-width: 1320px; }
 .page-shell.settings-page { max-width: var(--workspace-reading-width); }
 .page-shell.trash-page { max-width: var(--workspace-list-width); }
-.page-shell.today-page { max-width: 880px; }
+.page-shell.today-page { max-width: 1000px; }
 .page-shell .page-tabs.page-tabs { column-gap: .3rem; }
 .page-shell .page-toolbar.page-toolbar { padding-block: .65rem; }
 .page-shell :is(.btn-secondary, .ui-button--secondary):focus-visible,
@@ -1855,3 +1855,161 @@ button:disabled {
   width: 30px; height: 34px; min-width: 30px; min-height: 34px;
 }
 .calendar-selected-panel .calendar-date-move > summary { list-style-position: inside; }
+
+/* Workspace renewal / phase 1: restrained hierarchy across active views.
+   Workflow behavior and production data contracts are deliberately unchanged. */
+:root {
+  --workflow-planned: #8b9cac;
+  --workflow-active: #83aee3;
+  --workflow-blocked: #e1b26f;
+  --workflow-done: #82c4a4;
+}
+:root[data-theme="light"] {
+  --workflow-planned: #5a6775;
+  --workflow-active: #275e9e;
+  --workflow-blocked: #90601f;
+  --workflow-done: #176a4d;
+}
+.page-shell.all-todos-page { max-width: 1320px; }
+.page-shell.project-page { max-width: 1510px; }
+.page-shell.calendar-page { max-width: 1510px; }
+.page-shell.memo-page { max-width: 1280px; }
+.page-shell.settings-page { max-width: 1060px; }
+.page-shell .page-header { padding-bottom: 1.15rem; border-bottom-color: var(--ui-divider); }
+.page-shell .page-header h1 { font-weight: 650; letter-spacing: -.028em; }
+.page-shell .page-header p { max-width: 70ch; }
+.page-shell .page-toolbar.page-toolbar { border-bottom-color: var(--ui-divider); }
+.page-shell :is(.field, input, select, textarea):focus-visible {
+  outline: 2px solid var(--ui-focus); outline-offset: 1px;
+}
+.app-nav-button[aria-current="page"] {
+  background: color-mix(in srgb, var(--ui-focus) 9%, var(--ui-navigation));
+  color: var(--text-primary);
+}
+.app-nav-button[aria-current="page"] .app-nav-indicator { background: var(--ui-focus); }
+.app-topbar .app-quick-add-button {
+  background: var(--ui-inset); border-color: var(--border-default);
+}
+.app-topbar .app-quick-add-button:hover { border-color: var(--ui-focus); }
+/* Today: content gets real desktop width without becoming another dashboard. */
+.today-page .today-workspace { gap: 1rem; }
+.today-page .today-header { padding-bottom: .8rem; border-bottom-color: var(--ui-divider); }
+.today-page .today-task-section { width: 100%; }
+.today-page .todo-row--today:hover, .all-todos-page .todo-row:hover {
+  background: color-mix(in srgb, var(--ui-hover) 38%, transparent);
+}
+.today-page .today-digest { border-bottom-color: var(--ui-divider); }
+/* Project board: a state-colored top rail and subdued per-task left border. */
+.project-page .project-detail { min-width: 0; }
+.project-page .project-overview { border-bottom: 1px solid var(--ui-divider); }
+.project-page .page-tabs .page-tab[aria-selected="true"] {
+  border-bottom-color: var(--ui-focus);
+}
+.project-kanban-column {
+  --column-color: var(--workflow-planned);
+  position: relative;
+  border-top: 3px solid var(--column-color);
+  background: color-mix(in srgb, var(--ui-surface) 54%, var(--ui-canvas));
+  border-right-color: var(--ui-divider);
+}
+.project-kanban-column[data-status="IN_PROGRESS"] { --column-color: var(--workflow-active); }
+.project-kanban-column[data-status="BLOCKED"] { --column-color: var(--workflow-blocked); }
+.project-kanban-column[data-status="DONE"] { --column-color: var(--workflow-done); }
+.project-kanban-column > div:first-child :is(h4, button) { color: var(--column-color); }
+.project-kanban-column[data-drag-over="true"] {
+  background: color-mix(in srgb, var(--column-color) 12%, var(--ui-surface));
+  box-shadow: inset 0 0 0 1px var(--column-color);
+}
+.project-kanban-column .project-kanban-card {
+  border: 1px solid var(--ui-divider);
+  border-left: 2px solid var(--column-color);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ui-surface) 85%, var(--ui-canvas));
+  padding: .75rem .65rem;
+}
+.project-kanban-column .project-kanban-card:hover,
+.project-kanban-column .project-kanban-card:focus-within {
+  border-color: var(--border-default); border-left-color: var(--column-color);
+  background: var(--ui-hover);
+}
+.project-kanban-card .field { background: var(--ui-inset); }
+.project-kanban-card .icon-btn { color: var(--text-muted); }
+/* Lists, calendars and writing surfaces share the same restrained contrast. */
+.all-todos-page .todo-row { border-bottom-color: var(--ui-divider); }
+.calendar-page .calendar-day[data-selected="true"] {
+  background: color-mix(in srgb, var(--ui-focus) 7%, var(--ui-canvas));
+  box-shadow: inset 0 0 0 1px var(--ui-focus);
+}
+.calendar-page .calendar-selected-panel { border-color: var(--ui-divider); }
+.memo-page .memo-note:hover, .memo-page .memo-note:focus-within {
+  background: color-mix(in srgb, var(--ui-surface) 72%, var(--ui-canvas));
+}
+.scratchpad-workspace .scratchpad-command-strip { border-bottom: 1px solid var(--ui-divider); }
+@media (max-width: 1100px) {
+  .page-shell.all-todos-page, .page-shell.project-page,
+  .page-shell.calendar-page,
+  .page-shell.memo-page, .page-shell.settings-page { max-width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .project-kanban-column .project-kanban-card { transition: none; }
+}
+
+/* Workspace renewal / phases 3–5: functional pages retain their own purpose.
+   These are content and navigation refinements, not a second layer of cards. */
+.weekly-workspace .weekly-days-grid { border-color: var(--ui-divider); }
+.weekly-workspace .weekly-day { min-height: 116px; padding: .9rem .85rem; }
+.weekly-workspace .weekly-day:hover { background: var(--ui-hover); }
+.weekly-workspace .weekly-day[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--ui-focus) 8%, var(--ui-surface));
+  box-shadow: inset 0 3px 0 0 var(--ui-focus);
+}
+.weekly-workspace .weekly-day[aria-pressed="true"] > div:first-child span:first-child { color: var(--text-primary); }
+.weekly-workspace .weekly-day > div:last-child { line-height: 1.6; }
+.weekly-workspace [aria-labelledby="selected-day-title"] {
+  padding-top: 1rem; border-top: 1px solid var(--ui-divider);
+}
+.calendar-page .calendar-month-workspace { gap: 1.2rem; }
+.calendar-page .calendar-selected-panel { padding-inline-start: 1rem; }
+.calendar-page .calendar-day { transition: background-color 120ms ease; }
+.calendar-page .calendar-day:hover { background: var(--ui-hover); }
+.all-todos-page .page-toolbar, .all-todos-page .todo-filter-workspace {
+  border-color: var(--ui-divider);
+}
+.all-todos-page .todo-row { transition: background-color 120ms ease; }
+.all-todos-page .todo-category-header { border-bottom: 1px solid var(--ui-divider); }
+.memo-page .memo-toolbar .memo-search { max-width: 32rem; }
+.memo-page .memo-note-grid { gap: .3rem 1.1rem; }
+.memo-page .memo-note__title { font-size: .9rem; font-weight: 600; }
+.memo-page .memo-note__excerpt { line-height: 1.65; }
+.memo-page .memo-section__heading { border-bottom: 1px solid var(--ui-divider); }
+.scratchpad-workspace .scratchpad-toolbar { gap: .15rem; }
+.scratchpad-workspace .scratchpad-toolbar > button {
+  border-radius: 2px; min-height: 32px;
+}
+.scratchpad-workspace .scratchpad-toolbar > button:hover {
+  background: var(--ui-hover); color: var(--ui-text-primary);
+}
+.scratchpad-workspace .scratchpad-rendered-preview {
+  max-width: 88ch; line-height: 1.8;
+}
+.settings-page [role="tabpanel"] { max-width: 100%; }
+.settings-page .settings-option-row {
+  padding-block: .85rem; border-bottom: 1px solid var(--ui-divider);
+}
+.settings-page .settings-option-row > span { max-width: 80ch; }
+.settings-page .settings-save-row { border-top: 1px solid var(--ui-divider); }
+.trash-page .trash-toolbar { max-width: none; }
+.trash-page .trash-row { padding-block: .85rem; }
+.trash-page .trash-row:hover { background: var(--ui-hover); }
+.trash-page .trash-row__delete { border-color: var(--ui-divider); }
+@media (min-width: 1200px) {
+  .weekly-workspace .weekly-day { min-height: 142px; }
+  .weekly-workspace .weekly-day > div:last-child { margin-top: .8rem; }
+}
+@media (max-width: 1100px) {
+  .calendar-page .calendar-selected-panel { padding-inline-start: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .weekly-workspace .weekly-day, .calendar-page .calendar-day,
+  .all-todos-page .todo-row { transition: none; }
+}
