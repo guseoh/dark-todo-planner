@@ -254,7 +254,7 @@ export function TodoForm({
             onChange={(event) => { setTitle(event.target.value); if (saveError) setSaveError(""); }}
             onCompositionStart={() => setComposing(true)}
             onCompositionEnd={() => setComposing(false)}
-            placeholder={collapsible ? "할 일 이름" : "무엇을 할 예정인가요?"}
+            placeholder={alwaysOpen ? "할 일을 입력하고 Enter" : collapsible ? "할 일 이름" : "무엇을 할 예정인가요?"}
             aria-label="Todo 제목"
           />
         </div>

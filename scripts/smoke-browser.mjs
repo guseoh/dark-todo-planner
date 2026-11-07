@@ -706,7 +706,8 @@ try {
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
   await page.getByRole("progressbar", { name: "오늘 완료율", exact: true }).waitFor();
   assert.equal(await page.getByRole("progressbar", { name: "오늘 완료율", exact: true }).getAttribute("aria-valuenow"), "0", "A newly added incomplete Todo must expose a visible 0% progress indicator.");
-  // Direct star control pins and unpins without duplicating a Todo row.
+  // Direct star selection is a desktop affordance; mobile retains the more menu to avoid cramped rows.
+  await page.setViewportSize({ width: 1440, height: 900 });
   const focusRow = () => page.locator(".todo-row--today").filter({ has: page.getByRole("heading", { name: title, exact: true }) });
   await focusRow().getByRole("button", { name: `핵심 작업 선택: ${title}` }).click();
   await page.getByRole("heading", { name: "오늘의 핵심 작업" }).waitFor();
@@ -714,6 +715,7 @@ try {
   await focusRow().getByRole("button", { name: `핵심 작업 해제: ${title}` }).click();
   assert.equal(await page.getByRole("heading", { name: "오늘의 핵심 작업" }).count(), 0,
     "Focus section should collapse after removing the last pinned Todo.");
+  await page.setViewportSize({ width: 390, height: 844 });
   // The more menu still exposes the remaining task actions.
   const openTodoActions = async () => {
     const row = focusRow();
@@ -1150,6 +1152,34 @@ try {
   await page.getByText("검색 조건에 맞는 삭제된 Todo가 없습니다.", { exact: true }).waitFor();
   await trashSearch.fill(trashSearchFixtureTitle);
   await page.getByText(trashSearchFixtureTitle, { exact: true }).waitFor();
+  // Dense Today with 20 additional local-only tasks remains readable on narrow and wide displays.
+  const denseLabel = "Dense today " + randomUUID().slice(0, 6);
+  const denseResults = await page.evaluate(async ({ date, prefix }) => {
+    const errors = [];
+    for (let index = 0; index < 20; index += 1) {
+      const response = await fetch("/api/todos", {
+        method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ title: prefix + " " + index, date, planningState: "SCHEDULED", priority: "MEDIUM" }),
+      });
+      if (!response.ok) errors.push(response.status);
+    }
+    return errors;
+  }, { date: savedInlineTodo.date, prefix: denseLabel });
+  assert.deepEqual(denseResults, [], "All dense-layout fixtures should persist to local D1");
+  await page.evaluate(() => { window.location.hash = "#/today"; });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
+  await page.waitForFunction(() => document.querySelectorAll(".today-task-section .todo-row--today").length >= 20);
+  for (const width of [390, 1280]) {
+    await page.setViewportSize({ width, height: 844 });
+    const geometry = await page.evaluate(() => ({
+      width: window.innerWidth, scrollWidth: document.documentElement.scrollWidth,
+      count: document.querySelectorAll(".today-task-section .todo-row--today").length,
+    }));
+    assert.ok(geometry.count >= 20 && geometry.scrollWidth <= geometry.width + 2,
+      "Dense Today must preserve rows and avoid horizontal overflow: " + JSON.stringify(geometry));
+    await page.screenshot({ path: `test-artifacts/today-dense-${width}.png`, fullPage: true });
+  }
   console.log("BROWSER E2E PASS: functional flows, 24 responsive snapshots and 32 Dark/Light G2 screen snapshots.");
 } catch (error) {
   failed = true;

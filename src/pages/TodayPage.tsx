@@ -350,6 +350,7 @@ export function TodayPage({
               </>
             ) : <div className="today-empty-state" role="status">
               오늘 예정된 일이 없습니다. 새로 입력하거나 기존 작업에서 선택할 수 있습니다.
+              {!hasPlanningContent ? <a className="today-planning-panel__all-link block" href="#/all">전체 Todo에서 찾기</a> : null}
             </div>}
 
             <div className="today-composer">

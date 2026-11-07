@@ -2083,3 +2083,8 @@ button:disabled {
 @media (prefers-reduced-motion: reduce) {
   .today-page .today-candidate__move { transition: none; }
 }
+
+/* Keep mobile Today rows readable: the focus action remains in the more menu. */
+@media (max-width: 639px) {
+  .today-page .today-focus-toggle { display: none; }
+}
