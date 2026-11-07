@@ -1112,7 +1112,9 @@ try {
     return { ok: trashed.ok, stage: "trash", code: trashed.status };
   }, trashSearchFixtureTitle);
   assert.equal(trashSearchFixture.ok, true, "Create and trash a local-only search fixture: " + JSON.stringify(trashSearchFixture));
+  // The responsive screenshot loop may already be on #/trash: reload to refresh the list.
   await page.evaluate(() => { window.location.hash = "#/trash"; });
+  await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "휴지통", exact: true }).waitFor();
   const trashSearch = page.getByRole("searchbox", { name: "휴지통 검색" });
   await trashSearch.waitFor();
