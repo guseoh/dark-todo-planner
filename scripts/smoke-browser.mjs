@@ -91,7 +91,7 @@ try {
   assert.equal(visualSystem.digestBorderBottom, "1px", "The review summary should separate cleanly from the task list.");
   assert.equal(visualSystem.digestBeforeTasks, true, "Existing weekly and overdue review must be visible before the task list.");
   assert.equal(visualSystem.hasSidebar, false, "Today must not retain a disconnected right rail.");
-  assert.ok(visualSystem.todayWidth <= 890, "Today content should stay within the readable single-column width.");
+  assert.ok(visualSystem.todayWidth <= 1010, "Today must use a comfortable desktop reading column without stretching edge to edge.");
   assert.equal(visualSystem.accent, "#d4d4d8", "Accent must remain neutral.");
   assert.equal(visualSystem.canvas, "#101011", "Canvas must stay near-black.");
   assert.notEqual(visualSystem.primaryBackground, "rgb(226, 226, 229)", "Global Quick Add should not outshine task content.");
@@ -933,6 +933,10 @@ try {
   const scratch = page.getByRole("region", { name: "낙서장" });
   const scratchEditor = scratch.getByRole("textbox", { name: "낙서장 편집기" });
   await scratchEditor.waitFor();
+  await page.waitForFunction(() => {
+    const element = document.querySelector('[aria-label="낙서장 편집기"]');
+    return element instanceof HTMLElement && (element.isContentEditable || (element instanceof HTMLTextAreaElement && !element.disabled));
+  });
   const scratchContent = `Scratchpad E2E ${randomUUID().slice(0, 8)}\n남아야 할 두 번째 줄`;
   let failScratchOnce = true;
   await page.route("**/api/scratchpad", async (route) => {
