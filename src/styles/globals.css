@@ -2013,3 +2013,73 @@ button:disabled {
   .weekly-workspace .weekly-day, .calendar-page .calendar-day,
   .all-todos-page .todo-row { transition: none; }
 }
+
+/* Today planning workspace: activity first, actionable review second. */
+.page-shell.today-page, .today-page.page-shell { max-width: 1260px; }
+.today-page .today-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(280px, 0.9fr);
+  align-items: start;
+  gap: clamp(1.25rem, 3.2vw, 2.5rem);
+}
+.today-page .today-workspace--single { grid-template-columns: minmax(0, 1fr); max-width: 870px; }
+.today-page .today-workspace__main { min-width: 0; }
+.today-page .today-task-section { min-width: 0; }
+.today-page .today-task-heading { padding-bottom: .4rem; }
+.today-page .today-empty-state { padding: 1rem .2rem .75rem; max-width: 60ch; color: var(--text-secondary); line-height: 1.65; }
+.today-page .today-composer { max-width: 100%; margin-top: .5rem; }
+.today-page .today-composer:has(.todo-composer-form--inline) {
+  background: color-mix(in srgb, var(--ui-surface) 80%, var(--ui-canvas));
+  border: 1px solid var(--border-default);
+  border-radius: 3px;
+  padding: .15rem .4rem;
+}
+.today-page .todo-composer-form--inline .todo-composer-form__input { min-height: 42px; }
+.today-page .today-planning-panel {
+  border-left: 1px solid var(--ui-divider);
+  min-width: 0;
+  padding: .15rem 0 1rem clamp(1rem, 2vw, 1.7rem);
+}
+.today-page .today-planning-panel__header { padding-bottom: 1.2rem; }
+.today-page .today-planning-panel__header h2 { font-size: 1rem; color: var(--text-primary); font-weight: 650; }
+.today-page .today-planning-panel__header p { font-size: .8rem; color: var(--text-secondary); margin-top: .35rem; line-height: 1.6; }
+.today-page .today-planning-panel__section { padding: 1rem 0 1.2rem; border-top: 1px solid var(--ui-divider); }
+.today-page .today-planning-panel__section-title { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; }
+.today-page .today-planning-panel__section-title h3 { font-size: .88rem; color: var(--text-primary); font-weight: 620; }
+.today-page .today-planning-panel__section-title span { font-size: .74rem; color: var(--text-muted); white-space: nowrap; }
+.today-page .today-planning-panel__hint { margin-top: .4rem; color: var(--text-muted); font-size: .76rem; line-height: 1.55; }
+.today-page .today-candidate-list { margin-top: .45rem; padding: 0; list-style: none; }
+.today-page .today-candidate { display: flex; align-items: center; gap: .75rem; padding: .7rem 0; border-bottom: 1px solid var(--ui-divider); }
+.today-page .today-candidate__content { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: .22rem; }
+.today-page .today-candidate__title { font-size: .84rem; line-height: 1.45; color: var(--text-primary); overflow-wrap: anywhere; }
+.today-page .today-candidate__meta { color: var(--text-muted); font-size: .71rem; line-height: 1.5; overflow-wrap: anywhere; }
+.today-page .today-candidate__move {
+  flex-shrink: 0; border: 1px solid var(--border-default); background: transparent;
+  border-radius: 3px; color: var(--text-secondary); padding: .35rem .55rem; font-size: .74rem;
+  min-height: 32px; transition: border-color 120ms ease, background-color 120ms ease;
+}
+.today-page .today-candidate__move:hover:not(:disabled),
+.today-page .today-candidate__move:focus-visible { background: var(--ui-hover); color: var(--text-primary); border-color: var(--ui-focus); }
+.today-page .today-candidate__move:disabled { cursor: wait; opacity: .6; }
+.today-page .today-candidate__move:focus-visible,
+.today-page .today-focus-toggle:focus-visible,
+.today-page .today-planning-panel__all-link:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 2px; }
+.today-page .today-planning-panel__error { margin-top: .5rem; font-size: .76rem; color: var(--danger); }
+.today-page .today-planning-panel__overdue-count { color: var(--warning) !important; font-weight: 700; }
+.today-page .today-plan-review { margin-top: .6rem; display: inline-flex; gap: .35rem; }
+.today-page .today-plan-week { display: flex; align-items: center; gap: .8rem; margin-top: .75rem; }
+.today-page .today-plan-week__rate { color: var(--text-primary); font-size: .86rem; font-weight: 650; }
+.today-page .today-plan-week__track { flex: 1; min-width: 0; height: 4px; background: var(--surface-3); }
+.today-page .today-plan-week__track span { display: block; height: 100%; background: var(--success); }
+.today-page .today-planning-panel__all-link { display: inline-block; margin-top: .55rem; color: var(--info); font-size: .78rem; text-decoration: underline; text-underline-offset: 3px; }
+.today-page .today-focus-toggle { display: inline-flex; border: 0; background: transparent; border-radius: 3px; color: var(--text-muted); }
+.today-page .today-focus-toggle:hover { color: var(--warning); background: var(--ui-hover); }
+.today-page .today-focus-toggle.is-pinned { color: var(--warning); }
+.today-page .today-focus-toggle:disabled { opacity: .35; cursor: not-allowed; }
+@media (max-width: 1020px) {
+  .today-page .today-workspace { grid-template-columns: minmax(0,1fr); gap: 1.2rem; }
+  .today-page .today-planning-panel { border-left: 0; border-top: 1px solid var(--ui-divider); padding: 1.2rem 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .today-page .today-candidate__move { transition: none; }
+}
