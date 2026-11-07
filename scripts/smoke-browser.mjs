@@ -140,7 +140,7 @@ try {
   assert.ok(overdueFixture.every((item) => item.status >= 200 && item.status < 300),
     "Local D1 overdue fixtures should be created: " + JSON.stringify(overdueFixture));
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "정리하기", exact: true }).click();
+  await page.getByRole("button", { name: "지난 작업 검토", exact: true }).click();
   const overdueDialog = page.getByRole("dialog", { name: "지난 일정 정리" });
   await overdueDialog.getByRole("button", { name: "전체 선택", exact: true }).click();
   assert.ok((await overdueDialog.getByRole("button", { name: "선택 4개 삭제" }).count()) === 1,
