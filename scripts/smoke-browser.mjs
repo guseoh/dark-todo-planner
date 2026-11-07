@@ -534,9 +534,12 @@ try {
   const quickInput = page.locator('input[data-quick-todo-input="true"]');
   await quickInput.fill(title);
   await page.getByRole("button", { name: "추가", exact: true }).click();
-  assert.equal(await page.locator(".today-composer form").count(), 1, "Successful add must retain the inline composer for another task.");
-  assert.equal(await composer.getByRole("textbox", { name: "Todo 제목" }).inputValue(), "");
   await page.getByText(title, { exact: true }).first().waitFor();
+  await page.waitForFunction(() => {
+    const input = document.querySelector('.today-composer input[data-quick-todo-input="true"]');
+    return input instanceof HTMLInputElement && input.value === "";
+  });
+  assert.equal(await page.locator(".today-composer form").count(), 1, "Successful add must retain the inline composer for another task.");
   const savedInlineTodo = await findServerTodo(title);
   assert.ok(savedInlineTodo, "Todo create should persist to local D1.");
   assert.equal(savedInlineTodo.categoryId, menuFixtures.category.id, "Inline category selection must be persisted.");
