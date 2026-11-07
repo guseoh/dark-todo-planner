@@ -794,7 +794,7 @@ try {
   const newProjectInput = page.getByPlaceholder("새 프로젝트 이름");
   await newProjectInput.fill("UX Regression Project");
   await newProjectInput.locator("xpath=..").getByRole("button", { name: "추가", exact: true }).click();
-  await page.getByRole("tab", { name: /작업·Kanban/ }).waitFor();
+  await page.getByRole("tab", { name: /작업/ }).waitFor();
   const projectManageMenu = page.locator(".project-actions-menu");
   await projectManageMenu.locator("summary").click();
   assert.equal(await projectManageMenu.getAttribute("open"), "", "Project management actions should expand on demand.");
@@ -803,9 +803,9 @@ try {
   await page.getByRole("tab", { name: /마일스톤/ }).click();
   await page.getByRole("heading", { name: "마일스톤" }).waitFor();
   await page.getByRole("tab", { name: /결정 기록/ }).click();
-  await page.getByRole("tab", { name: /분석·관리/ }).click();
+  await page.getByRole("tab", { name: /프로젝트 관리/ }).click();
   await page.getByRole("heading", { name: "프로젝트 상태" }).waitFor();
-  await page.getByRole("tab", { name: /작업·Kanban/ }).click();
+  await page.getByRole("tab", { name: /작업/ }).click();
   await page.getByText("아직 등록한 프로젝트 작업이 없습니다.", { exact: true }).waitFor();
   // Inputs previously expanded across the entire desktop toolbar because
   // .field.field overrode explicit Tailwind width utilities.
