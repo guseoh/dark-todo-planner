@@ -1870,7 +1870,6 @@ button:disabled {
   --workflow-blocked: #90601f;
   --workflow-done: #176a4d;
 }
-.page-shell.today-page { max-width: 1060px; }
 .page-shell.all-todos-page { max-width: 1320px; }
 .page-shell.project-page { max-width: 1510px; }
 .page-shell.calendar-page { max-width: 1510px; }
@@ -1947,8 +1946,8 @@ button:disabled {
 }
 .scratchpad-workspace .scratchpad-command-strip { border-bottom: 1px solid var(--ui-divider); }
 @media (max-width: 1100px) {
-  .page-shell.today-page, .page-shell.all-todos-page,
-  .page-shell.project-page, .page-shell.calendar-page,
+  .page-shell.all-todos-page, .page-shell.project-page,
+  .page-shell.calendar-page,
   .page-shell.memo-page, .page-shell.settings-page { max-width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
