@@ -119,6 +119,15 @@ export function TodoRow({
         </button>
 
         {!selectionMode && variant === "today" ? (
+          <>
+          {onToggleFocus && !todo.completed ? (
+            <button type="button" className={`today-focus-toggle h-9 w-9 shrink-0 items-center justify-center ${focusPinned ? "is-pinned" : ""}`}
+              onClick={() => onToggleFocus(todo.id)} disabled={focusDisabled} aria-pressed={focusPinned}
+              aria-label={`핵심 작업 ${focusPinned ? "해제" : "선택"}: ${todo.title}`}
+              title={focusDisabled ? "핵심 작업은 최대 3개까지 지정할 수 있습니다." : focusPinned ? "핵심 작업에서 제외" : "핵심 작업으로 선택"}>
+              <Star size={16} fill={focusPinned ? "currentColor" : "none"} aria-hidden="true" />
+            </button>
+          ) : null}
           <details ref={menuRef} open={menuOpen} onToggle={(event) => setMenuOpen(event.currentTarget.open)} className="todo-row__more relative z-10 shrink-0">
             <summary className="ui-icon-button ui-icon-button--neutral h-9 w-9 cursor-pointer list-none" aria-label={`"${todo.title}" 더보기`} title="작업 메뉴">
               <MoreHorizontal size={17} />
@@ -142,6 +151,7 @@ export function TodoRow({
               </button>
             </div>
           </details>
+          </>
         ) : !selectionMode ? (
           <div className="todo-row__actions flex shrink-0 flex-wrap justify-end gap-0.5">
             <QuickSnoozeMenu todo={todo} />

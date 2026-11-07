@@ -21,7 +21,8 @@ import type { Todo, TodoInput } from "../types/todo";
 
 type TodayPageProps = {
   todayTodos: Todo[];
-  upcomingTodos?: Todo[];
+  candidateTodos: Todo[];
+  onPlanTodoToToday: (todo: Todo) => Promise<boolean>;
   onOpenDayClose?: () => void;
   stats: {
     todayTotal: number;
@@ -92,7 +93,8 @@ function SortableTodayRow({ todo, render }: {
 
 export function TodayPage({
   todayTodos,
-  upcomingTodos = [],
+  candidateTodos,
+  onPlanTodoToToday,
   onOpenDayClose,
   stats,
   onAdd,
@@ -120,11 +122,14 @@ export function TodayPage({
   const [showCompleted, setShowCompleted] = useState(false);
   const [focusIds, setFocusIds] = useState<string[]>(() => readFocusIds(todayKey()));
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [planningTodoId, setPlanningTodoId] = useState<string | null>(null);
+  const [planningError, setPlanningError] = useState("");
 
   const today = todayKey();
   const focusedTodos = useMemo(() => focusIds.map((id) => todayTodos.find((todo) => todo.id === id)).filter((todo): todo is Todo => Boolean(todo && !todo.completed && !todo.archived)), [focusIds, todayTodos]);
   const focusSet = useMemo(() => new Set(focusedTodos.map((todo) => todo.id)), [focusedTodos]);
   const oldestOverdueDate = overdueTodos[0]?.date;
+  const hasPlanningContent = candidateTodos.length > 0 || overdueTodos.length > 0 || stats.weekTotal > 0;
   const sortedCategories = useMemo(
     () => [...categories].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, "ko")),
     [categories],
@@ -194,6 +199,20 @@ export function TodayPage({
     });
   };
 
+  const planToday = async (todo: Todo) => {
+    if (planningTodoId) return;
+    setPlanningTodoId(todo.id);
+    setPlanningError("");
+    try {
+      const succeeded = await onPlanTodoToToday(todo);
+      if (!succeeded) setPlanningError("작업을 오늘로 이동하지 못했습니다. 다시 시도해 주세요.");
+    } catch {
+      setPlanningError("작업 이동에 실패했습니다. 연결 상태를 확인해 주세요.");
+    } finally {
+      setPlanningTodoId(null);
+    }
+  };
+
   const renderTodo = (todo: Todo, dragHandle?: ReactNode) => (
     <TodoRow
       key={todo.id}
@@ -246,23 +265,8 @@ export function TodayPage({
         </div>
       </header>
 
-      <div className="today-workspace">
-        <section className="today-digest" aria-label="일정 요약">
-          <div className="today-digest__week" aria-labelledby="week-summary-title">
-            <span id="week-summary-title" className="font-medium text-ui-secondary">이번 주</span>
-            <strong className={stats.weekRate > 0 ? "text-success" : "text-ui-secondary"}>{formatCompletionRate(stats.weekTotal, stats.weekRate)}</strong>
-            <span className="text-ui-muted">· {stats.weekTotal}개 일정 기준</span>
-          </div>
-          {overdueTodos.length > 0 ? (
-            <div className="today-digest__overdue" aria-labelledby="overdue-summary-title">
-              <History size={14} className="shrink-0 text-warning" aria-hidden="true" />
-              <span id="overdue-summary-title">지난 일정 <strong className="text-warning">{overdueTodos.length}개</strong></span>
-              {oldestOverdueDate ? <span className="text-ui-muted">· {formatKoreanDate(oldestOverdueDate, "M월 d일")}부터</span> : null}
-              <Button variant="secondary" size="sm" className="today-digest__link" onClick={() => setShowOverdueImport(true)}>정리하기</Button>
-            </div>
-          ) : null}
-        </section>
-        <div className="min-w-0 space-y-3">
+      <div className={`today-workspace ${hasPlanningContent ? "" : "today-workspace--single"}`}>
+        <main className="today-workspace__main min-w-0 space-y-3">
 
           {focusedTodos.length ? (
             <section className="today-focus-section" aria-labelledby="today-focus-title">
@@ -344,11 +348,14 @@ export function TodayPage({
                   <p className={`border-t border-ink-700/35 px-1 py-5 text-sm ${activeCategoryId === "all" && !stats.todayActive ? "text-ink-200" : "text-ink-300"}`}>{activeCategoryId === "all" && !stats.todayActive ? "오늘의 할 일을 모두 완료했습니다." : "선택한 카테고리에 미완료 Todo가 없습니다."}</p>
                 )}
               </>
-            ) : <div className="today-empty-state" role="status">오늘 예정된 일이 없습니다.</div>}
+            ) : <div className="today-empty-state" role="status">
+              오늘 예정된 일이 없습니다. 새로 입력하거나 기존 작업에서 선택할 수 있습니다.
+              {!hasPlanningContent ? <a className="today-planning-panel__all-link block" href="#/all">전체 Todo에서 찾기</a> : null}
+            </div>}
 
             <div className="today-composer">
               <TodoForm onAdd={onAdd} defaultDate={today} defaultCategoryId={inlineCategoryId}
-                compact collapsible submitLabel="추가"
+                compact collapsible alwaysOpen submitLabel="추가"
                 categories={categories} projects={activeProjects} showSyntaxHint={false} />
             </div>
 
@@ -361,27 +368,84 @@ export function TodayPage({
                 {showCompleted ? <div className="mt-1.5 space-y-1.5">{completedTodos.map((todo) => renderTodo(todo))}</div> : null}
               </div>
             ) : null}
-            {upcomingTodos.length > 0 ? (
-              <section className="today-upcoming border-t border-ui-divider pt-3" aria-labelledby="today-upcoming-heading">
-                <div className="flex items-baseline justify-between gap-3">
-                  <h3 id="today-upcoming-heading" className="text-sm font-semibold text-ui-text">다가오는 일정</h3>
-                  <span className="text-xs text-ui-muted">다음 작업 미리보기</span>
+          </section>
+        </main>
+        {hasPlanningContent ? (
+          <aside className="today-planning-panel" aria-label="오늘 계획하기">
+            <div className="today-planning-panel__header">
+              <h2>오늘 계획하기</h2>
+              <p>기존 작업을 선택해 오늘의 계획을 만듭니다.</p>
+            </div>
+
+            {candidateTodos.length > 0 ? (
+              <section className="today-planning-panel__section" aria-label="다음 작업 후보">
+                <div className="today-planning-panel__section-title">
+                  <h3>다음 작업 후보</h3>
+                  <span>{candidateTodos.length}개 표시</span>
                 </div>
-                <div className="mt-2">
-                  {upcomingTodos.slice(0, 3).map((todo) => (
-                    <button key={todo.id} type="button" onClick={() => setEditingTodo(todo)}
-                      className="flex min-h-10 w-full items-center justify-between gap-3 border-b border-ui-divider/60 px-1 text-left text-sm hover:bg-ui-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus">
-                      <span className="min-w-0 truncate text-ui-secondary">{todo.title}</span>
-                      <span className="shrink-0 text-xs tabular-nums text-ui-muted">{formatKoreanDate(todo.date, "M월 d일")}</span>
-                    </button>
+                <p className="today-planning-panel__hint">오늘로 이동하면 실행 날짜만 바뀌며 마감일은 유지됩니다.</p>
+                <ul className="today-candidate-list">
+                  {candidateTodos.map((todo) => (
+                    <li key={todo.id} className="today-candidate">
+                      <div className="today-candidate__content">
+                        <span className="today-candidate__title">{todo.title}</span>
+                        <span className="today-candidate__meta">
+                          {todo.planningState === "SCHEDULED"
+                            ? `${formatKoreanDate(todo.date, "M월 d일")} 예정`
+                            : todo.planningState === "SOMEDAY" ? "언젠가" : "미계획"}
+                          {todo.projectId && projectById.get(todo.projectId)
+                            ? ` · ${projectById.get(todo.projectId)?.name}` : ""}
+                          {todo.dueDate ? ` · 마감 ${formatKoreanDate(todo.dueDate, "M월 d일")}` : ""}
+                        </span>
+                      </div>
+                      <button type="button" className="today-candidate__move"
+                        onClick={() => void planToday(todo)}
+                        disabled={planningTodoId !== null}
+                        aria-label={`"${todo.title}" 오늘로 이동`}>
+                        {planningTodoId === todo.id ? "이동 중" : "오늘로"}
+                      </button>
+                    </li>
                   ))}
+                </ul>
+                {planningError ? <p role="alert" className="today-planning-panel__error">{planningError}</p> : null}
+              </section>
+            ) : null}
+
+            {overdueTodos.length > 0 ? (
+              <section className="today-planning-panel__section" aria-labelledby="overdue-summary-title">
+                <div className="today-planning-panel__section-title">
+                  <h3 id="overdue-summary-title">지난 일정</h3>
+                  <span className="today-planning-panel__overdue-count">{overdueTodos.length}개</span>
+                </div>
+                <p className="today-planning-panel__hint">
+                  {oldestOverdueDate ? `${formatKoreanDate(oldestOverdueDate, "M월 d일")}부터 남은 작업입니다.` : "이전 작업을 검토합니다."}
+                  {" "}선택한 항목만 이동합니다.
+                </p>
+                <Button variant="secondary" size="sm" className="today-plan-review"
+                  onClick={() => setShowOverdueImport(true)}>
+                  <History size={14} aria-hidden="true" /> 지난 작업 검토
+                </Button>
+              </section>
+            ) : null}
+
+            {stats.weekTotal > 0 ? (
+              <section className="today-planning-panel__section" aria-label="이번 주 요약">
+                <div className="today-planning-panel__section-title">
+                  <h3>이번 주</h3>
+                  <span>{stats.weekTotal}개 일정</span>
+                </div>
+                <div className="today-plan-week">
+                  <span className="today-plan-week__rate">{formatCompletionRate(stats.weekTotal, stats.weekRate)}</span>
+                  <div className="today-plan-week__track" aria-hidden="true">
+                    <span style={{ width: `${Math.max(0, Math.min(100, stats.weekRate))}%` }} />
+                  </div>
                 </div>
               </section>
             ) : null}
-          </section>
-        </div>
 
-
+            <a className="today-planning-panel__all-link" href="#/all">전체 Todo에서 작업 찾기</a>
+          </aside>
+        ) : null}
       </div>
 
       <TodoEditModal todo={editingTodo} categories={categories} projects={activeProjects} onClose={() => setEditingTodo(null)} onSave={onUpdate} />

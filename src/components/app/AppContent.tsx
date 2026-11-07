@@ -1,6 +1,8 @@
 import { lazy, Suspense } from "react";
 import { api, jsonBody } from "../../lib/api/client";
 import { getPlannerToday } from "../../lib/date";
+import { selectTodayCandidates, isTodayPlanningCandidate } from "../../lib/todayPlanning";
+import type { Todo } from "../../types/todo";
 import { prepareOverdueBulkImport } from "../../lib/todoBulkImport";
 import type { OverdueTodoImportMode, OverdueTodoImportResult } from "../../lib/todoRecovery";
 import { LoadingState } from "../common/LoadingState";
@@ -91,12 +93,20 @@ export function AppContent({ activeView, calendarMode, onCalendarModeChange, pla
     }
   };
 
+  const planExistingTodoForToday = async (todo: Todo): Promise<boolean> => {
+    const plannerToday = getPlannerToday();
+    if (!isTodayPlanningCandidate(todo, plannerToday)) return false;
+    const updated = await updateTodo(todo.id, { date: plannerToday, planningState: "SCHEDULED" });
+    // Only the execution date changes: dueDate, project and milestone are preserved.
+    return Boolean(updated);
+  };
+
   let content: JSX.Element;
 
   switch (activeView) {
     case "today":
       content = <TodayPage todayTodos={planner.getTodayTodos()}
-        upcomingTodos={[...planner.todos].filter((todo) => !todo.archived && !todo.completed && todo.planningState === "SCHEDULED" && todo.date > getPlannerToday()).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3)}
+        candidateTodos={selectTodayCandidates(planner.todos, getPlannerToday())} onPlanTodoToToday={planExistingTodoForToday}
         onOpenDayClose={onOpenDayClose} stats={planner.stats} onAdd={planner.addTodo} onToggle={toggleTodo} onDelete={planner.deleteTodo} onDeleteMany={planner.deleteTodos} onUpdate={updateTodo} onReorderTodos={planner.reorderTodos} categories={planner.categories} projects={planner.projects} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} onReorderCategories={planner.reorderCategories} overdueTodos={planner.getOverdueIncompleteTodos()} onBringOverdueTodos={bringOverdueTodosToToday} />;
       break;
     case "calendar":

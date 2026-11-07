@@ -79,6 +79,8 @@ type TodoFormProps = {
   showSyntaxHint?: boolean;
   lockCategory?: boolean;
   collapsible?: boolean;
+  /** Display the inline composer immediately and retain it after adding a task. */
+  alwaysOpen?: boolean;
 };
 
 export function TodoForm({
@@ -94,6 +96,7 @@ export function TodoForm({
   showSyntaxHint = true,
   lockCategory = false,
   collapsible = false,
+  alwaysOpen = false,
 }: TodoFormProps) {
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -112,12 +115,12 @@ export function TodoForm({
   const [planningState, setPlanningState] = useState<TodoPlanningState>(defaultPlanningState);
   const [showDetails, setShowDetails] = useState(!compact);
   const [saving, setSaving] = useState(false);
-  const [expanded, setExpanded] = useState(!collapsible);
+  const [expanded, setExpanded] = useState(!collapsible || alwaysOpen);
   const [composing, setComposing] = useState(false);
   const [saveError, setSaveError] = useState("");
 
   useEffect(() => { setDate(defaultDate || todayKey()); }, [defaultDate]);
-  useEffect(() => { if (collapsible && expanded) titleInputRef.current?.focus(); }, [collapsible, expanded]);
+  useEffect(() => { if (collapsible && expanded && !alwaysOpen) titleInputRef.current?.focus(); }, [collapsible, expanded, alwaysOpen]);
   useEffect(() => { setCategoryId(defaultCategoryId); }, [defaultCategoryId]);
   useEffect(() => { setProjectId(defaultProjectId); }, [defaultProjectId]);
   useEffect(() => { setPlanningState(defaultPlanningState); }, [defaultPlanningState]);
@@ -181,7 +184,7 @@ export function TodoForm({
         return;
       }
       reset();
-      if (collapsible) setExpanded(false);
+      if (collapsible && !alwaysOpen) setExpanded(false);
       else window.requestAnimationFrame(() => titleInputRef.current?.focus());
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Todo 저장 중 오류가 발생했습니다.");
@@ -235,7 +238,7 @@ export function TodoForm({
           event.preventDefault();
           return;
         }
-        if (event.key === "Escape" && collapsible && !saving && !event.nativeEvent.isComposing && !composing) {
+        if (event.key === "Escape" && collapsible && !alwaysOpen && !saving && !event.nativeEvent.isComposing && !composing) {
           event.preventDefault();
           if ([dateMenuRef, priorityMenuRef, projectMenuRef, categoryMenuRef].some((menu) => menu.current?.open)) closeMenus();
           else closeComposer();
@@ -251,7 +254,7 @@ export function TodoForm({
             onChange={(event) => { setTitle(event.target.value); if (saveError) setSaveError(""); }}
             onCompositionStart={() => setComposing(true)}
             onCompositionEnd={() => setComposing(false)}
-            placeholder={collapsible ? "할 일 이름" : "무엇을 할 예정인가요?"}
+            placeholder={alwaysOpen ? "할 일을 입력하고 Enter" : collapsible ? "할 일 이름" : "무엇을 할 예정인가요?"}
             aria-label="Todo 제목"
           />
         </div>
@@ -319,11 +322,11 @@ export function TodoForm({
           {collapsible ? <SlidersHorizontal size={14} aria-hidden="true" /> : <ChevronDown className={showDetails ? "rotate-180 transition-transform" : "transition-transform"} size={14} aria-hidden="true" />}
           {showDetails ? "상세 옵션 닫기" : "상세 옵션"}
         </button>
-        {collapsible ? (
+        {collapsible && !alwaysOpen ? (
           <div className="todo-composer-form__actions">
             <button type="button" className="todo-composer-form__toggle todo-composer-form__cancel" onClick={closeComposer} disabled={saving}>취소</button>
           </div>
-        ) : !showDetails && !showSyntaxHint ? <span className="todo-composer-form__hint">Enter로 추가 · Esc로 닫기</span> : null}
+        ) : !showDetails && !showSyntaxHint && !collapsible ? <span className="todo-composer-form__hint">Enter로 추가 · Esc로 닫기</span> : null}
       </div>
       </div>
       {saveError ? <p role="alert" className="mt-2 text-xs font-semibold text-danger">{saveError}</p> : null}

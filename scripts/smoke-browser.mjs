@@ -55,9 +55,9 @@ try {
     const composer = document.querySelector(".today-composer");
     const header = document.querySelector(".today-header");
     const status = document.querySelector(".today-header__status");
-    const digest = document.querySelector(".today-digest");
+    const planningPanel = document.querySelector(".today-planning-panel");
     const primary = document.querySelector("header .app-quick-add-button");
-    if (!section || !composer || !header || !status || !digest || !primary) return null;
+    if (!section || !composer || !header || !status || !primary) return null;
     const sectionStyle = getComputedStyle(section);
     const composerStyle = getComputedStyle(composer);
     const rootStyle = getComputedStyle(document.documentElement);
@@ -70,8 +70,8 @@ try {
       firstTaskOffset: section.getBoundingClientRect().top - header.getBoundingClientRect().top,
       headerText: status.textContent,
       oldDashboardCount: document.querySelectorAll(".today-overview__stat").length,
-      digestBorderBottom: getComputedStyle(digest).borderBottomWidth,
-      digestBeforeTasks: Boolean(digest.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING),
+      planningPanelPresent: Boolean(planningPanel),
+      workspaceLayout: getComputedStyle(document.querySelector(".today-workspace")).display,
       todayWidth: document.querySelector(".today-page").getBoundingClientRect().width,
       hasSidebar: Boolean(document.querySelector(".today-sidebar")),
       primaryBackground: getComputedStyle(primary).backgroundColor,
@@ -83,15 +83,14 @@ try {
   assert.equal(visualSystem.sectionRadius, "0px", "Tasks must not become a rounded card.");
   assert.equal(visualSystem.sectionBackground, "rgba(0, 0, 0, 0)", "Tasks must stay on the workspace canvas.");
   assert.equal(visualSystem.sectionBorderTop, "0px", "Task sections must not be enclosed.");
-  assert.equal(visualSystem.composerBackground, "rgba(0, 0, 0, 0)", "Collapsed inline entry should not create an empty card.");
+  assert.notEqual(visualSystem.composerBackground, visualSystem.sectionBackground, "Always-visible entry must be distinguishable from the task canvas.");
   assert.ok(visualSystem.headerHeight <= 90, "Today heading/status must be compact.");
   assert.ok(visualSystem.firstTaskOffset <= 140, "Task entry should appear close to the header.");
   assert.equal(visualSystem.oldDashboardCount, 0, "Old KPI grid must not return.");
   assert.ok(visualSystem.headerText.includes("중"), "Concise completion summary must remain visible.");
-  assert.equal(visualSystem.digestBorderBottom, "1px", "The review summary should separate cleanly from the task list.");
-  assert.equal(visualSystem.digestBeforeTasks, true, "Existing weekly and overdue review must be visible before the task list.");
+  assert.equal(visualSystem.workspaceLayout, "grid", "Today must be able to show a task lane and an actionable planning lane.");
   assert.equal(visualSystem.hasSidebar, false, "Today must not retain a disconnected right rail.");
-  assert.ok(visualSystem.todayWidth <= 1010, "Today must use a comfortable desktop reading column without stretching edge to edge.");
+  assert.ok(visualSystem.todayWidth <= 1270, "Today planning layout must remain contained at desktop width.");
   assert.equal(visualSystem.accent, "#d4d4d8", "Accent must remain neutral.");
   assert.equal(visualSystem.canvas, "#101011", "Canvas must stay near-black.");
   assert.notEqual(visualSystem.primaryBackground, "rgb(226, 226, 229)", "Global Quick Add should not outshine task content.");
@@ -141,7 +140,7 @@ try {
   assert.ok(overdueFixture.every((item) => item.status >= 200 && item.status < 300),
     "Local D1 overdue fixtures should be created: " + JSON.stringify(overdueFixture));
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "정리하기", exact: true }).click();
+  await page.getByRole("button", { name: "지난 작업 검토", exact: true }).click();
   const overdueDialog = page.getByRole("dialog", { name: "지난 일정 정리" });
   await overdueDialog.getByRole("button", { name: "전체 선택", exact: true }).click();
   assert.ok((await overdueDialog.getByRole("button", { name: "선택 4개 삭제" }).count()) === 1,
@@ -371,7 +370,7 @@ try {
 
   // Empty Today keeps its summary and add form, with one actionable empty-list message.
   await page.getByRole("group", { name: "오늘 작업 현황", exact: true }).waitFor();
-  await page.getByText("오늘 예정된 일이 없습니다.", { exact: true }).waitFor();
+  await page.getByText(/오늘 예정된 일이 없습니다/).waitFor();
   assert.equal(await page.getByText("첫 작업", { exact: true }).count(), 0, "Empty state should be a single calm line.");
   assert.equal(await page.getByRole("heading", { name: "오늘의 핵심 작업" }).count(), 0, "Do not render empty focus card.");
   assert.equal(await page.getByText("미완료 Todo가 없습니다.", { exact: true }).count(), 0, "Do not repeat zero-state placeholders.");
@@ -400,12 +399,11 @@ try {
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
 
-  // G6.1: Today starts as one inline add action, without a permanent form card.
-  const composerTrigger = page.locator(".today-composer").getByRole("button", { name: "할 일 추가" });
-  await composerTrigger.waitFor();
-  assert.equal(await page.locator(".today-composer form").count(), 0);
-  await composerTrigger.click();
-  const composer = page.getByRole("form", { name: "Todo 빠른 추가" });
+  // Today starts ready for capture: no extra click is required before typing.
+  const composer = page.locator(".today-composer").getByRole("form", { name: "Todo 빠른 추가" });
+  await composer.waitFor();
+  assert.equal(await page.locator(".today-composer form").count(), 1);
+  assert.equal(await page.locator(".today-composer .todo-composer-trigger").count(), 0);
   await composer.getByRole("textbox", { name: "Todo 제목" }).waitFor();
   // G6.3: compact chips replace the permanent date/priority/project input boxes.
   assert.equal(await composer.locator(".todo-composer-form__chips").count(), 1);
@@ -422,13 +420,11 @@ try {
   await dateChip.click();
   await composer.getByRole("group", { name: "날짜 빠른 선택" }).getByRole("button", { name: "오늘", exact: true }).click();
   assert.ok((await dateChip.innerText()).includes("오늘"));
-  // Esc keeps unsaved text locally; another click restores the draft.
+  // Escape leaves the always-visible composer and draft intact.
   const draft = `Unsubmitted draft ${randomUUID().slice(0, 6)}`;
   await composer.getByRole("textbox", { name: "Todo 제목" }).fill(draft);
   await composer.getByRole("textbox", { name: "Todo 제목" }).press("Escape");
-  await composerTrigger.waitFor();
-  assert.equal(await page.locator(".today-composer form").count(), 0);
-  await composerTrigger.click();
+  assert.equal(await page.locator(".today-composer form").count(), 1);
   assert.equal(await composer.getByRole("textbox", { name: "Todo 제목" }).inputValue(), draft);
   // Date input lives inside the compact date popover; project/priority stay visible.
   await dateChip.click();
@@ -463,10 +459,8 @@ try {
   await categoryChip.click();
   await composer.getByRole("textbox", { name: "Todo 제목" }).click();
   assert.equal(await composer.locator('[data-composer-selection="카테고리"]').getAttribute("open"), null);
-  // Once a category has been selected, Esc should preserve that selection and the text draft.
+  // Escape does not collapse the permanently available title input.
   await composer.getByRole("textbox", { name: "Todo 제목" }).press("Escape");
-  await composerTrigger.waitFor();
-  await composerTrigger.click();
   assert.equal(await composer.getByRole("textbox", { name: "Todo 제목" }).inputValue(), draft);
   assert.equal(await composer.locator('[data-composer-selection="카테고리"]').getAttribute("data-selected-value"),
     menuFixtures.category.id, "Esc must retain selected category after it was chosen.");
@@ -509,7 +503,7 @@ try {
   assert.equal(mainLayout.footerNoDivider, true, "Avoid a separated card-like footer.");
   assert.ok(mainLayout.formWidth < 600 || mainLayout.footerSameRowAsChips,
     "On desktop metadata and secondary actions share a line; mobile may wrap without clipping.");
-  assert.ok(mainLayout.composerWidth <= 765, "The composer should have a practical desktop max width.");
+  assert.ok(mainLayout.composerWidth <= 860, "The composer must remain inside the main execution lane.");
   assert.equal(await composer.getByRole("button", { name: "추가", exact: true }).isDisabled(), false,
     "Entered draft enables the compact Add button.");
   await composerToggle.click();
@@ -540,14 +534,50 @@ try {
   const quickInput = page.locator('input[data-quick-todo-input="true"]');
   await quickInput.fill(title);
   await page.getByRole("button", { name: "추가", exact: true }).click();
-  await composerTrigger.waitFor();
-  assert.equal(await page.locator(".today-composer form").count(), 0, "Successful inline add should return to quiet state.");
   await page.getByText(title, { exact: true }).first().waitFor();
+  await page.waitForFunction(() => {
+    const input = document.querySelector('.today-composer input[data-quick-todo-input="true"]');
+    return input instanceof HTMLInputElement && input.value === "";
+  });
+  assert.equal(await page.locator(".today-composer form").count(), 1, "Successful add must retain the inline composer for another task.");
   const savedInlineTodo = await findServerTodo(title);
   assert.ok(savedInlineTodo, "Todo create should persist to local D1.");
   assert.equal(savedInlineTodo.categoryId, menuFixtures.category.id, "Inline category selection must be persisted.");
   assert.equal(savedInlineTodo.projectId, menuFixtures.project.id, "Inline project selection must be persisted.");
   assert.equal(savedInlineTodo.priority, "MEDIUM", "Inline priority selection must be persisted.");
+  // Plan an existing project task into Today without cloning it or changing its deadline.
+  const futureTitle = `Plan existing ${randomUUID().slice(0, 8)}`;
+  const scheduledDate = new Date(savedInlineTodo.date + "T12:00:00.000Z");
+  scheduledDate.setUTCDate(scheduledDate.getUTCDate() + 4);
+  const futureDate = scheduledDate.toISOString().slice(0, 10);
+  const deadlineDate = new Date(scheduledDate);
+  deadlineDate.setUTCDate(deadlineDate.getUTCDate() + 4);
+  const dueDate = deadlineDate.toISOString().slice(0, 10);
+  const futureFixture = await page.evaluate(async (input) => {
+    const response = await fetch("/api/todos", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      credentials: "same-origin", body: JSON.stringify(input),
+    });
+    if (!response.ok) throw new Error("Candidate fixture failed: " + response.status);
+    return (await response.json()).todo;
+  }, { title: futureTitle, date: futureDate, dueDate, planningState: "SCHEDULED",
+    projectId: menuFixtures.project.id, priority: "HIGH" });
+  assert.ok(futureFixture?.id, "Local planning candidate created");
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
+  const planningPanel = page.locator('[aria-label="오늘 계획하기"]');
+  await planningPanel.waitFor();
+  await planningPanel.getByRole("button", { name: `"${futureTitle}" 오늘로 이동` }).click();
+  await planningPanel.getByRole("button", { name: `"${futureTitle}" 오늘로 이동` }).waitFor({ state: "detached" });
+  await page.getByText(futureTitle, { exact: true }).first().waitFor();
+  const moved = await findServerTodo(futureTitle);
+  assert.equal(moved.id, futureFixture.id, "Planning moves the existing Todo instead of creating a copy");
+  assert.equal(moved.date, savedInlineTodo.date, "Planning changes only the execution date to Today");
+  assert.equal(moved.dueDate, dueDate, "The original deadline is preserved");
+  assert.equal(moved.projectId, menuFixtures.project.id, "The project association is retained");
+  assert.equal(await planningPanel.getByRole("button", { name: `"${futureTitle}" 오늘로 이동` }).count(), 0,
+    "Planned task must disappear from the candidate list");
+
   // Readability regression: a task is a distinct text-first row, not a barely
   // visible line or a nested rounded card.
   const createdRow = page.locator(".todo-row").filter({ has: page.getByRole("heading", { name: title, exact: true }) });
@@ -566,7 +596,7 @@ try {
       divider: rowStyle.borderBottomWidth,
       dividerColor: rowStyle.borderBottomColor,
       todayVariant: row.classList.contains("todo-row--today"),
-      leadingAction: !!row.querySelector('button[aria-label*="핵심 작업으로 고정"]') && !row.querySelector("details"),
+      focusAction: !!row.querySelector("button.today-focus-toggle"),
     };
   });
   assert.ok(todoVisual.size >= 14.5 && todoVisual.size <= 15.5 && todoVisual.lineHeight >= 22,
@@ -575,7 +605,7 @@ try {
     `Today list rows should stay comfortably compact: ${todoVisual.height}px`);
   assert.equal(todoVisual.divider, "1px", "Todo rows must have a real separator.");
   assert.equal(todoVisual.todayVariant, true, "Today Todo rows must use the dedicated editorial presentation.");
-  assert.equal(todoVisual.leadingAction, false, "G6.2: Todo row should not show a permanent pin button.");
+  assert.equal(todoVisual.focusAction, true, "Today must expose focus selection without entering the more menu.");
   await page.setViewportSize({ width: 390, height: 844 });
   // G6: reviewing today's tasks must never reschedule them by default.
   const dayCloseBefore = (await findServerTodo(title))?.date;
@@ -676,22 +706,23 @@ try {
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
   await page.getByRole("progressbar", { name: "오늘 완료율", exact: true }).waitFor();
   assert.equal(await page.getByRole("progressbar", { name: "오늘 완료율", exact: true }).getAttribute("aria-valuenow"), "0", "A newly added incomplete Todo must expose a visible 0% progress indicator.");
-  // G6.2: task actions remain keyboard/touch accessible in a single menu.
+  // Direct star selection is a desktop affordance; mobile retains the more menu to avoid cramped rows.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const focusRow = () => page.locator(".todo-row--today").filter({ has: page.getByRole("heading", { name: title, exact: true }) });
+  await focusRow().getByRole("button", { name: `핵심 작업 선택: ${title}` }).click();
+  await page.getByRole("heading", { name: "오늘의 핵심 작업" }).waitFor();
+  assert.equal(await focusRow().count(), 1, "Pinned Todo must not be rendered twice.");
+  await focusRow().getByRole("button", { name: `핵심 작업 해제: ${title}` }).click();
+  assert.equal(await page.getByRole("heading", { name: "오늘의 핵심 작업" }).count(), 0,
+    "Focus section should collapse after removing the last pinned Todo.");
+  await page.setViewportSize({ width: 390, height: 844 });
+  // The more menu still exposes the remaining task actions.
   const openTodoActions = async () => {
-    const row = page.locator(".todo-row--today").filter({ has: page.getByRole("heading", { name: title, exact: true }) });
+    const row = focusRow();
     await row.locator("summary").click();
     return row;
   };
   let actionsRow = await openTodoActions();
-  await actionsRow.getByRole("button", { name: `${title} 핵심 작업으로 고정` }).click();
-  await page.getByRole("heading", { name: "오늘의 핵심 작업" }).waitFor();
-  assert.equal(await page.locator(".todo-row--today").filter({ has: page.getByRole("heading", { name: title, exact: true }) }).count(), 1,
-    "Pinned Todo must not be rendered twice.");
-  actionsRow = await openTodoActions();
-  await actionsRow.getByRole("button", { name: `${title} 핵심 작업에서 제외` }).click();
-  assert.equal(await page.getByRole("heading", { name: "오늘의 핵심 작업" }).count(), 0,
-    "Focus section should collapse after removing the last pinned Todo.");
-  actionsRow = await openTodoActions();
   await actionsRow.getByRole("button", { name: `"${title}" Todo 수정` }).waitFor();
   await actionsRow.locator("summary").click();
 
@@ -717,7 +748,7 @@ try {
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
   const offlineTitle = `Offline Browser Todo ${randomUUID().slice(0, 8)}`;
   await context.setOffline(true);
-  await composerTrigger.click();
+  await composer.waitFor();
   await quickInput.fill(offlineTitle);
   await page.getByRole("button", { name: "추가", exact: true }).click();
   await page.getByText(offlineTitle, { exact: true }).first().waitFor();
@@ -1073,9 +1104,8 @@ try {
         if (view === "scratchpad") await page.getByRole("textbox", { name: "낙서장 편집기" }).waitFor();
         else await page.getByRole("heading", { name: heading, exact: true }).first().waitFor();
         if (view === "today") {
-          const trigger = page.locator(".today-composer").getByRole("button", { name: "할 일 추가" });
-          await trigger.click();
-          const composer = page.getByRole("form", { name: "Todo 빠른 추가" });
+          const composer = page.locator(".today-composer").getByRole("form", { name: "Todo 빠른 추가" });
+          await composer.waitFor();
           await composer.getByRole("button", { name: "상세 옵션", exact: true }).click();
           await composer.getByRole("group", { name: "Todo 상세 옵션" }).waitFor();
           await page.screenshot({ path: `test-artifacts/g2-composer-expanded-${theme}-${width}.png`, fullPage: true });
@@ -1085,7 +1115,7 @@ try {
             composer: getComputedStyle(document.querySelector(".today-composer")).backgroundColor,
           }));
           assert.notEqual(surfaces.composer, surfaces.canvas, `Expanded composer must remain distinguishable in ${theme} theme.`);
-          await composer.getByRole("button", { name: /취소/ }).click();
+          assert.equal(await composer.count(), 1, "The Today composer must remain visible after closing advanced options.");
         }
         const geometry = await page.evaluate(() => ({
           viewport: window.innerWidth, document: document.documentElement.scrollWidth,
@@ -1122,6 +1152,34 @@ try {
   await page.getByText("검색 조건에 맞는 삭제된 Todo가 없습니다.", { exact: true }).waitFor();
   await trashSearch.fill(trashSearchFixtureTitle);
   await page.getByText(trashSearchFixtureTitle, { exact: true }).waitFor();
+  // Dense Today with 20 additional local-only tasks remains readable on narrow and wide displays.
+  const denseLabel = "Dense today " + randomUUID().slice(0, 6);
+  const denseResults = await page.evaluate(async ({ date, prefix }) => {
+    const errors = [];
+    for (let index = 0; index < 20; index += 1) {
+      const response = await fetch("/api/todos", {
+        method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ title: prefix + " " + index, date, planningState: "SCHEDULED", priority: "MEDIUM" }),
+      });
+      if (!response.ok) errors.push(response.status);
+    }
+    return errors;
+  }, { date: savedInlineTodo.date, prefix: denseLabel });
+  assert.deepEqual(denseResults, [], "All dense-layout fixtures should persist to local D1");
+  await page.evaluate(() => { window.location.hash = "#/today"; });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
+  await page.waitForFunction(() => document.querySelectorAll(".today-task-section .todo-row--today").length >= 20);
+  for (const width of [390, 1280]) {
+    await page.setViewportSize({ width, height: 844 });
+    const geometry = await page.evaluate(() => ({
+      width: window.innerWidth, scrollWidth: document.documentElement.scrollWidth,
+      count: document.querySelectorAll(".today-task-section .todo-row--today").length,
+    }));
+    assert.ok(geometry.count >= 20 && geometry.scrollWidth <= geometry.width + 2,
+      "Dense Today must preserve rows and avoid horizontal overflow: " + JSON.stringify(geometry));
+    await page.screenshot({ path: `test-artifacts/today-dense-${width}.png`, fullPage: true });
+  }
   console.log("BROWSER E2E PASS: functional flows, 24 responsive snapshots and 32 Dark/Light G2 screen snapshots.");
 } catch (error) {
   failed = true;
