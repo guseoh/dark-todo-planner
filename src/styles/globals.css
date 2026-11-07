@@ -1888,7 +1888,7 @@ button:disabled {
 }
 .app-nav-button[aria-current="page"] .app-nav-indicator { background: var(--ui-focus); }
 .app-topbar .app-quick-add-button {
-  background: var(--ui-surface); border-color: var(--border-default);
+  background: var(--ui-inset); border-color: var(--border-default);
 }
 .app-topbar .app-quick-add-button:hover { border-color: var(--ui-focus); }
 /* Today: content gets real desktop width without becoming another dashboard. */
