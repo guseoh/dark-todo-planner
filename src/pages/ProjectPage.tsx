@@ -417,10 +417,10 @@ export function ProjectPage({
 
           <nav className="page-tabs" aria-label="프로젝트 세부 화면" role="tablist">
             {([
-              { id: "work", label: "작업·Kanban", count: projectTodos.length },
+              { id: "work", label: "작업", count: projectTodos.length },
               { id: "milestones", label: "마일스톤", count: projectMilestones.length },
               { id: "decisions", label: "결정 기록", count: projectDecisions.length },
-              { id: "manage", label: "분석·관리", count: null },
+              { id: "manage", label: "프로젝트 관리", count: null },
             ] as const).map((tab) => (
               <button type="button" role="tab" key={tab.id} id={`project-tab-${tab.id}`} aria-selected={projectTab === tab.id}
                 tabIndex={projectTab === tab.id ? 0 : -1} onKeyDown={onProjectTabKey}
@@ -445,22 +445,21 @@ export function ProjectPage({
           /> : null}
 
           {projectTab === "work" && !selected.archived ? (
-            <details className="app-card py-3">
-              <summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 px-1 text-sm font-semibold text-ink-200 hover:text-ink-100"><Plus size={15} className="text-accent-300" />Todo 빠른 추가</summary>
-              <div className="mt-3 space-y-2 border-t border-ink-800/65 pt-3">
-                <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-                  <div>
-                    <p className="text-xs font-semibold text-ink-300">새 Todo 마일스톤</p>
-                    <p className="mt-0.5 text-xs text-ink-400">같은 마일스톤에 작업을 연속 추가할 때 선택을 유지합니다.</p>
-                  </div>
-                  <select className="field min-h-9 w-full py-1.5 text-xs sm:w-64" value={newTodoMilestoneId} onChange={(event) => setNewTodoMilestoneId(event.target.value)} aria-label="새 Todo 마일스톤">
-                    <option value="">마일스톤 없음</option>
-                    {projectMilestones.map((milestone) => <option key={milestone.id} value={milestone.id}>{milestone.title}</option>)}
-                  </select>
-                </div>
-                <TodoForm compact submitLabel="프로젝트 Todo 추가" categories={categories} projects={activeProjects} defaultProjectId={selected.id} onAdd={addProjectTodo} />
+            <section className="border-b border-ui-divider py-3" aria-label="프로젝트 작업 추가">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <h4 className="text-sm font-semibold text-ui-text">새 작업</h4>
+                {projectMilestones.length > 0 ? (
+                  <label className="flex min-w-0 items-center gap-2 text-xs text-ui-secondary">
+                    <span className="shrink-0">마일스톤</span>
+                    <select className="field min-h-9 w-44 max-w-full py-1.5 text-xs" value={newTodoMilestoneId} onChange={(event) => setNewTodoMilestoneId(event.target.value)} aria-label="새 Todo 마일스톤">
+                      <option value="">미지정</option>
+                      {projectMilestones.map((milestone) => <option key={milestone.id} value={milestone.id}>{milestone.title}</option>)}
+                    </select>
+                  </label>
+                ) : null}
               </div>
-            </details>
+              <TodoForm compact submitLabel="추가" categories={categories} projects={activeProjects} defaultProjectId={selected.id} onAdd={addProjectTodo} />
+            </section>
           ) : null}
 
           {projectTab === "milestones" ? <section className="app-card py-4">
