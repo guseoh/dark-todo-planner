@@ -565,6 +565,7 @@ try {
   const planningPanel = page.locator('[aria-label="오늘 계획하기"]');
   await planningPanel.waitFor();
   await planningPanel.getByRole("button", { name: `"${futureTitle}" 오늘로 이동` }).click();
+  await planningPanel.getByRole("button", { name: `"${futureTitle}" 오늘로 이동` }).waitFor({ state: "detached" });
   await page.getByText(futureTitle, { exact: true }).first().waitFor();
   const moved = await findServerTodo(futureTitle);
   assert.equal(moved.id, futureFixture.id, "Planning moves the existing Todo instead of creating a copy");
@@ -742,7 +743,7 @@ try {
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
   const offlineTitle = `Offline Browser Todo ${randomUUID().slice(0, 8)}`;
   await context.setOffline(true);
-  await composerTrigger.click();
+  await composer.waitFor();
   await quickInput.fill(offlineTitle);
   await page.getByRole("button", { name: "추가", exact: true }).click();
   await page.getByText(offlineTitle, { exact: true }).first().waitFor();
