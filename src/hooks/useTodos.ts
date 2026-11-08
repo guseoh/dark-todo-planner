@@ -112,6 +112,12 @@ export function useTodos() {
   const [pendingDelete, setPendingDelete] = useState<PendingTodoDelete | null>(null);
   const deleteTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const deletedSnapshotsRef = useRef(new Map<string, Todo>());
+  // Drag/status edits are shown immediately. Keep in-flight changes visible if
+  // a background reload races with the server write, and serialize edits to
+  // the same Todo so an older response cannot overwrite a newer drag.
+  const pendingUpdateRef = useRef(new Map<string, Todo>());
+  const updateSerialRef = useRef(new Map<string, number>());
+  const updateWriteRef = useRef(new Map<string, Promise<void>>());
 
   const loadTodos = useCallback(async () => {
     setLoading(true);
@@ -126,7 +132,9 @@ export function useTodos() {
         }));
       // The network snapshot can lag behind IndexedDB mutations awaiting replay.
       // Keep pending and FAILED edits visible rather than overwriting them with stale server state.
-      const visible = replayQueuedTodoMutations(loaded, await listTodoMutations());
+      const visible = replayQueuedTodoMutations(loaded, await listTodoMutations()).map((todo) =>
+        pendingUpdateRef.current.get(todo.id) ?? todo
+      );
       setAllTodos(visible);
       setError("");
       return visible;
@@ -190,20 +198,55 @@ export function useTodos() {
   const updateTodo = useCallback(async (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => {
     const existing = allTodos.find((todo) => todo.id === id);
     if (!existing) return undefined;
+
+    const serial = (updateSerialRef.current.get(id) ?? 0) + 1;
+    updateSerialRef.current.set(id, serial);
+    const optimistic = applyOptimisticUpdates(existing, updates);
+    // Only the atomic workflow transition used by the board is safe to render
+    // optimistically. Scheduling/metadata edits may change the active list
+    // filter while an edit modal is open: rendering those before persistence
+    // would unmount the editor and lose its failed-save retry UI.
+    const instantWorkflowMove = updates.workflowStatus !== undefined
+      && Object.keys(updates).every((key) => key === "workflowStatus" || key === "completed");
+    if (instantWorkflowMove) {
+      pendingUpdateRef.current.set(id, optimistic);
+      setAllTodos((current) => current.map((item) => item.id === id ? optimistic : item));
+    }
     setSaving(true);
+    const isLatest = () => updateSerialRef.current.get(id) === serial;
+
     try {
-      const optimistic = applyOptimisticUpdates(existing, updates);
       const body = toTodoRequestBody(optimistic);
       const mutation: QueueMutationInput = { kind: "UPDATE", method: "PUT", path: `/api/todos/${id}`, body };
-      const result = await runQueueableMutation<{ todo: Todo }>(mutation, () => api<{ todo: Todo }>(mutation.path, { method: "PUT", ...jsonBody(body) }));
+      const previousWrite = updateWriteRef.current.get(id) ?? Promise.resolve();
+      const request = previousWrite.catch(() => undefined).then(() =>
+        runQueueableMutation<{ todo: Todo }>(mutation,
+          () => api<{ todo: Todo }>(mutation.path, { method: "PUT", ...jsonBody(body) }))
+      );
+      // Serialize writes for the same item. A rejected request does not block
+      // subsequent saves; the latest edit still wins in the local UI.
+      updateWriteRef.current.set(id, request.then(() => undefined, () => undefined));
+      const result = await request;
       const todo = result.queued ? optimistic : result.data!.todo;
-      setAllTodos((current) => current.map((item) => (item.id === id ? todo : item)));
+      if (isLatest()) {
+        pendingUpdateRef.current.delete(id);
+        setAllTodos((current) => current.map((item) => item.id === id ? todo : item));
+      }
       setError("");
       return todo;
     } catch (err) {
+      if (isLatest()) {
+        pendingUpdateRef.current.delete(id);
+        if (instantWorkflowMove) {
+          // A failed online status write restores the original lane. Regular
+          // form edits have never mutated the visible record before saving.
+          setAllTodos((current) => current.map((item) => item.id === id ? existing : item));
+        }
+      }
       setError(getMessage(err));
       return undefined;
     } finally {
+      if (isLatest()) updateWriteRef.current.delete(id);
       setSaving(false);
     }
   }, [allTodos]);

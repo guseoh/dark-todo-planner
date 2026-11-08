@@ -2319,3 +2319,44 @@ button:disabled {
 @media (max-width: 639px) {
   .calendar-page .calendar-v4-date-drawer { bottom: 4rem; }
 }
+
+/* V4.1 Kanban interaction: a single GPU-transformed preview, stable source card
+   and unambiguous current count / manually configured WIP limit. */
+.project-page .project-kanban-column__header {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: .4rem; margin-bottom: .7rem;
+}
+.project-page .project-kanban-column__identity { display: inline-flex; align-items: center; min-width: 0; gap: .3rem; }
+.project-page .project-kanban-column__count { font-size: .75rem; color: var(--text-secondary); padding-inline: .25rem; }
+.project-page .project-kanban-column__limit { position: relative; margin-left: auto; }
+.project-page .project-kanban-column__limit > summary {
+  display: inline-flex; align-items: center; gap: .35rem; min-height: 30px; padding: .25rem .4rem;
+  border: 1px solid var(--border-default); border-radius: 3px; color: var(--text-secondary);
+  font-size: .69rem; list-style: none; cursor: pointer;
+}
+.project-page .project-kanban-column__limit > summary::-webkit-details-marker { display: none; }
+.project-page .project-kanban-column__limit > summary:hover,
+.project-page .project-kanban-column__limit[open] > summary { border-color: var(--ui-focus); color: var(--text-primary); }
+.project-page .project-kanban-column__limit > summary:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 1px; }
+.project-page .project-kanban-column__limit-panel {
+  position: absolute; right: 0; top: calc(100% + .25rem); z-index: 15; width: 230px;
+  padding: .75rem; border: 1px solid var(--border-default); border-radius: 4px;
+  background: var(--ui-elevated); box-shadow: 0 8px 20px rgb(0 0 0 / .24);
+}
+.project-page .project-kanban-column__limit-panel label { display: flex; align-items: center; justify-content: space-between; gap: .4rem; color: var(--text-primary); font-size: .75rem; }
+.project-page .project-kanban-column__limit-panel p { margin-top: .5rem; line-height: 1.5; color: var(--text-secondary); font-size: .7rem; }
+.project-page .project-kanban-column__filtered { margin: -.35rem 0 .55rem; font-size: .7rem; color: var(--text-secondary); }
+.project-page .project-kanban-card[data-dragging="true"] { opacity: .27; border-style: dashed; }
+.project-page .project-v4-card__drag { touch-action: none; user-select: none; }
+.project-v4-drag-preview {
+  display: flex; align-items: center; gap: .6rem; max-width: 280px; min-width: 175px;
+  padding: .75rem .9rem; color: var(--text-primary); background: var(--ui-elevated);
+  border: 1px solid var(--ui-focus); border-radius: 4px;
+  box-shadow: 0 10px 24px rgb(0 0 0 / .28);
+  font-size: .84rem; font-weight: 600; line-height: 1.45; pointer-events: none;
+  will-change: transform;
+}
+.project-v4-drag-preview__grip { display: inline-flex; color: var(--ui-focus); }
+@media (prefers-reduced-motion: reduce) {
+  .project-page .project-kanban-column, .project-v4-drag-preview { transition: none; }
+}
