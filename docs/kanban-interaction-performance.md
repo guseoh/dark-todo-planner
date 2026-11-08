@@ -10,7 +10,7 @@
 
 ## Implementation contract
 - Pointer-first collision + rect-intersection fallback; floating `DragOverlay`, no transform on original card. Only status transitions to valid lanes write to the server.
-- Immediate optimistic UI, serialize writes per Todo ID, ignore stale response in local UI, restore previous state on the latest failed request. Preserve existing offline mutation queue and reloading semantics.
+- Immediate optimistic UI only for atomic workflow-status moves (to avoid unmounting list-filtered edit forms); serialize writes per Todo ID, ignore stale responses in local UI, and restore the previous lane on the latest failed status write. Regular metadata/dates remain save-confirmed to preserve retry dialogs. Preserve existing offline mutation queue and reloading semantics.
 - Default board header: always display the actual total count. WIP is collapsed behind `한도` settings with explicit explanation, and warnings use total project count, even with a search filter. Stored limits remain unmodified and browser-local.
 - First paint may proceed before automation POST; automatically run maintenance and deferred goals/memos/project details after core data is displayed. Retain day rollover and manual refresh behavior.
 - Do not introduce a new API, database table, secret or third-party runtime dependency.
