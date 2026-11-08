@@ -87,13 +87,19 @@ try {
   assert.ok(visualSystem.headerHeight <= 90, "Today heading/status must be compact.");
   assert.ok(visualSystem.firstTaskOffset <= 140, "Task entry should appear close to the header.");
   assert.equal(visualSystem.oldDashboardCount, 0, "Old KPI grid must not return.");
-  assert.ok(visualSystem.headerText.includes("중"), "Concise completion summary must remain visible.");
+  assert.ok(visualSystem.headerText.includes("완료"), "Concise completion summary must remain visible.");
   assert.equal(visualSystem.workspaceLayout, "grid", "Today must be able to show a task lane and an actionable planning lane.");
   assert.equal(visualSystem.hasSidebar, false, "Today must not retain a disconnected right rail.");
   assert.ok(visualSystem.todayWidth <= 840, "Default Today should retain a compact, readable desktop width.");
   assert.equal(visualSystem.planningPanelPresent, false, "Planning is hidden by default, not a permanent second column.");
-  assert.equal(visualSystem.accent, "#d4d4d8", "Accent must remain neutral.");
-  assert.equal(visualSystem.canvas, "#101011", "Canvas must stay near-black.");
+  const captureFirst = await page.evaluate(() => {
+    const capture = document.querySelector(".today-capture-section");
+    const tasks = document.querySelector(".today-task-section");
+    return Boolean(capture && tasks && (capture.compareDocumentPosition(tasks) & Node.DOCUMENT_POSITION_FOLLOWING));
+  });
+  assert.equal(captureFirst, true, "Quick capture must precede the task list in V4.");
+  assert.equal(visualSystem.accent.toLowerCase(), "#79a7f7", "V4 primary actions use restrained blue accent.");
+  assert.equal(visualSystem.canvas.toLowerCase(), "#09090b", "V4 canvas uses neutral black.");
   assert.notEqual(visualSystem.primaryBackground, "rgb(226, 226, 229)", "Global Quick Add should not outshine task content.");
   // G6.4: primary, search, active navigation and warning stay visually distinct.
   const buttonSystem = await page.evaluate(() => {
@@ -112,7 +118,7 @@ try {
   assert.equal(buttonSystem.searchVisible, true, "Search should be available in desktop header.");
   assert.notEqual(buttonSystem.searchBackground, visualSystem.primaryBackground, "Search and Add need separate priority.");
   assert.notEqual(buttonSystem.activeNavBackground, "rgba(0, 0, 0, 0)", "Active navigation must use a soft state tint.");
-  assert.equal(buttonSystem.accent, "#93b4ff", "Blue info is reserved for active navigation and focus.");
+  assert.equal(buttonSystem.accent.toLowerCase(), "#79a7f7", "Focus and selection share V4 blue.");
   assert.notEqual(buttonSystem.activeNavIcon, "", "Current view has a visible icon state.");
   if (buttonSystem.warningBackground) {
     assert.notEqual(buttonSystem.warningBackground, visualSystem.primaryBackground, "Day cleanup must use warning tone.");
@@ -241,8 +247,8 @@ try {
   await page.screenshot({ path: "test-artifacts/layout-theme-dark-settings-390.png", fullPage: true });
   await themeControls.getByRole("button", { name: "라이트" }).click();
   assert.equal(await page.locator("html").getAttribute("data-theme"), "light");
-  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--app-bg").trim().toLowerCase()), "#f7f7f8");
-  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim().toLowerCase()), "#26262a");
+  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--app-bg").trim().toLowerCase()), "#fafafa");
+  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim().toLowerCase()), "#245fbf");
   assert.equal(await page.evaluate(() => localStorage.getItem("dark-todo-planner:theme")), "light");
   await page.screenshot({ path: "test-artifacts/layout-theme-light-settings-390.png", fullPage: true });
   await page.emulateMedia({ colorScheme: "light" });
