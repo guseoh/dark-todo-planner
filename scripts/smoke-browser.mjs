@@ -978,6 +978,26 @@ try {
     "Dropped status must survive the delayed server PUT.");
   await page.unroute("**/api/todos/*");
 
+  // A genuinely rejected workflow move must put the card back. An optimistic
+  // drag must never leave a false Done/Blocked state after a server error.
+  let failStatusMove = true;
+  await page.route("**/api/todos/*", async (route) => {
+    if (route.request().method() === "PUT" && route.request().url().includes(projectFixture.todo.id) && failStatusMove) {
+      failStatusMove = false;
+      await route.fulfill({ status: 503, contentType: "application/json", body: '{"message":"kanban status save failed"}' });
+    } else await route.continue();
+  });
+  const movedCard = doingLane.locator(".project-kanban-card").filter({
+    has: page.getByRole("button", { name: parentTaskTitle, exact: true }),
+  });
+  await movedCard.getByRole("button", { name: `${parentTaskTitle} 상태 이동` })
+    .dragTo(todoLane, { steps: 16 });
+  await page.getByRole("alert").filter({ hasText: "kanban status save failed" }).waitFor();
+  await doingLane.getByRole("button", { name: parentTaskTitle, exact: true }).waitFor();
+  assert.equal((await findServerTodo(parentTaskTitle))?.workflowStatus, "IN_PROGRESS",
+    "Failed workflow PUT must restore the previous lane and server state.");
+  await page.unroute("**/api/todos/*");
+
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("tab", { name: /프로젝트 관리/ }).click();
   const resourceDisclosure = page.locator("details").filter({ hasText: "자료 링크" }).first();
