@@ -637,6 +637,8 @@ try {
   await nav.getByRole("button", { name: "캘린더", exact: true }).click();
   await page.getByRole("heading", { name: "캘린더", exact: true }).waitFor();
   const monthGrid = page.getByRole("region", { name: "월간 일정 캘린더" });
+  assert.equal(await page.locator(".calendar-v4-date-drawer").count(), 0,
+    "Month calendar must not begin with a permanent detail panel.");
   await monthGrid.getByRole("button", { name: title, exact: true }).waitFor();
   await page.setViewportSize({ width: 1440, height: 900 });
   const monthDensity = await monthGrid.locator(".monthly-calendar-grid").evaluate((grid) => ({
@@ -720,8 +722,9 @@ try {
   await page.unroute("**/api/todos/*");
   await page.setViewportSize({ width: 390, height: 844 });
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
-  await page.getByRole("progressbar", { name: "오늘 완료율", exact: true }).waitFor();
-  assert.equal(await page.getByRole("progressbar", { name: "오늘 완료율", exact: true }).getAttribute("aria-valuenow"), "0", "A newly added incomplete Todo must expose a visible 0% progress indicator.");
+  await page.getByRole("group", { name: "오늘 작업 현황" }).waitFor();
+  assert.ok((await page.getByRole("group", { name: "오늘 작업 현황" }).innerText()).includes("완료"),
+    "Today keeps a concise completion summary instead of a KPI progress meter.");
   // Direct star selection is a desktop affordance; mobile retains the more menu to avoid cramped rows.
   await page.setViewportSize({ width: 1440, height: 900 });
   const focusRow = () => page.locator(".todo-row--today").filter({ has: page.getByRole("heading", { name: title, exact: true }) });
