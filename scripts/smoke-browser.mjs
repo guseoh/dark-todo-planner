@@ -724,6 +724,9 @@ try {
   }
   assert.equal((await findServerTodo(calendarTitle))?.date, quickDate, "Retry persists a changed date.");
   await page.unroute("**/api/todos/*");
+  // Close the V4 modal drawer before using the underlying mobile navigation.
+  await calendarDetails.getByRole("button", { name: "날짜 상세 닫기" }).click();
+  await calendarDetails.waitFor({ state: "detached" });
   await page.setViewportSize({ width: 390, height: 844 });
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
   await page.getByRole("group", { name: "오늘 작업 현황" }).waitFor();
@@ -884,6 +887,41 @@ try {
     `Milestone filter must not fill the toolbar: ${JSON.stringify(kanbanFilterWidths)}`);
   assert.ok(kanbanFilterWidths.document <= kanbanFilterWidths.viewport + 2,
     "Project controls must not overflow the desktop viewport.");
+  // V4 project cards stay concise; the right-side inspector owns subtask creation.
+  const parentTaskTitle = `Project inspector ${randomUUID().slice(0, 8)}`;
+  const projectFixture = await page.evaluate(async ({ title, date }) => {
+    const response = await fetch("/api/projects", { credentials: "same-origin" });
+    const projects = (await response.json()).projects;
+    const project = projects.find((item) => item.name === "UX Regression Project");
+    if (!project) throw new Error("New test project is missing");
+    const created = await fetch("/api/todos", {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, date, planningState: "SCHEDULED", projectId: project.id, priority: "HIGH" }),
+    });
+    if (!created.ok) throw new Error("Project parent task creation failed: " + created.status);
+    return { projectId: project.id, todo: (await created.json()).todo };
+  }, { title: parentTaskTitle, date: savedInlineTodo.date });
+  assert.ok(projectFixture.todo?.id, "Project parent task persisted");
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "프로젝트", exact: true }).waitFor();
+  await page.locator(".project-v4-switcher__nav").getByRole("button", { name: /UX Regression Project/ }).click();
+  const taskCard = page.locator(".project-kanban-card").filter({ has: page.getByRole("button", { name: parentTaskTitle, exact: true }) });
+  await taskCard.waitFor();
+  assert.equal(await taskCard.locator("select").count(), 0, "Kanban cards must not contain inline milestone editors");
+  await taskCard.getByRole("button", { name: parentTaskTitle, exact: true }).click();
+  const projectInspector = page.getByRole("dialog", { name: "Todo 수정" });
+  await projectInspector.getByRole("heading", { name: "하위 작업" }).waitFor();
+  const childTitle = `Inspector child ${randomUUID().slice(0, 8)}`;
+  await projectInspector.getByRole("textbox", { name: "하위 작업 제목" }).fill(childTitle);
+  await projectInspector.getByRole("button", { name: "추가", exact: true }).click();
+  await projectInspector.getByText(childTitle, { exact: true }).waitFor();
+  const child = await findServerTodo(childTitle);
+  assert.equal(child.parentTodoId, projectFixture.todo.id, "Inspector must persist the parent-child relationship");
+  assert.equal(child.projectId, projectFixture.projectId, "Inspector must retain the project association");
+  await projectInspector.getByRole("button", { name: "취소" }).click();
+  await projectInspector.waitFor({ state: "hidden" });
+
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("tab", { name: /프로젝트 관리/ }).click();
   const resourceDisclosure = page.locator("details").filter({ hasText: "자료 링크" }).first();
