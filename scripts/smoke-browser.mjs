@@ -857,8 +857,11 @@ try {
   await page.locator(".project-v4-toolbar h2").getByText("UX Regression Project", { exact: true }).waitFor();
   await newProjectInput.waitFor({ state: "detached" });
   const projectSwitcher = page.locator(".project-v4-switcher");
-  await projectSwitcher.locator('.project-v4-switcher__item[aria-pressed="true"]')
-    .getByText("UX Regression Project", { exact: true }).waitFor();
+  // The wide-screen project rail is intentionally hidden at the 390px smoke
+  // viewport; verify its selected state without requiring visual visibility.
+  const selectedProjectNav = projectSwitcher.locator('.project-v4-switcher__item[aria-pressed="true"]');
+  assert.match((await selectedProjectNav.textContent()) || "", /UX Regression Project/,
+    "Async project creation must select the newly created project");
   await page.getByRole("tab", { name: /프로젝트 관리/ }).click();
   const projectManageMenu = page.locator(".project-actions-menu");
   await projectManageMenu.locator("summary").waitFor();
