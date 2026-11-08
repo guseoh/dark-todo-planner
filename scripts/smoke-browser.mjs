@@ -842,6 +842,9 @@ try {
   await newProjectInput.fill("UX Regression Project");
   await newProjectInput.locator("xpath=..").getByRole("button", { name: "추가", exact: true }).click();
   await page.getByRole("tab", { name: /작업/ }).waitFor();
+  const projectSwitcher = page.locator(".project-v4-switcher");
+  await projectSwitcher.waitFor();
+  await page.getByRole("tab", { name: /프로젝트 관리/ }).click();
   const projectManageMenu = page.locator(".project-actions-menu");
   await projectManageMenu.locator("summary").click();
   assert.equal(await projectManageMenu.getAttribute("open"), "", "Project management actions should expand on demand.");
@@ -854,6 +857,8 @@ try {
   await page.getByRole("heading", { name: "프로젝트 상태" }).waitFor();
   await page.getByRole("tab", { name: /작업/ }).click();
   await page.getByText("아직 등록한 프로젝트 작업이 없습니다.", { exact: true }).waitFor();
+  assert.equal(await page.locator(".project-v4-workspace").count(), 1, "V4 project selection and workbench must share a layout.");
+  assert.equal(await page.locator(".project-v4-switcher__nav").count(), 1, "Wide layouts expose a separate project navigation rail.");
   // Inputs previously expanded across the entire desktop toolbar because
   // .field.field overrode explicit Tailwind width utilities.
   await page.setViewportSize({ width: 1280, height: 844 });

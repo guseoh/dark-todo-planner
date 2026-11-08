@@ -292,29 +292,45 @@ export function ProjectPage({
         </form>
       ) : null}
 
-      <section className="border-b border-ui-divider py-1" aria-label={showArchived ? "보관 프로젝트 선택" : "진행 프로젝트 선택"}>
-        {visibleProjects.length ? (
-          <div className="flex gap-1.5 overflow-x-auto pb-0.5">
-            {visibleProjects.map((project) => (
-              <button
-                key={project.id}
-                type="button"
-                onClick={() => setSelectedId(project.id)}
-                aria-pressed={selectedId === project.id}
-                aria-label={`${project.name} (${projectStatusLabel[project.status]})`}
-                className={`flex min-h-10 min-w-44 max-w-64 shrink-0 items-center gap-2 rounded-[4px] border-b-2 px-3 text-left text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/55 ${selectedId === project.id ? "border-ui-focus bg-transparent text-ui-text" : "border-transparent text-ui-secondary hover:bg-ui-hover hover:text-ui-text"}`}
-              >
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: project.color || "#9b9ba0" }} />
-                <span className="min-w-0 flex-1 truncate">{project.name}</span>
-              </button>
-            ))}
+      <div className="project-v4-workspace">
+        <aside className="project-v4-switcher" aria-label="프로젝트 전환">
+          <div className="project-v4-switcher__title">
+            <span>프로젝트 목록</span>
+            <span>{visibleProjects.length}</span>
           </div>
-        ) : <p className="px-3 py-5 text-center text-sm text-ink-500">{showArchived ? "보관된 프로젝트가 없습니다." : "프로젝트를 하나 만들어보세요."}</p>}
-      </section>
-
+          {visibleProjects.length ? (
+            <>
+              <label className="project-v4-compact-select">
+                <span className="sr-only">프로젝트 선택</span>
+                <select className="field" aria-label="프로젝트 선택" value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
+                  {visibleProjects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
+                </select>
+              </label>
+              <nav className="project-v4-switcher__nav" aria-label={showArchived ? "보관 프로젝트 선택" : "진행 프로젝트 선택"}>
+                {visibleProjects.map((project) => (
+                  <button key={project.id} type="button" onClick={() => setSelectedId(project.id)}
+                    aria-pressed={selectedId === project.id} aria-label={`${project.name} (${projectStatusLabel[project.status]})`}
+                    className="project-v4-switcher__item">
+                    <span className="project-v4-switcher__dot" style={{ backgroundColor: project.color || "var(--text-muted)" }} aria-hidden="true" />
+                    <span className="truncate">{project.name}</span>
+                    <span className="project-v4-switcher__status">{projectStatusLabel[project.status]}</span>
+                  </button>
+                ))}
+              </nav>
+            </>
+          ) : <p className="project-v4-switcher__empty">{showArchived ? "보관된 프로젝트가 없습니다." : "프로젝트를 추가해 시작하세요."}</p>}
+        </aside>
+        <div className="project-v4-main min-w-0">
       {selected ? (
         <div className="project-detail min-w-0 space-y-3">
-          <section className="project-overview app-card py-3">
+          <div className="project-v4-toolbar">
+            <div className="min-w-0">
+              <h2>{selected.name}</h2>
+              <p>{completed}/{projectTodos.length}개 완료 · {projectStatusLabel[selected.status]}</p>
+            </div>
+            <button type="button" className="btn-secondary" onClick={() => setProjectTab("manage")}>프로젝트 정보</button>
+          </div>
+          {projectTab === "manage" ? <section className="project-overview app-card py-3">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -413,7 +429,7 @@ export function ProjectPage({
                 </form>
               ) : null}
             </details> : null}
-          </section>
+          </section> : null}
 
           <nav className="page-tabs" aria-label="프로젝트 세부 화면" role="tablist">
             {([
@@ -445,7 +461,7 @@ export function ProjectPage({
           /> : null}
 
           {projectTab === "work" && !selected.archived ? (
-            <section className="border-b border-ui-divider py-3" aria-label="프로젝트 작업 추가">
+            <section className="project-v4-quick-add border-b border-ui-divider py-3" aria-label="프로젝트 작업 추가">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h4 className="text-sm font-semibold text-ui-text">새 작업</h4>
                 {projectMilestones.length > 0 ? (
@@ -532,6 +548,8 @@ export function ProjectPage({
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }

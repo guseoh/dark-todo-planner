@@ -2206,3 +2206,66 @@ button:disabled {
 .today-page .todo-row--today { min-height: 46px; border-radius: 2px; }
 .today-page .today-task-heading h3 { font-size: 14px; font-weight: 650; }
 .today-page .today-header__meter { display: none; }
+
+/* V4 project workbench: project list, focused board, editable task inspector. */
+.project-page .project-v4-workspace {
+  display: grid; grid-template-columns: minmax(190px, 228px) minmax(0, 1fr);
+  align-items: start; gap: clamp(1.1rem, 2.5vw, 2rem);
+}
+.project-page .project-v4-switcher {
+  position: sticky; top: 4.5rem; min-width: 0; padding-right: .6rem;
+  border-right: 1px solid var(--ui-divider);
+}
+.project-page .project-v4-switcher__title {
+  display: flex; justify-content: space-between; color: var(--text-secondary);
+  font-size: .75rem; font-weight: 600; padding: .45rem .75rem .65rem;
+}
+.project-page .project-v4-switcher__nav { display: grid; gap: .15rem; }
+.project-page .project-v4-switcher__item {
+  display: flex; min-width: 0; width: 100%; align-items: center; gap: .6rem;
+  min-height: 40px; padding: .45rem .65rem; color: var(--text-secondary);
+  text-align: left; font-size: .84rem; border-radius: 4px;
+}
+.project-page .project-v4-switcher__item:hover { background: var(--ui-hover); }
+.project-page .project-v4-switcher__item[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 10%, var(--ui-canvas)); color: var(--text-primary);
+  box-shadow: inset 2px 0 var(--accent);
+}
+.project-page .project-v4-switcher__dot { width: 7px; height: 7px; flex: none; border-radius: 50%; }
+.project-page .project-v4-switcher__status { font-size: .65rem; color: var(--text-muted); margin-left: auto; white-space: nowrap; }
+.project-page .project-v4-switcher__empty { padding: .75rem; color: var(--text-secondary); font-size: .8rem; line-height: 1.5; }
+.project-page .project-v4-compact-select { display: none; }
+.project-page .project-v4-toolbar {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem;
+  padding: .2rem 0 .85rem; border-bottom: 1px solid var(--ui-divider);
+}
+.project-page .project-v4-toolbar h2 { font-size: 1.15rem; font-weight: 650; color: var(--text-primary); }
+.project-page .project-v4-toolbar p { margin-top: .15rem; color: var(--text-secondary); font-size: .76rem; }
+.project-page .project-v4-quick-add { border-top: 0; padding-top: .75rem; }
+.project-page .project-v4-board { border: 0; gap: 12px; }
+.project-page .project-kanban-column { border: 1px solid var(--ui-divider); border-top: 3px solid var(--column-color); border-radius: 4px; background: var(--ui-navigation); }
+.project-page .project-kanban-column .project-kanban-card {
+  margin-bottom: .5rem; padding: .65rem .6rem;
+  background: var(--ui-surface); border: 1px solid var(--ui-divider); border-radius: 4px;
+  border-left: 1px solid var(--ui-divider);
+}
+.project-page .project-kanban-column .project-kanban-card:hover { border-color: var(--border-default); background: var(--ui-inset); }
+.project-v4-card__top { display: flex; align-items: flex-start; gap: .45rem; }
+.project-v4-card__check, .project-v4-card__drag {
+  display: inline-flex; justify-content: center; align-items: center; flex: none;
+  min-height: 32px; min-width: 26px; border-radius: 3px; color: var(--text-muted);
+}
+.project-v4-card__check:hover, .project-v4-card__drag:hover { color: var(--text-primary); background: var(--ui-hover); }
+.project-v4-card__drag { cursor: grab; }
+.project-v4-card__title { display: block; width: 100%; text-align: left; padding: .3rem 0; color: var(--text-primary); font-size: .84rem; font-weight: 560; line-height: 1.45; overflow-wrap: anywhere; }
+.project-v4-card__title:hover { color: var(--accent); }
+.project-v4-card__parent { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: .7rem; }
+.project-v4-card__meta { display: flex; flex-wrap: wrap; gap: .25rem .55rem; color: var(--text-secondary); font-size: .68rem; padding: .45rem 0 0 1.6rem; }
+.project-v4-card__meta span { max-width: 100%; }
+@media (max-width: 1150px) {
+  .project-page .project-v4-workspace { display: block; }
+  .project-page .project-v4-switcher { position: static; border: 0; padding: 0 0 .55rem; }
+  .project-page .project-v4-switcher__title, .project-page .project-v4-switcher__nav { display: none; }
+  .project-page .project-v4-compact-select { display: block; max-width: 420px; }
+  .project-page .project-v4-main { padding-top: .7rem; }
+}
