@@ -124,6 +124,58 @@ try {
     assert.notEqual(buttonSystem.warningBackground, visualSystem.primaryBackground, "Day cleanup must use warning tone.");
   }
 
+  // Activity is a separate read-only workbench, not a widget in Today/Projects.
+  // Keep the GitHub source deterministic and independent of upstream rate limits.
+  const githubDays = Array.from({ length: 365 }, (_, index) => ({
+    date: new Date(Date.UTC(2025, 0, 1 + index)).toISOString().slice(0, 10),
+    count: index === 0 ? 4 : 0,
+    level: index === 0 ? 3 : 0,
+  }));
+  await page.route("**/api/activity/github", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      username: "guseoh", source: "github-public", days: githubDays, total: 4,
+      fetchedAt: new Date().toISOString(),
+    }) });
+  });
+  const navActivity = page.getByRole("button", { name: "개발 활동", exact: true });
+  await navActivity.click();
+  await page.getByRole("heading", { name: "개발 활동", exact: true }).waitFor();
+  assert.equal(new URL(page.url()).hash, "#/activity");
+  await page.getByRole("region", { name: "GitHub 활동 최근 365일 활동 그래프" }).waitFor();
+  assert.ok((await page.locator(".activity-panel--github .activity-heatmap__day").count()) >= 365);
+  const emptyCodex = page.locator(".activity-panel--codex .activity-panel__empty");
+  await emptyCodex.getByText("아직 가져온 활동 기록이 없습니다.", { exact: true }).waitFor();
+  assert.equal(await page.locator(".activity-panel--codex .activity-heatmap__day").count(), 0,
+    "Unimported Codex data must NOT be silently shown as an all-zero heatmap.");
+  const localAggregate = {
+    version: 1, source: "codex-local-sessions", metric: "sessions",
+    days: [{ date: "2026-11-07", count: 2 }, { date: "2026-11-08", count: 1 }],
+  };
+  await page.getByLabel("Codex 집계 JSON 파일").setInputFiles({
+    name: "codex-activity.json", mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(localAggregate)),
+  });
+  await page.getByRole("region", { name: "Codex 활동 최근 365일 활동 그래프" }).waitFor();
+  const storedActivity = await page.evaluate(() => localStorage.getItem("dark-todo-planner:codex-activity:v1"));
+  assert.ok(storedActivity && storedActivity.includes('"metric":"sessions"'),
+    "Only sanitized daily counts are stored in browser-local storage.");
+  assert.equal(await page.locator(".activity-panel--codex .activity-heatmap__day--2").count() >= 1, true,
+    "Codex session activity intensity is calculated from the aggregate file.");
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("region", { name: "Codex 활동 최근 365일 활동 그래프" }).waitFor();
+  await page.getByRole("button", { name: "지우기" }).click();
+  await emptyCodex.waitFor();
+  assert.equal(await page.evaluate(() => localStorage.getItem("dark-todo-planner:codex-activity:v1")), null,
+    "Clear removes Codex aggregates from the current browser without a server write.");
+  await page.getByLabel("Codex 집계 JSON 파일").setInputFiles({
+    name: "raw-session.json", mimeType: "application/json",
+    buffer: Buffer.from('{"payload":{"message":"sensitive conversation"}}'),
+  });
+  await page.locator(".activity-panel--codex .activity-panel__empty").getByText(
+    "Codex 세션 집계 또는 account/usage/read 결과만 가져올 수 있습니다.", { exact: true }).waitFor();
+  await page.unroute("**/api/activity/github");
+  await page.getByRole("button", { name: "오늘", exact: true }).click();
+
   // G6.7: overdue review uses flat date rows, and bulk trash must only remove selected IDs.
   // Fixture dates are deliberately long before today, using an isolated local D1 account.
   const overduePrefix = "G67 Overdue " + randomUUID().slice(0, 8);

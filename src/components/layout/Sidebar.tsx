@@ -1,7 +1,7 @@
-import { Calendar, CalendarCheck, ClipboardList, FileText, FolderKanban, Menu, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Trash2, MoreHorizontal } from "lucide-react";
+import { Activity, Calendar, CalendarCheck, ClipboardList, FileText, FolderKanban, Menu, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Trash2, MoreHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-export const appViewIds = ["today", "all", "projects", "calendar", "memo", "scratchpad", "settings", "trash"] as const;
+export const appViewIds = ["today", "all", "projects", "calendar", "memo", "scratchpad", "activity", "settings", "trash"] as const;
 export type AppView = (typeof appViewIds)[number];
 
 type SidebarProps = {
@@ -22,6 +22,7 @@ export const navGroups: Array<{ label: string; items: NavItem[] }> = [
   { label: "기록", items: [
     { id: "memo", label: "메모", icon: StickyNote },
     { id: "scratchpad", label: "낙서장", icon: FileText },
+    { id: "activity", label: "개발 활동", icon: Activity },
   ] },
 ];
 

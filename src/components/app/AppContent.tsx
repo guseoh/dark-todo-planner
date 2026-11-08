@@ -21,6 +21,7 @@ const ProjectPage = lazy(() => import("../../pages/ProjectPage").then((module) =
 const AllTodosPage = lazy(() => import("../../pages/AllTodosPage").then((module) => ({ default: module.AllTodosPage })));
 const MemoPage = lazy(() => import("../../pages/MemoPage").then((module) => ({ default: module.MemoPage })));
 const ScratchpadPage = lazy(() => import("../../pages/ScratchpadPage").then((module) => ({ default: module.ScratchpadPage })));
+const ActivityPage = lazy(() => import("../../pages/ActivityPage").then((module) => ({ default: module.ActivityPage })));
 const TrashPage = lazy(() => import("../../pages/TrashPage").then((module) => ({ default: module.TrashPage })));
 const SettingsPage = lazy(() => import("../../pages/SettingsPage").then((module) => ({ default: module.SettingsPage })));
 
@@ -131,6 +132,9 @@ export function AppContent({ activeView, calendarMode, onCalendarModeChange, pla
       break;
     case "scratchpad":
       content = <ScratchpadPage />;
+      break;
+    case "activity":
+      content = <ActivityPage />;
       break;
     case "trash":
       content = <TrashPage onRestored={planner.loadAll} />;
