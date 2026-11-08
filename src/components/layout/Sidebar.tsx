@@ -1,7 +1,7 @@
-import { Calendar, CalendarCheck, ClipboardList, FileText, FolderKanban, Menu, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Trash2 } from "lucide-react";
+import { Calendar, CalendarCheck, ClipboardList, FileText, FolderKanban, Menu, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Trash2, MoreHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-export const appViewIds = ["today", "calendar", "projects", "all", "memo", "scratchpad", "trash", "settings"] as const;
+export const appViewIds = ["today", "all", "projects", "calendar", "memo", "scratchpad", "settings", "trash"] as const;
 export type AppView = (typeof appViewIds)[number];
 
 type SidebarProps = {
@@ -13,19 +13,22 @@ type NavItem = { id: AppView; label: string; icon: typeof CalendarCheck };
 type SidebarMode = "expanded" | "collapsed";
 
 export const navGroups: Array<{ label: string; items: NavItem[] }> = [
-  { label: "실행", items: [{ id: "today", label: "오늘", icon: CalendarCheck }] },
-  { label: "보기", items: [{ id: "calendar", label: "캘린더", icon: Calendar }, { id: "projects", label: "프로젝트", icon: FolderKanban }, { id: "all", label: "전체 Todo", icon: ClipboardList }] },
-  { label: "관리", items: [{ id: "memo", label: "메모", icon: StickyNote }, { id: "scratchpad", label: "낙서장", icon: FileText }, { id: "trash", label: "휴지통", icon: Trash2 }] },
+  { label: "작업", items: [
+    { id: "today", label: "오늘", icon: CalendarCheck },
+    { id: "all", label: "전체 Todo", icon: ClipboardList },
+    { id: "projects", label: "프로젝트", icon: FolderKanban },
+    { id: "calendar", label: "캘린더", icon: Calendar },
+  ] },
+  { label: "기록", items: [
+    { id: "memo", label: "메모", icon: StickyNote },
+    { id: "scratchpad", label: "낙서장", icon: FileText },
+  ] },
 ];
 
 export const settingsItem: NavItem = { id: "settings", label: "설정", icon: Settings };
-const mobilePrimaryItems = [
-  navGroups[0].items[0], // Today
-  navGroups[1].items[0], // Calendar
-  navGroups[1].items[1], // Projects
-  navGroups[1].items[2], // All Todo
-];
-const mobileMoreItems = [...navGroups[2].items, settingsItem];
+export const trashItem: NavItem = { id: "trash", label: "휴지통", icon: Trash2 };
+const mobilePrimaryItems = navGroups[0].items;
+const mobileMoreItems = [...navGroups[1].items, settingsItem, trashItem];
 const SIDEBAR_MODE_KEY = "dark-todo-planner:sidebar-mode";
 const LEGACY_SIDEBAR_COLLAPSED_KEY = "dark-todo-planner:sidebar-collapsed";
 const HOVER_OPEN_DELAY_MS = 110;
@@ -41,12 +44,16 @@ const readInitialMode = (): SidebarMode => {
 export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
   const [mode, setMode] = useState<SidebarMode>(readInitialMode);
   const [hoverExpanded, setHoverExpanded] = useState(false);
+  const [compactWindow, setCompactWindow] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 1099px)").matches,
+  );
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const hoverOpenTimerRef = useRef<number | null>(null);
   const hoverCloseTimerRef = useRef<number | null>(null);
-  const collapsed = mode === "collapsed";
-  const showExpandedContent = !collapsed || hoverExpanded;
+  const collapsed = mode === "collapsed" || compactWindow;
+  const inlineExpanded = !collapsed;
+  const showExpandedContent = inlineExpanded || hoverExpanded;
 
   const clearHoverTimers = () => {
     if (hoverOpenTimerRef.current !== null) { window.clearTimeout(hoverOpenTimerRef.current); hoverOpenTimerRef.current = null; }
@@ -65,7 +72,15 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
     hoverCloseTimerRef.current = window.setTimeout(() => { setHoverExpanded(false); hoverCloseTimerRef.current = null; }, HOVER_CLOSE_DELAY_MS);
   };
 
-  useEffect(() => { localStorage.setItem(SIDEBAR_MODE_KEY, mode); if (mode === "expanded") setHoverExpanded(false); }, [mode]);
+  useEffect(() => { localStorage.setItem(SIDEBAR_MODE_KEY, mode); }, [mode]);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1099px)");
+    const sync = () => setCompactWindow(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+  useEffect(() => { if (!collapsed) setHoverExpanded(false); }, [collapsed]);
   useEffect(() => () => clearHoverTimers(), []);
   useEffect(() => { setMobileMenuOpen(false); }, [activeView]);
   useEffect(() => {
@@ -99,8 +114,8 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
 
   return (
     <>
-      <aside className={`sticky top-14 z-20 hidden h-[calc(100vh-3.5rem)] shrink-0 self-start transition-[width] duration-150 ease-out lg:block ${showExpandedContent ? "w-[16.25rem]" : "w-[4.25rem]"}`} data-sidebar-mode={mode} data-sidebar-hover-expanded={hoverExpanded ? "true" : "false"}>
-        <nav className="flex h-full min-h-0 w-full flex-col border-r border-ink-700/50 bg-[var(--sidebar-bg)] px-2 py-2.5" onMouseEnter={openHoverPanel} onMouseLeave={closeHoverPanel} onFocusCapture={openHoverPanel} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) closeHoverPanel(); }}>
+      <aside className={`relative sticky top-14 z-20 hidden h-[calc(100vh-3.5rem)] shrink-0 self-start transition-[width] duration-150 ease-out sm:block ${inlineExpanded ? "w-[16.25rem]" : "w-[4.25rem]"}`} data-sidebar-mode={mode} data-compact-window={compactWindow ? "true" : "false"} data-sidebar-hover-expanded={hoverExpanded ? "true" : "false"}>
+        <nav className={`flex h-full min-h-0 flex-col border-r border-ui-divider bg-[var(--sidebar-bg)] px-2 py-2.5 ${!inlineExpanded && hoverExpanded ? "absolute left-0 top-0 z-30 w-[16.25rem] shadow-xl" : "w-full"}`} onMouseEnter={openHoverPanel} onMouseLeave={closeHoverPanel} onFocusCapture={openHoverPanel} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) closeHoverPanel(); }}>
           <button type="button" onClick={() => onChangeView("today")} aria-label="Todo Planner 홈" title={collapsed && !hoverExpanded ? "Todo Planner" : undefined}
             className={`mb-2 flex min-h-10 shrink-0 items-center rounded-lg text-left transition-colors hover:bg-ink-800/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${showExpandedContent ? "gap-2.5 px-2.5" : "justify-center px-2"}`}>
             <span className="sidebar-brand-mark flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] border border-ui-divider bg-ui-surface text-ui-text"><CalendarCheck size={18} /></span>
@@ -127,17 +142,26 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
           <div className="mt-2 shrink-0 border-t border-ink-700/70 pt-2">
             <div className="space-y-1">
               {renderDesktopItem(settingsItem)}
-              <button type="button" onClick={() => { clearHoverTimers(); setHoverExpanded(false); setMode((current) => current === "expanded" ? "collapsed" : "expanded"); }}
+              <details className="sidebar-utilities relative">
+                <summary className="app-nav-button flex min-h-10 cursor-pointer list-none items-center gap-3 rounded-[4px] px-3 text-sm text-ui-secondary hover:bg-ui-hover hover:text-ui-text" aria-label="추가 메뉴">
+                  <MoreHorizontal size={17} className="shrink-0" />
+                  {showExpandedContent ? <span>더보기</span> : null}
+                </summary>
+                <div className="sidebar-utilities__panel absolute bottom-full left-0 z-40 mb-1 w-48 border border-ui-divider bg-ui-elevated p-1 shadow-xl">
+                  {renderDesktopItem(trashItem)}
+                </div>
+              </details>
+              {!compactWindow ? <button type="button" onClick={() => { clearHoverTimers(); setHoverExpanded(false); setMode((current) => current === "expanded" ? "collapsed" : "expanded"); }}
                 className={`flex min-h-10 w-full items-center rounded-lg text-sm font-semibold text-ink-400 transition-colors hover:bg-ink-800/75 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${showExpandedContent ? "justify-between gap-3 px-3 text-left" : "justify-center px-2"}`}
                 aria-label={collapsed ? "사이드바 펼쳐서 고정" : "사이드바 축소"} aria-pressed={!collapsed} title={collapsed && !hoverExpanded ? "사이드바 펼쳐서 고정" : undefined}>
                 {collapsed && !hoverExpanded ? <PanelLeftOpen size={17} /> : collapsed ? <><span>사이드바 펼쳐서 고정</span><PanelLeftOpen size={17} className="shrink-0" /></> : <><span>사이드바 축소</span><PanelLeftClose size={17} className="shrink-0" /></>}
-              </button>
+              </button> : null}
             </div>
           </div>
         </nav>
       </aside>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-700/70 bg-ink-950/96 px-2 py-1.5 backdrop-blur-md lg:hidden" aria-label="모바일 탐색">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-700/70 bg-ink-950/96 px-2 py-1.5 backdrop-blur-md sm:hidden" aria-label="모바일 탐색">
         <div className="relative" ref={mobileMenuRef}>
           {mobileMenuOpen ? (
             <div id="mobile-more-menu" className="absolute bottom-full right-0 mb-3 w-[min(21rem,calc(100vw-1rem))] rounded-[4px] border border-ink-700 bg-ink-900 p-2">
