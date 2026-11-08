@@ -946,6 +946,16 @@ try {
   await memoEditDialog.waitFor();
   await memoEditDialog.getByRole("button", { name: "메모 수정 닫기" }).click();
   await page.setViewportSize({ width: 1440, height: 900 });
+  await memoCard.getByRole("button", { name: `${memoTitle} 열기` }).click();
+  const memoReadPane = page.getByRole("complementary", { name: "메모 문서" });
+  await memoReadPane.getByRole("heading", { name: memoTitle, exact: true }).waitFor();
+  await memoReadPane.getByText("작성 내용", { exact: true }).waitFor();
+  await memoReadPane.getByRole("button", { name: "수정", exact: true }).click();
+  const readerEditDialog = page.getByRole("dialog", { name: "메모 수정" });
+  await readerEditDialog.waitFor();
+  await readerEditDialog.getByRole("button", { name: "메모 수정 닫기" }).click();
+  await memoReadPane.getByRole("button", { name: "메모 문서 닫기" }).click();
+  await memoReadPane.waitFor({ state: "detached" });
   const memoLayout = await page.evaluate(() => ({
     cols: getComputedStyle(document.querySelector(".memo-note-grid")).gridTemplateColumns.split(" ").length,
     width: document.querySelector(".memo-collections").getBoundingClientRect().width,

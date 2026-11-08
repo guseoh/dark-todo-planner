@@ -2154,3 +2154,38 @@ button:disabled {
 @media (prefers-reduced-motion: reduce) {
   .today-page .today-plan-toggle { transition: none; }
 }
+
+/* Large memo windows: browse documents on the left, read on the right.
+   Editing still uses the original draft-safe MemoForm and server contract. */
+@media (min-width: 1360px) {
+  .page-shell.memo-page.memo-page--reading { max-width: 1340px; }
+  .memo-page .memo-workspace--split {
+    display: grid; grid-template-columns: minmax(280px, .78fr) minmax(0, 1.25fr);
+    align-items: start; gap: clamp(1.1rem, 2.4vw, 2rem);
+  }
+  .memo-page .memo-workspace--split .memo-collections {
+    min-width: 0; max-height: calc(100vh - 13rem); overflow-y: auto;
+  }
+  .memo-page .memo-workspace--split .memo-note-grid { grid-template-columns: minmax(0, 1fr); }
+  .memo-page .memo-read-pane {
+    min-width: 0; position: sticky; top: 4.25rem;
+    border-left: 1px solid var(--ui-divider); padding-left: clamp(.9rem, 2vw, 1.7rem);
+  }
+  .memo-page .memo-read-pane__header {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+    padding-bottom: 1rem; border-bottom: 1px solid var(--ui-divider);
+  }
+  .memo-page .memo-read-pane__header h2 {
+    font-size: 1.15rem; line-height: 1.4; font-weight: 650; color: var(--text-primary);
+    overflow-wrap: anywhere;
+  }
+  .memo-page .memo-read-pane__header span { font-size: .74rem; color: var(--text-muted); }
+  .memo-page .memo-read-pane__content {
+    max-height: calc(100vh - 15rem); overflow-y: auto;
+    padding-top: 1.2rem; line-height: 1.75; overflow-wrap: anywhere;
+  }
+  .memo-page .memo-note[data-selected="true"] {
+    background: color-mix(in srgb, var(--ui-focus) 7%, var(--ui-canvas));
+    border-color: var(--ui-divider);
+  }
+}

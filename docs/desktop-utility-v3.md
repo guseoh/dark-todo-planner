@@ -13,7 +13,7 @@ Small, action-first daily Todo utility with wider project boards and calendar on
 | All Todo | Search/filter/bulk management (1080px) | Existing selection and advanced actions |
 | Projects | Wide kanban/list (up to 1680px) | Project resources and administrative actions in **프로젝트 관리** tab |
 | Calendar | Wide week/month (up to 1680px) | Existing date editing and detail surfaces |
-| Memo | Readable collection width (1100px) | Existing draft-safe creation/edit modal, rather than risky editor migration |
+| Memo | Readable collection width (1100px). Large windows provide list + selected-document reader | Existing draft-safe creation/edit modal, rather than risky editor migration |
 | Scratchpad | 920px editor canvas | Existing Markdown/raw/WYSIWYG, recovery and automatic save |
 | Settings | 920px | Data, backup, automation and display settings |
 
