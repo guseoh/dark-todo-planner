@@ -37,14 +37,15 @@ export function usePlannerData() {
   }, [settingsState.runAutomations, todosState.loadTodos]);
 
   const loadCoreData = useCallback(async () => {
+    // First paint requires actual Todo/category/project/settings data, not the
+    // potentially slow automation POST and follow-up refresh.
     await Promise.all([
       categoriesState.loadCategories(),
       todosState.loadTodos(),
       projectsState.loadProjectList(),
       settingsState.loadSettings(),
     ]);
-    await runPlannerAutomations();
-  }, [categoriesState.loadCategories, projectsState.loadProjectList, runPlannerAutomations, settingsState.loadSettings, todosState.loadTodos]);
+  }, [categoriesState.loadCategories, projectsState.loadProjectList, settingsState.loadSettings, todosState.loadTodos]);
 
   const loadDeferredData = useCallback(async () => {
     if (deferredLoadedRef.current) return;
@@ -110,7 +111,10 @@ export function usePlannerData() {
     void loadInitial().then((success) => {
       if (!active || !success) return;
       cancelDeferred = scheduleDeferredTask(() => {
+        // The UI is now usable. Load supporting pages and apply carry-over /
+        // auto-archive in the background; the latter refreshes Todos if needed.
         void loadDeferredData().catch(() => undefined);
+        void runPlannerAutomations().catch(() => undefined);
       });
     });
 
@@ -118,7 +122,7 @@ export function usePlannerData() {
       active = false;
       cancelDeferred();
     };
-  }, [loadDeferredData, loadInitial]);
+  }, [loadDeferredData, loadInitial, runPlannerAutomations]);
 
   const addCategory = useCallback(async (input: { name: string; description?: string; color?: string; icon?: string }) => {
     await categoriesState.addCategory(input);
