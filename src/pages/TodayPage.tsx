@@ -6,14 +6,13 @@ import { ChevronDown, GripVertical, History, MoonStar, PanelRightOpen, Settings2
 import { Button } from "../components/ui/Button";
 import { IconButton } from "../components/ui/IconButton";
 import { IconRenderer } from "../components/common/IconRenderer";
-import { ProgressBar } from "../components/common/ProgressBar";
 import { TodayCategoryManager } from "../components/today/TodayCategoryManager";
 import { OverdueTodoImportModal } from "../components/todo/OverdueTodoImportModal";
 import { TodoEditModal } from "../components/todo/TodoEditModal";
 import { TodoForm } from "../components/todo/TodoForm";
 import { TodoRow } from "../components/todo/TodoRow";
 import { formatKoreanDate, todayKey } from "../lib/date";
-import { formatCompletionRate, isDueSoon, isOverdueByDeadline } from "../lib/todo";
+import { formatCompletionRate } from "../lib/todo";
 import type { OverdueTodoImportMode, OverdueTodoImportResult } from "../lib/todoRecovery";
 import type { Category } from "../types/category";
 import type { Project } from "../types/project";
@@ -170,15 +169,6 @@ export function TodayPage({
   const completedTodos = useMemo(() => visibleTodos.filter((todo) => todo.completed), [visibleTodos]);
   const remainingTodos = useMemo(() => activeTodos.filter((todo) => !focusSet.has(todo.id)), [activeTodos, focusSet]);
   const hasTodayTodos = todayTodos.length > 0;
-  const highPriorityCount = useMemo(
-    () => todayTodos.filter((todo) => !todo.completed && todo.priority === "HIGH").length,
-    [todayTodos],
-  );
-  const deadlineAttentionCount = useMemo(
-    () => todayTodos.filter((todo) => !todo.completed && (isOverdueByDeadline(todo, today) || isDueSoon(todo, today))).length,
-    [today, todayTodos],
-  );
-
   // Preselect the active filter, but allow an explicit category choice in the inline composer.
   const inlineCategoryId = activeCategoryId === "all" || activeCategoryId === "uncategorized" ? "" : activeCategoryId;
 
@@ -259,12 +249,7 @@ export function TodayPage({
           <span>{formatKoreanDate(today, "M월 d일 EEEE")}</span>
         </div>
         <div className="today-header__status" role="group" aria-label="오늘 작업 현황">
-          <span><strong>{stats.todayTotal}개</strong> 중 {stats.todayCompleted}개 완료</span>
-          {hasTodayTodos ? (
-            <div className="today-header__meter"><ProgressBar value={stats.todayRate} ariaLabel="오늘 완료율" /></div>
-          ) : null}
-          {highPriorityCount > 0 ? <span className="text-warning">높은 우선순위 {highPriorityCount}</span> : null}
-          {deadlineAttentionCount > 0 ? <span className="text-danger">마감 주의 {deadlineAttentionCount}</span> : null}
+          <span className="today-header__completion"><strong>{stats.todayCompleted}</strong> / {stats.todayTotal} 완료</span>
           <button type="button" className="today-plan-toggle" aria-label="오늘 계획하기"
             aria-expanded={planningOpen} aria-controls={planningOpen ? "today-plan-panel" : undefined}
             onClick={() => setPlanningOpen((open) => !open)}>
@@ -283,7 +268,13 @@ export function TodayPage({
 
       <div className={`today-workspace ${planningOpen ? "today-workspace--planning" : "today-workspace--single"}`}>
         <main className="today-workspace__main min-w-0 space-y-3">
-
+          <section className="today-capture-section" aria-label="빠른 작업 입력">
+            <div className="today-composer today-quick-capture">
+              <TodoForm onAdd={onAdd} defaultDate={today} defaultCategoryId={inlineCategoryId}
+                compact collapsible alwaysOpen submitLabel="추가"
+                categories={categories} projects={activeProjects} showSyntaxHint={false} />
+            </div>
+          </section>
           {focusedTodos.length ? (
             <section className="today-focus-section" aria-labelledby="today-focus-title">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -292,13 +283,13 @@ export function TodayPage({
                 </div>
                 <span className="text-xs font-medium tabular-nums text-ui-muted">{focusedTodos.length} / 3 선택</span>
               </div>
-              {focusedTodos.map((todo) => renderTodo(todo))}
+              <div className="today-focus-list">{focusedTodos.map((todo) => renderTodo(todo))}</div>
             </section>
           ) : null}
 
           <section className="today-task-section space-y-2" aria-label="오늘 Todo">
             <div className="today-task-heading">
-              <h3 className="text-[17px] font-semibold tracking-tight text-ui-text">할 일</h3>
+              <h3 className="text-[17px] font-semibold tracking-tight text-ui-text">{focusedTodos.length ? "나머지 할 일" : "오늘 할 일"}</h3>
               {activeTodos.length > 1 ? <span className="today-task-count">{activeTodos.length}개 남음</span> : null}
             </div>
             {hasTodayTodos ? (
@@ -369,11 +360,7 @@ export function TodayPage({
               {!hasPlanningContent ? <a className="today-planning-panel__all-link block" href="#/all">전체 Todo에서 찾기</a> : null}
             </div>}
 
-            <div className="today-composer">
-              <TodoForm onAdd={onAdd} defaultDate={today} defaultCategoryId={inlineCategoryId}
-                compact collapsible alwaysOpen submitLabel="추가"
-                categories={categories} projects={activeProjects} showSyntaxHint={false} />
-            </div>
+
 
             {completedTodos.length ? (
               <div className="border-t border-ui-divider pt-2">

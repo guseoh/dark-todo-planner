@@ -4,7 +4,7 @@ import { ExternalLink } from "lucide-react";
 import { parseDateKey, todayKey, toDateKey } from "../../lib/date";
 import { resolveTodoScheduledDate } from "../../lib/todoScheduledDate";
 import type { Category } from "../../types/category";
-import type { Project } from "../../types/project";
+import type { Milestone, Project } from "../../types/project";
 import type { Todo, TodoPlanningState, TodoPriority, TodoWorkflowStatus } from "../../types/todo";
 import { Modal } from "../common/Modal";
 import { TodoWorkflowPanel } from "./TodoWorkflowPanel";
@@ -23,12 +23,15 @@ type TodoEditModalProps = {
   todo: Todo | null;
   categories?: Category[];
   projects?: Project[];
+  milestones?: Milestone[];
+  subtasks?: Todo[];
+  onAddSubtask?: (parent: Todo, title: string) => Promise<Todo | undefined> | Todo | undefined;
   onClose: () => void;
   onSave: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => unknown | Promise<unknown>;
   presentation?: "modal" | "side-panel";
 };
 
-export function TodoEditModal({ todo, categories = [], projects = [], onClose, onSave, presentation = "modal" }: TodoEditModalProps) {
+export function TodoEditModal({ todo, categories = [], projects = [], milestones = [], subtasks, onAddSubtask, onClose, onSave, presentation = "modal" }: TodoEditModalProps) {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -38,6 +41,10 @@ export function TodoEditModal({ todo, categories = [], projects = [], onClose, o
   const [completed, setCompleted] = useState(false);
   const [categoryId, setCategoryId] = useState("");
   const [projectId, setProjectId] = useState("");
+  const [milestoneId, setMilestoneId] = useState("");
+  const [subtaskTitle, setSubtaskTitle] = useState("");
+  const [subtaskBusy, setSubtaskBusy] = useState(false);
+  const [subtaskError, setSubtaskError] = useState("");
   const [planningState, setPlanningState] = useState<TodoPlanningState>("SCHEDULED");
   const [workflowStatus, setWorkflowStatus] = useState<TodoWorkflowStatus>("TODO");
   const [referenceUrl, setReferenceUrl] = useState("");
@@ -56,6 +63,9 @@ export function TodoEditModal({ todo, categories = [], projects = [], onClose, o
     setCompleted(todo.completed);
     setCategoryId(todo.categoryId || "");
     setProjectId(todo.projectId || "");
+    setMilestoneId(todo.milestoneId || "");
+    setSubtaskTitle("");
+    setSubtaskError("");
     setPlanningState(todo.planningState || "SCHEDULED");
     setWorkflowStatus(todo.workflowStatus || (todo.completed ? "DONE" : "TODO"));
     setReferenceUrl(todo.referenceUrl || "");
@@ -72,6 +82,21 @@ export function TodoEditModal({ todo, categories = [], projects = [], onClose, o
     setDate(toDateKey(addDays(parseDateKey(todayKey()), days)));
   };
 
+  const addSubtask = async () => {
+    if (!todo || !onAddSubtask || !subtaskTitle.trim() || subtaskBusy) return;
+    setSubtaskBusy(true);
+    setSubtaskError("");
+    try {
+      const added = await onAddSubtask(todo, subtaskTitle.trim());
+      if (added) setSubtaskTitle("");
+      else setSubtaskError("하위 작업 추가에 실패했습니다. 다시 시도해 주세요.");
+    } catch {
+      setSubtaskError("하위 작업 저장에 실패했습니다. 입력은 유지됩니다.");
+    } finally {
+      setSubtaskBusy(false);
+    }
+  };
+
   const saveTodo = async () => {
     if (!title.trim() || saving) return;
     setSaving(true);
@@ -81,6 +106,7 @@ export function TodoEditModal({ todo, categories = [], projects = [], onClose, o
         title: title.trim(),
         categoryId: categoryId || undefined,
         projectId: projectId || undefined,
+        ...(milestones.length ? { milestoneId: milestoneId || undefined } : {}),
         date: planningState === "SCHEDULED" ? resolveTodoScheduledDate(date, todo.date, todayKey()) : UNSCHEDULED_DATE,
         dueDate: dueDate || undefined,
         blockReason: blockReason.trim() || undefined,
@@ -130,6 +156,14 @@ export function TodoEditModal({ todo, categories = [], projects = [], onClose, o
           </div>
           <label className="space-y-1 text-sm text-ink-400">카테고리<select className="field" value={categoryId} onChange={(event) => setCategoryId(event.target.value)}><option value="">미분류</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
           {projects.length || projectId ? <label className="space-y-1 text-sm text-ink-400">프로젝트<select className="field" value={projectId} onChange={(event) => setProjectId(event.target.value)}><option value="">프로젝트 없음</option>{projects.filter((project) => !project.archived || project.id === projectId).map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label> : null}
+          {milestones.length && projectId ? <label className="space-y-1 text-sm text-ink-400">
+            마일스톤
+            <select className="field" value={milestoneId} onChange={(event) => setMilestoneId(event.target.value)}>
+              <option value="">미지정</option>
+              {milestones.filter((item) => item.projectId === projectId).map((item) =>
+                <option key={item.id} value={item.id}>{item.title}</option>)}
+            </select>
+          </label> : null}
           <label className="space-y-1 text-sm text-ink-400">우선순위<select className="field" value={priority} onChange={(event) => setPriority(event.target.value as TodoPriority)}><option value="LOW">낮음</option><option value="MEDIUM">보통</option><option value="HIGH">높음</option></select></label>
           <div className="space-y-2 rounded-lg border border-ink-700/60 bg-ink-950/30 p-3 md:col-span-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -142,6 +176,27 @@ export function TodoEditModal({ todo, categories = [], projects = [], onClose, o
             </div>
             {referenceError ? <p className="text-xs font-semibold text-danger" role="alert">{referenceError}</p> : null}
           </div>
+          {subtasks ? <section className="md:col-span-2 border-t border-ui-divider pt-3" aria-label="하위 작업">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-ui-text">하위 작업</h3>
+              <span className="text-xs text-ui-muted">{subtasks.length}개</span>
+            </div>
+            {subtasks.length ? <ul className="mt-2 space-y-1.5 text-xs text-ui-secondary">
+              {subtasks.map((item) => <li key={item.id} className="flex items-center gap-2">
+                <span className={item.completed ? "line-through opacity-60" : ""}>{item.title}</span>
+              </li>)}
+            </ul> : null}
+            {onAddSubtask ? <div className="mt-3 flex gap-2">
+              <input className="field min-w-0 flex-1" value={subtaskTitle}
+                onChange={(event) => setSubtaskTitle(event.target.value)}
+                placeholder="하위 작업 제목" aria-label="하위 작업 제목"
+                onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void addSubtask(); } }} />
+              <button type="button" className="btn-secondary" disabled={subtaskBusy || !subtaskTitle.trim()} onClick={() => void addSubtask()}>
+                {subtaskBusy ? "추가 중" : "추가"}
+              </button>
+            </div> : null}
+            {subtaskError ? <p role="alert" className="mt-1 text-xs text-danger">{subtaskError}</p> : null}
+          </section> : null}
           <label className="flex min-h-11 items-center gap-3 rounded-lg bg-ink-950/45 px-3 text-sm text-ink-300 md:col-span-2"><input type="checkbox" checked={completed} onChange={(event) => setCompleted(event.target.checked)} className="h-4 w-4 accent-accent-500" />완료된 Todo로 표시</label>
         </div>
         <TodoWorkflowPanel todo={todo} />

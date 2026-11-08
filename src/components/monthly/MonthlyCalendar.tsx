@@ -32,7 +32,7 @@ type MonthlyCalendarProps = {
 };
 
 const eventTone: Record<CalendarEvent["kind"], string> = {
-  todo: "border-l-ink-400 bg-ink-850/65 text-ink-200",
+  todo: "border-l-info bg-info/[0.10] text-ink-200",
   deadline: "border-l-warning bg-warning/[0.10] text-ink-200",
   milestone: "border-l-info bg-info/[0.09] text-ink-200",
   project: "border-l-info bg-info/[0.09] text-ink-200",
@@ -176,18 +176,15 @@ export function MonthlyCalendar({
             <CalendarDropCell key={dateKey} dateKey={dateKey} disabled={draggingDisabled} onMoveTodo={onMoveTodo}>
             <article
               data-selected={selected}
-              className={`calendar-day group relative flex h-[6.25rem] min-w-0 flex-col overflow-hidden border-b border-r p-1.5 transition-colors sm:h-[7.25rem] sm:p-2 ${
-                selected
-                  ? "border-ink-500/70 bg-ink-800/25 ring-1 ring-inset ring-ink-400/35"
-                  : "border-ink-700/45 bg-transparent hover:border-ink-600/70 hover:bg-ink-850/35"
-              } ${!inMonth ? "opacity-60" : ""} ${today && !selected ? "ring-1 ring-inset ring-ink-400/45" : ""}`}
+              data-today={today ? "true" : "false"}
+              className={`calendar-day calendar-v4-day group relative flex h-[6.25rem] min-w-0 flex-col overflow-hidden border-b border-r p-1.5 transition-colors sm:h-[7.25rem] sm:p-2 ${!inMonth ? "opacity-55" : ""}`}
             >
               <button type="button" className="absolute inset-0 z-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500/60"
                 onClick={() => onSelectDate(dateKey)} aria-label={`${formattedDate} 일정 ${events.length}개 보기`} />
               <div className="pointer-events-none relative z-10 flex h-full min-w-0 flex-1 flex-col">
                 <div className="flex min-w-0 items-center justify-between gap-1">
                   <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-[3px] text-xs font-semibold sm:text-sm ${
-                    today ? "bg-ink-200 text-ink-950" : holidayName || isSunday ? "text-danger" : "text-ink-200"
+                    today ? "bg-accent-500 text-ink-950" : holidayName || isSunday ? "text-danger" : "text-ink-200"
                   }`}>{formatKoreanDate(day, "d")}</span>
                   <div className="pointer-events-auto flex shrink-0 items-center gap-0.5">
                     {events.length > 0 ? <span className="hidden truncate text-[10px] text-ink-400 sm:inline">{activeCount ? `${activeCount} 남음` : `${events.length} 완료`}</span> : null}

@@ -110,46 +110,25 @@ export function WeeklyView({
   }, [selectedDate]);
 
   return (
-    <div className="weekly-workspace space-y-4">
-      <section className="app-card py-3" aria-labelledby="week-summary-title">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-3">
-            <div>
-              <p className="text-xs font-semibold text-ink-400">{weekOffset === 0 ? "이번 주" : "선택한 주"}</p>
-              <h3 id="week-summary-title" className="mt-0.5 text-base font-bold text-ink-100">
-                {formatKoreanDate(weekStart, "M.d")} ~ {formatKoreanDate(weekEnd, "M.d")}
-              </h3>
-            </div>
-            <div className="flex items-center gap-1" aria-label="주간 이동">
-              <button type="button" className="icon-btn min-h-9 min-w-9" onClick={() => moveWeek(-1)} aria-label="이전 주" title="이전 주"><ChevronLeft size={17} /></button>
-              <button type="button" className="icon-btn min-h-9 min-w-9" onClick={() => moveWeek(1)} aria-label="다음 주" title="다음 주"><ChevronRight size={17} /></button>
-              {weekOffset !== 0 ? <button type="button" className="btn-secondary min-h-9 px-2 text-xs" onClick={backToThisWeek}>이번 주</button> : null}
-            </div>
+    <div className="weekly-workspace calendar-v4-week space-y-4">
+      <section className="calendar-v4-week-toolbar" aria-labelledby="week-summary-title">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <span className="text-xs text-ui-secondary">{weekOffset === 0 ? "이번 주" : "선택한 주"}</span>
+            <h3 id="week-summary-title" className="text-lg font-semibold text-ui-text">
+              {formatKoreanDate(weekStart, "M.d")} ~ {formatKoreanDate(weekEnd, "M.d")}
+            </h3>
           </div>
-          <dl className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs">
-            <div className="flex items-center gap-1.5"><dt className="text-ink-500">Todo</dt><dd className="font-bold text-ink-100">{weekTodos.length}</dd></div>
-            <div className="flex items-center gap-1.5"><dt className="text-ink-500">미완료</dt><dd className="font-bold text-ink-100">{weekActiveCount}</dd></div>
-            <div className="flex items-center gap-1.5"><dt className="text-ink-500">완료율</dt><dd className="font-bold text-accent-300">{formatCompletionRate(weekTodos.length, weekRate)}</dd></div>
-            <div className="flex items-center gap-1.5"><dt className="text-ink-500">주간 목표</dt><dd className="font-bold text-ink-300">{completedWeeklyGoals}/{weeklyGoals.length}</dd></div>
-          </dl>
+          <div className="flex items-center gap-1.5" aria-label="주간 이동">
+            <button type="button" className="icon-btn min-h-9 min-w-9" onClick={() => moveWeek(-1)} aria-label="이전 주"><ChevronLeft size={17} /></button>
+            <button type="button" className="icon-btn min-h-9 min-w-9" onClick={() => moveWeek(1)} aria-label="다음 주"><ChevronRight size={17} /></button>
+            {weekOffset !== 0 ? <button type="button" className="btn-secondary min-h-9 px-2 text-xs" onClick={backToThisWeek}>이번 주</button> : null}
+          </div>
         </div>
+        <p className="mt-2 text-xs text-ui-secondary">
+          {weekActiveCount}개 미완료 · {formatCompletionRate(weekTodos.length, weekRate)} 완료 · 주간 목표 {completedWeeklyGoals}/{weeklyGoals.length}
+        </p>
       </section>
-
-      <div className="w-full">
-        <GoalChecklist
-          title={weekOffset === 0 ? "이번 주 목표" : "선택한 주 목표"}
-          goals={weeklyGoals}
-          type="WEEKLY"
-          addDefaults={{ weekStartDate: weekStart, weekEndDate: weekEnd, dueDate: weekEnd }}
-          placeholder="이번 주에 끝낼 핵심 목표"
-          emptyTitle="이번 주 목표가 없습니다."
-          onAdd={onAddGoal}
-          onUpdate={onUpdateGoal}
-          onToggle={onToggleGoal}
-          onDelete={onDeleteGoal}
-        />
-      </div>
-
       <section className="space-y-3" aria-labelledby="week-days-title">
         <div className="flex items-end justify-between gap-3">
           <div>
@@ -157,19 +136,19 @@ export function WeeklyView({
               <CalendarCheck2 size={17} className="text-accent-300" />
               <h3 id="week-days-title" className="text-sm font-bold text-ink-100">7일 흐름</h3>
             </div>
-            <p className="mt-1 text-[11px] text-ink-500">요일은 분포만 보고, Todo 내용은 선택한 날짜에서 확인합니다.</p>
+            <p className="mt-1 text-[11px] text-ink-500">날짜를 선택하면 아래에서 해당 날짜의 할 일을 관리할 수 있습니다.</p>
           </div>
         </div>
 
-        <div className="weekly-days-grid grid grid-cols-2 gap-0 border-l border-t border-ui-divider sm:grid-cols-4 lg:grid-cols-7">
-          {daySummaries.map(({ date, day, index, active, completed, high }) => {
+        <div className="calendar-v4-week-scroll"><div className="weekly-days-grid calendar-v4-week-days grid min-w-[560px] grid-cols-7 gap-1">
+          {daySummaries.map(({ date, day, index, active, completed }) => {
             const selected = date === selectedDate;
             const isToday = date === today;
             return (
               <button
                 key={date}
                 type="button"
-                className={`weekly-day min-w-0 border-b border-r border-ui-divider px-3 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus ${
+                className={`weekly-day calendar-v4-week-day min-w-0 border border-ui-divider px-2.5 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus ${
                   selected
                     ? "bg-ui-selected text-ui-text"
                     : "bg-transparent hover:bg-ui-hover"
@@ -185,12 +164,12 @@ export function WeeklyView({
                 <div className="mt-2 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px]">
                   <span className={active ? "font-bold text-amber-100" : "text-ink-600"}>미완료 {active}</span>
                   <span className="text-ink-500">완료 {completed}</span>
-                  {high ? <span className="font-bold text-red-100">높은 우선순위 {high}</span> : null}
+
                 </div>
               </button>
             );
           })}
-        </div>
+        </div></div>
       </section>
 
       <section className="app-card py-4" aria-labelledby="selected-day-title">
@@ -274,6 +253,29 @@ export function WeeklyView({
           </div>
         ) : null}
       </section>
+
+      <details className="calendar-v4-week-goals" open>
+        <summary className="flex min-h-9 cursor-pointer items-center justify-between gap-2 text-sm font-semibold text-ui-secondary">
+          <span>이번 주 목표 · {completedWeeklyGoals}/{weeklyGoals.length}</span>
+          <ChevronDown size={15} aria-hidden="true" />
+        </summary>
+        <div className="mt-3">
+<div className="w-full">
+        <GoalChecklist
+          title={weekOffset === 0 ? "이번 주 목표" : "선택한 주 목표"}
+          goals={weeklyGoals}
+          type="WEEKLY"
+          addDefaults={{ weekStartDate: weekStart, weekEndDate: weekEnd, dueDate: weekEnd }}
+          placeholder="이번 주에 끝낼 핵심 목표"
+          emptyTitle="이번 주 목표가 없습니다."
+          onAdd={onAddGoal}
+          onUpdate={onUpdateGoal}
+          onToggle={onToggleGoal}
+          onDelete={onDeleteGoal}
+        />
+      </div>
+        </div>
+      </details>
 
       <TodoEditModal
         todo={editingTodo}

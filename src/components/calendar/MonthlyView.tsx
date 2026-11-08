@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PanelRightOpen } from "lucide-react";
 import { TodoEditModal } from "../todo/TodoEditModal";
 import {
@@ -61,13 +61,21 @@ export function MonthlyView({
 }: MonthlyViewProps) {
   const [currentMonth, setCurrentMonth] = useState(() => parseDateKey(todayKey()));
   const [selectedDate, setSelectedDate] = useState(todayKey);
-  const [panelOpen, setPanelOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1280);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [quickAdd, setQuickAdd] = useState(false);
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
   const [movingTodoId, setMovingTodoId] = useState<string | null>(null);
   const [moveFeedback, setMoveFeedback] = useState<{ kind: "error" | "success"; message: string } | null>(null);
   const [visibility, setVisibility] = useState<CalendarVisibility>(defaultCalendarVisibility);
   const selectedPanelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!panelOpen) return;
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { setPanelOpen(false); setQuickAdd(false); }
+    };
+    window.addEventListener("keydown", onEscape);
+    return () => window.removeEventListener("keydown", onEscape);
+  }, [panelOpen]);
   const monthDays = useMemo(() => getMonthGrid(currentMonth), [currentMonth]);
   const events = useMemo(() => buildCalendarEvents(todos, projects, milestones), [todos, projects, milestones]);
   const eventsByDate = useMemo(() => groupCalendarEvents(events, visibility), [events, visibility]);
@@ -103,11 +111,7 @@ export function MonthlyView({
     }
     setPanelOpen(true);
     setQuickAdd(false);
-    if (window.innerWidth < 1280) {
-      window.requestAnimationFrame(() => {
-        selectedPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-    }
+    window.requestAnimationFrame(() => selectedPanelRef.current?.focus());
   };
 
   const openQuickAdd = (dateKey: string) => {
@@ -171,7 +175,7 @@ export function MonthlyView({
       </div>
 
       {moveFeedback ? <p role={moveFeedback.kind === "error" ? "alert" : "status"} className={`border-l-2 py-2 pl-3 text-xs ${moveFeedback.kind === "error" ? "border-danger/60 text-danger" : "border-success/60 text-ui-secondary"}`}>{moveFeedback.message}</p> : null}
-      <div className={`grid min-w-0 items-start gap-4 ${panelOpen ? "xl:grid-cols-[minmax(0,1fr)_390px]" : ""}`}>
+      <div className="calendar-v4-month-stage min-w-0">
         <MonthlyCalendar
           currentMonth={currentMonth}
           monthDays={monthDays}
@@ -188,7 +192,11 @@ export function MonthlyView({
           draggingDisabled={Boolean(movingTodoId)}
         />
         {panelOpen ? (
-          <div ref={selectedPanelRef} className="calendar-month-panel min-w-0 scroll-mt-24 xl:sticky xl:top-20 xl:self-start">
+          <>
+          <button type="button" className="calendar-v4-date-backdrop" aria-label="날짜 상세 바깥 영역 닫기"
+            onClick={() => { setPanelOpen(false); setQuickAdd(false); }} />
+          <div ref={selectedPanelRef} tabIndex={-1}
+            className="calendar-month-panel calendar-v4-date-drawer min-w-0">
             <MonthlySidePanel
               selectedDate={selectedDate}
               monthEndLabel={selectedMonthEndLabel}
@@ -210,6 +218,7 @@ export function MonthlyView({
               onDeleteCategory={onDeleteCategory}
             />
           </div>
+          </>
         ) : null}
       </div>
       <TodoEditModal
