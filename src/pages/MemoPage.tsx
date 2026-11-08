@@ -252,8 +252,10 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
   );
 }
 
-function MemoCard({ memo, onDelete, onTogglePin, onEdit, onCreateTodo, onCreateChecklistTodos }: {
+function MemoCard({ memo, selected, onSelect, onDelete, onTogglePin, onEdit, onCreateTodo, onCreateChecklistTodos }: {
   memo: Memo;
+  selected: boolean;
+  onSelect: (memo: Memo) => void;
   onDelete: (id: string) => unknown | Promise<unknown>;
   onTogglePin: (id: string) => unknown | Promise<unknown>;
   onEdit: (memo: Memo) => void;
@@ -269,11 +271,11 @@ function MemoCard({ memo, onDelete, onTogglePin, onEdit, onCreateTodo, onCreateC
     if (window.confirm("메모를 삭제할까요? 삭제 후 6초 동안 실행 취소할 수 있습니다.")) void onDelete(memo.id);
   };
   return (
-    <article className="memo-note group min-w-0" style={memoAccentStyle(memo.color)}>
+    <article className="memo-note group min-w-0" data-selected={selected ? "true" : "false"} style={memoAccentStyle(memo.color)}>
       <div className="memo-note__body">
         <div className="memo-note__top">
-          <button type="button" className="memo-note__title-button" onClick={() => onEdit(memo)}
-            aria-label={`${displayTitle} 메모 수정`}>
+          <button type="button" className="memo-note__title-button" onClick={() => onSelect(memo)}
+            aria-label={`${displayTitle} 열기`} aria-pressed={selected}>
             <span className="memo-note__title-line">
               {memo.pinned ? <Pin size={14} className="memo-note__pin" aria-label="고정된 메모" /> : null}
               <h3 className="memo-note__title" title={displayTitle}>{displayTitle}</h3>
@@ -315,8 +317,8 @@ function MemoCard({ memo, onDelete, onTogglePin, onEdit, onCreateTodo, onCreateC
         </div>
         <div className="memo-note__preview" onClick={(event) => {
           if (event.target instanceof Element && event.target.closest("a")) return;
-          onEdit(memo);
-        }} title="메모 수정">
+          onSelect(memo);
+        }} title="메모 열기">
           <MarkdownPreview className="memo-note__excerpt text-[13px] leading-[1.65] text-ui-secondary" value={memo.content} />
         </div>
         {memo.todoIds.length || memo.projectIds.length ? (
@@ -350,6 +352,7 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
 }) {
   const [creating, setCreating] = useState(false);
   const [editingMemo, setEditingMemo] = useState<Memo | null>(null);
+  const [previewMemoId, setPreviewMemoId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [memoView, setMemoView] = useState<"all" | "pinned" | "linked">("all");
   useEffect(() => {
@@ -373,6 +376,12 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
   });
   const pinnedMemos = filteredMemos.filter((memo) => memo.pinned);
   const normalMemos = filteredMemos.filter((memo) => !memo.pinned);
+  const previewMemo = filteredMemos.find((memo) => memo.id === previewMemoId) || null;
+  const selectMemo = (memo: Memo) => {
+    // Compact utility windows retain the safe, established editor dialog.
+    if (window.matchMedia("(max-width: 1359px)").matches) setEditingMemo(memo);
+    else setPreviewMemoId(memo.id);
+  };
 
   useEffect(() => {
     if (!conversionMessage) return undefined;
@@ -398,10 +407,10 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
     setConversionMessage(`${createdIds.length}/${titles.length}개 Todo를 만들고 메모와 연결했습니다.`);
   };
 
-  const renderCard = (memo: Memo) => <MemoCard key={memo.id} memo={memo} onDelete={onDelete} onTogglePin={onTogglePin} onEdit={setEditingMemo} onCreateTodo={createTodoFromMemo} onCreateChecklistTodos={createChecklistTodos} />;
+  const renderCard = (memo: Memo) => <MemoCard key={memo.id} memo={memo} selected={previewMemoId === memo.id} onSelect={selectMemo} onDelete={onDelete} onTogglePin={onTogglePin} onEdit={setEditingMemo} onCreateTodo={createTodoFromMemo} onCreateChecklistTodos={createChecklistTodos} />;
 
   return (
-    <div className="page-shell memo-page">
+    <div className={`page-shell memo-page ${previewMemo ? "memo-page--reading" : ""}`}>
       <PageHeader title="메모" description="생각과 작업 기록을 모아 봅니다."
         meta={`전체 ${memos.length}개`}
         actions={<Button variant="secondary" className="memo-action-button" onClick={() => setCreating(true)}><Plus size={16} aria-hidden="true" />새 메모</Button>}
@@ -431,9 +440,31 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
       {conversionMessage ? <div className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-xs font-semibold text-success" role="status">{conversionMessage}</div> : null}
 
       {filteredMemos.length ? (
-        <div className="memo-collections space-y-8">
-          {pinnedMemos.length ? <section className="memo-section space-y-2"><div className="memo-section__heading flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">고정 메모</h3><span className="text-[10px] text-ink-600">{pinnedMemos.length}개</span></div><div className="memo-note-grid">{pinnedMemos.map(renderCard)}</div></section> : null}
-          {normalMemos.length ? <section className="memo-section space-y-2"><div className="memo-section__heading flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">일반 메모</h3><span className="text-[10px] text-ink-600">{normalMemos.length}개</span></div><div className="memo-note-grid">{normalMemos.map(renderCard)}</div></section> : null}
+        <div className={`memo-workspace ${previewMemo ? "memo-workspace--split" : ""}`}>
+          <div className="memo-collections space-y-8">
+            {pinnedMemos.length ? <section className="memo-section space-y-2"><div className="memo-section__heading flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">고정 메모</h3><span className="text-[10px] text-ink-600">{pinnedMemos.length}개</span></div><div className="memo-note-grid">{pinnedMemos.map(renderCard)}</div></section> : null}
+            {normalMemos.length ? <section className="memo-section space-y-2"><div className="memo-section__heading flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">일반 메모</h3><span className="text-[10px] text-ink-600">{normalMemos.length}개</span></div><div className="memo-note-grid">{normalMemos.map(renderCard)}</div></section> : null}
+          </div>
+          {previewMemo ? (
+            <aside className="memo-read-pane" aria-label="메모 문서">
+              <div className="memo-read-pane__header">
+                <div className="min-w-0">
+                  <h2>{memoDisplayTitle(previewMemo)}</h2>
+                  <span>{formatKoreanDate(previewMemo.updatedAt, "yyyy.MM.dd 수정")}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button type="button" className="btn-secondary" onClick={() => setEditingMemo(previewMemo)}>
+                    <Pencil size={14} aria-hidden="true" />수정
+                  </button>
+                  <button type="button" className="ui-icon-button" aria-label="메모 문서 닫기"
+                    onClick={() => setPreviewMemoId(null)}><X size={16} aria-hidden="true" /></button>
+                </div>
+              </div>
+              <div className="memo-read-pane__content">
+                <MarkdownPreview value={previewMemo.content} />
+              </div>
+            </aside>
+          ) : null}
         </div>
       ) : memos.length ? <EmptyState title="검색 결과가 없습니다." description="검색어를 변경하거나 전체 필터를 선택해보세요." /> : <EmptyState title="아직 작성한 메모가 없습니다." description="새 메모에서 작업 중 떠오른 생각을 가볍게 남겨보세요." />}
 

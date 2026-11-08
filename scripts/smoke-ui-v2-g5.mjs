@@ -150,12 +150,16 @@ try {
         }
         await assertAccessibleView(view, width);
         const mobileNav = page.getByRole("navigation", { name: "모바일 탐색" });
-        if (width < 1024) {
-          assert.equal(await mobileNav.isVisible(), true, "Mobile nav must be available at " + width);
+        if (width < 640) {
+          assert.equal(await mobileNav.isVisible(), true, "Phone navigation must be available at " + width);
           assert.equal(await mobileNav.getByRole("button", { name: "받은함" }).count(), 0);
           assert.equal(await mobileNav.getByRole("button", { name: "전체 Todo" }).count(), 1);
         } else {
-          assert.equal(await mobileNav.isVisible(), false, "Mobile nav must not overlap desktop content");
+          assert.equal(await mobileNav.isVisible(), false, "Phone navigation must not overlap desktop utility content");
+          const desktopSidebar = page.locator('aside[data-compact-window]');
+          assert.equal(await desktopSidebar.isVisible(), true, "Desktop icon/sidebar navigation must be visible at " + width);
+          assert.equal(await desktopSidebar.getAttribute("data-compact-window"), width < 1100 ? "true" : "false",
+            "Compact desktop sidebar must follow viewport width rather than device type");
         }
         await page.screenshot({
           path: "test-artifacts/layout-g5-" + theme + "-" + width + "-" + view + ".png",

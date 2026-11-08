@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { navigation } from "../common/CommandPalette";
-import { appViewIds, navGroups, settingsItem } from "./Sidebar";
+import { appViewIds, navGroups, settingsItem, trashItem } from "./Sidebar";
 
 describe("active views", () => {
-  const navIds = [...navGroups.flatMap((group) => group.items.map((item) => item.id)), settingsItem.id];
+  const navIds = [...navGroups.flatMap((group) => group.items.map((item) => item.id)), settingsItem.id, trashItem.id];
 
   it("lists every active screen once in the sidebar", () => {
     expect(navIds).toEqual([...appViewIds]);

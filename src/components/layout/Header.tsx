@@ -15,13 +15,13 @@ export function Header({ storageStatus = "server", onLogout, onQuickAdd, onSearc
     <header className="app-topbar sticky top-0 z-40 border-b border-ui-divider bg-ui-canvas">
       <div className="flex h-14 w-full items-center justify-between gap-3 px-4 sm:px-5 lg:px-6">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex items-center gap-2.5 lg:hidden">
+          <div className="flex items-center gap-2.5 sm:hidden">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-ui-selected text-ui-text">
               <CalendarCheck2 size={18} />
             </div>
             <h1 className="hidden truncate text-base font-bold text-ink-100 sm:block">Todo Planner</h1>
           </div>
-          <span className="hidden text-sm font-semibold tracking-tight text-ui-text lg:inline">Todo Planner</span>
+          <span className="hidden text-sm font-semibold tracking-tight text-ui-text sm:inline">Todo Planner</span>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
           {storageStatus === "offline" ? (

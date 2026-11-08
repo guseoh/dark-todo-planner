@@ -268,7 +268,7 @@ export function ProjectPage({
 
   return (
     <div className="page-shell project-page">
-      <PageHeader title="프로젝트" description="프로젝트의 작업·마일스톤·의사결정 기록을 한곳에서 관리합니다."
+      <PageHeader title="프로젝트" description="칸반에서 작업을 관리하고, 필요할 때 마일스톤과 기록을 확인합니다."
         meta={`진행 ${activeProjects.length}개`}
         actions={<>
 
@@ -384,7 +384,7 @@ export function ProjectPage({
               <div className="h-full bg-accent-500 transition-[width]" style={{ width: `${progress}%` }} />
             </div> : null}
 
-            <details className="project-resources mt-2 border-t border-ink-800/80 pt-2" key={selected.id}>
+            {projectTab === "manage" ? <details className="project-resources mt-2 border-t border-ink-800/80 pt-2" key={selected.id}>
               <summary className="flex min-h-9 cursor-pointer list-none flex-wrap items-center justify-between gap-2 rounded-sm px-1 text-xs font-medium text-ink-300 hover:bg-ink-800/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
                 <span className="flex items-center gap-2"><Link2 size={16} className="text-accent-300" />자료 링크 <span className="text-xs font-medium text-ink-400">{(selected.resources || []).length}/12</span></span>
                 <span className="flex items-center gap-1 text-xs font-medium text-ink-400">GitHub · 배포 · 문서 <ChevronDown size={15} /></span>
@@ -412,7 +412,7 @@ export function ProjectPage({
                   {resourceError ? <p className="text-xs font-semibold text-danger lg:col-span-3">{resourceError}</p> : null}
                 </form>
               ) : null}
-            </details>
+            </details> : null}
           </section>
 
           <nav className="page-tabs" aria-label="프로젝트 세부 화면" role="tablist">

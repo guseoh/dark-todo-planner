@@ -29,13 +29,13 @@ type Result = {
 export const navigation: Result[] = [
   { id: "quick-add", label: "빠른 Todo 추가", detail: "Ctrl+Shift+K", action: "quick-add", kind: "명령" },
   { id: "nav-today", label: "오늘", detail: "오늘 실행할 Todo", view: "today", kind: "이동" },
-  { id: "nav-calendar", label: "캘린더", detail: "월간·주간 일정 보기", view: "calendar", kind: "이동" },
-  { id: "nav-projects", label: "프로젝트", detail: "프로젝트와 Kanban", view: "projects", kind: "이동" },
   { id: "nav-all", label: "전체 Todo", detail: "모든 Todo 검색과 관리", view: "all", kind: "이동" },
+  { id: "nav-projects", label: "프로젝트", detail: "프로젝트와 Kanban", view: "projects", kind: "이동" },
+  { id: "nav-calendar", label: "캘린더", detail: "월간·주간 일정 보기", view: "calendar", kind: "이동" },
   { id: "nav-memo", label: "메모", detail: "메모 검색과 작성", view: "memo", kind: "이동" },
   { id: "nav-scratchpad", label: "낙서장", detail: "계속 이어 쓰는 개인 메모장", view: "scratchpad", kind: "이동" },
-  { id: "nav-trash", label: "휴지통", detail: "삭제한 항목 확인과 복원", view: "trash", kind: "이동" },
   { id: "nav-settings", label: "설정", detail: "Planner 설정과 내보내기", view: "settings", kind: "이동" },
+  { id: "nav-trash", label: "휴지통", detail: "삭제한 항목 확인과 복원", view: "trash", kind: "이동" },
 ];
 
 const resultIcon = (result: Result) => {

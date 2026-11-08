@@ -226,7 +226,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
 
   return (
     <TodoQuickActionsProvider snoozeTodo={snoozeTodo}>
-      <div className="min-h-screen pb-20 lg:pb-0">
+      <div className="min-h-screen pb-20 sm:pb-0">
         <Header storageStatus={planner.connectionError ? "offline" : "server"} onLogout={onLogout} onQuickAdd={openQuickAdd} onSearch={openSearch} />
 
         <div className="flex w-full items-start">

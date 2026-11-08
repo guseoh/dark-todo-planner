@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronDown, GripVertical, History, MoonStar, Settings2, Star } from "lucide-react";
+import { ChevronDown, GripVertical, History, MoonStar, PanelRightOpen, Settings2, Star, X } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { IconButton } from "../components/ui/IconButton";
 import { IconRenderer } from "../components/common/IconRenderer";
@@ -124,6 +124,15 @@ export function TodayPage({
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [planningTodoId, setPlanningTodoId] = useState<string | null>(null);
   const [planningError, setPlanningError] = useState("");
+  const [planningOpen, setPlanningOpen] = useState(false);
+  useEffect(() => {
+    if (!planningOpen) return;
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPlanningOpen(false);
+    };
+    window.addEventListener("keydown", onEscape);
+    return () => window.removeEventListener("keydown", onEscape);
+  }, [planningOpen]);
 
   const today = todayKey();
   const focusedTodos = useMemo(() => focusIds.map((id) => todayTodos.find((todo) => todo.id === id)).filter((todo): todo is Todo => Boolean(todo && !todo.completed && !todo.archived)), [focusIds, todayTodos]);
@@ -243,7 +252,7 @@ export function TodayPage({
   };
 
   return (
-    <div className="page-shell today-page">
+    <div className={`page-shell today-page ${planningOpen ? "today-page--planning" : ""}`}>
       <header className="today-header">
         <div className="today-header__identity">
           <h1>오늘</h1>
@@ -256,6 +265,13 @@ export function TodayPage({
           ) : null}
           {highPriorityCount > 0 ? <span className="text-warning">높은 우선순위 {highPriorityCount}</span> : null}
           {deadlineAttentionCount > 0 ? <span className="text-danger">마감 주의 {deadlineAttentionCount}</span> : null}
+          <button type="button" className="today-plan-toggle" aria-label="오늘 계획하기"
+            aria-expanded={planningOpen} aria-controls={planningOpen ? "today-plan-panel" : undefined}
+            onClick={() => setPlanningOpen((open) => !open)}>
+            <PanelRightOpen size={15} aria-hidden="true" />
+            계획하기
+            {overdueTodos.length > 0 ? <span className="today-plan-toggle__count" aria-hidden="true">{overdueTodos.length}</span> : null}
+          </button>
           {stats.todayActive > 0 && onOpenDayClose ? (
             <Button variant="warning" size="sm" className="today-header__action" onClick={onOpenDayClose}
               title="명시적으로 선택한 일정만 내일이나 언젠가로 이동합니다">
@@ -265,7 +281,7 @@ export function TodayPage({
         </div>
       </header>
 
-      <div className={`today-workspace ${hasPlanningContent ? "" : "today-workspace--single"}`}>
+      <div className={`today-workspace ${planningOpen ? "today-workspace--planning" : "today-workspace--single"}`}>
         <main className="today-workspace__main min-w-0 space-y-3">
 
           {focusedTodos.length ? (
@@ -370,10 +386,17 @@ export function TodayPage({
             ) : null}
           </section>
         </main>
-        {hasPlanningContent ? (
-          <aside className="today-planning-panel" aria-label="오늘 계획하기">
+        {planningOpen ? (
+          <>
+          <button className="today-planning-backdrop" type="button" aria-label="계획 패널 바깥 영역 닫기"
+            onClick={() => setPlanningOpen(false)} />
+          <aside id="today-plan-panel" className="today-planning-panel" aria-label="오늘 계획하기">
             <div className="today-planning-panel__header">
-              <h2>오늘 계획하기</h2>
+              <div className="flex items-center justify-between gap-3">
+                <h2>오늘 계획하기</h2>
+                <button type="button" className="today-plan-close" onClick={() => setPlanningOpen(false)}
+                  aria-label="계획 패널 닫기"><X size={17} aria-hidden="true" /></button>
+              </div>
               <p>기존 작업을 선택해 오늘의 계획을 만듭니다.</p>
             </div>
 
@@ -445,6 +468,7 @@ export function TodayPage({
 
             <a className="today-planning-panel__all-link" href="#/all">전체 Todo에서 작업 찾기</a>
           </aside>
+          </>
         ) : null}
       </div>
 

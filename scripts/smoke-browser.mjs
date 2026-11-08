@@ -90,7 +90,8 @@ try {
   assert.ok(visualSystem.headerText.includes("중"), "Concise completion summary must remain visible.");
   assert.equal(visualSystem.workspaceLayout, "grid", "Today must be able to show a task lane and an actionable planning lane.");
   assert.equal(visualSystem.hasSidebar, false, "Today must not retain a disconnected right rail.");
-  assert.ok(visualSystem.todayWidth <= 1270, "Today planning layout must remain contained at desktop width.");
+  assert.ok(visualSystem.todayWidth <= 840, "Default Today should retain a compact, readable desktop width.");
+  assert.equal(visualSystem.planningPanelPresent, false, "Planning is hidden by default, not a permanent second column.");
   assert.equal(visualSystem.accent, "#d4d4d8", "Accent must remain neutral.");
   assert.equal(visualSystem.canvas, "#101011", "Canvas must stay near-black.");
   assert.notEqual(visualSystem.primaryBackground, "rgb(226, 226, 229)", "Global Quick Add should not outshine task content.");
@@ -140,6 +141,7 @@ try {
   assert.ok(overdueFixture.every((item) => item.status >= 200 && item.status < 300),
     "Local D1 overdue fixtures should be created: " + JSON.stringify(overdueFixture));
   await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "오늘 계획하기", exact: true }).click();
   await page.getByRole("button", { name: "지난 작업 검토", exact: true }).click();
   const overdueDialog = page.getByRole("dialog", { name: "지난 일정 정리" });
   await overdueDialog.getByRole("button", { name: "전체 선택", exact: true }).click();
@@ -196,6 +198,7 @@ try {
   assert.equal(deletedTrashRecords.matches.length, 3,
     "Only the selected Todo items must be recoverable in local D1 trash.");
   await overdueDialog.getByRole("button", { name: "닫기", exact: true }).click();
+  await page.getByRole("button", { name: "계획 패널 닫기", exact: true }).click();
 
   await page.setViewportSize({ width: 390, height: 844 });
 
@@ -565,7 +568,11 @@ try {
   assert.ok(futureFixture?.id, "Local planning candidate created");
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
-  const planningPanel = page.locator('[aria-label="오늘 계획하기"]');
+  const planningToggle = page.getByRole("button", { name: "오늘 계획하기", exact: true });
+  assert.equal(await planningToggle.getAttribute("aria-expanded"), "false", "Default Today focuses on execution.");
+  await planningToggle.click();
+  assert.equal(await planningToggle.getAttribute("aria-expanded"), "true");
+  const planningPanel = page.locator('aside[aria-label="오늘 계획하기"]');
   await planningPanel.waitFor();
   await planningPanel.getByRole("button", { name: `"${futureTitle}" 오늘로 이동` }).click();
   await planningPanel.getByRole("button", { name: `"${futureTitle}" 오늘로 이동` }).waitFor({ state: "detached" });
@@ -577,6 +584,9 @@ try {
   assert.equal(moved.projectId, menuFixtures.project.id, "The project association is retained");
   assert.equal(await planningPanel.getByRole("button", { name: `"${futureTitle}" 오늘로 이동` }).count(), 0,
     "Planned task must disappear from the candidate list");
+  await planningPanel.getByRole("button", { name: "계획 패널 닫기" }).click();
+  await planningPanel.waitFor({ state: "detached" });
+  assert.equal(await planningToggle.getAttribute("aria-expanded"), "false");
 
   // Readability regression: a task is a distinct text-first row, not a barely
   // visible line or a nested rounded card.
@@ -857,6 +867,7 @@ try {
   assert.ok(kanbanFilterWidths.document <= kanbanFilterWidths.viewport + 2,
     "Project controls must not overflow the desktop viewport.");
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("tab", { name: /프로젝트 관리/ }).click();
   const resourceDisclosure = page.locator("details").filter({ hasText: "자료 링크" }).first();
   await resourceDisclosure.locator("summary").click();
   assert.equal(await resourceDisclosure.evaluate((node) => node.open), true);
@@ -935,6 +946,16 @@ try {
   await memoEditDialog.waitFor();
   await memoEditDialog.getByRole("button", { name: "메모 수정 닫기" }).click();
   await page.setViewportSize({ width: 1440, height: 900 });
+  await memoCard.getByRole("button", { name: `${memoTitle} 열기` }).click();
+  const memoReadPane = page.getByRole("complementary", { name: "메모 문서" });
+  await memoReadPane.getByRole("heading", { name: memoTitle, exact: true }).waitFor();
+  await memoReadPane.getByText("작성 내용", { exact: true }).waitFor();
+  await memoReadPane.getByRole("button", { name: "수정", exact: true }).click();
+  const readerEditDialog = page.getByRole("dialog", { name: "메모 수정" });
+  await readerEditDialog.waitFor();
+  await readerEditDialog.getByRole("button", { name: "메모 수정 닫기" }).click();
+  await memoReadPane.getByRole("button", { name: "메모 문서 닫기" }).click();
+  await memoReadPane.waitFor({ state: "detached" });
   const memoLayout = await page.evaluate(() => ({
     cols: getComputedStyle(document.querySelector(".memo-note-grid")).gridTemplateColumns.split(" ").length,
     width: document.querySelector(".memo-collections").getBoundingClientRect().width,
