@@ -388,7 +388,7 @@ export function ScratchpadPage() {
   };
 
   return (
-    <section aria-label="낙서장" className="scratchpad-workspace mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-[1500px] flex-col overflow-hidden bg-ui-canvas">
+    <section aria-label="낙서장" className="scratchpad-workspace mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-[920px] flex-col overflow-hidden bg-ui-canvas">
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-ui-divider bg-transparent px-3 py-3">
         <div className="flex items-center gap-2"><h1 className="text-lg font-semibold text-ui-text">낙서장</h1></div>
       </div>
