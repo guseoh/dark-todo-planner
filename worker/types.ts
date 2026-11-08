@@ -5,6 +5,8 @@ export type Bindings = {
   AUTH_PASSWORD_HASH: string;
   SESSION_SECRET: string;
   DISCORD_WEBHOOK_URL?: string;
+  /** Optional: server-only GitHub GraphQL token. Public calendar works without it. */
+  GITHUB_ACTIVITY_TOKEN?: string;
   LOGIN_RATE_LIMITER: RateLimit;
   MUTATION_RATE_LIMITER: RateLimit;
 };

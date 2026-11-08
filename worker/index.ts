@@ -17,6 +17,7 @@ import { requireSafeFullBackupImport } from "./backupRestoreGuard";
 import { todoReferenceTrashRestoreMiddleware } from "./referenceLinkMiddleware";
 import { runDiscordIncompleteTodoReminder, runDueTodoReminders } from "./reminders/incompleteTodoReminder";
 import { backupRoutes } from "./routes/backup";
+import { activityRoutes } from "./routes/activity";
 import { calendarRoutes } from "./routes/calendar";
 import { contentRoutes } from "./routes/content";
 import { libraryRoutes } from "./routes/library";
@@ -105,6 +106,7 @@ app.use("/api/migrate/local-storage", step4BackupImportMiddleware);
 app.use("/api/backup/export", backupV9ExportMiddleware);
 app.use("/api/migrate/local-storage", backupV9ImportMiddleware);
 
+app.route("/api", activityRoutes);
 app.route("/api", todoCompletionRoutes);
 app.route("/api", todoRoutes);
 app.route("/api", todoWorkflowRoutes);
