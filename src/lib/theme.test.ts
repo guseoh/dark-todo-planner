@@ -38,7 +38,7 @@ describe("V4 light/dark neutral black design tokens", () => {
     expect(css).toContain("--accent-500: 121 167 247;");
     expect(css).toContain("--accent-500: 36 95 191;");
     expect(css).toContain("--ui-canvas: var(--app-bg)");
-    expect(css).toContain("--ui-control-border: #747480;");
+    expect(css).toContain("--ui-control-border: var(--border-strong);");
     expect(tailwind).toContain('themedShade("ink-950")');
     expect(tailwind).toContain('themedShade("accent-500")');
     expect(tailwind).toContain('"var(--ui-canvas)"');
