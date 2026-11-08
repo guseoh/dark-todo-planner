@@ -67,7 +67,7 @@ try {
       sectionBorderTop: sectionStyle.borderTopWidth,
       composerBackground: composerStyle.backgroundColor,
       headerHeight: header.getBoundingClientRect().height,
-      firstTaskOffset: section.getBoundingClientRect().top - header.getBoundingClientRect().top,
+      captureOffset: composer.getBoundingClientRect().top - header.getBoundingClientRect().top,
       headerText: status.textContent,
       oldDashboardCount: document.querySelectorAll(".today-overview__stat").length,
       planningPanelPresent: Boolean(planningPanel),
@@ -85,7 +85,7 @@ try {
   assert.equal(visualSystem.sectionBorderTop, "0px", "Task sections must not be enclosed.");
   assert.notEqual(visualSystem.composerBackground, visualSystem.sectionBackground, "Always-visible entry must be distinguishable from the task canvas.");
   assert.ok(visualSystem.headerHeight <= 90, "Today heading/status must be compact.");
-  assert.ok(visualSystem.firstTaskOffset <= 140, "Task entry should appear close to the header.");
+  assert.ok(visualSystem.captureOffset <= 145, "Quick capture should appear close to the header in V4.");
   assert.equal(visualSystem.oldDashboardCount, 0, "Old KPI grid must not return.");
   assert.ok(visualSystem.headerText.includes("완료"), "Concise completion summary must remain visible.");
   assert.equal(visualSystem.workspaceLayout, "grid", "Today must be able to show a task lane and an actionable planning lane.");
