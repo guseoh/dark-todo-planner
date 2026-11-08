@@ -992,7 +992,7 @@ try {
   });
   await movedCard.getByRole("button", { name: `${parentTaskTitle} 상태 이동` })
     .dragTo(todoLane, { steps: 16 });
-  await page.getByRole("alert").filter({ hasText: "kanban status save failed" }).waitFor();
+  await page.getByRole("status").filter({ hasText: "kanban status save failed" }).waitFor();
   await doingLane.getByRole("button", { name: parentTaskTitle, exact: true }).waitFor();
   assert.equal((await findServerTodo(parentTaskTitle))?.workflowStatus, "IN_PROGRESS",
     "Failed workflow PUT must restore the previous lane and server state.");
