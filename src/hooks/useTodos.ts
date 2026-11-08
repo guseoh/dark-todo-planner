@@ -202,10 +202,16 @@ export function useTodos() {
     const serial = (updateSerialRef.current.get(id) ?? 0) + 1;
     updateSerialRef.current.set(id, serial);
     const optimistic = applyOptimisticUpdates(existing, updates);
-    pendingUpdateRef.current.set(id, optimistic);
-    // React state updates before any network round trip: the card lands in the
-    // target column immediately. On offline writes, the queue preserves it.
-    setAllTodos((current) => current.map((item) => item.id === id ? optimistic : item));
+    // Only the atomic workflow transition used by the board is safe to render
+    // optimistically. Scheduling/metadata edits may change the active list
+    // filter while an edit modal is open: rendering those before persistence
+    // would unmount the editor and lose its failed-save retry UI.
+    const instantWorkflowMove = updates.workflowStatus !== undefined
+      && Object.keys(updates).every((key) => key === "workflowStatus" || key === "completed");
+    if (instantWorkflowMove) {
+      pendingUpdateRef.current.set(id, optimistic);
+      setAllTodos((current) => current.map((item) => item.id === id ? optimistic : item));
+    }
     setSaving(true);
     const isLatest = () => updateSerialRef.current.get(id) === serial;
 
@@ -231,9 +237,11 @@ export function useTodos() {
     } catch (err) {
       if (isLatest()) {
         pendingUpdateRef.current.delete(id);
-        // A failed online write must restore the prior state. Do not roll back
-        // a subsequent operation that has already changed this Todo.
-        setAllTodos((current) => current.map((item) => item.id === id ? existing : item));
+        if (instantWorkflowMove) {
+          // A failed online status write restores the original lane. Regular
+          // form edits have never mutated the visible record before saving.
+          setAllTodos((current) => current.map((item) => item.id === id ? existing : item));
+        }
       }
       setError(getMessage(err));
       return undefined;
