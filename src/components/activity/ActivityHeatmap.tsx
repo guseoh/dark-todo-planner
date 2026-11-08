@@ -42,6 +42,7 @@ export function ActivityHeatmap({
         </div>
         {actions ? <div className="activity-panel__actions">{actions}</div> : null}
       </div>
+      {error && hasData ? <p role="alert" className="activity-panel__error">{error}</p> : null}
       {hasData ? (
         <>
           <div className="activity-panel__stats">
@@ -66,11 +67,11 @@ export function ActivityHeatmap({
                       {week.map((cell) => {
                         const item = byDate.get(cell.date);
                         const unavailable = cell.inside && !item;
-                        const level = !cell.inside || unavailable ? 0 : item.level;
+                        const level = !cell.inside || unavailable ? 0 : (item?.level ?? 0);
                         const amount = item?.count;
                         const label = !cell.inside ? "" : cell.date + ": " +
                           (unavailable ? "기록 없음" : amount === null ? "활동 있음 · 정확한 수 미제공" :
-                            formatNumber(amount) + " " + unit);
+                            formatNumber(amount ?? 0) + " " + unit);
                         return <span key={cell.date} role={cell.inside ? "gridcell" : undefined}
                           tabIndex={cell.inside && level > 0 ? 0 : undefined}
                           title={label} aria-label={cell.inside ? label : undefined}

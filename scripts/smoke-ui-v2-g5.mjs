@@ -17,7 +17,7 @@ if (!process.env.SMOKE_USERNAME || !process.env.SMOKE_PASSWORD) {
 
 const screens = [
   ["today", "오늘"], ["all", "전체 Todo"], ["calendar", "캘린더"],
-  ["projects", "프로젝트"], ["memo", "메모"], ["scratchpad", "낙서장"],
+  ["projects", "프로젝트"], ["memo", "메모"], ["scratchpad", "낙서장"], ["activity", "개발 활동"],
   ["trash", "휴지통"], ["settings", "설정"],
 ];
 const widths = [320, 390, 768, 1280];

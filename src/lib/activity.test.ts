@@ -9,7 +9,7 @@ describe("activity calendar", () => {
     expect(v.weeks[0][0].date).toBe("2025-11-09");
     expect(v.weeks[0][0].inside).toBe(false);
     expect(v.weeks[0][1]).toEqual({ date: "2025-11-10", inside: true });
-    expect(v.weeks.at(-1)?.[1]).toEqual({ date: "2026-11-09", inside: true });
+    expect(v.weeks[v.weeks.length - 1]?.[1]).toEqual({ date: "2026-11-09", inside: true });
     expect(v.weeks.flat().filter((d) => d.inside)).toHaveLength(365);
   });
 

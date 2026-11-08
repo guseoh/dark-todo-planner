@@ -2456,3 +2456,5 @@ button:disabled {
   .activity-panel__stats { gap: .8rem 1.2rem; }
   .activity-panel__stats strong { font-size: .95rem; }
 }
+
+.activity-panel__error { margin-top: .6rem; color: var(--danger); font-size: .74rem; line-height: 1.6; }
