@@ -1,7 +1,6 @@
-import { DndContext, PointerSensor, closestCenter, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
+import { DndContext, DragOverlay, PointerSensor, pointerWithin, rectIntersection, useDraggable, useDroppable, useSensor, useSensors, type CollisionDetection, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { ChevronDown, ChevronRight, GripVertical, LayoutGrid, List, Pencil, Search } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { todayKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../../lib/todo";
 import { workflowStatusLabels } from "../../lib/todoLabels";
@@ -29,6 +28,13 @@ type ProjectKanbanProps = {
 };
 
 const statusOf = (todo: Todo): TodoWorkflowStatus => todo.workflowStatus || (todo.completed ? "DONE" : "TODO");
+
+// Pointer location, rather than the nearest column's center, decides the drop.
+// Rect intersection is the fallback for keyboard/synthetic drag interactions.
+const columnCollision: CollisionDetection = (args) => {
+  const pointer = pointerWithin(args);
+  return pointer.length ? pointer : rectIntersection(args);
+};
 const VIEW_MODE_KEY = "dark-todo-planner:project-work-view";
 const WIP_LIMITS_KEY = "dark-todo-planner:project-wip-limits";
 const DONE_COLUMN_KEY = "dark-todo-planner:collapsed-done-columns";
@@ -69,29 +75,59 @@ function readCollapsedDoneColumns(): Record<string, boolean> {
   }
 }
 
-function KanbanColumn({ status, label, count, wipLimit, onWipLimitChange, collapsed = false, onToggleCollapse, children }: { status: TodoWorkflowStatus; label: string; count: number; wipLimit?: number; onWipLimitChange: (status: TodoWorkflowStatus, limit: number) => void; collapsed?: boolean; onToggleCollapse?: () => void; children: ReactNode }) {
+function KanbanColumn({ status, label, count, visibleCount, wipLimit, onWipLimitChange, collapsed = false, onToggleCollapse, children }: {
+  status: TodoWorkflowStatus;
+  label: string;
+  count: number;
+  visibleCount: number;
+  wipLimit?: number;
+  onWipLimitChange: (status: TodoWorkflowStatus, limit: number) => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
+  children: ReactNode;
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: `column:${status}` });
   const overLimit = wipLimit !== undefined && count > wipLimit;
   return (
-    <section ref={setNodeRef} data-status={status} data-drag-over={isOver ? "true" : "false"} className="project-kanban-column min-h-[10rem] w-[17rem] shrink-0 px-3 py-3 transition sm:w-auto">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        {onToggleCollapse ? <button type="button" className="inline-flex min-h-9 items-center gap-1 rounded-[4px] px-1 text-sm font-semibold text-ink-100 hover:bg-ink-850 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70" onClick={onToggleCollapse} aria-expanded={!collapsed}>{collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}{label}</button> : <h4 className="px-1 text-sm font-semibold text-ink-100">{label}</h4>}
-        <span className="mr-auto text-xs tabular-nums text-ui-muted" aria-label={`${label} 작업 ${count}개`}>{count}</span>
-        <div className="flex items-center gap-1.5">
-          <label className="flex items-center gap-1 text-[10px] text-ink-500" title="0으로 설정하면 작업 수 제한이 없습니다.">
-            <span>WIP</span>
-            <input type="number" min={0} max={999} className="field h-8 min-h-8 w-14 px-1 py-0.5 text-center text-xs" value={wipLimit || ""} placeholder="—" aria-label={`${label} WIP 한도`} onChange={(event) => onWipLimitChange(status, Math.max(0, Math.min(999, Number.parseInt(event.target.value, 10) || 0)))} />
-          </label>
-          {overLimit ? <span className="text-[11px] font-semibold text-danger" aria-label="WIP 초과">초과</span> : null}
+    <section ref={setNodeRef} data-status={status} data-drag-over={isOver ? "true" : "false"}
+      className="project-kanban-column min-h-[10rem] w-[17rem] shrink-0 px-3 py-3 transition sm:w-auto">
+      <div className="project-kanban-column__header">
+        <div className="project-kanban-column__identity">
+          {onToggleCollapse ? <button type="button" className="inline-flex min-h-9 items-center gap-1 rounded-[4px] px-1 text-sm font-semibold text-ink-100 hover:bg-ink-850 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70"
+            onClick={onToggleCollapse} aria-expanded={!collapsed}>
+            {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}{label}
+          </button> : <h4 className="px-1 text-sm font-semibold text-ink-100">{label}</h4>}
+          <span className="project-kanban-column__count tabular-nums" aria-label={`${label} 작업 ${count}개`}>{count}</span>
         </div>
+        <details className="project-kanban-column__limit">
+          <summary title="WIP(Work In Progress) 한도: 현재 작업 수가 아닌 이 열의 최대 작업 수입니다. 초과 시 경고만 표시합니다."
+            aria-label={`${label} WIP 한도 설정`}>
+            <span>한도</span><span className="tabular-nums">{wipLimit ?? "—"}</span>
+          </summary>
+          <div className="project-kanban-column__limit-panel">
+            <label>
+              <span>WIP · 최대 작업 수</span>
+              <input type="number" min={0} max={999}
+                className="field h-8 min-h-8 w-14 px-1 py-0.5 text-center text-xs"
+                value={wipLimit ?? ""} placeholder="—" aria-label={`${label} WIP 한도`}
+                onChange={(event) => onWipLimitChange(status, Math.max(0, Math.min(999, Number.parseInt(event.target.value, 10) || 0)))} />
+            </label>
+            <p>설정한 한도는 브라우저에 저장되며, 0이나 빈칸은 제한 없음입니다. 작업 이동을 차단하지 않습니다.</p>
+          </div>
+        </details>
       </div>
-      {overLimit ? <p className="mb-2 border-l-2 border-danger/65 py-1 pl-2 text-[11px] font-medium text-danger" role="status">WIP 한도 초과 · 작업을 먼저 마무리해 보세요.</p> : null}
-      {collapsed ? <p className="border-t border-ink-700/35 px-2 py-5 text-center text-xs text-ink-500">완료 작업 {count}개 · 열을 펼쳐 확인하세요</p> : <div className="space-y-2">{children}</div>}
+      {visibleCount !== count ? <p className="project-kanban-column__filtered">현재 필터에 표시된 작업 {visibleCount}개 / 전체 {count}개</p> : null}
+      {overLimit ? <p className="mb-2 border-l-2 border-danger/65 py-1 pl-2 text-[11px] font-medium text-danger" role="status">
+        WIP 한도 초과 · 작업을 먼저 마무리해 보세요.
+      </p> : null}
+      {collapsed ? <p className="border-t border-ink-700/35 px-2 py-5 text-center text-xs text-ink-500">
+        완료 작업 {count}개 · 열을 펼쳐 확인하세요
+      </p> : <div className="space-y-2">{children}</div>}
     </section>
   );
 }
 
-function ProjectKanbanCard({ project, todo, parent, childCount, milestone, today, onToggleTodo, onOpenDetails }: {
+const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, parent, childCount, milestone, today, onToggleTodo, onOpenDetails }: {
   project: Project;
   todo: Todo;
   parent?: Todo;
@@ -101,15 +137,14 @@ function ProjectKanbanCard({ project, todo, parent, childCount, milestone, today
   onToggleTodo: ProjectKanbanProps["onToggleTodo"];
   onOpenDetails: (todo: Todo) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: todo.id, disabled: project.archived,
   });
   const overdue = isOverdueByDeadline(todo, today);
   const dueSoon = isDueSoon(todo, today);
   return (
     <article ref={setNodeRef} data-v4-card="true"
-      style={{ transform: CSS.Translate.toString(transform), opacity: isDragging ? .55 : 1 }}
-      className="project-kanban-card">
+      data-dragging={isDragging ? "true" : "false"} className="project-kanban-card">
       <div className="project-v4-card__top">
         <button type="button" onClick={() => onToggleTodo(todo.id)}
           className="project-v4-card__check" aria-label={`${todo.title} 완료 토글`}>
@@ -121,7 +156,7 @@ function ProjectKanbanCard({ project, todo, parent, childCount, milestone, today
             onClick={() => onOpenDetails(todo)}>{todo.title}</button>
         </div>
         {!project.archived ? <button type="button" className="project-v4-card__drag"
-          title="드래그하여 상태 변경" aria-label={`${todo.title} 상태 이동`}
+          title="잡고 다른 열로 드래그해 상태 변경" aria-label={`${todo.title} 상태 이동`}
           {...listeners} {...attributes}><GripVertical size={15} /></button> : null}
       </div>
       {(todo.priority === "HIGH" || milestone || childCount > 0 || todo.dueDate) ? (
@@ -134,7 +169,7 @@ function ProjectKanbanCard({ project, todo, parent, childCount, milestone, today
       ) : null}
     </article>
   );
-}
+});
 
 export function ProjectKanban({ project, todos, milestones, categories = [], projects = [], onAddTodo, onUpdateTodo, onToggleTodo }: ProjectKanbanProps) {
   const today = todayKey();
@@ -142,6 +177,12 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
   const [query, setQuery] = useState("");
   const [milestoneFilter, setMilestoneFilter] = useState("");
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  // App's undo wrapper changes identity on unrelated re-renders. Keep card
+  // callbacks stable so memoized cards do not all re-render on every save.
+  const toggleRef = useRef(onToggleTodo);
+  toggleRef.current = onToggleTodo;
+  const stableToggle = useCallback((id: string) => toggleRef.current(id), []);
   const [wipLimitsByProject, setWipLimitsByProject] = useState<ProjectWipLimits>(readWipLimits);
   const [collapsedDoneColumns, setCollapsedDoneColumns] = useState<Record<string, boolean>>(readCollapsedDoneColumns);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
@@ -188,15 +229,28 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
     return { todoById, milestoneById, childCountByParentId, byStatus };
   }, [milestones, todos]);
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const overId = event.over?.id;
-    if (!overId || typeof overId !== "string" || !overId.startsWith("column:")) return;
-    const todo = indexed.todoById.get(String(event.active.id));
-    if (!todo || project.archived) return;
+  const visibleByStatus = useMemo(() => {
+    const map = new Map<TodoWorkflowStatus, Todo[]>(workflowColumns.map((column) => [column.status, []]));
+    visibleTodos.forEach((todo) => map.get(statusOf(todo))?.push(todo));
+    return map;
+  }, [visibleTodos]);
+
+  const onDragStart = useCallback(({ active }: DragStartEvent) => {
+    setActiveDragId(String(active.id));
+  }, []);
+  const onDragCancel = useCallback(() => setActiveDragId(null), []);
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    setActiveDragId(null);
+    const overId = over?.id;
+    if (typeof overId !== "string" || !overId.startsWith("column:")) return;
     const nextStatus = overId.slice("column:".length) as TodoWorkflowStatus;
-    if (statusOf(todo) === nextStatus) return;
+    if (!workflowColumns.some((column) => column.status === nextStatus)) return;
+    const todo = indexed.todoById.get(String(active.id));
+    if (!todo || project.archived || statusOf(todo) === nextStatus) return;
     void onUpdateTodo(todo.id, { workflowStatus: nextStatus, completed: nextStatus === "DONE" });
   };
+  const activeDragTodo = activeDragId ? indexed.todoById.get(activeDragId) : undefined;
 
   return (
     <section className="space-y-3">
@@ -226,13 +280,15 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
           <h4 className="text-sm font-semibold text-ui-text">{todos.length ? "검색 조건에 맞는 작업이 없습니다." : "아직 등록한 프로젝트 작업이 없습니다."}</h4>
           <p className="mt-1.5 text-sm text-ui-secondary">{todos.length ? "검색어 또는 마일스톤 필터를 변경해 보세요." : "위의 Todo 빠른 추가에서 첫 작업을 등록하세요."}</p>
         </div>
-      ) : viewMode === "board" ? <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      ) : viewMode === "board" ? <DndContext sensors={sensors} collisionDetection={columnCollision} onDragStart={onDragStart} onDragCancel={onDragCancel} onDragEnd={handleDragEnd}>
         <div className="overflow-x-auto pb-2">
           <div className="project-v4-board grid min-w-[68rem] grid-cols-4 gap-3">
             {workflowColumns.map((column) => {
-              const items = visibleTodos.filter((todo) => statusOf(todo) === column.status);
+              const items = visibleByStatus.get(column.status) ?? [];
+              // WIP count is the total project count, not the filtered subset.
+              const count = indexed.byStatus.get(column.status)?.length ?? 0;
               return (
-                <KanbanColumn key={column.status} status={column.status} label={column.label} count={items.length} wipLimit={wipLimitsByProject[project.id]?.[column.status]} onWipLimitChange={changeWipLimit} collapsed={column.status === "DONE" && (collapsedDoneColumns[project.id] ?? true)} onToggleCollapse={column.status === "DONE" ? () => setCollapsedDoneColumns((current) => ({ ...current, [project.id]: !(current[project.id] ?? true) })) : undefined}>
+                <KanbanColumn key={column.status} status={column.status} label={column.label} count={count} visibleCount={items.length} wipLimit={wipLimitsByProject[project.id]?.[column.status]} onWipLimitChange={changeWipLimit} collapsed={column.status === "DONE" && (collapsedDoneColumns[project.id] ?? true)} onToggleCollapse={column.status === "DONE" ? () => setCollapsedDoneColumns((current) => ({ ...current, [project.id]: !(current[project.id] ?? true) })) : undefined}>
                   {items.map((todo) => (
                     <ProjectKanbanCard
                       key={todo.id}
@@ -242,7 +298,7 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
                       childCount={indexed.childCountByParentId.get(todo.id) || 0}
                       milestone={todo.milestoneId ? indexed.milestoneById.get(todo.milestoneId) : undefined}
                       today={today}
-                      onToggleTodo={onToggleTodo}
+                      onToggleTodo={stableToggle}
                       onOpenDetails={setEditingTodo}
                     />
                   ))}
@@ -252,6 +308,12 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
             })}
           </div>
         </div>
+        <DragOverlay adjustScale={false} dropAnimation={null} zIndex={70}>
+          {activeDragTodo ? <div className="project-v4-drag-preview" role="presentation" aria-hidden="true">
+            <span className="project-v4-drag-preview__grip"><GripVertical size={15} /></span>
+            <span className="truncate">{activeDragTodo.title}</span>
+          </div> : null}
+        </DragOverlay>
       </DndContext> : (
         <div className="overflow-x-auto border-t border-ink-700/50">
           <table className="w-full min-w-[58rem] text-left text-sm">
