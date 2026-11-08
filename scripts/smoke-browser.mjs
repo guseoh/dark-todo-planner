@@ -851,11 +851,17 @@ try {
   const newProjectInput = page.getByPlaceholder("새 프로젝트 이름");
   await newProjectInput.fill("UX Regression Project");
   await newProjectInput.locator("xpath=..").getByRole("button", { name: "추가", exact: true }).click();
-  await page.getByRole("tab", { name: /작업/ }).waitFor();
+  // Project creation is async. Tabs for a previously selected project may
+  // already be visible before the newly created project has been selected.
+  // Wait for the actual new project header/rail selection, not any old tab.
+  await page.locator(".project-v4-toolbar h2").getByText("UX Regression Project", { exact: true }).waitFor();
+  await newProjectInput.waitFor({ state: "detached" });
   const projectSwitcher = page.locator(".project-v4-switcher");
-  await projectSwitcher.waitFor();
+  await projectSwitcher.locator('.project-v4-switcher__item[aria-pressed="true"]')
+    .getByText("UX Regression Project", { exact: true }).waitFor();
   await page.getByRole("tab", { name: /프로젝트 관리/ }).click();
   const projectManageMenu = page.locator(".project-actions-menu");
+  await projectManageMenu.locator("summary").waitFor();
   await projectManageMenu.locator("summary").click();
   assert.equal(await projectManageMenu.getAttribute("open"), "", "Project management actions should expand on demand.");
   await projectManageMenu.getByRole("button", { name: "삭제", exact: true }).waitFor();
