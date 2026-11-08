@@ -990,8 +990,19 @@ try {
   const movedCard = doingLane.locator(".project-kanban-card").filter({
     has: page.getByRole("button", { name: parentTaskTitle, exact: true }),
   });
-  await movedCard.getByRole("button", { name: `${parentTaskTitle} 상태 이동` })
-    .dragTo(todoLane, { steps: 16 });
+  const returnHandle = await movedCard.getByRole("button", { name: `${parentTaskTitle} 상태 이동` }).boundingBox();
+  const returnTarget = await todoLane.boundingBox();
+  assert.ok(returnHandle && returnTarget, "Rollback-drag handle and destination must be visible");
+  await page.mouse.move(returnHandle.x + returnHandle.width / 2, returnHandle.y + returnHandle.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(returnHandle.x + returnHandle.width / 2 + 20,
+    returnHandle.y + returnHandle.height / 2 + 7, { steps: 5 });
+  await page.locator(".project-v4-drag-preview").waitFor();
+  await page.mouse.move(returnTarget.x + returnTarget.width / 2,
+    returnTarget.y + Math.min(100, returnTarget.height / 2), { steps: 15 });
+  await page.mouse.up();
+  for (let attempt = 0; attempt < 20 && failStatusMove; attempt += 1) await sleep(100);
+  assert.equal(failStatusMove, false, "Rejected status mutation must reach the intercepted PUT");
   await page.getByRole("status").filter({ hasText: "kanban status save failed" }).waitFor();
   await doingLane.getByRole("button", { name: parentTaskTitle, exact: true }).waitFor();
   assert.equal((await findServerTodo(parentTaskTitle))?.workflowStatus, "IN_PROGRESS",
