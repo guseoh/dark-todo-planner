@@ -685,6 +685,10 @@ try {
   await monthGrid.getByRole("button", { name: calendarTitle, exact: true }).waitFor();
   assert.equal((await findServerTodo(calendarTitle))?.date, quickDate, "Calendar quick-add must use selected day.");
 
+  // V4 uses a real overlay; close the inspector before dragging on the underlying calendar.
+  await calendarDetails.getByRole("button", { name: "날짜 상세 닫기" }).click();
+  await calendarDetails.waitFor({ state: "detached" });
+
   // Mouse drag changes only the execution date, preserving the due date.
   await page.setViewportSize({ width: 1280, height: 844 });
   await monthGrid.getByRole("button", { name: calendarTitle, exact: true })
