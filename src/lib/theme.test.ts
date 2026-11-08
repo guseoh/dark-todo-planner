@@ -19,7 +19,7 @@ const contrast = (a: string, b: string) => {
   return (Math.max(one, two) + 0.05) / (Math.min(one, two) + 0.05);
 };
 
-describe("light/dark neutral design tokens", () => {
+describe("V4 light/dark neutral black design tokens", () => {
   it("resolves preference and retains the previous default dark mode", () => {
     expect(parseThemePreference("dark")).toBe("dark");
     expect(parseThemePreference("light")).toBe("light");
@@ -32,29 +32,29 @@ describe("light/dark neutral design tokens", () => {
 
   it("shares RGB compatibility tokens and semantic roles across themes", () => {
     expect(css).toContain(':root[data-theme="light"]');
-    expect(css).toContain("--ink-950: 16 16 17;");
-    expect(css).toContain("--surface-2: #242a33;");
-    expect(css).toContain("--ink-950: 247 247 248;");
-    expect(css).toContain("--accent-500: 212 212 216;");
-    expect(css).toContain("--accent-500: 38 38 42;");
+    expect(css).toContain("--ink-950: 9 9 11;");
+    expect(css).toContain("--surface-2: #222225;");
+    expect(css).toContain("--ink-950: 250 250 250;");
+    expect(css).toContain("--accent-500: 121 167 247;");
+    expect(css).toContain("--accent-500: 36 95 191;");
     expect(css).toContain("--ui-canvas: var(--app-bg)");
-    expect(css).toContain("--ui-control-border: #8A8A90;");
+    expect(css).toContain("--ui-control-border: #747480;");
     expect(tailwind).toContain('themedShade("ink-950")');
     expect(tailwind).toContain('themedShade("accent-500")');
     expect(tailwind).toContain('"var(--ui-canvas)"');
     expect(tailwind).toContain('themedShade("semantic-danger")');
-    expect(css).toContain("--semantic-danger: 190 18 60;");
-    expect(css).toContain("--semantic-info: 147 180 255;");
-    expect(css).toContain("--workflow-planned: #8b9cac;");
-    expect(css).toContain("--workflow-active: #83aee3;");
-    expect(css).toContain("--workflow-blocked: #e1b26f;");
-    expect(css).toContain("--workflow-done: #82c4a4;");
+    expect(css).toContain("--semantic-danger: 177 64 80;");
+    expect(css).toContain("--semantic-info: 121 167 247;");
+    expect(css).toContain("--workflow-planned: #A1A1AA;");
+    expect(css).toContain("--workflow-active: #79A7F7;");
+    expect(css).toContain("--workflow-blocked: #DE858E;");
+    expect(css).toContain("--workflow-done: #67BE9B;");
     expect(css).toContain('data-status="IN_PROGRESS"');
     expect(css).toContain('data-status="BLOCKED"');
     expect(css).toContain('data-status="DONE"');
     expect(tailwind).toContain('themedShade("semantic-info")');
-    expect(css).toContain("--success: #4ade80;");
-    expect(css).toContain("--success: #15803d;");
+    expect(css).toContain("--success: #67BE9B;");
+    expect(css).toContain("--success: #147553;");
     expect(css).not.toContain("#8fb9a3");
     expect(css).toContain(".today-header__status");
     expect(css).toContain(".today-page.page-shell");
@@ -86,25 +86,23 @@ describe("light/dark neutral design tokens", () => {
   });
 
   it("meets AA text contrast in both palettes", () => {
-    expect(contrast("#EFEFF0", "#101011")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#99999F", "#161617")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#1B1B1E", "#F7F7F8")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#66666C", "#FFFFFF")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#101011", "#D4D4D8")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#F7F7F8", "#26262A")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#4ADE80", "#101011")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#FB7185", "#101011")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#FBBF24", "#101011")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#93B4FF", "#101011")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#15803D", "#F7F7F8")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#BE123C", "#F7F7F8")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#92400E", "#F7F7F8")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#1D4ED8", "#F7F7F8")).toBeGreaterThanOrEqual(4.5);
-    for (const token of ["#8b9cac", "#83aee3", "#e1b26f", "#82c4a4"]) {
-      expect(contrast(token, "#1B2027")).toBeGreaterThanOrEqual(4.5);
+    for (const [foreground, background] of [
+      ["#F2F2F4", "#09090B"], ["#B3B3BE", "#18181B"],
+      ["#18181B", "#FAFAFA"], ["#52525B", "#FFFFFF"],
+      ["#09090B", "#79A7F7"], ["#FFFFFF", "#245FBF"],
+      ["#67BE9B", "#09090B"], ["#DE858E", "#09090B"],
+      ["#E5B66D", "#09090B"], ["#79A7F7", "#09090B"],
+      ["#147553", "#FFFFFF"], ["#B14050", "#FFFFFF"],
+      ["#8D5B20", "#FFFFFF"], ["#245FBF", "#FFFFFF"],
+      ["#A1A1AA", "#18181B"], ["#60606A", "#FFFFFF"],
+    ]) {
+      expect(contrast(foreground, background)).toBeGreaterThanOrEqual(4.5);
     }
-    for (const token of ["#5a6775", "#275e9e", "#90601f", "#176a4d"]) {
-      expect(contrast(token, "#FFFFFF")).toBeGreaterThanOrEqual(4.5);
+    for (const role of ["#A1A1AA", "#79A7F7", "#DE858E", "#67BE9B"]) {
+      expect(contrast(role, "#18181B")).toBeGreaterThanOrEqual(4.5);
+    }
+    for (const role of ["#60606A", "#245FBF", "#B14050", "#147553"]) {
+      expect(contrast(role, "#FFFFFF")).toBeGreaterThanOrEqual(4.5);
     }
   });
 

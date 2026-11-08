@@ -1859,16 +1859,16 @@ button:disabled {
 /* Workspace renewal / phase 1: restrained hierarchy across active views.
    Workflow behavior and production data contracts are deliberately unchanged. */
 :root {
-  --workflow-planned: #8b9cac;
-  --workflow-active: #83aee3;
-  --workflow-blocked: #e1b26f;
-  --workflow-done: #82c4a4;
+  --workflow-planned: #A1A1AA;
+  --workflow-active: #79A7F7;
+  --workflow-blocked: #DE858E;
+  --workflow-done: #67BE9B;
 }
 :root[data-theme="light"] {
-  --workflow-planned: #5a6775;
-  --workflow-active: #275e9e;
-  --workflow-blocked: #90601f;
-  --workflow-done: #176a4d;
+  --workflow-planned: #60606A;
+  --workflow-active: #245FBF;
+  --workflow-blocked: #B14050;
+  --workflow-done: #147553;
 }
 .page-shell.all-todos-page { max-width: 1320px; }
 .page-shell.project-page { max-width: 1510px; }
