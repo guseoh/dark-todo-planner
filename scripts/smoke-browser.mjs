@@ -922,6 +922,62 @@ try {
   await projectInspector.getByRole("button", { name: "취소" }).click();
   await projectInspector.waitFor({ state: "hidden" });
 
+  // WIP is a manually configured limit, NOT the automatically updated count.
+  // A filter must not hide an over-limit warning.
+  const todoLane = page.locator('.project-kanban-column[data-status="TODO"]');
+  const doingLane = page.locator('.project-kanban-column[data-status="IN_PROGRESS"]');
+  await todoLane.getByLabel("할 일 작업 2개").waitFor();
+  const wipControls = todoLane.locator(".project-kanban-column__limit");
+  await wipControls.locator("summary").click();
+  await wipControls.getByRole("spinbutton", { name: "할 일 WIP 한도" }).fill("1");
+  await todoLane.getByRole("status").filter({ hasText: "WIP 한도 초과" }).waitFor();
+  await wipControls.locator("summary").click();
+  const projectSearch = page.getByRole("textbox", { name: "프로젝트 작업 검색" });
+  await projectSearch.fill(parentTaskTitle);
+  await todoLane.getByLabel("할 일 작업 2개").waitFor();
+  await todoLane.getByText("현재 필터에 표시된 작업 1개 / 전체 2개").waitFor();
+  await todoLane.getByRole("status").filter({ hasText: "WIP 한도 초과" }).waitFor();
+  await projectSearch.fill("");
+
+  // Hold the actual network PUT. The card must appear in the destination lane
+  // before we release the request (optimistic UI, not server-response UI).
+  let releaseProjectMove;
+  const projectMoveGate = new Promise((resolve) => { releaseProjectMove = resolve; });
+  let sawProjectMove;
+  const projectMoveStarted = new Promise((resolve) => { sawProjectMove = resolve; });
+  await page.route("**/api/todos/*", async (route) => {
+    if (route.request().method() === "PUT" && route.request().url().includes(projectFixture.todo.id)) {
+      sawProjectMove();
+      await projectMoveGate;
+      await route.continue();
+    } else {
+      await route.continue();
+    }
+  });
+  const dragHandle = taskCard.getByRole("button", { name: `${parentTaskTitle} 상태 이동` });
+  const handleBox = await dragHandle.boundingBox();
+  const targetBox = await doingLane.boundingBox();
+  assert.ok(handleBox && targetBox, "Drag handle and destination must be visible");
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(handleBox.x + handleBox.width / 2 + 24, handleBox.y + handleBox.height / 2 + 8, { steps: 5 });
+  await page.locator(".project-v4-drag-preview").waitFor();
+  await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + Math.min(100, targetBox.height / 2), { steps: 14 });
+  await page.mouse.up();
+  await projectMoveStarted;
+  await doingLane.getByRole("button", { name: parentTaskTitle, exact: true }).waitFor();
+  await todoLane.getByLabel("할 일 작업 1개").waitFor();
+  assert.equal(await todoLane.getByRole("status").filter({ hasText: "WIP 한도 초과" }).count(), 0,
+    "WIP warning clears when total work is within the configured limit.");
+  releaseProjectMove();
+  for (let i = 0; i < 25; i += 1) {
+    if ((await findServerTodo(parentTaskTitle))?.workflowStatus === "IN_PROGRESS") break;
+    await sleep(200);
+  }
+  assert.equal((await findServerTodo(parentTaskTitle))?.workflowStatus, "IN_PROGRESS",
+    "Dropped status must survive the delayed server PUT.");
+  await page.unroute("**/api/todos/*");
+
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("tab", { name: /프로젝트 관리/ }).click();
   const resourceDisclosure = page.locator("details").filter({ hasText: "자료 링크" }).first();
