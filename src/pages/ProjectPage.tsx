@@ -1,3 +1,7 @@
+import { Modal } from "../components/common/Modal";
+import { differenceInCalendarDays } from "date-fns";
+import { formatKoreanDate, getDaysPast, parseDateKey, todayKey } from "../lib/date";
+import { isOverdueByDeadline } from "../lib/todo";
 import { entityColors, getEntityColor } from "../lib/entityColor";
 import { FormEvent, useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { Archive, ArchiveRestore, CheckCircle2, ChevronDown, CircleDot, ExternalLink, FolderKanban, Link2, MoreHorizontal, PauseCircle, Pencil, Plus, Save, Target, Trash2, X } from "lucide-react";
@@ -83,7 +87,7 @@ export function ProjectPage({
   const activeProjects = useMemo(() => projects.filter((project) => !project.archived), [projects]);
   const archivedProjects = useMemo(() => projects.filter((project) => project.archived), [projects]);
   const [showArchived, setShowArchived] = useState(false);
-  const [projectTab, setProjectTab] = useState<"work" | "milestones" | "decisions" | "manage">("work");
+  const [projectTab, setProjectTab] = useState<"work" | "milestones" | "decisions">("work");
   const visibleProjects = showArchived ? archivedProjects : activeProjects;
   const [selectedId, setSelectedId] = useState("");
   const [showCreateProject, setShowCreateProject] = useState(false);
@@ -102,12 +106,12 @@ export function ProjectPage({
   const [resourceUrl, setResourceUrl] = useState("");
   const [resourceError, setResourceError] = useState("");
   const [deletingProject, setDeletingProject] = useState(false);
-  const projectTabIds = ["work", "milestones", "decisions", "manage"] as const;
+  const projectTabIds = ["work", "milestones", "decisions"] as const;
   const onProjectTabKey = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
     const index = projectTabIds.indexOf(projectTab);
-    const next = event.key === "Home" ? projectTabIds[0] : event.key === "End" ? projectTabIds[3]
+    const next = event.key === "Home" ? projectTabIds[0] : event.key === "End" ? projectTabIds[2]
       : projectTabIds[(index + (event.key === "ArrowRight" ? 1 : projectTabIds.length - 1)) % projectTabIds.length];
     setProjectTab(next);
     document.getElementById(`project-tab-${next}`)?.focus();
@@ -141,6 +145,20 @@ export function ProjectPage({
   const projectMilestones = useMemo(() => milestones.filter((milestone) => milestone.projectId === selectedId), [milestones, selectedId]);
   const projectDecisions = useMemo(() => decisions.filter((decision) => decision.projectId === selectedId), [decisions, selectedId]);
   const completed = projectTodos.filter((todo) => todo.completed).length;
+  const today = todayKey();
+  const blocked = projectTodos.filter((todo) => !todo.completed && todo.workflowStatus === "BLOCKED").length;
+  const stale = projectTodos.filter((todo) => !todo.completed && todo.workflowStatus === "IN_PROGRESS" && Date.now() - Date.parse(todo.updatedAt) >= 7 * 86_400_000).length;
+  const overdue = projectTodos.filter((todo) => isOverdueByDeadline(todo, today)).length;
+  const datedMilestones = [...projectMilestones].sort((a, b) =>
+    (a.targetDate || "9999-12-31").localeCompare(b.targetDate || "9999-12-31") || a.order - b.order);
+  const targetLabel = (project: Project) => {
+    if (!project.targetDate) return "";
+    const remaining = differenceInCalendarDays(parseDateKey(project.targetDate), parseDateKey(today));
+    if (remaining < 0 && project.status !== "DONE") return `목표일 ${getDaysPast(project.targetDate, today)}일 지남`;
+    return remaining >= 0 && remaining <= 14 ? `D-${remaining}` : formatKoreanDate(project.targetDate, "M/d");
+  };
+  const targetOverdue = (project: Project) => Boolean(project.targetDate && project.targetDate < today && project.status !== "DONE");
+  const [showDuplicate, setShowDuplicate] = useState(false);
   const progress = projectTodos.length ? Math.round((completed / projectTodos.length) * 100) : 0;
   const unassignedMilestoneTodos = projectTodos.filter((todo) => !todo.milestoneId).length;
 
@@ -280,10 +298,7 @@ export function ProjectPage({
                 <Plus size={16} />{showCreateProject ? "추가 닫기" : "프로젝트 추가"}
               </button>
             ) : null}
-            <button type="button" className="btn-secondary" onClick={() => { setShowArchived((value) => !value); setShowCreateProject(false); }}>
-              {showArchived ? <ArchiveRestore size={16} /> : <Archive size={16} />}
-              {showArchived ? "진행 프로젝트" : `보관함 ${archivedProjects.length}`}
-            </button>
+
         </>}
       />
 
@@ -310,35 +325,35 @@ export function ProjectPage({
                 </select>
               </label>
               <nav className="project-v4-switcher__nav" aria-label={showArchived ? "보관 프로젝트 선택" : "진행 프로젝트 선택"}>
-                {visibleProjects.map((project) => (
-                  <button key={project.id} type="button" onClick={() => setSelectedId(project.id)}
+                {visibleProjects.map((project) => {
+                  const tasks = todos.filter((todo) => todo.projectId === project.id && !todo.archived);
+                  const done = tasks.filter((todo) => todo.completed).length;
+                  return <button key={project.id} type="button" onClick={() => setSelectedId(project.id)}
                     aria-pressed={selectedId === project.id} aria-label={`${project.name} (${projectStatusLabel[project.status]})`}
                     className="project-v4-switcher__item">
                     <span className="project-v4-switcher__dot" style={{ backgroundColor: getEntityColor(project, projects) }} aria-hidden="true" />
                     <span className="truncate">{project.name}</span>
-                    <span className="project-v4-switcher__status">{projectStatusLabel[project.status]}</span>
-                  </button>
-                ))}
+                    <span className="project-v4-switcher__status">{done}/{tasks.length}</span>
+                    <span className="project-switcher-progress"><span style={{ width: tasks.length ? `${done / tasks.length * 100}%` : 0, background: getEntityColor(project, projects) }} /></span>
+                    {project.targetDate ? <span className={`col-span-full text-xs ${targetOverdue(project) ? "text-danger" : "text-ui-muted"}`}>{targetLabel(project)}</span> : null}
+                  </button>;
+                })}
               </nav>
             </>
           ) : <p className="project-v4-switcher__empty">{showArchived ? "보관된 프로젝트가 없습니다." : "프로젝트를 추가해 시작하세요."}</p>}
+            <button type="button" className="btn-secondary" onClick={() => { setShowArchived((value) => !value); setShowCreateProject(false); }}>
+              {showArchived ? <ArchiveRestore size={16} /> : <Archive size={16} />}
+              {showArchived ? "진행 프로젝트" : `보관 ${archivedProjects.length}`}
+            </button>
         </aside>
         <div className="project-v4-main min-w-0">
       {selected ? (
         <div className="project-detail min-w-0 space-y-3">
-          <div className="project-v4-toolbar">
-            <div className="min-w-0">
-              <h2>{selected.name}</h2>
-              <p>{completed}/{projectTodos.length}개 완료 · {projectStatusLabel[selected.status]}</p>
-            </div>
-            <button type="button" className="btn-secondary" onClick={() => setProjectTab("manage")}>프로젝트 정보</button>
-          </div>
-          {projectTab === "manage" ? <section className="project-overview app-card py-3">
+          <section className="project-overview py-3">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <FolderKanban size={19} className="text-ui-secondary" />
-                  <h3 className="text-lg font-semibold tracking-tight text-ink-100">{selected.name}</h3>
+                  <h2 className="text-xl font-semibold tracking-tight text-ui-text">{selected.name}</h2>
                 </div>
                 <details className="mt-1 group">
                   <summary className="flex min-h-8 w-fit cursor-pointer items-center gap-2 rounded px-1 text-xs font-semibold text-ink-400 hover:bg-ink-800/65 hover:text-ink-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
@@ -349,14 +364,17 @@ export function ProjectPage({
                 <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-400">
                   <span><strong className="font-medium text-ui-text">{completed}/{projectTodos.length}개 완료</strong>{projectTodos.length > 0 ? ` · ${progress}%` : ""}</span>
                   {selected.startDate ? <span>시작일 {selected.startDate}</span> : null}
-                  {selected.targetDate ? <span>목표일 {selected.targetDate}</span> : null}
+                  {selected.targetDate ? <span className={targetOverdue(selected) ? "font-semibold text-danger" : ""}>{targetLabel(selected)}</span> : null}
+                  <span>남은 작업 {projectTodos.length - completed} · 마감 초과 {overdue}</span>
+                  <span>차단 {blocked} · 정체 {stale}</span>
                   <span>마일스톤 {projectMilestones.length}개</span>
                   <span>결정 {projectDecisions.length}개</span>
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {!selected.archived ? <button type="button" className="btn-secondary" onClick={beginProjectEdit}><Pencil size={15} />정보 수정</button> : null}
+                {(selected.resources || []).map((resource) => <a key={resource.id} className="btn-secondary text-xs"
+                  href={resource.url} target="_blank" rel="noreferrer"><ExternalLink size={13} />{resource.label}</a>)}
                 <select aria-label="프로젝트 상태" className="field min-h-10 w-auto py-1.5 text-sm" value={selected.status} onChange={(event) => void onUpdateProject(selected.id, { status: event.target.value as ProjectStatus })} disabled={selected.archived || deletingProject}>
                   <option value="PLANNING">계획</option>
                   <option value="ACTIVE">진행 중</option>
@@ -368,6 +386,8 @@ export function ProjectPage({
                     <MoreHorizontal size={17} aria-hidden="true" />
                   </summary>
                   <div className="project-actions-menu__panel" role="group" aria-label="프로젝트 관리">
+                    {!selected.archived ? <button type="button" onClick={beginProjectEdit}><Pencil size={15} />정보 및 색상 수정</button> : null}
+                    <button type="button" onClick={() => setShowDuplicate(true)}>복제</button>
                     {selected.archived ? (
                       <button type="button" onClick={() => void onUnarchiveProject(selected.id)} disabled={deletingProject}>
                         <ArchiveRestore size={15} />복원
@@ -412,10 +432,10 @@ export function ProjectPage({
             ) : null}
 
             {projectTodos.length > 0 ? <div role="progressbar" aria-label="프로젝트 완료율" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="project-overview__progress mt-4 h-1 overflow-hidden bg-ink-800">
-              <div className="h-full bg-accent-500 transition-[width]" style={{ width: `${progress}%` }} />
+              <div className="h-full" style={{ width: `${progress}%`, background: getEntityColor(selected, projects) }} />
             </div> : null}
 
-            {projectTab === "manage" ? <details className="project-resources mt-2 border-t border-ink-800/80 pt-2" key={selected.id}>
+            <details className="project-resources mt-2 border-t border-ink-800/80 pt-2" key={selected.id}>
               <summary className="flex min-h-9 cursor-pointer list-none flex-wrap items-center justify-between gap-2 rounded-sm px-1 text-xs font-medium text-ink-300 hover:bg-ink-800/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
                 <span className="flex items-center gap-2"><Link2 size={16} className="text-accent-300" />자료 링크 <span className="text-xs font-medium text-ink-400">{(selected.resources || []).length}/12</span></span>
                 <span className="flex items-center gap-1 text-xs font-medium text-ink-400">GitHub · 배포 · 문서 <ChevronDown size={15} /></span>
@@ -443,15 +463,29 @@ export function ProjectPage({
                   {resourceError ? <p className="text-xs font-semibold text-danger lg:col-span-3">{resourceError}</p> : null}
                 </form>
               ) : null}
-            </details> : null}
-          </section> : null}
+            </details>
+          </section>
+          <div className="project-milestone-timeline" aria-label="마일스톤 타임라인">
+            {datedMilestones.length ? (
+              <ol className="flex items-start gap-3 overflow-x-auto">
+                {datedMilestones.map((milestone) => {
+                  const tasks = projectTodos.filter((todo) => todo.milestoneId === milestone.id);
+                  return <li key={milestone.id} className="shrink-0 border-t border-ui-divider text-xs">
+                    <span className={`relative -top-px block h-2 w-2 rounded-full border border-accent-300 ${milestone.status === "DONE" ? "bg-accent-300" : ""}`} />
+                    <button type="button" className="text-left" onClick={() => setProjectTab("milestones")}>
+                      {milestone.title} {milestone.targetDate ? formatKoreanDate(milestone.targetDate, "M/d") : ""} · {tasks.filter(({ completed }) => completed).length}/{tasks.length}
+                    </button>
+                  </li>;
+                })}
+              </ol>
+            ) : !selected.archived ? <button type="button" className="text-xs text-accent-300" onClick={() => setProjectTab("milestones")}>마일스톤 추가</button> : null}
+          </div>
 
           <nav className="page-tabs" aria-label="프로젝트 세부 화면" role="tablist">
             {([
               { id: "work", label: "작업", count: projectTodos.length },
               { id: "milestones", label: "마일스톤", count: projectMilestones.length },
-              { id: "decisions", label: "결정 기록", count: projectDecisions.length },
-              { id: "manage", label: "프로젝트 관리", count: null },
+              { id: "decisions", label: "기록", count: projectDecisions.length },
             ] as const).map((tab) => (
               <button type="button" role="tab" key={tab.id} id={`project-tab-${tab.id}`} aria-selected={projectTab === tab.id}
                 tabIndex={projectTab === tab.id ? 0 : -1} onKeyDown={onProjectTabKey}
@@ -462,7 +496,7 @@ export function ProjectPage({
             ))}
           </nav>
 
-          {projectTab === "manage" ? <ProjectOverviewTools
+          {showDuplicate ? <Modal title="프로젝트 복제" onClose={() => setShowDuplicate(false)}><ProjectOverviewTools duplicateOnly
             project={selected}
             todos={projectTodos}
             milestones={projectMilestones}
@@ -470,10 +504,11 @@ export function ProjectPage({
             onUpdateProject={onUpdateProject}
             onDuplicateProject={onDuplicateProject}
             onDuplicated={(project) => {
+              setShowDuplicate(false);
               setShowArchived(false);
               setSelectedId(project.id);
             }}
-          /> : null}
+          /></Modal> : null}
 
           {projectTab === "work" && !selected.archived ? (
             <section className="project-v4-quick-add border-b border-ui-divider py-3" aria-label="프로젝트 작업 추가">

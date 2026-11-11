@@ -2617,3 +2617,36 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
   .today-week-current { background: var(--accent); color: var(--app-bg); }
   .today-page .today-focus-list .todo-row { min-height: 44px; }
 }
+
+
+.project-switcher-progress { display: none; }
+.project-milestone-timeline { min-height: 40px; padding-top: 5px; }
+
+@media (min-width: 1280px) {
+  .project-page .project-v4-workspace { grid-template-columns: 200px minmax(0, 1fr); gap: 24px; }
+  .project-page .project-v4-switcher__item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 4px 8px;
+  }
+  .project-switcher-progress {
+    display: block;
+    grid-column: 2 / -1;
+    height: 3px;
+    background: var(--surface-3);
+  }
+  .project-switcher-progress > span { display: block; height: 100%; }
+  .project-page .project-v4-board { min-width: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .project-page .project-v4-board[data-done-collapsed="true"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) 36px;
+  }
+  .project-page .project-kanban-column { border-top: 2px solid var(--surface-3); }
+  .project-page .project-kanban-column[data-status="IN_PROGRESS"] { border-top-color: var(--accent); }
+  .project-page .project-kanban-column[data-status="BLOCKED"] { border-top-color: var(--danger); }
+  .project-page .project-kanban-column[data-status="DONE"] { border-top-color: var(--success); }
+  .project-page .project-kanban-column[data-over-limit="true"] h4 { color: var(--warning); }
+  .project-page .project-kanban-column[data-collapsed="true"] { padding-inline: 0; }
+  .project-page .project-kanban-column[data-collapsed="true"] :is(.project-kanban-column__count, details, p) { display: none; }
+  .project-page .project-kanban-column[data-collapsed="true"] button { writing-mode: vertical-rl; margin-inline: auto; }
+  .project-page .project-kanban-column__header { flex-wrap: wrap; }
+}
