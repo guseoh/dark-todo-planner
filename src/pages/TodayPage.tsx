@@ -1,5 +1,9 @@
 import { getEntityColor } from "../lib/entityColor";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { addDays } from "date-fns";
+import { api, apiAllPages, jsonBody } from "../lib/api/client";
+import type { DailyPlan } from "../types/planning";
+import { TodayPlanningRail } from "../components/today/TodayPlanningRail";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -12,7 +16,8 @@ import { OverdueTodoImportModal } from "../components/todo/OverdueTodoImportModa
 import { TodoEditModal } from "../components/todo/TodoEditModal";
 import { TodoForm } from "../components/todo/TodoForm";
 import { TodoRow } from "../components/todo/TodoRow";
-import { formatKoreanDate, PLANNER_DAY_START_HOUR, toDateKey, todayKey } from "../lib/date";
+import { formatKoreanDate, parseDateKey, PLANNER_DAY_START_HOUR, toDateKey, todayKey } from "../lib/date";
+import { moveFocusTodo } from "../lib/todayPlanning";
 import { formatCompletionRate } from "../lib/todo";
 import type { OverdueTodoImportMode, OverdueTodoImportResult } from "../lib/todoRecovery";
 import type { Category } from "../types/category";
@@ -21,6 +26,8 @@ import type { Todo, TodoInput } from "../types/todo";
 
 type TodayPageProps = {
   todayTodos: Todo[];
+  rail: React.ComponentProps<typeof TodayPlanningRail>;
+  onMoveOverdue: (date: string) => Promise<boolean>;
   candidateTodos: Todo[];
   onPlanTodoToToday: (todo: Todo) => Promise<boolean>;
   onOpenDayClose?: () => void;
@@ -93,6 +100,8 @@ function SortableTodayRow({ todo, render }: {
 
 export function TodayPage({
   todayTodos,
+  rail,
+  onMoveOverdue,
   candidateTodos,
   onPlanTodoToToday,
   onOpenDayClose,
@@ -120,7 +129,11 @@ export function TodayPage({
   const [activeCategoryId, setActiveCategoryId] = useState<CategoryFilter>("all");
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
-  const [focusIds, setFocusIds] = useState<string[]>(() => readFocusIds(todayKey()));
+  const [focusPlan, setFocusPlan] = useState<Pick<DailyPlan, "date" | "focusText" | "topTodoIds">>();
+  const [focusError, setFocusError] = useState("");
+  const [focusSaving, setFocusSaving] = useState(false);
+  const focusWrite = useRef(false);
+  const [movingOverdue, setMovingOverdue] = useState(false);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [planningTodoId, setPlanningTodoId] = useState<string | null>(null);
   const [planningError, setPlanningError] = useState("");
@@ -135,6 +148,7 @@ export function TodayPage({
   }, [planningOpen]);
 
   const today = todayKey();
+  const focusIds = useMemo(() => focusPlan?.date === today ? focusPlan.topTodoIds : [], [focusPlan, today]);
   const focusedTodos = useMemo(() => focusIds.map((id) => todayTodos.find((todo) => todo.id === id)).filter((todo): todo is Todo => Boolean(todo && !todo.completed && !todo.archived)), [focusIds, todayTodos]);
   const focusSet = useMemo(() => new Set(focusedTodos.map((todo) => todo.id)), [focusedTodos]);
   const oldestOverdueDate = overdueTodos[0]?.date;
@@ -187,16 +201,51 @@ export function TodayPage({
   }, [activeCategoryId]);
 
   useEffect(() => {
-    setFocusIds(readFocusIds(today));
+    let live = true;
+    setFocusError("");
+    void apiAllPages<DailyPlan>(`/api/daily-plans?date=${today}`, "dailyPlans").then(([plan]) => {
+      if (live) setFocusPlan(plan ?? { date: today, topTodoIds: readFocusIds(today) });
+    }).catch(() => { if (live) setFocusError("집중 목록을 불러오지 못했습니다."); });
+    return () => { live = false; };
   }, [today]);
 
+  const saveFocus = async (topTodoIds: string[]) => {
+    if (focusPlan?.date !== today || focusWrite.current) return;
+    focusWrite.current = true;
+    setFocusSaving(true);
+    setFocusError("");
+    try {
+      const { dailyPlan } = await api<{ dailyPlan: DailyPlan }>(`/api/daily-plans/${today}`, {
+        method: "PUT",
+        ...jsonBody({ topTodoIds, focusText: focusPlan.focusText }),
+      });
+      setFocusPlan((current) => current?.date === today ? dailyPlan : current);
+    } catch {
+      setFocusError("집중 순서를 저장하지 못했습니다.");
+    } finally {
+      focusWrite.current = false;
+      setFocusSaving(false);
+    }
+  };
+
   const toggleFocus = (id: string) => {
-    setFocusIds((current) => {
-      const valid = current.filter((candidate) => todayTodos.some((todo) => todo.id === candidate && !todo.completed && !todo.archived));
-      const next = valid.includes(id) ? valid.filter((candidate) => candidate !== id) : valid.length < 3 ? [...valid, id] : valid;
-      try { localStorage.setItem(FOCUS_STORAGE_PREFIX + today, JSON.stringify(next)); } catch { /* storage might be blocked */ }
-      return next;
-    });
+    const ids = focusedTodos.map((todo) => todo.id);
+    if (ids.includes(id)) void saveFocus(ids.filter((value) => value !== id));
+    else if (ids.length < 3) void saveFocus([...ids, id]);
+  };
+
+  const moveOverdue = async (date: string) => {
+    setMovingOverdue(true);
+    try {
+      await onMoveOverdue(date);
+    } finally {
+      setMovingOverdue(false);
+    }
+  };
+
+  const moveFocused = ({ active, over }: DragEndEvent) => {
+    const ids = moveFocusTodo(focusedTodos.map(({ id }) => id), String(active.id), over ? String(over.id) : undefined);
+    if (ids) void saveFocus(ids);
   };
 
   const planToday = async (todo: Todo) => {
@@ -220,7 +269,7 @@ export function TodayPage({
       leadingAction={dragHandle}
       variant="today"
       focusPinned={focusSet.has(todo.id)}
-      focusDisabled={!focusSet.has(todo.id) && focusedTodos.length >= 3}
+      focusDisabled={focusPlan?.date !== today || focusSaving || (!focusSet.has(todo.id) && focusedTodos.length >= 3)}
       onToggleFocus={toggleFocus}
       onToggle={onToggle}
       onDelete={onDelete}
@@ -246,8 +295,10 @@ export function TodayPage({
     <div className={`page-shell today-page ${planningOpen ? "today-page--planning" : ""}`}>
       <header className="today-header">
         <div className="today-header__identity">
-          <h1>오늘</h1>
-          <span>{formatKoreanDate(today, "M월 d일 EEEE")}</span>
+          <h1 className="xl:hidden">오늘</h1>
+          <span className="xl:hidden">{formatKoreanDate(today, "M월 d일 EEEE")}</span>
+          {toDateKey(new Date()) === today ? <span className="hidden xl:inline">오늘 · 새벽 3시 기준</span> : null}
+          <h1 className="hidden xl:block">{formatKoreanDate(today, "M월 d일 EEEE")}</h1>
           {toDateKey(new Date()) !== today ? (
             <span className="today-header__day-start" title={`하루는 새벽 ${PLANNER_DAY_START_HOUR}시에 시작합니다. 그 전까지는 전날 일정으로 표시됩니다.`}>
               새벽 {PLANNER_DAY_START_HOUR}시 전이라 전날로 표시 중
@@ -255,7 +306,10 @@ export function TodayPage({
           ) : null}
         </div>
         <div className="today-header__status" role="group" aria-label="오늘 작업 현황">
-          <span className="today-header__completion"><strong>{stats.todayCompleted}</strong> / {stats.todayTotal} 완료</span>
+          <div className="today-desktop-progress">
+            <span className="today-header__completion">진행 <strong>{stats.todayCompleted}</strong> / {stats.todayTotal}</span>
+            <progress aria-label="오늘 진행률" max={Math.max(1, stats.todayTotal)} value={stats.todayCompleted} />
+          </div>
           <button type="button" className="today-plan-toggle" aria-label="오늘 계획하기"
             aria-expanded={planningOpen} aria-controls={planningOpen ? "today-plan-panel" : undefined}
             onClick={() => setPlanningOpen((open) => !open)}>
@@ -277,10 +331,16 @@ export function TodayPage({
           {overdueTodos.length > 0 ? (
             <div className="today-overdue-banner" role="status">
               <span>
-                지난 일정 <strong>{overdueTodos.length}개</strong>가 남아 있어요
-                {oldestOverdueDate ? ` (${formatKoreanDate(oldestOverdueDate, "M월 d일")}부터)` : ""}.
+                지난 일정 <strong>{overdueTodos.length}개</strong>
+                {oldestOverdueDate ? ` · ${formatKoreanDate(oldestOverdueDate, "M월 d일")}부터` : ""}
               </span>
-              <button type="button" className="today-overdue-banner__action" onClick={() => setShowOverdueImport(true)}>검토하기</button>
+              <div className="flex flex-wrap gap-1">
+                <button type="button" className="today-overdue-banner__action hidden xl:inline-flex" disabled={movingOverdue}
+                  onClick={() => void moveOverdue(toDateKey(addDays(parseDateKey(today), 1)))}>전부 내일로</button>
+                <button type="button" className="today-overdue-banner__action hidden xl:inline-flex" disabled={movingOverdue}
+                  onClick={() => void moveOverdue(today)}>전부 오늘로</button>
+                <button type="button" className="today-overdue-banner__action" onClick={() => setShowOverdueImport(true)}>하나씩 검토</button>
+              </div>
             </div>
           ) : null}
           <section className="today-capture-section" aria-label="빠른 작업 입력">
@@ -290,15 +350,28 @@ export function TodayPage({
                 categories={categories} projects={activeProjects} />
             </div>
           </section>
+          {focusError ? <p role="alert" className="text-xs text-danger">{focusError}</p> : null}
           {focusedTodos.length ? (
             <section className="today-focus-section" aria-labelledby="today-focus-title">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h3 id="today-focus-title" className="inline-flex items-center gap-2 text-sm font-semibold text-ui-text"><Star size={15} className="text-warning" />오늘의 핵심 작업</h3>
+                  <h3 id="today-focus-title" className="inline-flex items-center gap-2 text-sm font-semibold text-ui-text"><Star size={15} className="text-warning" />지금 집중</h3>
                 </div>
                 <span className="text-xs font-medium tabular-nums text-ui-muted">{focusedTodos.length} / 3 선택</span>
               </div>
-              <div className="today-focus-list">{focusedTodos.map((todo) => renderTodo(todo))}</div>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={moveFocused}>
+                <SortableContext items={focusIds} strategy={verticalListSortingStrategy}>
+                  <div className="today-focus-list">
+                    {focusedTodos.map((todo) => (
+                      <div key={todo.id} className="flex items-center gap-1">
+                        <div className="min-w-0 flex-1"><SortableTodayRow todo={todo} render={renderTodo} /></div>
+                        {todo.workflowStatus === "TODO" ? <button type="button" className="btn-secondary shrink-0 text-xs"
+                          onClick={() => onUpdate(todo.id, { workflowStatus: "IN_PROGRESS" })}>시작</button> : null}
+                      </div>
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             </section>
           ) : null}
 
@@ -388,6 +461,7 @@ export function TodayPage({
             ) : null}
           </section>
         </main>
+        <TodayPlanningRail {...rail} />
         {planningOpen ? (
           <>
           <button className="today-planning-backdrop" type="button" aria-label="계획 패널 바깥 영역 닫기"

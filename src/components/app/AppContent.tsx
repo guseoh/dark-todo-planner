@@ -109,6 +109,10 @@ export function AppContent({ activeView, calendarMode, onCalendarModeChange, pla
   switch (activeView) {
     case "today":
       content = <TodayPage todayTodos={planner.getTodayTodos()}
+        rail={{ todos: planner.todos, goals: planner.goals, dueSoonDays: planner.plannerSettings?.reminderDueSoonDays ?? 3,
+          onAddGoal: planner.addGoal, onUpdateGoal: planner.updateGoal, onToggleGoal: planner.toggleGoal,
+          onDeleteGoal: planner.deleteGoal, onReload: planner.loadTodos }}
+        onMoveOverdue={(date) => bulkUpdateTodos(planner.getOverdueIncompleteTodos().map(({ id }) => id), { type: "DATE", value: date })}
         candidateTodos={selectTodayCandidates(planner.todos, getPlannerToday())} onPlanTodoToToday={planExistingTodoForToday}
         onOpenDayClose={onOpenDayClose} stats={planner.stats} onAdd={planner.addTodo} onToggle={toggleTodo} onDelete={planner.deleteTodo} onDeleteMany={planner.deleteTodos} onUpdate={updateTodo} onReorderTodos={planner.reorderTodos} categories={planner.categories} projects={planner.projects} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} onReorderCategories={planner.reorderCategories} overdueTodos={planner.getOverdueIncompleteTodos()} onBringOverdueTodos={bringOverdueTodosToToday} />;
       break;

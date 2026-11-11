@@ -1,3 +1,4 @@
+import { moveFocusTodo } from "./todayPlanning";
 import { describe, expect, it } from "vitest";
 import type { Todo } from "../types/todo";
 import { isTodayPlanningCandidate, selectTodayCandidates } from "./todayPlanning";
@@ -38,5 +39,15 @@ describe("Today planning candidates", () => {
     expect(result).toHaveLength(6);
     expect(result.filter((t) => t.planningState === "SOMEDAY")).toHaveLength(3);
     expect(selectTodayCandidates(scheduled, today, 0)).toEqual([]);
+  });
+});
+
+
+describe("moveFocusTodo", () => {
+  it("moves a focused Todo without changing the saved order array", () => {
+    const ids = ["a", "b", "c"];
+    expect(moveFocusTodo(ids, "a", "c")).toEqual(["b", "c", "a"]);
+    expect(ids).toEqual(["a", "b", "c"]);
+    expect(moveFocusTodo(ids, "a", "other")).toBeUndefined();
   });
 });

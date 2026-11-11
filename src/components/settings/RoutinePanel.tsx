@@ -15,7 +15,7 @@ type RoutineItem = {
   order?: number;
 };
 
-type Routine = {
+export type Routine = {
   id: string;
   name: string;
   description?: string | null;

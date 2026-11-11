@@ -8,11 +8,13 @@ export const viewHash = (view: AppView, mode: CalendarMode = "month"): string =>
 
 // Previously shared links remain valid, while the sidebar has one calendar entry.
 export function viewFromHash(hash: string): AppView {
+  hash = hash.split("?")[0];
   if (hash === "#/inbox") return "all"; // Legacy bookmark.
   if (["#/calendar", "#/calendar/month", "#/calendar/week", "#/month", "#/week"].includes(hash)) return "calendar";
   const candidate = hash.startsWith(VIEW_PREFIX) ? hash.slice(VIEW_PREFIX.length) : "";
   return appViewIds.find((view) => view === candidate) ?? "today";
 }
 export function calendarModeFromHash(hash: string): CalendarMode {
+  hash = hash.split("?")[0];
   return hash === "#/week" || hash === "#/calendar/week" ? "week" : "month";
 }
