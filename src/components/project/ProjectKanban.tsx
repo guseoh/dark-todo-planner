@@ -1,7 +1,9 @@
 import { DndContext, DragOverlay, PointerSensor, pointerWithin, rectIntersection, useDraggable, useDroppable, useSensor, useSensors, type CollisionDetection, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { ChevronDown, ChevronRight, GripVertical, LayoutGrid, List, Pencil, Search } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { todayKey } from "../../lib/date";
+import { TodoForm } from "../todo/TodoForm";
+import { exceedsWipLimit } from "../../lib/projectWorkflow";
+import { getDaysPast, todayKey, toDateKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../../lib/todo";
 import { workflowStatusLabels } from "../../lib/todoLabels";
 import type { Category } from "../../types/category";
@@ -89,15 +91,15 @@ function KanbanColumn({ status, label, count, visibleCount, wipLimit, onWipLimit
   children: ReactNode;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `column:${status}` });
-  const overLimit = wipLimit !== undefined && count > wipLimit;
+  const overLimit = exceedsWipLimit(count, wipLimit);
   return (
-    <section ref={setNodeRef} data-status={status} data-drag-over={isOver ? "true" : "false"}
+    <section ref={setNodeRef} data-status={status} data-collapsed={collapsed} data-over-limit={overLimit} data-drag-over={isOver ? "true" : "false"}
       className="project-kanban-column min-h-[10rem] w-[17rem] shrink-0 px-3 py-3 transition sm:w-auto">
       <div className="project-kanban-column__header">
         <div className="project-kanban-column__identity">
           {onToggleCollapse ? <button type="button" className="inline-flex min-h-9 items-center gap-1 rounded-[4px] px-1 text-sm font-semibold text-ink-100 hover:bg-ink-850 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70"
             onClick={onToggleCollapse} aria-expanded={!collapsed}>
-            {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}{label}
+            {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}{label}{collapsed ? ` ${count}` : ""}
           </button> : <h4 className="px-1 text-sm font-semibold text-ink-100">{label}</h4>}
           <span className="project-kanban-column__count tabular-nums" aria-label={`${label} 작업 ${count}개`}>{count}</span>
         </div>
@@ -119,7 +121,7 @@ function KanbanColumn({ status, label, count, visibleCount, wipLimit, onWipLimit
         </details>
       </div>
       {visibleCount !== count ? <p className="project-kanban-column__filtered">현재 필터에 표시된 작업 {visibleCount}개 / 전체 {count}개</p> : null}
-      {overLimit ? <p className="mb-2 border-l-2 border-danger/65 py-1 pl-2 text-[11px] font-medium text-danger" role="status">
+      {overLimit ? <p className="mb-2 border-l-2 border-warning/65 py-1 pl-2 text-[11px] font-medium text-warning" role="status">
         WIP 한도 초과 · 작업을 먼저 마무리해 보세요.
       </p> : null}
       {collapsed ? <p className="border-t border-ink-700/35 px-2 py-5 text-center text-xs text-ink-500">
@@ -144,6 +146,9 @@ const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, paren
   });
   const overdue = isOverdueByDeadline(todo, today);
   const dueSoon = isDueSoon(todo, today);
+  const status = statusOf(todo);
+  const changed = Date.parse(todo.updatedAt);
+  const age = Number.isFinite(changed) ? getDaysPast(toDateKey(new Date(changed)), today) : 0;
   return (
     <article ref={setNodeRef} data-v4-card="true"
       data-dragging={isDragging ? "true" : "false"} className="project-kanban-card">
@@ -161,10 +166,12 @@ const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, paren
           title="잡고 다른 열로 드래그해 상태 변경" aria-label={`${todo.title} 상태 이동`}
           {...listeners} {...attributes}><GripVertical size={15} /></button> : null}
       </div>
-      {(todo.priority === "HIGH" || milestone || childCount > 0 || todo.dueDate) ? (
+      {(todo.priority === "HIGH" || milestone || childCount > 0 || todo.dueDate || status === "IN_PROGRESS" || status === "BLOCKED") ? (
         <div className="project-v4-card__meta">
           {todo.priority === "HIGH" ? <span className="text-warning">높음</span> : null}
           {milestone ? <span title={milestone.title} className="truncate">{milestone.title}</span> : null}
+          {status === "IN_PROGRESS" ? <span>{age + 1}일째</span> : null}
+          {status === "BLOCKED" ? <span className="text-danger">{todo.blockReason ? `${todo.blockReason} · ` : ""}{age}일</span> : null}
           {childCount ? <span>하위 {childCount}</span> : null}
           {todo.dueDate ? <span className={overdue ? "text-danger" : dueSoon ? "text-warning" : ""}>마감 {todo.dueDate}</span> : null}
         </div>
@@ -176,6 +183,9 @@ const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, paren
 export function ProjectKanban({ project, todos, milestones, categories = [], projects = [], onAddTodo, onUpdateTodo, onToggleTodo, onDeleteTodo }: ProjectKanbanProps) {
   const today = todayKey();
   const [viewMode, setViewMode] = useState<"board" | "list">(readInitialViewMode);
+  const [addingTo, setAddingTo] = useState<TodoWorkflowStatus | null>(null);
+  const [priorityFilter, setPriorityFilter] = useState("ALL");
+  const [sortPriority, setSortPriority] = useState(false);
   const [query, setQuery] = useState("");
   const [milestoneFilter, setMilestoneFilter] = useState("");
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
@@ -212,12 +222,14 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
 
   const visibleTodos = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
-    return todos.filter((todo) => {
+    const filtered = todos.filter((todo) => {
       const matchesQuery = !normalizedQuery || `${todo.title} ${todo.memo || ""}`.toLocaleLowerCase().includes(normalizedQuery);
       const matchesMilestone = !milestoneFilter || (milestoneFilter === "unassigned" ? !todo.milestoneId : todo.milestoneId === milestoneFilter);
-      return matchesQuery && matchesMilestone;
+      return matchesQuery && matchesMilestone && (priorityFilter === "ALL" || todo.priority === priorityFilter);
     });
-  }, [milestoneFilter, query, todos]);
+    const priorityRank = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+    return sortPriority ? filtered.sort((a, b) => priorityRank[a.priority] - priorityRank[b.priority] || a.createdAt.localeCompare(b.createdAt)) : filtered;
+  }, [milestoneFilter, priorityFilter, query, sortPriority, todos]);
 
   const indexed = useMemo(() => {
     const todoById = new Map(todos.map((todo) => [todo.id, todo]));
@@ -269,6 +281,10 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
           <select className="field h-9 min-h-9 w-full py-1 text-xs sm:w-48" value={milestoneFilter} onChange={(event) => setMilestoneFilter(event.target.value)} aria-label="마일스톤 필터">
             <option value="">모든 마일스톤</option><option value="unassigned">미지정</option>{milestones.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
           </select>
+          <select className="field h-9 min-h-9 w-auto text-xs" value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value)} aria-label="우선순위 필터">
+            <option value="ALL">모든 우선순위</option><option value="HIGH">높음</option><option value="MEDIUM">보통</option><option value="LOW">낮음</option>
+          </select>
+          <button type="button" className="btn-secondary text-xs" aria-pressed={sortPriority} onClick={() => setSortPriority((value) => !value)}>우선순위 순</button>
           <div className="inline-flex shrink-0 border-b border-ui-divider" role="group" aria-label="프로젝트 작업 보기">
             <button type="button" className={`inline-flex h-8 items-center gap-1.5 rounded px-2 text-xs font-semibold ${viewMode === "board" ? "border-b border-ui-focus text-ui-text" : "text-ui-secondary hover:text-ui-text"}`} aria-pressed={viewMode === "board"} onClick={() => setViewMode("board")}><LayoutGrid size={14} />보드</button>
             <button type="button" className={`inline-flex h-8 items-center gap-1.5 rounded px-2 text-xs font-semibold ${viewMode === "list" ? "border-b border-ui-focus text-ui-text" : "text-ui-secondary hover:text-ui-text"}`} aria-pressed={viewMode === "list"} onClick={() => setViewMode("list")}><List size={14} />목록</button>
@@ -277,14 +293,14 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
         </div>
       </div>
 
-      {!visibleTodos.length ? (
+      {!visibleTodos.length && viewMode === "list" ? (
         <div className="border-b border-ui-divider py-10" role="status">
           <h4 className="text-sm font-semibold text-ui-text">{todos.length ? "검색 조건에 맞는 작업이 없습니다." : "아직 등록한 프로젝트 작업이 없습니다."}</h4>
           <p className="mt-1.5 text-sm text-ui-secondary">{todos.length ? "검색어 또는 마일스톤 필터를 변경해 보세요." : "위의 Todo 빠른 추가에서 첫 작업을 등록하세요."}</p>
         </div>
       ) : viewMode === "board" ? <DndContext sensors={sensors} collisionDetection={columnCollision} onDragStart={onDragStart} onDragCancel={onDragCancel} onDragEnd={handleDragEnd}>
         <div className="overflow-x-auto pb-2">
-          <div className="project-v4-board grid min-w-[68rem] grid-cols-4 gap-3">
+          <div data-done-collapsed={collapsedDoneColumns[project.id] ?? true} className="project-v4-board grid min-w-[68rem] grid-cols-4 gap-3">
             {workflowColumns.map((column) => {
               const items = visibleByStatus.get(column.status) ?? [];
               // WIP count is the total project count, not the filtered subset.
@@ -304,6 +320,11 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
                       onOpenDetails={setEditingTodo}
                     />
                   ))}
+                  {!project.archived ? addingTo === column.status ? (
+                    <TodoForm compact autoFocus layout="stacked" defaultProjectId={project.id} categories={categories}
+                      projects={projects} onCancel={() => setAddingTo(null)}
+                      onAdd={(input) => onAddTodo({ ...input, projectId: project.id, workflowStatus: column.status })} />
+                  ) : <button type="button" className="btn-secondary w-full text-xs" onClick={() => setAddingTo(column.status)}>+ 추가</button> : null}
                   {!items.length ? <p className="border-t border-ui-divider py-6 text-center text-xs text-ui-muted">여기로 작업을 이동할 수 있습니다</p> : null}
                 </KanbanColumn>
               );

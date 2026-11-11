@@ -32,6 +32,7 @@ const sortBacklog = (a: Todo, b: Todo) => {
 };
 
 type ProjectOverviewToolsProps = {
+  duplicateOnly?: boolean;
   project: Project;
   todos: Todo[];
   milestones: Milestone[];
@@ -41,7 +42,7 @@ type ProjectOverviewToolsProps = {
   onDuplicated: (project: Project) => void;
 };
 
-export function ProjectOverviewTools({ project, todos, milestones, onUpdateTodo, onUpdateProject, onDuplicateProject, onDuplicated }: ProjectOverviewToolsProps) {
+export function ProjectOverviewTools({ duplicateOnly = false, project, todos, milestones, onUpdateTodo, onUpdateProject, onDuplicateProject, onDuplicated }: ProjectOverviewToolsProps) {
   const incomplete = useMemo(() => todos.filter((todo) => !todo.completed), [todos]);
   const backlog = useMemo(() => incomplete.filter((todo) => todo.workflowStatus === "TODO").sort(sortBacklog), [incomplete]);
   const progress = todos.length ? Math.round(((todos.length - incomplete.length) / todos.length) * 100) : 0;
@@ -55,7 +56,7 @@ export function ProjectOverviewTools({ project, todos, milestones, onUpdateTodo,
   const openMilestoneCount = milestones.filter((milestone) => milestone.status !== "DONE").length;
   const canComplete = todos.length > 0 && incomplete.length === 0 && openMilestoneCount === 0 && project.status !== "DONE";
 
-  const [showDuplicate, setShowDuplicate] = useState(false);
+  const [showDuplicate, setShowDuplicate] = useState(duplicateOnly);
   const [backlogQuery, setBacklogQuery] = useState("");
   const [backlogPriority, setBacklogPriority] = useState<"ALL" | Todo["priority"]>("ALL");
   const [backlogSort, setBacklogSort] = useState<"PRIORITY" | "DUE" | "MANUAL">("PRIORITY");
@@ -68,11 +69,11 @@ export function ProjectOverviewTools({ project, todos, milestones, onUpdateTodo,
   const [duplicating, setDuplicating] = useState(false);
 
   useEffect(() => {
-    setShowDuplicate(false);
+    setShowDuplicate(duplicateOnly);
     setDuplicateName(`${project.name} 복사본`);
     setDuplicateMode("STRUCTURE");
     setDuplicateError("");
-  }, [project.id, project.name]);
+  }, [duplicateOnly, project.id, project.name]);
 
   useEffect(() => {
     try { localStorage.setItem(BACKLOG_ORDER_KEY, JSON.stringify(manualBacklogOrder)); } catch { /* Backlog remains usable without browser storage. */ }
@@ -132,7 +133,7 @@ export function ProjectOverviewTools({ project, todos, milestones, onUpdateTodo,
 
   return (
     <div className="space-y-4">
-      <section className="app-card p-4">
+      <section hidden={duplicateOnly} className="app-card p-4">
         <div className="flex items-center gap-2">
           <Activity size={17} className="text-accent-300" />
           <div>
@@ -157,7 +158,7 @@ export function ProjectOverviewTools({ project, todos, milestones, onUpdateTodo,
         </div> : null}
       </section>
 
-      <section className="app-card p-4">
+      <section hidden={duplicateOnly} className="app-card p-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2"><ListTodo size={17} className="text-accent-300" /><h3 className="font-bold text-ink-100">시작 전 작업</h3></div>
           <span className="text-xs text-ink-500">{backlog.length}개</span>
