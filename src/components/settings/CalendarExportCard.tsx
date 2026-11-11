@@ -33,9 +33,9 @@ export function CalendarExportCard() {
     <section className="app-card p-4 sm:p-5" aria-labelledby="calendar-export-title">
       <div className="flex items-center gap-2">
         <CalendarDays size={18} className="text-accent-300" />
-        <h3 id="calendar-export-title" className="text-base font-bold text-ink-100">Calendar Export</h3>
+        <h3 id="calendar-export-title" className="text-base font-bold text-ink-100">캘린더 내보내기</h3>
       </div>
-      <p className="mt-1 text-xs text-ink-400">Scheduled Todo와 시간 블록을 ICS 파일로 내려받아 Google Calendar, Apple Calendar, Outlook 등에 가져올 수 있습니다.</p>
+      <p className="mt-1 text-xs text-ink-400">날짜가 정해진 Todo와 시간 블록을 ICS 파일로 내려받아 Google Calendar, Apple Calendar, Outlook 등에 가져올 수 있습니다.</p>
 
       <div className="mt-4 flex flex-wrap gap-2" aria-label="Calendar 내보내기 기간 프리셋">
         <button type="button" className={presetButtonClass} onClick={() => applyPreset(30)}>30일</button>
@@ -49,7 +49,7 @@ export function CalendarExportCard() {
       </div>
 
       <div className="mt-3 rounded-lg border border-ink-800/70 bg-ink-950/25 px-3 py-2 text-xs text-ink-400">
-        시간 블록에 연결된 Todo는 시간 일정으로 내보내고, 연결된 시간 블록이 없는 Scheduled Todo는 종일 일정으로 내보냅니다. 완료·보관 Todo는 제외합니다.
+        시간 블록에 연결된 Todo는 시간 일정으로 내보내고, 연결된 시간 블록이 없는 날짜 지정 Todo는 종일 일정으로 내보냅니다. 완료·보관 Todo는 제외합니다.
       </div>
 
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

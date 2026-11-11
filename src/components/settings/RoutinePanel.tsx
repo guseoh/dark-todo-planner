@@ -119,7 +119,7 @@ export function RoutinePanel({ categories, projects, onTodosCreated }: { categor
   return (
     <section className="app-card p-4 sm:p-5" aria-labelledby="routine-panel-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div><h3 id="routine-panel-title" className="text-base font-bold text-ink-100">Routine Bundle</h3><p className="mt-1 text-xs text-ink-400">반복해서 만드는 Todo 묶음을 저장하고 오늘 일정으로 한 번에 생성합니다.</p></div>
+        <div><h3 id="routine-panel-title" className="text-base font-bold text-ink-100">루틴 묶음</h3><p className="mt-1 text-xs text-ink-400">반복해서 만드는 Todo 묶음을 저장하고 오늘 일정으로 한 번에 생성합니다.</p></div>
         <div className="flex gap-2"><button type="button" className="btn-secondary" disabled={loading} onClick={() => void load()}><RefreshCw size={15} className={loading ? "animate-spin" : ""} />새로고침</button><button type="button" className="btn-primary" onClick={openCreate}><Plus size={15} />루틴 만들기</button></div>
       </div>
       {message ? <div className="mt-3 rounded-lg border border-ink-700/70 bg-ink-950/35 px-3 py-2 text-xs font-semibold text-ink-300" aria-live="polite">{message}</div> : null}

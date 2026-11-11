@@ -38,7 +38,6 @@ export function TodoEditModal({ todo, categories = [], projects = [], milestones
   const [blockReason, setBlockReason] = useState("");
   const [unblockCondition, setUnblockCondition] = useState("");
   const [priority, setPriority] = useState<TodoPriority>("MEDIUM");
-  const [completed, setCompleted] = useState(false);
   const [categoryId, setCategoryId] = useState("");
   const [projectId, setProjectId] = useState("");
   const [milestoneId, setMilestoneId] = useState("");
@@ -60,14 +59,13 @@ export function TodoEditModal({ todo, categories = [], projects = [], milestones
     setBlockReason(todo.blockReason || "");
     setUnblockCondition(todo.unblockCondition || "");
     setPriority(todo.priority);
-    setCompleted(todo.completed);
     setCategoryId(todo.categoryId || "");
     setProjectId(todo.projectId || "");
     setMilestoneId(todo.milestoneId || "");
     setSubtaskTitle("");
     setSubtaskError("");
     setPlanningState(todo.planningState || "SCHEDULED");
-    setWorkflowStatus(todo.workflowStatus || (todo.completed ? "DONE" : "TODO"));
+    setWorkflowStatus(todo.completed ? "DONE" : (todo.workflowStatus && todo.workflowStatus !== "DONE" ? todo.workflowStatus : "TODO"));
     setReferenceUrl(todo.referenceUrl || "");
     setReferenceLabel(todo.referenceLabel || "");
     setReferenceError("");
@@ -112,9 +110,9 @@ export function TodoEditModal({ todo, categories = [], projects = [], milestones
         blockReason: blockReason.trim() || undefined,
         unblockCondition: unblockCondition.trim() || undefined,
         priority,
-        completed,
+        completed: workflowStatus === "DONE",
         planningState,
-        workflowStatus: completed ? "DONE" : workflowStatus,
+        workflowStatus,
         referenceUrl: referenceUrl.trim() || undefined,
         referenceLabel: referenceUrl.trim() ? (referenceLabel.trim() || undefined) : undefined,
       }));
@@ -136,7 +134,7 @@ export function TodoEditModal({ todo, categories = [], projects = [], milestones
         <div className="grid gap-3 md:grid-cols-2">
           <label className="space-y-1 text-sm text-ink-400 md:col-span-2">제목<input className="field" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Todo 제목" data-modal-initial-focus /></label>
           <label className="space-y-1 text-sm text-ink-400">보관 위치<select className="field" value={planningState} onChange={(event) => setPlanningState(event.target.value as TodoPlanningState)}>{planningState === "INBOX" ? <option value="INBOX" disabled>미계획 (기존 데이터)</option> : null}<option value="SCHEDULED">일정</option><option value="SOMEDAY">언젠가</option><option value="WAITING">대기</option></select></label>
-          <label className="space-y-1 text-sm text-ink-400">작업 상태<select className="field" value={workflowStatus} onChange={(event) => setWorkflowStatus(event.target.value as TodoWorkflowStatus)} disabled={completed}><option value="TODO">할 일</option><option value="IN_PROGRESS">진행 중</option><option value="BLOCKED">차단됨</option><option value="DONE">완료</option></select></label>
+          <label className="space-y-1 text-sm text-ink-400">작업 상태<select className="field" value={workflowStatus} onChange={(event) => setWorkflowStatus(event.target.value as TodoWorkflowStatus)} aria-describedby="todo-edit-status-help"><option value="TODO">할 일</option><option value="IN_PROGRESS">진행 중</option><option value="BLOCKED">차단됨</option><option value="DONE">완료</option></select><span id="todo-edit-status-help" className="block text-xs text-ink-500">완료를 고르면 Todo가 완료 처리됩니다.</span></label>
           {workflowStatus === "BLOCKED" || blockReason || unblockCondition ? (
             <div className="grid gap-3 rounded-lg border border-warning/25 bg-warning/[0.04] p-3 md:col-span-2 md:grid-cols-2">
               <label className="space-y-1 text-sm text-ink-300">차단 사유<textarea className="field min-h-20 resize-y" value={blockReason} onChange={(event) => setBlockReason(event.target.value)} maxLength={1000} placeholder="무엇 때문에 이 작업을 진행할 수 없나요?" /></label>
@@ -197,7 +195,6 @@ export function TodoEditModal({ todo, categories = [], projects = [], milestones
             </div> : null}
             {subtaskError ? <p role="alert" className="mt-1 text-xs text-danger">{subtaskError}</p> : null}
           </section> : null}
-          <label className="flex min-h-11 items-center gap-3 rounded-lg bg-ink-950/45 px-3 text-sm text-ink-300 md:col-span-2"><input type="checkbox" checked={completed} onChange={(event) => setCompleted(event.target.checked)} className="h-4 w-4 accent-accent-500" />완료된 Todo로 표시</label>
         </div>
         <TodoWorkflowPanel todo={todo} />
         <div className="mt-5 flex flex-col-reverse gap-2 border-t border-ink-700/60 pt-4 sm:flex-row sm:justify-end"><button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>취소</button><button type="submit" className="btn-primary" disabled={!title.trim() || saving}>{saving ? "저장 중..." : "저장"}</button></div>

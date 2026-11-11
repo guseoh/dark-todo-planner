@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PanelRightOpen } from "lucide-react";
+import { Check, PanelRightOpen } from "lucide-react";
 import { TodoEditModal } from "../todo/TodoEditModal";
 import {
   buildCalendarEvents,
@@ -159,12 +159,12 @@ export function MonthlyView({
               type="button"
               aria-pressed={visibility[key]}
               onClick={() => setVisibility((current) => ({ ...current, [key]: !current[key] }))}
-              className={`min-h-9 border-b-2 px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/60 ${
+              className={`calendar-filter-chip inline-flex min-h-9 items-center gap-1.5 rounded-[4px] border px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/60 ${
                 visibility[key]
-                  ? "border-ink-200 bg-transparent text-ink-100"
-                  : "border-transparent bg-transparent text-ink-500 hover:text-ink-200"
+                  ? "border-ui-focus bg-ui-selected text-ui-text"
+                  : "border-dashed border-ui-divider bg-transparent text-ink-500 hover:text-ui-secondary"
               }`}
-            >{label}</button>
+            >{visibility[key] ? <Check size={13} aria-hidden="true" /> : null}{label}</button>
           ))}
         </div>
         {!panelOpen ? (

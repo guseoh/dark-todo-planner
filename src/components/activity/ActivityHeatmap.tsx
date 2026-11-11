@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import { activitySummary, getActivityWeeks, type ActivityDay, type ActivityMetric } from "../../lib/activity";
 
 type HeatmapProps = {
@@ -31,8 +31,15 @@ export function ActivityHeatmap({
     return null;
   }).filter((month): month is { index: number; label: string } => month !== null);
 
-  const unit = metric === "tokens" ? "토큰" : metric === "sessions" ? "세션" : "기여";
+  const scrollRef = useRef<HTMLDivElement>(null);
   const hasData = Boolean(days && days.length > 0);
+  // Start at the most recent weeks; older history is reachable by scrolling left.
+  useLayoutEffect(() => {
+    const element = scrollRef.current;
+    if (element) element.scrollLeft = element.scrollWidth;
+  }, [hasData]);
+
+  const unit = metric === "tokens" ? "토큰" : metric === "sessions" ? "세션" : "기여";
   return (
     <section className={"activity-panel activity-panel--" + palette} aria-label={title}>
       <div className="activity-panel__heading">
@@ -50,7 +57,7 @@ export function ActivityHeatmap({
             <div><span>기간 합계</span><strong>{summary.total === null ? "집계 불가" : formatNumber(summary.total) + " " + unit}</strong></div>
             <div><span>기간</span><strong>최근 365일</strong></div>
           </div>
-          <div className="activity-heatmap__scroll" role="region" aria-label={title + " 최근 365일 활동 그래프"} tabIndex={0}>
+          <div ref={scrollRef} className="activity-heatmap__scroll" role="region" aria-label={title + " 최근 365일 활동 그래프"} tabIndex={0}>
             <div className="activity-heatmap">
               <div className="activity-heatmap__months" aria-hidden="true">
                 {months.map(({ index, label }) => (

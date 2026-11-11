@@ -1,5 +1,5 @@
 import { useEffect, useState, type KeyboardEvent } from "react";
-import { BellRing, Moon, Monitor, RefreshCw, Save, Sun } from "lucide-react";
+import { BellRing, Check, Moon, Monitor, RefreshCw, Save, Sun } from "lucide-react";
 import { readThemePreference, setThemePreference, type ThemePreference } from "../lib/theme";
 import { StatCard } from "../components/common/StatCard";
 import { PageHeader } from "../components/common/PageHeader";
@@ -133,8 +133,8 @@ export function SettingsPage({
             { id: "system", label: "시스템", icon: Monitor },
           ] as const).map(({ id, label, icon: Icon }) => (
             <button type="button" key={id} aria-pressed={themePreference === id} onClick={() => chooseTheme(id)}
-              className={`btn-secondary min-w-24 gap-2 ${themePreference === id ? "border-ui-focus bg-ui-selected text-ui-text" : ""}`}>
-              <Icon size={15} aria-hidden="true" />{label}
+              className={`btn-secondary theme-choice min-w-24 gap-2 ${themePreference === id ? "theme-choice--selected" : ""}`}>
+              {themePreference === id ? <Check size={15} aria-hidden="true" /> : <Icon size={15} aria-hidden="true" />}{label}
             </button>
           ))}
         </div>

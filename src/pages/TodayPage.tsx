@@ -11,7 +11,7 @@ import { OverdueTodoImportModal } from "../components/todo/OverdueTodoImportModa
 import { TodoEditModal } from "../components/todo/TodoEditModal";
 import { TodoForm } from "../components/todo/TodoForm";
 import { TodoRow } from "../components/todo/TodoRow";
-import { formatKoreanDate, todayKey } from "../lib/date";
+import { formatKoreanDate, PLANNER_DAY_START_HOUR, toDateKey, todayKey } from "../lib/date";
 import { formatCompletionRate } from "../lib/todo";
 import type { OverdueTodoImportMode, OverdueTodoImportResult } from "../lib/todoRecovery";
 import type { Category } from "../types/category";
@@ -247,6 +247,11 @@ export function TodayPage({
         <div className="today-header__identity">
           <h1>오늘</h1>
           <span>{formatKoreanDate(today, "M월 d일 EEEE")}</span>
+          {toDateKey(new Date()) !== today ? (
+            <span className="today-header__day-start" title={`하루는 새벽 ${PLANNER_DAY_START_HOUR}시에 시작합니다. 그 전까지는 전날 일정으로 표시됩니다.`}>
+              새벽 {PLANNER_DAY_START_HOUR}시 전이라 전날로 표시 중
+            </span>
+          ) : null}
         </div>
         <div className="today-header__status" role="group" aria-label="오늘 작업 현황">
           <span className="today-header__completion"><strong>{stats.todayCompleted}</strong> / {stats.todayTotal} 완료</span>
@@ -268,6 +273,15 @@ export function TodayPage({
 
       <div className={`today-workspace ${planningOpen ? "today-workspace--planning" : "today-workspace--single"}`}>
         <main className="today-workspace__main min-w-0 space-y-3">
+          {overdueTodos.length > 0 ? (
+            <div className="today-overdue-banner" role="status">
+              <span>
+                지난 일정 <strong>{overdueTodos.length}개</strong>가 남아 있어요
+                {oldestOverdueDate ? ` (${formatKoreanDate(oldestOverdueDate, "M월 d일")}부터)` : ""}.
+              </span>
+              <button type="button" className="today-overdue-banner__action" onClick={() => setShowOverdueImport(true)}>검토하기</button>
+            </div>
+          ) : null}
           <section className="today-capture-section" aria-label="빠른 작업 입력">
             <div className="today-composer today-quick-capture">
               <TodoForm onAdd={onAdd} defaultDate={today} defaultCategoryId={inlineCategoryId}
