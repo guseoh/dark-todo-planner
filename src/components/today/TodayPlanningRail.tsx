@@ -79,7 +79,7 @@ export function TodayPlanningRail({ todos, goals, dueSoonDays, onAddGoal, onUpda
           })}
         </div>
       </section>
-      <GoalChecklist title="주간 목표" type="WEEKLY" addDefaults={{ weekStartDate: start, weekEndDate: end }}
+      <GoalChecklist title="주간 목표" type="WEEKLY" addDefaults={{ weekStartDate: start, weekEndDate: end, dueDate: end }}
         goals={goals.filter((goal) => goal.type === "WEEKLY" && (!goal.weekStartDate || goal.weekStartDate <= end) && (!goal.weekEndDate || goal.weekEndDate >= start))}
         placeholder="주간 목표 추가" emptyTitle="주간 목표가 없습니다." onAdd={onAddGoal}
         onUpdate={onUpdateGoal} onToggle={onToggleGoal} onDelete={onDeleteGoal} />

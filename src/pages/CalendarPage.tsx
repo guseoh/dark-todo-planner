@@ -25,7 +25,6 @@ export function CalendarPage({ mode, onModeChange, children }: CalendarPageProps
       <header className="page-header">
         <div>
           <h1 className="text-[23px] font-semibold tracking-tight text-ui-text">캘린더</h1>
-          <p className="mt-1 text-sm text-ink-400">날짜별 작업과 마감 일정을 확인합니다.</p>
         </div>
         <div role="tablist" aria-label="캘린더 보기" className="page-tabs inline-flex shrink-0 self-start sm:self-auto">
           {modes.map((item) => (

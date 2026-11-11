@@ -2650,3 +2650,130 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
   .project-page .project-kanban-column[data-collapsed="true"] button { writing-mode: vertical-rl; margin-inline: auto; }
   .project-page .project-kanban-column__header { flex-wrap: wrap; }
 }
+
+
+.calendar-month-right:not(.is-open), .calendar-month-ranges, .calendar-unscheduled { display: none; }
+
+@media (min-width: 1280px) {
+  .calendar-page .calendar-v4-month-stage,
+  .calendar-page .calendar-v4-week {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 200px;
+    align-items: start;
+    gap: 16px;
+  }
+  .calendar-page .calendar-v4-week > * { margin-top: 0; }
+  .calendar-v4-week-toolbar, .calendar-v4-week-goals { grid-column: 1 / -1; }
+  .calendar-v4-week-goals { grid-row: 2; }
+  .calendar-week-right { grid-column: 2; grid-row: 3; min-width: 0; }
+  .calendar-week-timetable { grid-row: 3; }
+  .calendar-page .calendar-month-right { display: block; min-width: 0; }
+  .calendar-page .calendar-v4-date-drawer {
+    position: static;
+    width: auto;
+    max-width: none;
+    max-height: none;
+    padding: 0 0 0 8px;
+    box-shadow: none;
+    overflow: visible;
+    border-inline-start: 1px solid var(--ui-divider);
+  }
+  .calendar-page .calendar-v4-date-backdrop,
+  .calendar-page .calendar-open-day,
+  .calendar-page .calendar-v4-date-drawer [aria-label="날짜 상세 닫기"] { display: none; }
+  .calendar-unscheduled { display: block; padding: 0 0 12px; margin-bottom: 12px; border-bottom: 1px solid var(--ui-divider); }
+  .calendar-month-ranges:not(:empty) {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px;
+    padding: 2px;
+  }
+  .calendar-page .calendar-day[data-weekend="true"] { background: var(--surface-1); }
+  .calendar-page .calendar-day[data-today="true"] { box-shadow: none; border-color: var(--ui-divider); }
+  .calendar-page .calendar-day[data-today="true"] .calendar-date-number {
+    background: var(--accent);
+    color: var(--app-bg);
+    border-radius: 999px;
+  }
+  .calendar-page .calendar-day-status {
+    position: absolute;
+    top: 4px;
+    right: 2px;
+    min-width: 12px;
+    min-height: 14px;
+    border: 0;
+    background: transparent;
+  }
+  .calendar-page .calendar-day-status span { display: none; }
+  .calendar-page .calendar-day-status::after {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
+  .calendar-page .calendar-day-status[data-day-status="O"]::after,
+  .calendar-page .calendar-day-status[data-day-status="X"]::after { background: var(--success); }
+  .calendar-page .calendar-day .calendar-date-number + div { padding-right: 14px; }
+  .calendar-page [data-calendar-event] { background: var(--surface-1); color: var(--text-primary); }
+  .calendar-page [data-calendar-event][data-past="true"] { color: var(--danger); }
+  .calendar-time-grid {
+    display: grid;
+    grid-template-columns: 40px repeat(7, minmax(0, 1fr));
+    border-top: 1px solid var(--ui-divider);
+    border-inline-start: 1px solid var(--ui-divider);
+  }
+  .calendar-time-grid > * {
+    min-width: 0;
+    border-inline-end: 1px solid var(--ui-divider);
+    border-bottom: 1px solid var(--ui-divider);
+  }
+  .calendar-time-grid [data-today="true"] {
+    background-color: color-mix(in srgb, var(--accent) 8%, var(--app-bg));
+  }
+  .calendar-time-heading[aria-pressed="true"] { box-shadow: inset 0 -2px var(--accent); }
+  .calendar-all-day { min-height: 32px; padding: 3px; }
+  .calendar-all-day button { background: var(--surface-1); padding-block: 2px; margin-bottom: 2px; }
+  .calendar-hour-labels, .calendar-time-day { height: 480px; }
+  .calendar-hour-labels { display: grid; grid-template-rows: repeat(10, 1fr); text-align: center; }
+  .calendar-time-day {
+    position: relative;
+    touch-action: none;
+    user-select: none;
+    background-image: repeating-linear-gradient(to bottom, var(--ui-divider) 0 1px, transparent 1px 48px);
+  }
+  .calendar-time-block, .calendar-time-selection {
+    position: absolute;
+    inset-inline: 2px;
+    overflow: hidden;
+    padding: 2px 3px;
+    border-inline-start: 2px solid;
+    border-radius: 4px;
+    cursor: grab;
+    font-size: 12px;
+  }
+  .calendar-time-resize { position: absolute; inset: auto 0 0; height: 7px; cursor: ns-resize; }
+  .calendar-time-selection { pointer-events: none; background: color-mix(in srgb, var(--accent) 25%, transparent); color: var(--accent); }
+  .calendar-now-line { position: absolute; inset-inline: 0; height: 1.5px; pointer-events: none; background: var(--danger); }
+  .calendar-week-right .todo-row__actions { flex-wrap: nowrap; }
+  .calendar-page :is(.calendar-week-right, .calendar-month-right) .todo-row__content { display: block; }
+  .calendar-page :is(.calendar-week-right, .calendar-month-right) .todo-row__actions { position: absolute; right: 2px; background: var(--surface-1); }
+  .calendar-page :is(.calendar-week-right, .calendar-month-right) .todo-row { position: relative; }
+}
+
+
+@media (min-width: 1280px) {
+  .calendar-page .calendar-week-right__heading { flex-direction: column; align-items: stretch; gap: 8px; }
+  .calendar-page :is(.calendar-week-right, .calendar-month-right) .todo-row__title {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .calendar-page :is(.calendar-week-right, .calendar-month-right) .todo-row__meta { flex-wrap: wrap; }
+  .calendar-page .calendar-selected-panel { padding-inline: 0; }
+  .today-page .today-desktop-rail section[aria-label="주간 목표"] { padding-inline: 0; }
+  .today-desktop-rail section[aria-label="주간 목표"] form { flex: 0 0 100%; }
+  .today-desktop-rail section[aria-label="주간 목표"] form input { min-width: 0; }
+  .today-page .todo-row.todo-row--today { min-height: 36px; padding-block: 0; }
+  .today-page .today-focus-list .todo-row.todo-row--today { min-height: 44px; }
+}

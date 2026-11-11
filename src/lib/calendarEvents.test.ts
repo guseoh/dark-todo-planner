@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCalendarEvents, defaultCalendarVisibility, groupCalendarEvents } from "./calendarEvents";
+import { buildCalendarEvents, defaultCalendarVisibility, groupCalendarEvents, placeCalendarSpans } from "./calendarEvents";
 import type { Todo } from "../types/todo";
 import type { Project, Milestone } from "../types/project";
 
@@ -84,5 +84,19 @@ describe("calendar events", () => {
     ], [milestone({ status: "DONE" })]);
     expect(items).toHaveLength(4);
     expect(items.every((item) => item.completed)).toBe(true);
+  });
+});
+
+
+describe("placeCalendarSpans", () => {
+  it("continues ranges across weeks and assigns separate lanes to overlaps", () => {
+    const events = buildCalendarEvents([], [
+      project({ startDate: "2026-10-17", targetDate: "2026-10-20" }),
+      project({ id: "second", startDate: "2026-10-19", targetDate: "2026-10-21" }),
+    ], []);
+    expect(placeCalendarSpans(events, ["2026-10-17", "2026-10-18"]).map(({ first, last, row }) => [first, last, row]))
+      .toEqual([[0, 1, 0]]);
+    expect(placeCalendarSpans(events, ["2026-10-19", "2026-10-20", "2026-10-21"]).map(({ first, last, row }) => [first, last, row]))
+      .toEqual([[0, 2, 0], [0, 1, 1]]);
   });
 });

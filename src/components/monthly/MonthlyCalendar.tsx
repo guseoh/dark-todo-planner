@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { useState, type DragEvent, type ReactNode } from "react";
+import { Fragment, useState, type DragEvent, type ReactNode } from "react";
 import {
   formatKoreanDate,
   getDayIndex,
@@ -10,8 +10,9 @@ import {
   isTodayDate,
   toDateKey,
   weekdayLabels,
+  todayKey,
 } from "../../lib/date";
-import type { CalendarEvent } from "../../lib/calendarEvents";
+import { placeCalendarSpans, type CalendarEvent } from "../../lib/calendarEvents";
 import type { Goal } from "../../types/goal";
 import { getDayStatus, isDayStatusGoal } from "../../lib/goals";
 
@@ -21,6 +22,7 @@ type MonthlyCalendarProps = {
   selectedDate: string;
   goals: Goal[];
   eventsByDate: Map<string, CalendarEvent[]>;
+  rangeEvents: CalendarEvent[];
   onMonthChange: (date: Date) => void;
   onToday: () => void;
   onSelectDate: (date: string) => void;
@@ -106,6 +108,9 @@ function CalendarEventChip({ event, onClick, draggingDisabled, hiddenClass }: {
       onDragEnd={() => setDragging(false)}
       onClick={onClick}
       data-calendar-event={event.id}
+      data-past={!event.completed && (event.kind === "todo" || event.kind === "deadline") && event.date < todayKey()}
+      data-kind={event.kind}
+      style={{ borderLeftColor: event.color }}
       title={`${prefix}${event.title}${event.projectName ? ` · ${event.projectName}` : ""}`}
       aria-label={event.title}
       className={`pointer-events-auto relative block min-h-5 w-full min-w-0 truncate rounded-[2px] border-l-2 px-1 py-0.5 text-left text-[10px] leading-4 transition-colors hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${tone} ${event.completed ? "line-through" : ""} ${dragging ? "cursor-grabbing opacity-60" : draggable ? "cursor-grab" : "cursor-pointer"} ${hiddenClass}`}
@@ -121,6 +126,7 @@ export function MonthlyCalendar({
   selectedDate,
   goals,
   eventsByDate,
+  rangeEvents,
   onMonthChange,
   onToday,
   onSelectDate,
@@ -152,7 +158,7 @@ export function MonthlyCalendar({
       </div>
 
       <div className="monthly-calendar-grid grid grid-cols-7 overflow-hidden border-l border-t border-ink-700/45" data-weeks={monthDays.length / 7}>
-        {monthDays.map((day) => {
+        {monthDays.map((day, dayIndex) => {
           const dateKey = toDateKey(day);
           const events = eventsByDate.get(dateKey) ?? [];
           const activeCount = events.filter((event) => !event.completed).length;
@@ -174,8 +180,9 @@ export function MonthlyCalendar({
               ? `${formattedDate}, 현재 미수행. 클릭하면 미설정으로 변경`
               : `${formattedDate}, 현재 미설정. 클릭하면 수행 완료로 변경`;
           return (
-            <CalendarDropCell key={dateKey} dateKey={dateKey} disabled={draggingDisabled} onMoveTodo={onMoveTodo}>
+            <Fragment key={dateKey}><CalendarDropCell dateKey={dateKey} disabled={draggingDisabled} onMoveTodo={onMoveTodo}>
             <article
+              data-weekend={isSunday || isSaturday}
               data-selected={selected}
               data-today={today ? "true" : "false"}
               className={`calendar-day calendar-v4-day group relative flex h-[6.25rem] min-w-0 flex-col overflow-hidden border-b border-r p-1.5 transition-colors sm:h-[7.25rem] sm:p-2 ${!inMonth ? "opacity-55" : ""}`}
@@ -184,7 +191,7 @@ export function MonthlyCalendar({
                 onClick={() => onSelectDate(dateKey)} aria-label={`${formattedDate} 일정 ${events.length}개 보기`} />
               <div className="pointer-events-none relative z-10 flex h-full min-w-0 flex-1 flex-col">
                 <div className="flex min-w-0 items-center justify-between gap-1">
-                  <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-[3px] text-xs font-semibold sm:text-sm ${
+                  <span className={`calendar-date-number inline-flex h-6 min-w-6 items-center justify-center rounded-[3px] text-xs font-semibold sm:text-sm ${
                     today ? "bg-accent-500 text-ink-950" : holidayName || isSunday ? "text-danger" : isSaturday ? "text-info" : "text-ink-200"
                   }`}>{formatKoreanDate(day, "d")}</span>
                   <div className="pointer-events-auto flex shrink-0 items-center gap-0.5">
@@ -219,15 +226,29 @@ export function MonthlyCalendar({
                 <div className="mt-auto flex items-center justify-between gap-1 pt-1">
                   <span className="hidden truncate text-[10px] text-ink-500 sm:block">{dayGoals.length ? `목표 ${dayGoals.length}` : ""}</span>
                   <button type="button" onClick={() => onCycleDayStatus(dateKey)} aria-label={statusActionLabel} title="일일 수행 상태 O → X → 미설정"
-                    className={`pointer-events-auto ml-auto inline-flex min-h-6 min-w-6 items-center justify-center rounded border px-1 text-[10px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
+                    data-day-status={dayStatus ?? ""}
+                    className={`calendar-day-status pointer-events-auto ml-auto inline-flex min-h-6 min-w-6 items-center justify-center rounded border px-1 text-[10px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
                       dayStatus === "O" ? "border-success/55 bg-success/[0.10] text-success" : dayStatus === "X" ? "border-danger/55 bg-danger/[0.10] text-danger" : "calendar-day-action--quiet border-transparent text-ink-600 hover:border-ink-700 hover:text-ink-300"
                     }`}>
-                    {dayStatus ?? "–"}
+                    <span>{dayStatus ?? "–"}</span>
                   </button>
                 </div>
               </div>
             </article>
             </CalendarDropCell>
+            {dayIndex % 7 === 6 ? (
+              <div className="calendar-month-ranges">
+                {placeCalendarSpans(rangeEvents, monthDays.slice(dayIndex - 6, dayIndex + 1).map(toDateKey)).map(({ event, first, last, row }) => (
+                  <button type="button" key={event.id} title={event.title} onClick={() => onSelectDate(toDateKey(monthDays[dayIndex - 6 + first]))}
+                    className="truncate rounded-sm border-l-2 px-1 text-left text-xs"
+                    style={{ gridColumn: `${first + 1} / ${last + 2}`, gridRow: row + 1, borderColor: event.color,
+                      background: `color-mix(in srgb, ${event.color || "var(--text-muted)"} 20%, transparent)` }}>
+                    {event.title}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            </Fragment>
           );
         })}
       </div>

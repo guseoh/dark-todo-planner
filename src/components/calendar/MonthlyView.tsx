@@ -1,3 +1,4 @@
+import { UnscheduledCalendarTodos } from "./UnscheduledCalendarTodos";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, PanelRightOpen } from "lucide-react";
 import { TodoEditModal } from "../todo/TodoEditModal";
@@ -77,7 +78,7 @@ export function MonthlyView({
     return () => window.removeEventListener("keydown", onEscape);
   }, [panelOpen]);
   const monthDays = useMemo(() => getMonthGrid(currentMonth), [currentMonth]);
-  const events = useMemo(() => buildCalendarEvents(todos, projects, milestones), [todos, projects, milestones]);
+  const events = useMemo(() => buildCalendarEvents(todos, projects, milestones, categories), [todos, projects, milestones, categories]);
   const eventsByDate = useMemo(() => groupCalendarEvents(events, visibility), [events, visibility]);
   const selectedEvents = eventsByDate.get(selectedDate) ?? [];
   const selectedTodos = getTodosByDate(selectedDate);
@@ -167,8 +168,9 @@ export function MonthlyView({
             >{visibility[key] ? <Check size={13} aria-hidden="true" /> : null}{label}</button>
           ))}
         </div>
+        <span className="hidden text-xs text-ui-muted xl:inline-flex"><span className="mr-1 text-success" aria-hidden="true">●</span>기록한 날</span>
         {!panelOpen ? (
-          <button type="button" className="btn-secondary min-h-9 text-xs" onClick={() => setPanelOpen(true)}>
+          <button type="button" className="calendar-open-day btn-secondary min-h-9 text-xs" onClick={() => setPanelOpen(true)}>
             <PanelRightOpen size={15} /> 선택한 날짜 보기
           </button>
         ) : null}
@@ -182,6 +184,7 @@ export function MonthlyView({
           selectedDate={selectedDate}
           goals={goals}
           eventsByDate={eventsByDate}
+          rangeEvents={visibility.project ? events.filter(({ startDate }) => startDate) : []}
           onMonthChange={changeMonth}
           onToday={goToToday}
           onSelectDate={selectDate}
@@ -191,12 +194,12 @@ export function MonthlyView({
           onMoveTodo={(id, date) => { void moveTodo(id, date); }}
           draggingDisabled={Boolean(movingTodoId)}
         />
-        {panelOpen ? (
-          <>
+        <div className={`calendar-month-right ${panelOpen ? "is-open" : ""}`}>
           <button type="button" className="calendar-v4-date-backdrop" aria-label="날짜 상세 바깥 영역 닫기"
             onClick={() => { setPanelOpen(false); setQuickAdd(false); }} />
           <div ref={selectedPanelRef} tabIndex={-1}
             className="calendar-month-panel calendar-v4-date-drawer min-w-0">
+            <UnscheduledCalendarTodos todos={todos} />
             <MonthlySidePanel
               selectedDate={selectedDate}
               monthEndLabel={selectedMonthEndLabel}
@@ -218,8 +221,7 @@ export function MonthlyView({
               onDeleteCategory={onDeleteCategory}
             />
           </div>
-          </>
-        ) : null}
+        </div>
       </div>
       <TodoEditModal
         todo={todos.find((todo) => todo.id === editingTodoId) ?? null}

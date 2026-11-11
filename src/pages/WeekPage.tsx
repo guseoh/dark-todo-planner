@@ -1,3 +1,4 @@
+import type { Project } from "../types/project";
 import type { Todo, TodoInput } from "../types/todo";
 import type { Category } from "../types/category";
 import type { Goal } from "../types/goal";
@@ -5,11 +6,13 @@ import { WeeklyView } from "../components/calendar/WeeklyView";
 
 type WeekPageProps = {
   embedded?: boolean;
+  todos?: Todo[];
+  projects?: Project[];
   getTodosByDate: (date: string) => Todo[];
   onAdd: (todo: TodoInput) => Promise<Todo | undefined> | Todo | undefined;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
+  onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => Promise<Todo | undefined> | Todo | undefined | void;
   onAddGoal: (input: Partial<Goal> & { title: string }) => Promise<Goal | undefined>;
   onUpdateGoal: (id: string, updates: Partial<Omit<Goal, "id" | "createdAt">>) => Promise<Goal | undefined>;
   onToggleGoal: (id: string) => Promise<boolean>;
@@ -20,6 +23,8 @@ type WeekPageProps = {
 
 export function WeekPage({
   embedded = false,
+  todos,
+  projects,
   getTodosByDate,
   onAdd,
   onToggle,
@@ -40,7 +45,7 @@ export function WeekPage({
           <p className="mt-1 text-sm text-ink-500">한 주의 작업 분포를 보고, 선택한 날짜의 Todo를 집중해서 관리합니다.</p>
         </section>
       ) : null}
-      <WeeklyView
+      <WeeklyView todos={todos} projects={projects}
         getTodosByDate={getTodosByDate}
         onAdd={onAdd}
         onToggle={onToggle}
