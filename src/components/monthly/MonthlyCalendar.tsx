@@ -147,7 +147,7 @@ export function MonthlyCalendar({
 
       <div className="grid grid-cols-7 text-center text-[11px] font-medium text-ui-secondary">
         {weekdayLabels.map((label, index) => (
-          <div key={label} className={`py-1.5 ${index === 6 ? "text-danger/80" : ""}`}>{label}</div>
+          <div key={label} className={`py-1.5 ${index === 6 ? "text-danger/80" : index === 5 ? "text-info/80" : ""}`}>{label}</div>
         ))}
       </div>
 
@@ -166,6 +166,7 @@ export function MonthlyCalendar({
           const dayStatus = getDayStatus(goals, dateKey);
           const holidayName = getKoreanHolidayName(dateKey);
           const isSunday = getDayIndex(day) === 0;
+          const isSaturday = getDayIndex(day) === 6;
           const formattedDate = formatKoreanDate(day, "M월 d일");
           const statusActionLabel = dayStatus === "O"
             ? `${formattedDate}, 현재 수행 완료. 클릭하면 미수행으로 변경`
@@ -184,7 +185,7 @@ export function MonthlyCalendar({
               <div className="pointer-events-none relative z-10 flex h-full min-w-0 flex-1 flex-col">
                 <div className="flex min-w-0 items-center justify-between gap-1">
                   <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-[3px] text-xs font-semibold sm:text-sm ${
-                    today ? "bg-accent-500 text-ink-950" : holidayName || isSunday ? "text-danger" : "text-ink-200"
+                    today ? "bg-accent-500 text-ink-950" : holidayName || isSunday ? "text-danger" : isSaturday ? "text-info" : "text-ink-200"
                   }`}>{formatKoreanDate(day, "d")}</span>
                   <div className="pointer-events-auto flex shrink-0 items-center gap-0.5">
                     {events.length > 0 ? <span className="hidden truncate text-[10px] text-ink-400 sm:inline">{activeCount ? `${activeCount} 남음` : `${events.length} 완료`}</span> : null}

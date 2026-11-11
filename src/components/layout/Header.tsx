@@ -1,4 +1,6 @@
 import { AlertCircle, CalendarCheck2, Github, LogOut, Plus, Search, UserRound } from "lucide-react";
+import { useRef } from "react";
+import { useDismissibleDetails } from "../../hooks/useDismissibleDetails";
 import { Button } from "../ui/Button";
 
 const REPOSITORY_URL = "https://github.com/guseoh/dark-todo-planner";
@@ -8,9 +10,13 @@ type HeaderProps = {
   onLogout: () => Promise<void>;
   onQuickAdd?: () => void;
   onSearch?: () => void;
+  activeView?: string;
 };
 
-export function Header({ storageStatus = "server", onLogout, onQuickAdd, onSearch }: HeaderProps) {
+export function Header({ storageStatus = "server", onLogout, onQuickAdd, onSearch, activeView }: HeaderProps) {
+  const accountMenuRef = useRef<HTMLDetailsElement>(null);
+  useDismissibleDetails(accountMenuRef, activeView);
+  const closeAccountMenu = () => { if (accountMenuRef.current) accountMenuRef.current.open = false; };
   return (
     <header className="app-topbar sticky top-0 z-40 border-b border-ui-divider bg-ui-canvas">
       <div className="flex h-14 w-full items-center justify-between gap-3 px-4 sm:px-5 lg:px-6">
@@ -19,9 +25,8 @@ export function Header({ storageStatus = "server", onLogout, onQuickAdd, onSearc
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-ui-selected text-ui-text">
               <CalendarCheck2 size={18} />
             </div>
-            <h1 className="hidden truncate text-base font-bold text-ink-100 sm:block">Todo Planner</h1>
+            <h1 className="truncate text-base font-bold text-ink-100">Todo Planner</h1>
           </div>
-          <span className="hidden text-sm font-semibold tracking-tight text-ui-text sm:inline">Todo Planner</span>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
           {storageStatus === "offline" ? (
@@ -43,14 +48,14 @@ export function Header({ storageStatus = "server", onLogout, onQuickAdd, onSearc
               <span className="hidden sm:inline">빠른 추가</span>
             </Button>
           ) : null}
-          <details className="relative">
+          <details ref={accountMenuRef} className="relative">
             <summary className="ui-icon-button ui-icon-button--neutral h-9 w-9 list-none cursor-pointer" aria-label="계정 메뉴" title="계정 메뉴"><UserRound size={17} /></summary>
             <div className="absolute right-0 top-full z-50 mt-2 min-w-40 rounded-md border border-ui-divider bg-ui-elevated p-1.5 shadow-lg">
               <a href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer"
-                className="ui-button ui-button--ghost w-full justify-start px-3 text-left text-xs" title="GitHub 저장소 열기">
+                className="ui-button ui-button--ghost w-full justify-start px-3 text-left text-xs" title="GitHub 저장소 열기" onClick={closeAccountMenu}>
                 <Github size={15} />GitHub 저장소
               </a>
-              <button type="button" onClick={() => void onLogout()} className="ui-button ui-button--ghost w-full justify-start px-3 text-left">
+              <button type="button" onClick={() => { closeAccountMenu(); void onLogout(); }} className="ui-button ui-button--ghost w-full justify-start px-3 text-left">
                 <LogOut size={15} />로그아웃
               </button>
             </div>

@@ -43,7 +43,8 @@ const resultIcon = (result: Result) => {
   if (result.action === "quick-add") return Plus;
   if (result.kind === "Todo") return ListTodo;
   if (result.kind === "메모") return StickyNote;
-  if (result.kind === "프로젝트") return FolderKanban;
+  if (result.kind === "프로젝트" || result.view === "projects") return FolderKanban;
+  if (result.view === "memo") return StickyNote;
   if (result.view === "scratchpad") return FileText;
   if (result.view === "activity") return Activity;
   if (result.view === "calendar") return Calendar;

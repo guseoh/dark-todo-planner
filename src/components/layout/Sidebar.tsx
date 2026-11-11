@@ -1,4 +1,4 @@
-import { Activity, Calendar, CalendarCheck, ClipboardList, FileText, FolderKanban, Menu, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Trash2, MoreHorizontal } from "lucide-react";
+import { Activity, Calendar, CalendarCheck, ClipboardList, FileText, FolderKanban, Menu, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 export const appViewIds = ["today", "all", "projects", "calendar", "memo", "scratchpad", "activity", "settings", "trash"] as const;
@@ -123,12 +123,6 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
             {showExpandedContent ? <span className="min-w-0"><span className="block truncate text-sm font-bold text-ink-100">Todo Planner</span><span className="block truncate text-xs text-ink-500">개인 작업 관리</span></span> : null}
           </button>
 
-          <button type="button" onClick={onSearch} aria-label="빠른 검색 및 명령" title={collapsed && !hoverExpanded ? "빠른 검색 (Ctrl+K)" : undefined}
-            className={`app-nav-button mb-3 flex min-h-10 shrink-0 w-full items-center rounded-[6px] border border-transparent bg-transparent text-sm text-ui-secondary transition-colors hover:bg-ui-hover hover:text-ui-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus ${showExpandedContent ? "gap-2.5 px-3 text-left" : "justify-center px-2"}`}>
-            <Search size={17} className="shrink-0" />
-            {showExpandedContent ? <><span className="min-w-0 flex-1 truncate">빠른 검색...</span><kbd className="shrink-0 border-l border-ui-divider pl-1.5 text-[11px] font-normal leading-4 text-ui-muted">Ctrl K</kbd></> : null}
-          </button>
-
           <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-0.5">
             <div className="space-y-3">
               {navGroups.map((group, index) => (
@@ -143,15 +137,7 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
           <div className="mt-2 shrink-0 border-t border-ink-700/70 pt-2">
             <div className="space-y-1">
               {renderDesktopItem(settingsItem)}
-              <details className="sidebar-utilities relative">
-                <summary className="app-nav-button flex min-h-10 cursor-pointer list-none items-center gap-3 rounded-[4px] px-3 text-sm text-ui-secondary hover:bg-ui-hover hover:text-ui-text" aria-label="추가 메뉴">
-                  <MoreHorizontal size={17} className="shrink-0" />
-                  {showExpandedContent ? <span>더보기</span> : null}
-                </summary>
-                <div className="sidebar-utilities__panel absolute bottom-full left-0 z-40 mb-1 w-48 border border-ui-divider bg-ui-elevated p-1 shadow-xl">
-                  {renderDesktopItem(trashItem)}
-                </div>
-              </details>
+              {renderDesktopItem(trashItem)}
               {!compactWindow ? <button type="button" onClick={() => { clearHoverTimers(); setHoverExpanded(false); setMode((current) => current === "expanded" ? "collapsed" : "expanded"); }}
                 className={`flex min-h-10 w-full items-center rounded-lg text-sm font-semibold text-ink-400 transition-colors hover:bg-ink-800/75 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${showExpandedContent ? "justify-between gap-3 px-3 text-left" : "justify-center px-2"}`}
                 aria-label={collapsed ? "사이드바 펼쳐서 고정" : "사이드바 축소"} aria-pressed={!collapsed} title={collapsed && !hoverExpanded ? "사이드바 펼쳐서 고정" : undefined}>

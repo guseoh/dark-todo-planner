@@ -2127,10 +2127,6 @@ button:disabled {
 .today-page :is(.today-plan-toggle,.today-plan-close):focus-visible {
   outline: 2px solid var(--ui-focus); outline-offset: 2px;
 }
-.sidebar-utilities__panel { display: none; }
-.sidebar-utilities[open] .sidebar-utilities__panel { display: block; }
-.sidebar-utilities summary::-webkit-details-marker { display: none; }
-.sidebar-utilities summary:focus-visible { outline: 2px solid var(--ui-focus); }
 /* Small desktop windows keep a collapsible icon rail, not bottom-phone navigation. */
 @media (max-width: 1099px) {
   .today-page .today-workspace--planning { grid-template-columns: minmax(0, 1fr); }
@@ -2458,3 +2454,27 @@ button:disabled {
 }
 
 .activity-panel__error { margin-top: .6rem; color: var(--danger); font-size: .74rem; line-height: 1.6; }
+
+/* Bug sweep: Today overdue banner, day-start hint, clearer selected states. */
+.today-header__day-start {
+  font-size: .72rem; color: var(--text-muted);
+  border-left: 1px solid var(--ui-divider); padding-left: .55rem; cursor: help;
+}
+.today-overdue-banner {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem;
+  padding: .6rem .75rem; border: 1px solid var(--ui-divider); border-left: 2px solid var(--warning);
+  border-radius: 4px; background: var(--warning-tint); font-size: .82rem; color: var(--text-secondary);
+}
+.today-overdue-banner strong { color: var(--text-primary); }
+.today-overdue-banner__action {
+  min-height: 2rem; padding: 0 .7rem; border-radius: 4px; border: 1px solid var(--ui-divider);
+  font-size: .78rem; font-weight: 600; color: var(--text-primary); background: var(--ui-surface);
+}
+.today-overdue-banner__action:hover { background: var(--ui-hover); }
+.today-overdue-banner__action:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 1px; }
+.theme-choice.theme-choice--selected {
+  border-color: var(--ui-focus); background: var(--ui-selected); color: var(--ui-text-primary);
+  box-shadow: inset 0 0 0 1px var(--ui-focus); font-weight: 600;
+}
+/* Show the quick-syntax cheat sheet only while the composer is in use. */
+form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
