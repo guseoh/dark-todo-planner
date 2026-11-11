@@ -47,7 +47,7 @@ export function ProjectDecisionLog({ projectId, archived, decisions, onAdd, onDe
     <section className="app-card p-4">
       <div className="mb-3 flex items-center gap-2">
         <GitBranch size={17} className="text-accent-300" />
-        <h3 className="font-bold text-ink-100">Decision Log</h3>
+        <h3 className="font-bold text-ink-100">결정 기록</h3>
       </div>
 
       {!archived ? (

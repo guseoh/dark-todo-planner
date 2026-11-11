@@ -1,3 +1,4 @@
+import { entityColors, getEntityColor } from "../lib/entityColor";
 import { FormEvent, useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { Archive, ArchiveRestore, CheckCircle2, ChevronDown, CircleDot, ExternalLink, FolderKanban, Link2, MoreHorizontal, PauseCircle, Pencil, Plus, Save, Target, Trash2, X } from "lucide-react";
 import { ProjectDecisionLog } from "../components/project/ProjectDecisionLog";
@@ -51,6 +52,7 @@ type ProjectPageProps = {
   onDeleteDecision: (id: string) => Promise<boolean> | boolean;
   onAddTodo: (input: TodoInput) => Promise<Todo | undefined> | Todo | undefined;
   onUpdateTodo: (id: string, input: Partial<Omit<Todo, "id" | "createdAt">>) => Promise<Todo | undefined> | Todo | undefined;
+  onDeleteTodo: (id: string) => void;
   onToggleTodo: (id: string) => void;
 };
 
@@ -76,6 +78,7 @@ export function ProjectPage({
   onAddTodo,
   onUpdateTodo,
   onToggleTodo,
+  onDeleteTodo,
 }: ProjectPageProps) {
   const activeProjects = useMemo(() => projects.filter((project) => !project.archived), [projects]);
   const archivedProjects = useMemo(() => projects.filter((project) => project.archived), [projects]);
@@ -94,7 +97,7 @@ export function ProjectPage({
   const [projectDescription, setProjectDescription] = useState("");
   const [projectStartDate, setProjectStartDate] = useState("");
   const [projectTargetDate, setProjectTargetDate] = useState("");
-  const [projectColor, setProjectColor] = useState("#9b9ba0");
+  const [projectColor, setProjectColor] = useState("");
   const [resourceLabel, setResourceLabel] = useState("");
   const [resourceUrl, setResourceUrl] = useState("");
   const [resourceError, setResourceError] = useState("");
@@ -182,7 +185,7 @@ export function ProjectPage({
     setProjectDescription(selected.description || "");
     setProjectStartDate(selected.startDate || "");
     setProjectTargetDate(selected.targetDate || "");
-    setProjectColor(selected.color || "#9b9ba0");
+    setProjectColor(selected.color || "");
     setEditingProject(true);
   };
 
@@ -288,7 +291,7 @@ export function ProjectPage({
         <form className="grid gap-2 border-b border-ui-divider py-4 sm:grid-cols-[minmax(0,1fr)_11rem_auto]" onSubmit={createProject}>
           <input className="field" value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="새 프로젝트 이름" autoFocus />
           <input className="field" type="date" value={newTargetDate} onChange={(event) => setNewTargetDate(event.target.value)} aria-label="프로젝트 목표일" />
-          <button className="btn-primary" type="submit" disabled={!newName.trim()}><Plus size={16} />추가</button>
+          <button className="btn-secondary" type="submit" disabled={!newName.trim()}><Plus size={16} />추가</button>
         </form>
       ) : null}
 
@@ -311,7 +314,7 @@ export function ProjectPage({
                   <button key={project.id} type="button" onClick={() => setSelectedId(project.id)}
                     aria-pressed={selectedId === project.id} aria-label={`${project.name} (${projectStatusLabel[project.status]})`}
                     className="project-v4-switcher__item">
-                    <span className="project-v4-switcher__dot" style={{ backgroundColor: project.color || "var(--text-muted)" }} aria-hidden="true" />
+                    <span className="project-v4-switcher__dot" style={{ backgroundColor: getEntityColor(project, projects) }} aria-hidden="true" />
                     <span className="truncate">{project.name}</span>
                     <span className="project-v4-switcher__status">{projectStatusLabel[project.status]}</span>
                   </button>
@@ -385,13 +388,25 @@ export function ProjectPage({
             {editingProject ? (
               <form className="mt-4 grid gap-3 border-t border-ui-divider pt-4 lg:grid-cols-2" onSubmit={saveProjectInfo}>
                 <label className="text-xs font-semibold text-ink-400">프로젝트 이름<input className="field mt-1.5" value={projectName} onChange={(event) => setProjectName(event.target.value)} maxLength={120} /></label>
-                <label className="text-xs font-semibold text-ink-400">색상<div className="mt-1.5 flex gap-2"><input className="h-10 w-14 rounded-md border border-ink-700 bg-ink-950 p-1" type="color" value={projectColor} onChange={(event) => setProjectColor(event.target.value)} /><input className="field" value={projectColor} onChange={(event) => setProjectColor(event.target.value)} maxLength={20} /></div></label>
+                <fieldset className="text-xs font-semibold text-ink-400">
+                  <legend>색상</legend>
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {entityColors.map((color, index) => (
+                      <button type="button" key={color} aria-label={["파랑", "초록", "황갈색", "장밋빛", "보라", "청록"][index]}
+                        aria-pressed={projectColor === color} onClick={() => setProjectColor(color)}
+                        className="grid h-8 w-8 place-items-center rounded-md border border-ui-divider aria-pressed:border-ui-focus">
+                        <span className="h-4 w-4 rounded-full" style={{ background: `var(--entity-${color})` }} />
+                      </button>
+                    ))}
+                  </div>
+                  <input className="field mt-1" aria-label="직접 색상 입력" placeholder="자동 색상" value={projectColor} onChange={(event) => setProjectColor(event.target.value)} maxLength={20} />
+                </fieldset>
                 <label className="text-xs font-semibold text-ink-400">시작일<input className="field mt-1.5" type="date" value={projectStartDate} onChange={(event) => setProjectStartDate(event.target.value)} /></label>
                 <label className="text-xs font-semibold text-ink-400">목표일<input className="field mt-1.5" type="date" value={projectTargetDate} onChange={(event) => setProjectTargetDate(event.target.value)} /></label>
                 <label className="text-xs font-semibold text-ink-400 lg:col-span-2">설명<textarea className="field mt-1.5 min-h-24 resize-y" value={projectDescription} onChange={(event) => setProjectDescription(event.target.value)} maxLength={1000} placeholder="프로젝트의 목표와 범위를 짧게 기록하세요." /></label>
                 <div className="flex justify-end gap-2 lg:col-span-2">
                   <button type="button" className="btn-secondary" onClick={() => setEditingProject(false)}><X size={15} />취소</button>
-                  <button type="submit" className="btn-primary" disabled={!projectName.trim()}><Save size={15} />저장</button>
+                  <button type="submit" className="btn-secondary" disabled={!projectName.trim()}><Save size={15} />저장</button>
                 </div>
               </form>
             ) : null}
@@ -538,7 +553,7 @@ export function ProjectPage({
           </section> : null}
 
           {projectTab === "decisions" ? <ProjectDecisionLog projectId={selected.id} archived={selected.archived} decisions={projectDecisions} onAdd={onAddDecision} onDelete={onDeleteDecision} /> : null}
-          {projectTab === "work" ? <ProjectKanban project={selected} todos={projectTodos} milestones={projectMilestones} categories={categories} projects={projects} onAddTodo={onAddTodo} onUpdateTodo={onUpdateTodo} onToggleTodo={onToggleTodo} /> : null}
+          {projectTab === "work" ? <ProjectKanban project={selected} todos={projectTodos} milestones={projectMilestones} categories={categories} projects={projects} onAddTodo={onAddTodo} onUpdateTodo={onUpdateTodo} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} /> : null}
         </div>
       ) : (
         <div className="app-card flex min-h-56 items-center justify-center p-6 text-center">

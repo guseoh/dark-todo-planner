@@ -2,8 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: Inter;
+  src: url("/fonts/InterVariable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Pretendard;
+  src: url("/fonts/PretendardVariable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 45 920;
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
+  --entity-blue: #79a7f7;
+  --entity-green: #67be9b;
+  --entity-amber: #e5b66d;
+  --entity-rose: #de858e;
+  --entity-violet: #a99af0;
+  --entity-teal: #6cc4c9;
 
   --app-bg: #09090B;
   --sidebar-bg: #111113;
@@ -86,13 +108,19 @@
 
   background: var(--app-bg);
   color: var(--text-primary);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Inter, Pretendard, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 
 /* Resolved theme is written before React renders. System follows OS preference. */
 :root[data-theme="light"] {
   color-scheme: light;
+  --entity-blue: #305d9e;
+  --entity-green: #2d7156;
+  --entity-amber: #835813;
+  --entity-rose: #963f50;
+  --entity-violet: #63509b;
+  --entity-teal: #28686f;
   --app-bg: #FAFAFA;
   --sidebar-bg: #F4F4F5;
   --surface-1: #FFFFFF;
@@ -2478,3 +2506,65 @@ button:disabled {
 }
 /* Show the quick-syntax cheat sheet only while the composer is in use. */
 form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
+
+
+.todo-composer-form--stacked .todo-composer-form__main {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.todo-row[data-todo-row]:focus-visible {
+  outline: none;
+  border-inline-start: 2px solid var(--accent);
+  background: var(--surface-2);
+}
+
+.todo-row__title.todo-row__title--completed { color: var(--text-disabled); }
+
+@media (min-width: 1280px) {
+  main { font-variant-numeric: tabular-nums; }
+  .page-header h1 { font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+  main :is(.btn-primary, .btn-secondary, .ui-button) { border-radius: 6px; }
+  main :is(.app-card, .todo-composer-form) { border-radius: 8px; box-shadow: none; }
+  .todo-composer-form :is(.todo-composer-form__category, .todo-composer-form__chips) { display: none; }
+  .todo-composer-form .todo-composer-form__main:has(.todo-composer-form__category) {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .todo-composer-form--stacked .todo-composer-form__main:has(.todo-composer-form__category) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .todo-composer-form .todo-composer-chip { border-radius: 999px; }
+  main .todo-row { min-height: 36px; padding-block: 0; }
+  main .todo-row > div { align-items: center; }
+  main .todo-row > div > :first-child:not(.todo-row__content),
+  main .todo-row .todo-row__more > summary { height: 35px; }
+  main .todo-row .todo-row__content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-block: 0;
+  }
+  main .todo-row .todo-row__title {
+    min-width: 5ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 400;
+  }
+  main .todo-row .todo-row__memo { display: none; }
+  main .todo-row .todo-row__meta {
+    min-width: 0;
+    margin: 0;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+  main .todo-row:is(:hover, :focus-within) { background: var(--surface-1); }
+  main .todo-row:focus-visible { background: var(--surface-2); }
+  .todo-row :is(.todo-row__actions, .todo-row__more) { opacity: 0; }
+  .todo-row:is(:hover, :focus-within) :is(.todo-row__actions, .todo-row__more),
+  .todo-row .todo-row__more[open] { opacity: 1; }
+}

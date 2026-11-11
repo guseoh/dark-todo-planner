@@ -1,3 +1,4 @@
+import { getEntityColor } from "../lib/entityColor";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -286,7 +287,7 @@ export function TodayPage({
             <div className="today-composer today-quick-capture">
               <TodoForm onAdd={onAdd} defaultDate={today} defaultCategoryId={inlineCategoryId}
                 compact collapsible alwaysOpen submitLabel="추가"
-                categories={categories} projects={activeProjects} showSyntaxHint={false} />
+                categories={categories} projects={activeProjects} />
             </div>
           </section>
           {focusedTodos.length ? (
@@ -318,7 +319,7 @@ export function TodayPage({
                         <button key={category.id} type="button" className={`${categoryButtonClass} ${activeCategoryId === category.id ? activeCategoryButtonClass : idleCategoryButtonClass}`} onClick={() => setActiveCategoryId(category.id)} aria-pressed={activeCategoryId === category.id} title={category.description || category.name}>
                           <IconRenderer
                             icon={category.icon}
-                            color={category.color || "#b0b0b6"}
+                            color={getEntityColor(category, categories)}
                             name={category.name}
                             className={category.icon ? "h-5 w-5 border-0 bg-transparent" : "h-2 w-2"}
                             iconClassName="h-3.5 w-3.5"

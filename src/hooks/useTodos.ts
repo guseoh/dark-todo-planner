@@ -22,7 +22,7 @@ import {
   type OverdueTodoImportResult,
 } from "../lib/todoRecovery";
 
-const DELETE_UNDO_MS = 6000;
+const DELETE_UNDO_MS = 5000;
 const BULK_TRASH_CHUNK_SIZE = 3;
 
 export const defaultFilters: TodoFilters = {

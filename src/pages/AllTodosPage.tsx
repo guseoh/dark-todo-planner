@@ -1,3 +1,4 @@
+import { TodoForm } from "../components/todo/TodoForm";
 import { useMemo, useState } from "react";
 import { Activity, CalendarDays, Flag, FolderKanban, ListChecks, Settings2, Trash2, X } from "lucide-react";
 import { defaultFilters } from "../hooks/useTodos";
@@ -122,6 +123,8 @@ export function AllTodosPage({
           </button>
         }
       />
+
+      {!selectionMode ? <TodoForm compact collapsible categories={categories} projects={projects.filter((project) => !project.archived)} onAdd={onAddTodo} /> : null}
 
       {unplannedCount > 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-ui-divider py-2.5">

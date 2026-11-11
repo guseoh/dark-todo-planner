@@ -7,6 +7,7 @@ import { workflowStatusLabels } from "../../lib/todoLabels";
 import type { Category } from "../../types/category";
 import type { Milestone, Project } from "../../types/project";
 import type { Todo, TodoInput, TodoWorkflowStatus } from "../../types/todo";
+import { TodoRow } from "../todo/TodoRow";
 import { TodoEditModal } from "../todo/TodoEditModal";
 
 const workflowColumns: Array<{ status: TodoWorkflowStatus; label: string }> = [
@@ -25,6 +26,7 @@ type ProjectKanbanProps = {
   onAddTodo: (input: TodoInput) => Promise<Todo | undefined> | Todo | undefined;
   onUpdateTodo: (id: string, input: Partial<Omit<Todo, "id" | "createdAt">>) => Promise<Todo | undefined> | Todo | undefined;
   onToggleTodo: (id: string) => void;
+  onDeleteTodo: (id: string) => void;
 };
 
 const statusOf = (todo: Todo): TodoWorkflowStatus => todo.workflowStatus || (todo.completed ? "DONE" : "TODO");
@@ -171,7 +173,7 @@ const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, paren
   );
 });
 
-export function ProjectKanban({ project, todos, milestones, categories = [], projects = [], onAddTodo, onUpdateTodo, onToggleTodo }: ProjectKanbanProps) {
+export function ProjectKanban({ project, todos, milestones, categories = [], projects = [], onAddTodo, onUpdateTodo, onToggleTodo, onDeleteTodo }: ProjectKanbanProps) {
   const today = todayKey();
   const [viewMode, setViewMode] = useState<"board" | "list">(readInitialViewMode);
   const [query, setQuery] = useState("");
@@ -324,10 +326,8 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
               {visibleTodos.map((todo) => (
                 <tr key={todo.id} className="hover:bg-ink-800/40">
                   <td className="max-w-[30rem] px-3 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <button type="button" onClick={() => onToggleTodo(todo.id)} className={`h-4 w-4 shrink-0 rounded-full border ${todo.completed ? "border-success bg-success" : "border-ink-600"}`} aria-label={`${todo.title} ${todo.completed ? "미완료로" : "완료로"} 변경`} />
-                      <button type="button" onClick={() => setEditingTodo(todo)} className={`truncate text-left font-semibold hover:text-accent-200 ${todo.completed ? "text-ink-500 line-through" : "text-ink-100"}`}>{todo.title}</button>
-                    </div>
+                    <TodoRow todo={todo} onToggle={onToggleTodo} onDelete={onDeleteTodo} onEdit={setEditingTodo}
+                      showDate={false} showCategoryBadge={false} hideMediumPriority />
                     {todo.parentTodoId && indexed.todoById.get(todo.parentTodoId) ? <p className="ml-6 mt-1 truncate text-[11px] text-ink-400">상위 작업: {indexed.todoById.get(todo.parentTodoId)?.title}</p> : null}
                   </td>
                   <td className="px-3 py-2.5"><select className="field h-8 min-h-8 w-28 py-0.5 text-xs" value={statusOf(todo)} onChange={(event) => { const nextStatus = event.target.value as TodoWorkflowStatus; void onUpdateTodo(todo.id, { workflowStatus: nextStatus, completed: nextStatus === "DONE" }); }} disabled={project.archived} aria-label={`${todo.title} 상태`}>{(["TODO", "IN_PROGRESS", "BLOCKED", "DONE"] as const).map((status) => <option key={status} value={status}>{workflowStatusLabels[status]}</option>)}</select></td>

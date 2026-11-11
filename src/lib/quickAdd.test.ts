@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseQuickTodoTitle } from "./quickAdd";
+import { parseQuickTodoDraft, parseQuickTodoTitle } from "./quickAdd";
 
 const context = {
   projects: [
@@ -72,5 +72,17 @@ describe("parseQuickTodoTitle", () => {
     expect(parseQuickTodoTitle("문서 정리 @Unknown +기타", "2026-08-16", context)).toEqual({
       title: "문서 정리 @Unknown +기타",
     });
+  });
+});
+
+describe("parseQuickTodoDraft", () => {
+  it("maps displayed chips to removable ranges in the original input", () => {
+    const input = "  내일 문서 @{Large Scale Board} +{공부 기록} !high due:모레";
+    const draft = parseQuickTodoDraft(input, "2026-08-16", context);
+    expect(draft.chips.map(({ start, end }) => input.slice(start, end)))
+      .toEqual(["내일", "@{Large Scale Board}", "+{공부 기록}", "!high", "due:모레"]);
+    const { start, end } = draft.chips[1];
+    expect(parseQuickTodoDraft(input.slice(0, start) + input.slice(end), "2026-08-16", context).todo)
+      .toEqual({ ...draft.todo, projectId: undefined });
   });
 });

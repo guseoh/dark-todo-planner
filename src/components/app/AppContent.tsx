@@ -34,15 +34,17 @@ type AppContentProps = {
   planner: PlannerData;
   onToggleTodo?: ToggleTodo;
   onUpdateTodo?: UpdateTodo;
+  onBulkUpdateTodos?: PlannerData["bulkUpdateTodos"];
   focusedMemoId?: string | null;
   focusedProjectId?: string | null;
   onFocusedItemOpened?: (kind: "메모" | "프로젝트") => void;
   onOpenDayClose?: () => void;
 };
 
-export function AppContent({ activeView, calendarMode, onCalendarModeChange, planner, onToggleTodo, onUpdateTodo, focusedMemoId, focusedProjectId, onFocusedItemOpened, onOpenDayClose }: AppContentProps) {
+export function AppContent({ activeView, calendarMode, onCalendarModeChange, planner, onToggleTodo, onUpdateTodo, onBulkUpdateTodos, focusedMemoId, focusedProjectId, onFocusedItemOpened, onOpenDayClose }: AppContentProps) {
   const toggleTodo = onToggleTodo ?? planner.toggleTodo;
   const updateTodo = onUpdateTodo ?? planner.updateTodo;
+  const bulkUpdateTodos = onBulkUpdateTodos ?? planner.bulkUpdateTodos;
 
   const bringOverdueTodosToToday = async (
     selectedIds: ReadonlySet<string>,
@@ -61,7 +63,7 @@ export function AppContent({ activeView, calendarMode, onCalendarModeChange, pla
 
     try {
       if (mode === "move") {
-        const success = await planner.bulkUpdateTodos(prepared.ids, { type: "DATE", value: today });
+        const success = await bulkUpdateTodos(prepared.ids, { type: "DATE", value: today });
         return {
           total: prepared.total,
           success: success ? prepared.ids.length : 0,
@@ -122,10 +124,10 @@ export function AppContent({ activeView, calendarMode, onCalendarModeChange, pla
       );
       break;
     case "projects":
-      content = <ProjectPage focusedProjectId={focusedProjectId} onSearchTargetOpened={() => onFocusedItemOpened?.("프로젝트")} projects={planner.projects} milestones={planner.milestones} decisions={planner.projectDecisions} todos={planner.todos} categories={planner.categories} onAddProject={planner.addProject} onUpdateProject={planner.updateProject} onDeleteProject={planner.deleteProject} onDuplicateProject={planner.duplicateProject} onArchiveProject={planner.archiveProject} onUnarchiveProject={planner.unarchiveProject} onAddMilestone={planner.addMilestone} onUpdateMilestone={planner.updateMilestone} onDeleteMilestone={planner.deleteMilestone} onAddDecision={planner.addProjectDecision} onDeleteDecision={planner.deleteProjectDecision} onAddTodo={planner.addTodo} onUpdateTodo={updateTodo} onToggleTodo={toggleTodo} />;
+      content = <ProjectPage focusedProjectId={focusedProjectId} onSearchTargetOpened={() => onFocusedItemOpened?.("프로젝트")} projects={planner.projects} milestones={planner.milestones} decisions={planner.projectDecisions} todos={planner.todos} categories={planner.categories} onAddProject={planner.addProject} onUpdateProject={planner.updateProject} onDeleteProject={planner.deleteProject} onDuplicateProject={planner.duplicateProject} onArchiveProject={planner.archiveProject} onUnarchiveProject={planner.unarchiveProject} onAddMilestone={planner.addMilestone} onUpdateMilestone={planner.updateMilestone} onDeleteMilestone={planner.deleteMilestone} onAddDecision={planner.addProjectDecision} onDeleteDecision={planner.deleteProjectDecision} onAddTodo={planner.addTodo} onUpdateTodo={updateTodo} onToggleTodo={toggleTodo} onDeleteTodo={planner.deleteTodo} />;
       break;
     case "all":
-      content = <AllTodosPage allTodos={planner.allTodos} filterTodos={planner.filterTodos} categories={planner.categories} projects={planner.projects} duplicateTodoIds={planner.duplicateTodoIds} onToggle={toggleTodo} onDelete={planner.deleteTodo} onDeleteMany={planner.deleteTodos} onBulkUpdate={planner.bulkUpdateTodos} onUpdate={updateTodo} onUnarchive={planner.unarchiveTodo} onAddTodo={planner.addTodo} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} />;
+      content = <AllTodosPage allTodos={planner.allTodos} filterTodos={planner.filterTodos} categories={planner.categories} projects={planner.projects} duplicateTodoIds={planner.duplicateTodoIds} onToggle={toggleTodo} onDelete={planner.deleteTodo} onDeleteMany={planner.deleteTodos} onBulkUpdate={bulkUpdateTodos} onUpdate={updateTodo} onUnarchive={planner.unarchiveTodo} onAddTodo={planner.addTodo} onAddCategory={planner.addCategory} onUpdateCategory={planner.updateCategory} onDeleteCategory={planner.deleteCategory} />;
       break;
     case "memo":
       content = <MemoPage focusedMemoId={focusedMemoId} onSearchTargetOpened={() => onFocusedItemOpened?.("메모")} memos={planner.memos} todos={planner.allTodos} projects={planner.projects} onAdd={planner.addMemo} onUpdate={planner.updateMemo} onUpdateLinks={planner.updateMemoLinks} onDelete={planner.deleteMemo} onTogglePin={planner.toggleMemoPin} onAddTodo={planner.addTodo} />;

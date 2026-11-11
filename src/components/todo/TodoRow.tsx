@@ -1,10 +1,12 @@
-import { Archive, CalendarDays, CheckCircle2, ExternalLink, FolderKanban, MoreHorizontal, Pencil, RotateCcw, Star, StarOff, Tag, Trash2 } from "lucide-react";
+import { Archive, CalendarDays, CheckCircle2, ExternalLink, MoreHorizontal, Pencil, RotateCcw, Star, StarOff, Tag, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { formatKoreanDate, getDdayLabel, todayKey } from "../../lib/date";
+import { formatKoreanDate, getDdayLabel, getDaysPast, todayKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../../lib/todo";
 import { planningStateLabels, workflowStatusLabels } from "../../lib/todoLabels";
 import type { Todo } from "../../types/todo";
 import { PriorityBadge } from "./PriorityBadge";
+import { getEntityColor } from "../../lib/entityColor";
+import { useTodoQuickActions } from "./TodoQuickActionsContext";
 import { QuickSnoozeMenu } from "./QuickSnoozeMenu";
 
 type TodoRowProps = {
@@ -42,7 +44,7 @@ export function TodoRow({
   showDate = true,
   showCategoryBadge = true,
   showCategoryMeta = false,
-  projectName,
+  projectName: fallbackProjectName,
   leadingAction,
   variant = "default",
   focusPinned = false,
@@ -75,7 +77,11 @@ export function TodoRow({
     };
   }, [menuOpen]);
 
+  const actions = useTodoQuickActions();
+  const project = actions?.projects.find(({ id }) => id === todo.projectId);
+  const projectName = project?.name ?? fallbackProjectName;
   const today = todayKey();
+  const scheduledDaysPast = !todo.completed && todo.planningState === "SCHEDULED" ? getDaysPast(todo.date, today) : 0;
   const overdue = isOverdueByDeadline(todo, today);
   const dueSoon = isDueSoon(todo, today);
   const openOrSelect = () => selectionMode ? onSelect?.(todo.id) : onEdit(todo);
@@ -87,7 +93,20 @@ export function TodoRow({
     || Boolean(todo.dueDate) || Boolean(todo.referenceUrl);
 
   return (
-    <article className={`todo-row ${variant === "today" ? "todo-row--today" : ""} group px-1 py-3 transition-colors sm:px-2 ${selected && selectionMode ? "bg-ui-selected" : "bg-transparent hover:bg-ui-hover"}`}>
+    <article data-todo-row={selectionMode ? undefined : todo.id} tabIndex={selectionMode ? undefined : -1}
+      onKeyDown={(event) => {
+        if (selectionMode || event.defaultPrevented || event.nativeEvent.isComposing || event.ctrlKey || event.metaKey || event.altKey) return;
+        if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable]")) return;
+        const key = event.key.toLowerCase();
+        if (key === "x") onToggle(todo.id);
+        else if (key === "t" && actions) void actions.snoozeTodo(todo, { type: "DATE", date: today });
+        else if (key === "e") onEdit(todo);
+        else if (key === "delete") onDelete(todo.id);
+        else if (key === "f" && onToggleFocus && !focusDisabled && !todo.completed) onToggleFocus(todo.id);
+        else return;
+        event.preventDefault();
+      }}
+      className={`todo-row ${variant === "today" ? "todo-row--today" : ""} group px-1 py-3 transition-colors sm:px-2 ${selected && selectionMode ? "bg-ui-selected" : "bg-transparent hover:bg-ui-hover"}`}>
       <div className="flex min-w-0 items-start gap-1.5 sm:gap-2">
         {leadingAction ? <div className="flex h-10 w-10 shrink-0 items-center justify-center">{leadingAction}</div> : null}
         {selectionMode ? (
@@ -101,8 +120,8 @@ export function TodoRow({
         )}
 
         <button type="button" className="todo-row__content min-w-0 flex-1 rounded-[4px] px-1 py-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus" onClick={openOrSelect} aria-pressed={selectionMode ? selected : undefined}>
-          <h4 className={`min-w-0 break-words text-[15px] font-medium leading-6 tracking-[-0.01em] text-ui-text ${todo.completed ? "text-ui-muted line-through" : ""}`}>{todo.title}</h4>
-          {todo.memo ? <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-[13px] leading-5 text-ui-secondary">{todo.memo}</p> : null}
+          <h4 title={todo.title} className={`todo-row__title ${todo.completed ? "todo-row__title--completed" : ""} min-w-0 break-words text-[15px] font-medium leading-6 tracking-[-0.01em] text-ui-text ${todo.completed ? "text-ui-muted line-through" : ""}`}>{todo.title}</h4>
+          {todo.memo ? <p className="todo-row__memo mt-1 line-clamp-2 whitespace-pre-wrap text-[13px] leading-5 text-ui-secondary">{todo.memo}</p> : null}
           {showMeta ? <div className="todo-row__meta mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ui-secondary">
             {!(hideMediumPriority && todo.priority === "MEDIUM") ? <PriorityBadge priority={todo.priority} compact /> : null}
             {!todo.completed && (todo.workflowStatus === "IN_PROGRESS" || todo.workflowStatus === "BLOCKED") ? <span className={todo.workflowStatus === "BLOCKED" ? "font-medium text-danger" : "text-ink-300"}>{workflowStatusLabels[todo.workflowStatus]}</span> : null}
@@ -110,10 +129,10 @@ export function TodoRow({
             {todo.planningState !== "SCHEDULED" ? <span>{planningLabel[todo.planningState]}</span> : null}
             {todo.archived ? <span>보관됨</span> : null}
             {duplicateCandidate ? <span className="font-medium text-warning">중복 후보</span> : null}
-            {projectName ? <span className="inline-flex items-center gap-1 font-medium text-ui-secondary">{variant === "today" ? <FolderKanban size={12} aria-hidden="true" /> : null}{projectName}</span> : null}
+            {projectName ? <span className="inline-flex items-center gap-1 font-medium text-ui-secondary"><span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: getEntityColor(project, actions?.projects) }} aria-hidden="true" />{projectName}</span> : null}
             {showCategoryMeta && !showCategoryBadge && todo.category ? <span className="inline-flex items-center gap-1">{variant === "today" ? <Tag size={12} aria-hidden="true" /> : null}{todo.category.name}</span> : null}
-            {showDate && todo.planningState === "SCHEDULED" ? <span className="inline-flex items-center gap-1"><CalendarDays size={12} />{formatKoreanDate(todo.date, "M월 d일 E")}</span> : null}
-            {todo.dueDate ? <span className={`font-medium ${overdue ? "text-danger" : dueSoon ? "text-warning" : "text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {getDdayLabel(todo.dueDate)}</span> : null}
+            {showDate && todo.planningState === "SCHEDULED" ? <span className={`inline-flex items-center gap-1 ${scheduledDaysPast ? "text-danger" : ""}`}><CalendarDays size={12} />{formatKoreanDate(todo.date, "M월 d일 E")}{scheduledDaysPast ? ` · ${scheduledDaysPast}일 지남` : ""}</span> : null}
+            {todo.dueDate ? <span className={`font-medium ${overdue ? "text-danger" : dueSoon ? "text-warning" : "text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {overdue ? `${getDaysPast(todo.dueDate, today)}일 지남` : getDdayLabel(todo.dueDate)}</span> : null}
             {todo.referenceUrl ? <span className="inline-flex items-center gap-1 font-semibold text-accent-200"><ExternalLink size={11} />{todo.referenceLabel || "관련 링크"}</span> : null}
           </div> : null}
         </button>
@@ -132,7 +151,7 @@ export function TodoRow({
             <summary className="ui-icon-button ui-icon-button--neutral h-9 w-9 cursor-pointer list-none" aria-label={`"${todo.title}" 더보기`} title="작업 메뉴">
               <MoreHorizontal size={17} />
             </summary>
-            <div className="todo-row__menu absolute right-0 top-full z-40 mt-1 min-w-44 rounded-md border border-ui-divider bg-ui-elevated p-1.5 shadow-xl" role="group" aria-label={`"${todo.title}" 작업 메뉴`}>
+            <div className="todo-row__menu absolute right-0 top-full z-40 mt-1 min-w-44 rounded-md border border-ui-divider bg-ui-elevated p-1.5" role="group" aria-label={`"${todo.title}" 작업 메뉴`}>
               {onToggleFocus ? (
                 <button type="button" className="todo-row__menu-action" onClick={() => { onToggleFocus(todo.id); setMenuOpen(false); }}
                   disabled={focusDisabled} aria-label={`${todo.title} ${focusPinned ? "핵심 작업에서 제외" : "핵심 작업으로 고정"}`}
