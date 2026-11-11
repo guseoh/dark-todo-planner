@@ -107,6 +107,15 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     void planner.ensureDeferredData().catch(() => undefined);
   }, [activeView, planner.ensureDeferredData]);
 
+  useEffect(() => {
+    if (activeView !== "today") return;
+    const media = window.matchMedia("(min-width: 1280px)");
+    const load = () => { if (media.matches) void planner.loadGoals().catch(() => undefined); };
+    load();
+    media.addEventListener("change", load);
+    return () => media.removeEventListener("change", load);
+  }, [activeView, planner.loadGoals]);
+
   // A tab can remain open across the 03:00 planner-day boundary.
   // Refresh views and stats on the next minute or when the tab becomes visible.
   useEffect(() => {

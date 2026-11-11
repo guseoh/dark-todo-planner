@@ -55,7 +55,10 @@ export function WeeklyView({
   const weekDateKeys = useMemo(() => weekDays.map(toDateKey), [weekDays]);
   const weekStart = weekDateKeys[0];
   const weekEnd = weekDateKeys[6];
-  const [selectedDate, setSelectedDate] = useState(today);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const requested = new URLSearchParams(window.location.hash.split("?")[1]).get("date");
+    return requested && weekDateKeys.includes(requested) ? requested : today;
+  });
   const weekTodos = useMemo(() => weekDateKeys.flatMap((date) => getTodosByDate(date)), [weekDateKeys, getTodosByDate]);
 
   const moveWeek = (delta: number) => {

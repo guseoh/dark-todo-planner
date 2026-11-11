@@ -2568,3 +2568,52 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
   .todo-row:is(:hover, :focus-within) :is(.todo-row__actions, .todo-row__more),
   .todo-row .todo-row__more[open] { opacity: 1; }
 }
+
+
+.today-desktop-rail, .today-desktop-progress progress { display: none; }
+
+@media (min-width: 1280px) {
+  .page-shell.today-page { max-width: 984px; }
+  .today-page .today-workspace {
+    max-width: none;
+    grid-template-columns: minmax(0, 720px) 240px;
+    gap: 24px;
+  }
+  .today-page .today-planning-panel {
+    position: fixed;
+    z-index: 31;
+    inset: 60px 0 0 auto;
+    width: 320px;
+    overflow-y: auto;
+    padding: 16px;
+    background: var(--app-bg);
+  }
+  .today-page .today-planning-backdrop {
+    display: block;
+    position: fixed;
+    z-index: 30;
+    inset: 60px 0 0;
+    background: rgb(0 0 0 / .35);
+  }
+  .today-page .today-workspace__main > :not([hidden]) ~ :not([hidden]) { margin-top: 24px; }
+  .today-page .today-header__identity { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .today-page .today-header__identity h1 { font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+  .today-desktop-progress progress {
+    display: block;
+    width: 100%;
+    height: 4px;
+    accent-color: var(--accent);
+    margin-top: 4px;
+  }
+  .today-desktop-rail {
+    display: grid;
+    align-self: start;
+    gap: 24px;
+    min-width: 0;
+    padding-inline-start: 12px;
+    border-inline-start: 1px solid var(--ui-divider);
+  }
+  .today-desktop-rail h2 { margin-bottom: 8px; font-size: 13px; font-weight: 600; }
+  .today-week-current { background: var(--accent); color: var(--app-bg); }
+  .today-page .today-focus-list .todo-row { min-height: 44px; }
+}
