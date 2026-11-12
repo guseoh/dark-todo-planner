@@ -44,7 +44,7 @@ export async function planTodoDetach(db: D1Database, userId: string, id: string,
 // no rows change. Only link fields are written, preserving concurrent edits.
 export async function writeTodoProjectLinks(db: D1Database, userId: string, changes: TodoProjectLinkChange[], detaching: boolean) {
   if (new Set(changes.map(({ id }) => id)).size !== changes.length) return false;
-  const result = await db.prepare(`
+  const { results } = await db.prepare(`
     WITH patch AS MATERIALIZED (
       SELECT json_extract(value, '$.id') AS id,
              json_extract(value, '$.before.projectId') AS old_project,
@@ -80,6 +80,7 @@ export async function writeTodoProjectLinks(db: D1Database, userId: string, chan
     SET (project_id, milestone_id, parent_todo_id, updated_at) =
         (SELECT project, milestone, parent, ?3 FROM patch WHERE patch.id = todos.id)
     WHERE user_id = ?2 AND id IN (SELECT id FROM patch) AND (SELECT ok FROM valid)
-  `).bind(JSON.stringify(changes), userId, nowIso(), detaching ? 1 : 0).run();
-  return result.meta.changes === changes.length;
+    RETURNING id
+  `).bind(JSON.stringify(changes), userId, nowIso(), detaching ? 1 : 0).all<{ id: string }>();
+  return results.length === changes.length;
 }

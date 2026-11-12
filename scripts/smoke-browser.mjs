@@ -366,7 +366,8 @@ try {
   await legacyRow.evaluate((row) => row.scrollIntoView({ block: "center", inline: "nearest" }));
   await editLegacy.click();
   await legacyEdit.getByRole("combobox", { name: "보관 위치" }).selectOption("SCHEDULED");
-  await legacyEdit.getByLabel("실행일").fill("2026-11-12");
+  const legacyScheduleDate = "2099-11-12";
+  await legacyEdit.getByLabel("실행일").fill(legacyScheduleDate);
   let legacyUpdateFailure = true;
   await page.route("**/api/todos/*", async (route) => {
     if (route.request().method() === "PUT" && legacyUpdateFailure) {
@@ -384,7 +385,7 @@ try {
     const body = await response.json();
     return body.todos?.find((todo) => todo.title === title)?.planningState === "SCHEDULED";
   }, legacyTitle);
-  assert.equal((await findServerTodo(legacyTitle))?.date, "2026-11-12");
+  assert.equal((await findServerTodo(legacyTitle))?.date, legacyScheduleDate);
   await page.unroute("**/api/todos/*");
 
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
@@ -689,8 +690,8 @@ try {
   await nav.getByRole("button", { name: "캘린더", exact: true }).click();
   await page.getByRole("heading", { name: "캘린더", exact: true }).waitFor();
   const monthGrid = page.getByRole("region", { name: "월간 일정 캘린더" });
-  assert.equal(await page.locator(".calendar-v4-date-drawer").count(), 0,
-    "Month calendar must not begin with a permanent detail panel.");
+  assert.equal(await page.getByRole("complementary", { name: "선택한 날짜 상세" }).isVisible(), false,
+    "The month detail drawer stays closed on mobile until a date is selected.");
   await monthGrid.getByRole("button", { name: title, exact: true }).waitFor();
   await page.setViewportSize({ width: 1440, height: 900 });
   const monthDensity = await monthGrid.locator(".monthly-calendar-grid").evaluate((grid) => ({
@@ -739,7 +740,7 @@ try {
 
   // V4 uses a real overlay; close the inspector before dragging on the underlying calendar.
   await calendarDetails.getByRole("button", { name: "날짜 상세 닫기" }).click();
-  await calendarDetails.waitFor({ state: "detached" });
+  await calendarDetails.waitFor({ state: "hidden" });
 
   // Mouse drag changes only the execution date, preserving the due date.
   await page.setViewportSize({ width: 1280, height: 844 });
@@ -776,10 +777,10 @@ try {
   }
   assert.equal((await findServerTodo(calendarTitle))?.date, quickDate, "Retry persists a changed date.");
   await page.unroute("**/api/todos/*");
-  // Close the V4 modal drawer before using the underlying mobile navigation.
-  await calendarDetails.getByRole("button", { name: "날짜 상세 닫기" }).click();
-  await calendarDetails.waitFor({ state: "detached" });
+  // The desktop date rail becomes a dismissible drawer on mobile.
   await page.setViewportSize({ width: 390, height: 844 });
+  await calendarDetails.getByRole("button", { name: "날짜 상세 닫기" }).click();
+  await calendarDetails.waitFor({ state: "hidden" });
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
   await page.getByRole("group", { name: "오늘 작업 현황" }).waitFor();
   assert.match(await page.getByRole("group", { name: "오늘 작업 현황" }).innerText(), /진행\s*\d+\s*\/\s*\d+/,
