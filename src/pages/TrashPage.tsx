@@ -153,12 +153,12 @@ export function TrashPage({ onRestored, onOpenTodo }: { onRestored: () => Promis
           <div className="space-y-4">
             <div className="border-b border-ink-700/45 pb-3">
               <p className="font-bold text-ink-100">{preview.title}</p>
-              <p className="mt-1 text-xs text-ink-500">원본 Todo ID: {preview.originalTodoId}</p>
+              {preview.originalDate ? <p className="mt-1 text-xs text-ui-secondary">기존 예정일 {preview.originalDate}</p> : null}
             </div>
 
             <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
               <div className="border-b border-ink-700/35 py-2.5"><p className="text-xs font-semibold text-ink-500">카테고리</p><p className="mt-1 text-sm text-ink-200">{refLabel(preview.refs.category)}</p></div>
-              <div className="border-b border-ink-700/35 py-2.5"><p className="text-xs font-semibold text-ink-500">프로젝트</p><p className="mt-1 text-sm text-ink-200">{refLabel(preview.refs.project)}</p></div>
+              <div className="border-b border-ink-700/35 py-2.5"><p className="text-xs font-semibold text-ink-500">프로젝트</p><p className="mt-1 text-sm text-ink-200">{preview.projectName ? preview.projectName + " · " : ""}{refLabel(preview.refs.project)}</p></div>
               <div className="border-b border-ink-700/35 py-2.5"><p className="text-xs font-semibold text-ink-500">마일스톤</p><p className="mt-1 text-sm text-ink-200">{refLabel(preview.refs.milestone)}</p></div>
               <div className="border-b border-ink-700/35 py-2.5"><p className="text-xs font-semibold text-ink-500">상위 Todo</p><p className="mt-1 text-sm text-ink-200">{refLabel(preview.refs.parentTodo)}</p></div>
             </div>
