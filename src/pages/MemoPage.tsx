@@ -63,6 +63,7 @@ type MemoFormProps = {
   initial?: Memo;
   submitLabel: string;
   onSubmit: (input: MemoInput) => Memo | undefined | Promise<Memo | undefined>;
+  onSaved?: (memo: Memo) => void;
   onSaveLinks: (id: string, input: MemoLinksInput) => unknown | Promise<unknown>;
   onRetryCreatedMemo: (id: string, input: MemoInput) => Memo | undefined | Promise<Memo | undefined>;
   todos: Todo[];
@@ -72,7 +73,7 @@ type MemoFormProps = {
   draftKey: string;
 };
 
-function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedMemo, todos, projects, onCancel, large = false, draftKey }: MemoFormProps) {
+function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedMemo, todos, projects, onCancel, onSaved, large = false, draftKey }: MemoFormProps) {
   const initialDraft = useMemo(() => readDraft(draftKey, initial), [draftKey, initial]);
   const [title, setTitle] = useState(initialDraft?.title ?? initial?.title ?? "");
   const [content, setContent] = useState(initialDraft?.content ?? initial?.content ?? "");
@@ -150,6 +151,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
       draftVersionRef.current += 1;
       try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
       setError("");
+      onSaved?.(saved);
       onCancel?.();
     } catch (err) {
       // Server memo may be saved even when link synchronization fails.
@@ -364,6 +366,11 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
     }
   }, [focusedMemoId, memos, onSearchTargetOpened]);
   const [conversionMessage, setConversionMessage] = useState("");
+  const [saveMessage, setSaveMessage] = useState("");
+  const showSaved = (memo: Memo) => {
+    setPreviewMemoId(memo.id);
+    setSaveMessage("메모를 서버에 저장했습니다.");
+  };
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase("ko-KR");
   const todosById = useMemo(() => new Map(todos.map((todo) => [todo.id, todo.title])), [todos]);
   const projectsById = useMemo(() => new Map(projects.map((project) => [project.id, project.name])), [projects]);
@@ -411,7 +418,7 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
 
   return (
     <div className={`page-shell memo-page ${previewMemo ? "memo-page--reading" : ""}`}>
-      <PageHeader title="메모" description="생각과 작업 기록을 모아 봅니다."
+      <PageHeader title="메모"
         meta={`전체 ${memos.length}개`}
         actions={<Button variant="secondary" className="memo-action-button" onClick={() => setCreating(true)}><Plus size={16} aria-hidden="true" />새 메모</Button>}
       />
@@ -470,15 +477,16 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
 
       {creating ? (
         <Modal title="새 메모" description="생각을 기록하고 필요할 때 Todo·프로젝트와 연결합니다." onClose={() => setCreating(false)}>
-          <MemoForm draftKey={`${DRAFT_PREFIX}new`} submitLabel="메모 저장" todos={todos} projects={projects} onSaveLinks={onUpdateLinks} onRetryCreatedMemo={onUpdate} onSubmit={onAdd} onCancel={() => setCreating(false)} />
+          <MemoForm draftKey={`${DRAFT_PREFIX}new`} submitLabel="메모 저장" todos={todos} projects={projects} onSaveLinks={onUpdateLinks} onRetryCreatedMemo={onUpdate} onSubmit={onAdd} onSaved={showSaved} onCancel={() => setCreating(false)} />
         </Modal>
       ) : null}
 
       {editingMemo ? (
         <Modal title="메모 수정" description="내용과 연결된 Todo·프로젝트를 함께 관리합니다. 입력 내용은 브라우저 초안으로 자동 저장됩니다." onClose={() => setEditingMemo(null)} size="lg">
-          <MemoForm initial={editingMemo} draftKey={`${DRAFT_PREFIX}${editingMemo.id}`} submitLabel="저장" large todos={todos} projects={projects} onSaveLinks={onUpdateLinks} onRetryCreatedMemo={onUpdate} onSubmit={(input) => onUpdate(editingMemo.id, input)} onCancel={() => setEditingMemo(null)} />
+          <MemoForm initial={editingMemo} draftKey={`${DRAFT_PREFIX}${editingMemo.id}`} submitLabel="저장" large todos={todos} projects={projects} onSaveLinks={onUpdateLinks} onRetryCreatedMemo={onUpdate} onSubmit={(input) => onUpdate(editingMemo.id, input)} onSaved={showSaved} onCancel={() => setEditingMemo(null)} />
         </Modal>
       ) : null}
+      <p role="status" className="sr-only">{saveMessage}</p>
     </div>
   );
 }

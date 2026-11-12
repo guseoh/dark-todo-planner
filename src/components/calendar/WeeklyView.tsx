@@ -15,6 +15,8 @@ import { TodoEditModal } from "../todo/TodoEditModal";
 import { TodoRow } from "../todo/TodoRow";
 
 type WeeklyViewProps = {
+  selectedDate: string;
+  onSelectDate: (date: string) => void;
   todos?: Todo[];
   projects?: Project[];
   getTodosByDate: (date: string) => Todo[];
@@ -37,6 +39,8 @@ const dayLabelTone = (index: number) => {
 };
 
 export function WeeklyView({
+  selectedDate,
+  onSelectDate: setSelectedDate,
   todos = [],
   projects = [],
   getTodosByDate,
@@ -54,28 +58,21 @@ export function WeeklyView({
   // The 03:00 planner-day rollover triggers a rerender in App; derive visible
   // dates from the current planner day rather than freezing them at mount.
   const today = todayKey();
-  const [weekOffset, setWeekOffset] = useState(0);
+  const currentWeek = toDateKey(getWeekDays(parseDateKey(today))[0]);
   const weekDays = useMemo(
-    () => getWeekDays(addWeeks(parseDateKey(today), weekOffset)),
-    [today, weekOffset],
+    () => getWeekDays(parseDateKey(selectedDate)),
+    [selectedDate],
   );
   const weekDateKeys = useMemo(() => weekDays.map(toDateKey), [weekDays]);
   const weekStart = weekDateKeys[0];
   const weekEnd = weekDateKeys[6];
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const requested = new URLSearchParams(window.location.hash.split("?")[1]).get("date");
-    return requested && weekDateKeys.includes(requested) ? requested : today;
-  });
   const weekTodos = useMemo(() => weekDateKeys.flatMap((date) => getTodosByDate(date)), [weekDateKeys, getTodosByDate]);
 
   const moveWeek = (delta: number) => {
-    const offset = weekOffset + delta;
-    const dates = getWeekDays(addWeeks(parseDateKey(today), offset));
-    setWeekOffset(offset);
-    setSelectedDate(offset === 0 ? today : toDateKey(dates[0]));
+    const next = toDateKey(addWeeks(parseDateKey(weekStart), delta));
+    setSelectedDate(next === currentWeek ? today : next);
   };
   const backToThisWeek = () => {
-    setWeekOffset(0);
     setSelectedDate(today);
   };
   const [addingDate, setAddingDate] = useState<string | null>(null);
@@ -111,10 +108,6 @@ export function WeeklyView({
   });
 
   useEffect(() => {
-    if (!weekDateKeys.includes(selectedDate)) setSelectedDate(weekOffset === 0 ? today : weekStart);
-  }, [selectedDate, today, weekDateKeys, weekOffset, weekStart]);
-
-  useEffect(() => {
     setAddingDate(null);
     setShowCompleted(false);
   }, [selectedDate]);
@@ -127,7 +120,7 @@ export function WeeklyView({
       <section className="calendar-v4-week-toolbar" aria-labelledby="week-summary-title">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <span className="text-xs text-ui-secondary">{weekOffset === 0 ? "이번 주" : "선택한 주"}</span>
+            <span className="text-xs text-ui-secondary">{weekStart === currentWeek ? "이번 주" : "선택한 주"}</span>
             <h3 id="week-summary-title" className="text-lg font-semibold text-ui-text">
               {formatKoreanDate(weekStart, "M.d")} ~ {formatKoreanDate(weekEnd, "M.d")}
             </h3>
@@ -278,7 +271,7 @@ export function WeeklyView({
         <div className="mt-3">
 <div className="w-full">
         <GoalChecklist
-          title={weekOffset === 0 ? "이번 주 목표" : "선택한 주 목표"}
+          title={weekStart === currentWeek ? "이번 주 목표" : "선택한 주 목표"}
           goals={weeklyGoals}
           type="WEEKLY"
           addDefaults={{ weekStartDate: weekStart, weekEndDate: weekEnd, dueDate: weekEnd }}

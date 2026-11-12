@@ -1,15 +1,15 @@
 import { DndContext, DragOverlay, PointerSensor, pointerWithin, rectIntersection, useDraggable, useDroppable, useSensor, useSensors, type CollisionDetection, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
-import { ChevronDown, ChevronRight, GripVertical, LayoutGrid, List, Pencil, Search } from "lucide-react";
+import { ChevronDown, ChevronRight, GripVertical, MoreHorizontal, Plus, Search } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { TodoForm } from "../todo/TodoForm";
 import { exceedsWipLimit } from "../../lib/projectWorkflow";
-import { getDaysPast, todayKey, toDateKey } from "../../lib/date";
+import { formatKoreanDate, todayKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../../lib/todo";
 import { workflowStatusLabels } from "../../lib/todoLabels";
 import type { Category } from "../../types/category";
 import type { Milestone, Project } from "../../types/project";
 import type { Todo, TodoInput, TodoWorkflowStatus } from "../../types/todo";
-import { TodoRow } from "../todo/TodoRow";
+import { Modal } from "../common/Modal";
 import { TodoEditModal } from "../todo/TodoEditModal";
 
 const workflowColumns: Array<{ status: TodoWorkflowStatus; label: string }> = [
@@ -29,6 +29,7 @@ type ProjectKanbanProps = {
   onUpdateTodo: (id: string, input: Partial<Omit<Todo, "id" | "createdAt">>) => Promise<Todo | undefined> | Todo | undefined;
   onToggleTodo: (id: string) => void;
   onDeleteTodo: (id: string) => void;
+  onDetachTodo: (id: string, projectId: string, includeChildren: boolean) => Promise<boolean>;
 };
 
 const statusOf = (todo: Todo): TodoWorkflowStatus => todo.workflowStatus || (todo.completed ? "DONE" : "TODO");
@@ -39,19 +40,10 @@ const columnCollision: CollisionDetection = (args) => {
   const pointer = pointerWithin(args);
   return pointer.length ? pointer : rectIntersection(args);
 };
-const VIEW_MODE_KEY = "dark-todo-planner:project-work-view";
 const WIP_LIMITS_KEY = "dark-todo-planner:project-wip-limits";
 const DONE_COLUMN_KEY = "dark-todo-planner:collapsed-done-columns";
 type WipLimits = Partial<Record<TodoWorkflowStatus, number>>;
 type ProjectWipLimits = Record<string, WipLimits>;
-
-const readInitialViewMode = (): "board" | "list" => {
-  try {
-    return localStorage.getItem(VIEW_MODE_KEY) === "list" ? "list" : "board";
-  } catch {
-    return "board";
-  }
-};
 
 function readWipLimits(): ProjectWipLimits {
   try {
@@ -131,7 +123,7 @@ function KanbanColumn({ status, label, count, visibleCount, wipLimit, onWipLimit
   );
 }
 
-const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, parent, childCount, milestone, today, onToggleTodo, onOpenDetails }: {
+const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, parent, childCount, milestone, today, onToggleTodo, onOpenDetails, onMove, onDetach, onDelete }: {
   project: Project;
   todo: Todo;
   parent?: Todo;
@@ -140,6 +132,9 @@ const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, paren
   today: string;
   onToggleTodo: ProjectKanbanProps["onToggleTodo"];
   onOpenDetails: (todo: Todo) => void;
+  onMove: (todo: Todo, status: TodoWorkflowStatus) => void;
+  onDetach: (todo: Todo) => void;
+  onDelete: (id: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: todo.id, disabled: project.archived,
@@ -147,13 +142,11 @@ const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, paren
   const overdue = isOverdueByDeadline(todo, today);
   const dueSoon = isDueSoon(todo, today);
   const status = statusOf(todo);
-  const changed = Date.parse(todo.updatedAt);
-  const age = Number.isFinite(changed) ? getDaysPast(toDateKey(new Date(changed)), today) : 0;
   return (
     <article ref={setNodeRef} data-v4-card="true"
       data-dragging={isDragging ? "true" : "false"} className="project-kanban-card">
       <div className="project-v4-card__top">
-        <button type="button" onClick={() => onToggleTodo(todo.id)}
+        <button type="button" disabled={project.archived} onClick={() => onToggleTodo(todo.id)}
           className="project-v4-card__check" aria-label={`${todo.title} 완료 토글`}>
           <span className={`block h-4 w-4 rounded-full border ${todo.completed ? "border-success bg-success" : "border-ink-600"}`} aria-hidden="true" />
         </button>
@@ -165,14 +158,31 @@ const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, paren
         {!project.archived ? <button type="button" className="project-v4-card__drag"
           title="잡고 다른 열로 드래그해 상태 변경" aria-label={`${todo.title} 상태 이동`}
           {...listeners} {...attributes}><GripVertical size={15} /></button> : null}
+        {!project.archived ? <details className="project-actions-menu" onKeyDown={(event) => {
+          if (event.key !== "Escape") return;
+          event.currentTarget.open = false;
+          event.currentTarget.querySelector("summary")?.focus();
+        }}>
+          <summary className="icon-btn" aria-label={todo.title + " 작업 메뉴"}><MoreHorizontal size={16} /></summary>
+          <div className="project-actions-menu__panel" onClick={(event) => {
+            const menu = event.currentTarget.closest("details");
+            if (menu) menu.open = false;
+          }}>
+            {workflowColumns.filter((column) => column.status !== status).map((column) => (
+              <button key={column.status} type="button" onClick={() => onMove(todo, column.status)}>{column.label}으로 이동</button>
+            ))}
+            <button type="button" onClick={() => onDetach(todo)}>프로젝트에서 제외</button>
+            <button type="button" className="project-actions-menu__danger" onClick={() => onDelete(todo.id)}>휴지통으로 이동</button>
+          </div>
+        </details> : null}
       </div>
-      {(todo.priority === "HIGH" || milestone || childCount > 0 || todo.dueDate || status === "IN_PROGRESS" || status === "BLOCKED") ? (
+      {(todo.priority === "HIGH" || milestone || childCount > 0 || todo.dueDate || todo.planningState === "SCHEDULED" || todo.blockReason) ? (
         <div className="project-v4-card__meta">
           {todo.priority === "HIGH" ? <span className="text-warning">높음</span> : null}
           {milestone ? <span title={milestone.title} className="truncate">{milestone.title}</span> : null}
-          {status === "IN_PROGRESS" ? <span>{age + 1}일째</span> : null}
-          {status === "BLOCKED" ? <span className="text-danger">{todo.blockReason ? `${todo.blockReason} · ` : ""}{age}일</span> : null}
+          {status === "BLOCKED" && todo.blockReason ? <span className="text-danger">{todo.blockReason}</span> : null}
           {childCount ? <span>하위 {childCount}</span> : null}
+          {todo.planningState === "SCHEDULED" && todo.date !== "9999-12-31" ? <span>예정 {formatKoreanDate(todo.date, "M/d")}</span> : null}
           {todo.dueDate ? <span className={overdue ? "text-danger" : dueSoon ? "text-warning" : ""}>마감 {todo.dueDate}</span> : null}
         </div>
       ) : null}
@@ -180,15 +190,37 @@ const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, paren
   );
 });
 
-export function ProjectKanban({ project, todos, milestones, categories = [], projects = [], onAddTodo, onUpdateTodo, onToggleTodo, onDeleteTodo }: ProjectKanbanProps) {
+export function ProjectKanban({ project, todos, milestones, categories = [], projects = [], onAddTodo, onUpdateTodo, onToggleTodo, onDeleteTodo, onDetachTodo }: ProjectKanbanProps) {
   const today = todayKey();
-  const [viewMode, setViewMode] = useState<"board" | "list">(readInitialViewMode);
   const [addingTo, setAddingTo] = useState<TodoWorkflowStatus | null>(null);
   const [priorityFilter, setPriorityFilter] = useState("ALL");
   const [sortPriority, setSortPriority] = useState(false);
   const [query, setQuery] = useState("");
-  const [milestoneFilter, setMilestoneFilter] = useState("");
-  const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+  const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [detachTarget, setDetachTarget] = useState<Todo | null>(null);
+  const [detaching, setDetaching] = useState(false);
+  const [detachFailed, setDetachFailed] = useState(false);
+  const editingTodo = todos.find(({ id }) => id === editingTodoId);
+  const openDetails = useCallback((todo: Todo) => setEditingTodoId(todo.id), []);
+  const openDetach = useCallback((todo: Todo) => {
+    setDetachTarget(todo);
+    setDetachFailed(false);
+  }, []);
+  const moveTodo = (todo: Todo, workflowStatus: TodoWorkflowStatus) => {
+    void onUpdateTodo(todo.id, { workflowStatus, completed: workflowStatus === "DONE" });
+  };
+  const detach = async (includeChildren: boolean) => {
+    if (!detachTarget || detaching) return;
+    setDetaching(true);
+    try {
+      const detached = await onDetachTodo(detachTarget.id, project.id, includeChildren);
+      if (detached) setDetachTarget(null);
+      else setDetachFailed(true);
+    } finally {
+      setDetaching(false);
+    }
+  };
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   // App's undo wrapper changes identity on unrelated re-renders. Keep card
   // callbacks stable so memoized cards do not all re-render on every save.
@@ -198,10 +230,6 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
   const [wipLimitsByProject, setWipLimitsByProject] = useState<ProjectWipLimits>(readWipLimits);
   const [collapsedDoneColumns, setCollapsedDoneColumns] = useState<Record<string, boolean>>(readCollapsedDoneColumns);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-
-  useEffect(() => {
-    try { localStorage.setItem(VIEW_MODE_KEY, viewMode); } catch { /* The view remains usable without browser storage. */ }
-  }, [viewMode]);
 
   useEffect(() => {
     try { localStorage.setItem(WIP_LIMITS_KEY, JSON.stringify(wipLimitsByProject)); } catch { /* WIP guidance remains usable for the current session. */ }
@@ -224,12 +252,11 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
     const normalizedQuery = query.trim().toLocaleLowerCase();
     const filtered = todos.filter((todo) => {
       const matchesQuery = !normalizedQuery || `${todo.title} ${todo.memo || ""}`.toLocaleLowerCase().includes(normalizedQuery);
-      const matchesMilestone = !milestoneFilter || (milestoneFilter === "unassigned" ? !todo.milestoneId : todo.milestoneId === milestoneFilter);
-      return matchesQuery && matchesMilestone && (priorityFilter === "ALL" || todo.priority === priorityFilter);
+      return matchesQuery && (priorityFilter === "ALL" || todo.priority === priorityFilter);
     });
     const priorityRank = { HIGH: 0, MEDIUM: 1, LOW: 2 };
     return sortPriority ? filtered.sort((a, b) => priorityRank[a.priority] - priorityRank[b.priority] || a.createdAt.localeCompare(b.createdAt)) : filtered;
-  }, [milestoneFilter, priorityFilter, query, sortPriority, todos]);
+  }, [priorityFilter, query, sortPriority, todos]);
 
   const indexed = useMemo(() => {
     const todoById = new Map(todos.map((todo) => [todo.id, todo]));
@@ -262,43 +289,32 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
     if (!workflowColumns.some((column) => column.status === nextStatus)) return;
     const todo = indexed.todoById.get(String(active.id));
     if (!todo || project.archived || statusOf(todo) === nextStatus) return;
-    void onUpdateTodo(todo.id, { workflowStatus: nextStatus, completed: nextStatus === "DONE" });
+    moveTodo(todo, nextStatus);
   };
   const activeDragTodo = activeDragId ? indexed.todoById.get(activeDragId) : undefined;
 
   return (
     <section className="space-y-3">
       <div className="flex flex-col gap-3 border-b border-ui-divider pb-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h3 className="text-base font-bold text-ink-100">프로젝트 작업</h3>
-          <p className="mt-1 text-xs text-ink-400">{viewMode === "board" ? "카드의 핸들을 드래그해 상태를 바꾸고 제목을 눌러 상세 정보를 수정합니다." : "상태를 바로 변경하거나 행을 열어 세부 내용을 수정합니다."}</p>
-        </div>
         <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
           <label className="relative w-full sm:w-60">
             <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-500" />
             <input className="field h-9 min-h-9 pl-8 py-1 text-xs" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="프로젝트 작업 검색" aria-label="프로젝트 작업 검색" />
           </label>
-          <select className="field h-9 min-h-9 w-full py-1 text-xs sm:w-48" value={milestoneFilter} onChange={(event) => setMilestoneFilter(event.target.value)} aria-label="마일스톤 필터">
-            <option value="">모든 마일스톤</option><option value="unassigned">미지정</option>{milestones.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
-          </select>
           <select className="field h-9 min-h-9 w-auto text-xs" value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value)} aria-label="우선순위 필터">
             <option value="ALL">모든 우선순위</option><option value="HIGH">높음</option><option value="MEDIUM">보통</option><option value="LOW">낮음</option>
           </select>
           <button type="button" className="btn-secondary text-xs" aria-pressed={sortPriority} onClick={() => setSortPriority((value) => !value)}>우선순위 순</button>
-          <div className="inline-flex shrink-0 border-b border-ui-divider" role="group" aria-label="프로젝트 작업 보기">
-            <button type="button" className={`inline-flex h-8 items-center gap-1.5 rounded px-2 text-xs font-semibold ${viewMode === "board" ? "border-b border-ui-focus text-ui-text" : "text-ui-secondary hover:text-ui-text"}`} aria-pressed={viewMode === "board"} onClick={() => setViewMode("board")}><LayoutGrid size={14} />보드</button>
-            <button type="button" className={`inline-flex h-8 items-center gap-1.5 rounded px-2 text-xs font-semibold ${viewMode === "list" ? "border-b border-ui-focus text-ui-text" : "text-ui-secondary hover:text-ui-text"}`} aria-pressed={viewMode === "list"} onClick={() => setViewMode("list")}><List size={14} />목록</button>
-          </div>
           <span className="shrink-0 text-xs text-ui-muted" aria-live="polite">{visibleTodos.length}개</span>
         </div>
+        {!project.archived ? <button type="button" className="btn-primary shrink-0" onClick={() => setShowAdd((value) => !value)}>
+          <Plus size={16} />{showAdd ? "추가 닫기" : "작업 추가"}
+        </button> : null}
       </div>
+      {showAdd && !project.archived ? <TodoForm compact autoFocus submitLabel="추가" defaultProjectId={project.id}
+        categories={categories} projects={projects} onAdd={onAddTodo} /> : null}
 
-      {!visibleTodos.length && viewMode === "list" ? (
-        <div className="border-b border-ui-divider py-10" role="status">
-          <h4 className="text-sm font-semibold text-ui-text">{todos.length ? "검색 조건에 맞는 작업이 없습니다." : "아직 등록한 프로젝트 작업이 없습니다."}</h4>
-          <p className="mt-1.5 text-sm text-ui-secondary">{todos.length ? "검색어 또는 마일스톤 필터를 변경해 보세요." : "위의 Todo 빠른 추가에서 첫 작업을 등록하세요."}</p>
-        </div>
-      ) : viewMode === "board" ? <DndContext sensors={sensors} collisionDetection={columnCollision} onDragStart={onDragStart} onDragCancel={onDragCancel} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={columnCollision} onDragStart={onDragStart} onDragCancel={onDragCancel} onDragEnd={handleDragEnd}>
         <div className="overflow-x-auto pb-2">
           <div data-done-collapsed={collapsedDoneColumns[project.id] ?? true} className="project-v4-board grid min-w-[68rem] grid-cols-4 gap-3">
             {workflowColumns.map((column) => {
@@ -317,7 +333,10 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
                       milestone={todo.milestoneId ? indexed.milestoneById.get(todo.milestoneId) : undefined}
                       today={today}
                       onToggleTodo={stableToggle}
-                      onOpenDetails={setEditingTodo}
+                      onOpenDetails={openDetails}
+                      onMove={moveTodo}
+                      onDetach={openDetach}
+                      onDelete={onDeleteTodo}
                     />
                   ))}
                   {!project.archived ? addingTo === column.status ? (
@@ -337,33 +356,16 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
             <span className="truncate">{activeDragTodo.title}</span>
           </div> : null}
         </DragOverlay>
-      </DndContext> : (
-        <div className="overflow-x-auto border-t border-ink-700/50">
-          <table className="w-full min-w-[58rem] text-left text-sm">
-            <thead className="border-b border-ink-700/65 bg-ink-900/80 text-xs text-ink-400">
-              <tr><th scope="col" className="px-3 py-2.5">작업</th><th scope="col" className="px-3 py-2.5">상태</th><th scope="col" className="px-3 py-2.5">우선순위</th><th scope="col" className="px-3 py-2.5">마일스톤</th><th scope="col" className="px-3 py-2.5">작업일</th><th scope="col" className="px-3 py-2.5">마감일</th><th scope="col" className="w-12 px-3 py-2.5"><span className="sr-only">작업 편집</span></th></tr>
-            </thead>
-            <tbody className="divide-y divide-ink-800/70">
-              {visibleTodos.map((todo) => (
-                <tr key={todo.id} className="hover:bg-ink-800/40">
-                  <td className="max-w-[30rem] px-3 py-2.5">
-                    <TodoRow todo={todo} onToggle={onToggleTodo} onDelete={onDeleteTodo} onEdit={setEditingTodo}
-                      showDate={false} showCategoryBadge={false} hideMediumPriority />
-                    {todo.parentTodoId && indexed.todoById.get(todo.parentTodoId) ? <p className="ml-6 mt-1 truncate text-[11px] text-ink-400">상위 작업: {indexed.todoById.get(todo.parentTodoId)?.title}</p> : null}
-                  </td>
-                  <td className="px-3 py-2.5"><select className="field h-8 min-h-8 w-28 py-0.5 text-xs" value={statusOf(todo)} onChange={(event) => { const nextStatus = event.target.value as TodoWorkflowStatus; void onUpdateTodo(todo.id, { workflowStatus: nextStatus, completed: nextStatus === "DONE" }); }} disabled={project.archived} aria-label={`${todo.title} 상태`}>{(["TODO", "IN_PROGRESS", "BLOCKED", "DONE"] as const).map((status) => <option key={status} value={status}>{workflowStatusLabels[status]}</option>)}</select></td>
-                  <td className="px-3 py-2.5 text-xs text-ink-300">{todo.priority === "HIGH" ? "높음" : todo.priority === "LOW" ? "낮음" : "보통"}</td>
-                  <td className="px-3 py-2.5"><select className="field h-8 min-h-8 max-w-44 py-0.5 text-xs" value={todo.milestoneId || ""} onChange={(event) => void onUpdateTodo(todo.id, { projectId: project.id, milestoneId: event.target.value || undefined })} disabled={project.archived} aria-label={`${todo.title} 마일스톤`}><option value="">미지정</option>{milestones.map((milestone) => <option key={milestone.id} value={milestone.id}>{milestone.title}</option>)}</select></td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-xs text-ink-300">{todo.date === "9999-12-31" ? "—" : todo.date}</td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-xs">{todo.dueDate ? <span className={isOverdueByDeadline(todo, today) ? "text-danger" : isDueSoon(todo, today) ? "text-warning" : "text-ink-300"}>{todo.dueDate}</span> : <span className="text-ink-600">—</span>}</td>
-                  <td className="px-3 py-2.5"><button type="button" className="icon-btn h-8 w-8" onClick={() => setEditingTodo(todo)} aria-label={`${todo.title} 편집`}><Pencil size={14} /></button></td>
-                </tr>
-              ))}
-              {!visibleTodos.length ? <tr><td colSpan={7} className="px-3 py-12 text-center text-sm text-ink-400">검색 조건에 맞는 프로젝트 작업이 없습니다.</td></tr> : null}
-            </tbody>
-          </table>
+      </DndContext>
+      {detachTarget ? <Modal title="프로젝트에서 제외" onClose={() => { if (!detaching) setDetachTarget(null); }}>
+        <p className="text-sm text-ui-secondary">“{detachTarget.title}”의 프로젝트 연결을 해제합니다. Task와 일정은 유지됩니다.</p>
+        {detachFailed ? <p role="alert" className="mt-2 text-sm text-danger">작업을 제외하지 못했습니다. 연결을 확인하고 다시 시도하세요.</p> : null}
+        <div className="mt-4 flex flex-wrap justify-end gap-2">
+          <button type="button" className="btn-secondary" disabled={detaching} onClick={() => setDetachTarget(null)}>취소</button>
+          {indexed.childCountByParentId.has(detachTarget.id) ? <button type="button" className="btn-secondary" disabled={detaching} onClick={() => void detach(true)}>하위 작업과 함께 제외</button> : null}
+          <button type="button" className="btn-primary" disabled={detaching} onClick={() => void detach(false)}>{detaching ? "처리 중" : "이 작업만 제외"}</button>
         </div>
-      )}
+      </Modal> : null}
       {editingTodo ? <TodoEditModal todo={editingTodo} categories={categories} projects={projects}
         milestones={milestones} subtasks={todos.filter((item) => item.parentTodoId === editingTodo.id)}
         onAddSubtask={async (parent, title) => {
@@ -374,7 +376,7 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
             priority: parent.priority,
           });
         }}
-        onClose={() => setEditingTodo(null)} onSave={onUpdateTodo} presentation="side-panel" /> : null}
+        onClose={() => setEditingTodoId(null)} onSave={onUpdateTodo} presentation="side-panel" /> : null}
     </section>
   );
 }

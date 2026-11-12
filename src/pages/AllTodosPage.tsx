@@ -12,6 +12,7 @@ import { PageHeader } from "../components/common/PageHeader";
 import { GroupedTodoList } from "../components/todo/GroupedTodoList";
 
 type AllTodosPageProps = {
+  initialProjectId?: string;
   allTodos: Todo[];
   filterTodos: (filters: TodoFilters) => Todo[];
   categories?: Category[];
@@ -30,10 +31,10 @@ type AllTodosPageProps = {
 };
 
 export function AllTodosPage({
-  allTodos, filterTodos, categories = [], projects, duplicateTodoIds, onToggle, onDelete, onDeleteMany, onBulkUpdate,
+  initialProjectId = "", allTodos, filterTodos, categories = [], projects, duplicateTodoIds, onToggle, onDelete, onDeleteMany, onBulkUpdate,
   onUpdate, onUnarchive, onAddTodo, onAddCategory, onUpdateCategory, onDeleteCategory,
 }: AllTodosPageProps) {
-  const [filters, setFilters] = useState<TodoFilters>(() => ({ ...defaultFilters, status: "ACTIVE" }));
+  const [filters, setFilters] = useState<TodoFilters>(() => ({ ...defaultFilters, status: initialProjectId ? "ALL" : "ACTIVE", projectId: initialProjectId }));
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [deleting, setDeleting] = useState(false);
@@ -124,7 +125,7 @@ export function AllTodosPage({
         }
       />
 
-      {!selectionMode ? <TodoForm compact collapsible categories={categories} projects={projects.filter((project) => !project.archived)} onAdd={onAddTodo} /> : null}
+      {!selectionMode ? <TodoForm key={filters.projectId} compact collapsible categories={categories} projects={projects.filter((project) => !project.archived)} defaultProjectId={filters.projectId || undefined} onAdd={onAddTodo} /> : null}
 
       {unplannedCount > 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-ui-divider py-2.5">
@@ -135,7 +136,7 @@ export function AllTodosPage({
         </div>
       ) : null}
       <div className="relative z-20 border-b border-ui-divider bg-ui-canvas py-2 lg:sticky lg:top-[60px]">
-        <TodoFilter filters={filters} onChange={setFilters} categories={categories} projects={projects} />
+        <TodoFilter filters={filters} onChange={(next) => { setFilters(next); setSelectedIds(new Set()); }} categories={categories} projects={projects} />
       </div>
 
       {selectionMode ? (
@@ -144,11 +145,10 @@ export function AllTodosPage({
             <div className="relative pl-3">
               <span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 rounded-full bg-accent-500" />
               <p className="text-sm font-bold text-ink-100">{selectedIds.size}개 선택됨</p>
-              <p className="mt-0.5 text-[11px] text-ink-500">체크박스로 직접 고르거나 현재 검색 결과·전체 Todo를 한 번에 선택할 수 있습니다.</p>
+              <p className="mt-0.5 text-[11px] text-ink-500">선택 범위는 현재 검색 결과입니다.</p>
             </div>
             <div className="flex flex-wrap gap-1.5">
               <button type="button" className="btn-secondary px-2.5 text-xs" onClick={() => selectTodos(filteredTodos)} disabled={!filteredTodos.length || deleting || updating}>현재 결과 {filteredTodos.length}개 선택</button>
-              <button type="button" className="btn-secondary px-2.5 text-xs" onClick={() => selectTodos(allTodos)} disabled={!allTodos.length || deleting || updating}>전체 {allTodos.length}개 선택</button>
               <button type="button" className="btn-secondary px-2.5 text-xs" onClick={() => setSelectedIds(new Set())} disabled={!selectedIds.size || deleting || updating}>선택 해제</button>
             </div>
           </div>

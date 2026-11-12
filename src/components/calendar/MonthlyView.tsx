@@ -18,6 +18,8 @@ import { MonthlyCalendar } from "../monthly/MonthlyCalendar";
 import { MonthlySidePanel } from "../monthly/MonthlySidePanel";
 
 type MonthlyViewProps = {
+  selectedDate: string;
+  onSelectDate: (date: string) => void;
   todos: Todo[];
   projects?: Project[];
   milestones?: Milestone[];
@@ -43,6 +45,8 @@ const filterOptions: Array<{ key: keyof CalendarVisibility; label: string }> = [
 ];
 
 export function MonthlyView({
+  selectedDate,
+  onSelectDate,
   todos,
   projects = [],
   milestones = [],
@@ -60,8 +64,7 @@ export function MonthlyView({
   onUpdateCategory,
   onDeleteCategory,
 }: MonthlyViewProps) {
-  const [currentMonth, setCurrentMonth] = useState(() => parseDateKey(todayKey()));
-  const [selectedDate, setSelectedDate] = useState(todayKey);
+  const currentMonth = useMemo(() => parseDateKey(selectedDate.slice(0, 7) + "-01"), [selectedDate]);
   const [panelOpen, setPanelOpen] = useState(false);
   const [quickAdd, setQuickAdd] = useState(false);
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
@@ -105,11 +108,7 @@ export function MonthlyView({
   };
 
   const selectDate = (dateKey: string) => {
-    setSelectedDate(dateKey);
-    const date = parseDateKey(dateKey);
-    if (date.getMonth() !== currentMonth.getMonth() || date.getFullYear() !== currentMonth.getFullYear()) {
-      setCurrentMonth(date);
-    }
+    onSelectDate(dateKey);
     setPanelOpen(true);
     setQuickAdd(false);
     window.requestAnimationFrame(() => selectedPanelRef.current?.focus());
@@ -141,13 +140,10 @@ export function MonthlyView({
   };
 
   const changeMonth = (date: Date) => {
-    setCurrentMonth(date);
-    setSelectedDate(toDateKey(date));
+    onSelectDate(toDateKey(date));
   };
   const goToToday = () => {
-    const today = todayKey();
-    setCurrentMonth(parseDateKey(today));
-    setSelectedDate(today);
+    onSelectDate(todayKey());
   };
 
   return (

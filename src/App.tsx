@@ -13,14 +13,17 @@ import { TodoForm } from "./components/todo/TodoForm";
 import { TodoQuickActionsProvider, type TodoSnoozeTarget } from "./components/todo/TodoQuickActionsContext";
 import { usePlannerData } from "./hooks/usePlannerData";
 import { getPlannerToday, parseDateKey, todayKey, toDateKey } from "./lib/date";
-import { calendarModeFromHash, viewFromHash, viewHash, type CalendarMode } from "./lib/viewNavigation";
+import { calendarDateFromHash, calendarModeFromHash, viewFromHash, viewHash, type CalendarMode } from "./lib/viewNavigation";
 import type { Todo } from "./types/todo";
+import type { TodoProjectLinkChange } from "./types/todoProjectLinks";
 
 const TODO_UNDO_MS = 5000;
-const UNDOABLE_UPDATE_FIELDS = new Set(["date", "planningState", "priority"]);
+const UNDOABLE_UPDATE_FIELDS = new Set(["date", "planningState", "priority", "workflowStatus", "completed"]);
+const undoToastClass = "flex items-center justify-between gap-3 rounded-lg border border-ui-divider bg-ui-elevated px-3 py-2.5 text-sm text-ui-text";
 
 type PendingTodoUndo = {
   changes: { id: string; updates: Partial<Todo> }[];
+  projectLinks?: TodoProjectLinkChange[];
   message: string;
   createdAt: number;
 };
@@ -28,6 +31,8 @@ type PendingTodoUndo = {
 function App({ onLogout }: { onLogout: () => Promise<void> }) {
   const [activeView, setActiveView] = useState<AppView>(() => viewFromHash(window.location.hash));
   const [calendarMode, setCalendarMode] = useState<CalendarMode>(() => calendarModeFromHash(window.location.hash));
+  const [calendarDate, setCalendarDate] = useState(() => calendarDateFromHash(window.location.hash));
+  const [allProjectId, setAllProjectId] = useState(() => new URLSearchParams(window.location.hash.split("?")[1]).get("project") || "");
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [searchTodoId, setSearchTodoId] = useState<string | null>(null);
@@ -52,6 +57,8 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
       setSearchTodoId(null);
       setActiveView(next);
       setCalendarMode(calendarModeFromHash(window.location.hash));
+      setCalendarDate(next === "calendar" ? calendarDateFromHash(window.location.hash) : undefined);
+      setAllProjectId(next === "all" ? new URLSearchParams(window.location.hash.split("?")[1]).get("project") || "" : "");
     };
     syncLocation(); // Normalize old Inbox bookmarks on initial load.
     window.addEventListener("popstate", syncLocation);
@@ -140,26 +147,35 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     if (todoUndoTimerRef.current !== null) window.clearTimeout(todoUndoTimerRef.current);
   }, []);
 
-  const registerTodoUndo = useCallback((changes: PendingTodoUndo["changes"], message: string) => {
-    if (!changes.length) return;
+  const scheduleTodoUndoExpiry = useCallback(() => {
     if (todoUndoTimerRef.current !== null) window.clearTimeout(todoUndoTimerRef.current);
-    setPendingTodoUndo({ changes, message, createdAt: Date.now() });
     todoUndoTimerRef.current = window.setTimeout(() => {
       todoUndoTimerRef.current = null;
       setPendingTodoUndo(null);
     }, TODO_UNDO_MS);
   }, []);
+  const registerTodoUndo = useCallback((changes: PendingTodoUndo["changes"], message: string, projectLinks?: TodoProjectLinkChange[]) => {
+    if (!changes.length && !projectLinks?.length) return;
+    setPendingTodoUndo({ changes, projectLinks, message, createdAt: Date.now() });
+    scheduleTodoUndoExpiry();
+  }, [scheduleTodoUndoExpiry]);
 
-  const navigateToView = (view: AppView, mode: CalendarMode = "month") => {
-    const target = viewHash(view, mode);
+  const navigateToView = (view: AppView, mode: CalendarMode = "month", projectId = "") => {
+    const target = viewHash(view, mode) + (view === "all" && projectId ? `?project=${encodeURIComponent(projectId)}`
+      : view === "calendar" && calendarDate ? `?date=${calendarDate}` : "");
     if (window.location.hash !== target) {
       window.history.pushState({ view, mode }, "", target);
     }
     setActiveView(view);
+    setAllProjectId(view === "all" ? projectId : "");
     if (view === "calendar") setCalendarMode(mode);
   };
 
   const changeCalendarMode = (mode: CalendarMode) => navigateToView("calendar", mode);
+  const changeCalendarDate = (date: string) => {
+    setCalendarDate(date);
+    window.history.replaceState(window.history.state, "", `${viewHash("calendar", calendarMode)}?date=${date}`);
+  };
 
   const changeView = (view: AppView) => {
     setSearchMemoId(null);
@@ -211,7 +227,9 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     if (!changedKeys.length || !changedKeys.every((key) => UNDOABLE_UPDATE_FIELDS.has(key))) return updated;
     const message = changedKeys.length === 1 && changedKeys[0] === "priority"
       ? `“${before.title}”의 우선순위를 변경했습니다.`
-      : `“${before.title}”의 일정을 변경했습니다.`;
+      : changedKeys.some((key) => key === "workflowStatus" || key === "completed")
+        ? `“${before.title}”의 상태를 변경했습니다.`
+        : `“${before.title}”의 일정을 변경했습니다.`;
     registerTodoUndo([{ id, updates: Object.fromEntries(changedKeys.map((key) => [key, beforeRecord[key]])) }], message);
     return updated;
   };
@@ -240,11 +258,25 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     return Boolean(updated);
   };
 
+  const detachTodoWithUndo = async (id: string, projectId: string, includeChildren: boolean) => {
+    const changes = await planner.detachTodo(id, projectId, includeChildren);
+    if (!changes) return false;
+    const count = changes.filter(({ before, after }) => before.projectId !== after.projectId).length;
+    registerTodoUndo([], `작업 ${count}개를 프로젝트에서 제외했습니다.`, changes);
+    return true;
+  };
+
   const undoTodoAction = async () => {
     const pending = pendingTodoUndo;
     if (!pending || undoInProgress.current) return;
     undoInProgress.current = true;
     try {
+      if (pending.projectLinks) {
+        const restored = await planner.restoreTodoProjectLinks(pending.projectLinks);
+        setPendingTodoUndo((current) => current !== pending ? current
+          : restored ? null : { ...pending, message: "프로젝트 연결을 복구하지 못했습니다." });
+        return;
+      }
       const results = await Promise.all(pending.changes.map(async (change) =>
         await planner.updateTodo(change.id, change.updates) ? null : change));
       const failed = results.filter((change): change is NonNullable<typeof change> => change !== null);
@@ -263,6 +295,12 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
   const pendingMemo = planner.pendingMemoDelete;
   const showMemoUndo = pendingMemo && pendingMemo.createdAt >= latestTodoActionAt;
   const showUpdateUndo = pendingTodoUndo && !showDeleteUndo && !showMemoUndo;
+  const deleteUndoVisible = Boolean(showDeleteUndo && !showMemoUndo);
+  const { setDeleteUndoPaused } = planner;
+  useEffect(() => {
+    if (!deleteUndoVisible) setDeleteUndoPaused(false);
+    if (pendingTodoUndo && !showUpdateUndo && todoUndoTimerRef.current === null) scheduleTodoUndoExpiry();
+  }, [deleteUndoVisible, pendingTodoUndo, showUpdateUndo, setDeleteUndoPaused, scheduleTodoUndoExpiry]);
 
   const todayOpenTodos = planner.getTodayTodos().filter((todo) => !todo.completed && !todo.archived);
   const searchTodo = searchTodoId ? planner.allTodos.find((todo) => todo.id === searchTodoId) || null : null;
@@ -294,7 +332,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
             {planner.loadedOnce ? (
               <>
                 {planner.backgroundOrOperationError ? <ErrorBanner message={planner.backgroundOrOperationError} onRetry={planner.loadAll} /> : null}
-                <AppContent activeView={activeView} calendarMode={calendarMode} onCalendarModeChange={changeCalendarMode} planner={planner} onToggleTodo={toggleTodoWithUndo} onUpdateTodo={updateTodoWithUndo} onBulkUpdateTodos={bulkUpdateWithUndo} focusedMemoId={searchMemoId} focusedProjectId={searchProjectId} onFocusedItemOpened={clearOpenedSearchTarget} onOpenDayClose={() => setShowDayClose(true)} />
+                <AppContent activeView={activeView} calendarMode={calendarMode} calendarDate={calendarDate ?? todayKey()} onCalendarDateChange={changeCalendarDate} onCalendarModeChange={changeCalendarMode} planner={planner} onToggleTodo={toggleTodoWithUndo} onUpdateTodo={updateTodoWithUndo} onBulkUpdateTodos={bulkUpdateWithUndo} focusedMemoId={searchMemoId} focusedProjectId={searchProjectId} onFocusedItemOpened={clearOpenedSearchTarget} onOpenDayClose={() => setShowDayClose(true)} onDetachTodo={detachTodoWithUndo} onOpenProjectTodos={(id) => navigateToView("all", "month", id)} onOpenTodo={(id) => setSearchTodoId(id)} allProjectId={allProjectId} />
               </>
             ) : null}
           </main>
@@ -326,9 +364,12 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
 
         {pendingTodoUndo || pendingDelete || planner.pendingMemoDelete ? (
           <div className="fixed bottom-20 right-4 z-[90] flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2 lg:bottom-4" aria-live="polite">
-            {showDeleteUndo && !showMemoUndo ? <div className="flex items-center justify-between gap-3 rounded-lg border border-ui-divider bg-ui-elevated px-3 py-2.5"><p className="min-w-0 text-sm">“{pendingDelete.label}” 항목을 삭제했습니다.</p><button type="button" className="btn-secondary shrink-0 px-2.5 text-xs" onClick={planner.undoDeleteTodo}><Undo2 size={14} />되돌리기</button></div> : null}
-            {showUpdateUndo ? <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-600 bg-ui-elevated px-3 py-2.5"><p className="min-w-0 text-sm font-semibold text-ui-text">{pendingTodoUndo.message}</p><button type="button" className="btn-secondary shrink-0 px-2.5 text-xs" onClick={() => void undoTodoAction()}><Undo2 size={14} />되돌리기</button></div> : null}
-            {showMemoUndo ? <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-600 bg-ink-900/96 px-3 py-2.5 shadow-2xl backdrop-blur-xl"><p className="min-w-0 truncate text-sm font-semibold text-ink-200">“{pendingMemo.label}” 메모 삭제 대기</p><button type="button" className="btn-secondary shrink-0 px-2.5 text-xs" onClick={planner.undoDeleteMemo}><Undo2 size={14} />실행 취소</button></div> : null}
+            {deleteUndoVisible && pendingDelete ? <div className={undoToastClass}><p className="min-w-0">“{pendingDelete.label}” 휴지통으로 이동</p><button type="button" className="btn-secondary shrink-0 px-2.5 text-xs" onFocus={() => setDeleteUndoPaused(true)} onBlur={() => setDeleteUndoPaused(false)} onClick={planner.undoDeleteTodo}><Undo2 size={14} />되돌리기</button></div> : null}
+            {showUpdateUndo ? <div className={undoToastClass}><p className="min-w-0">{pendingTodoUndo.message}</p><button type="button" className="btn-secondary shrink-0 px-2.5 text-xs" onFocus={() => {
+              if (todoUndoTimerRef.current !== null) window.clearTimeout(todoUndoTimerRef.current);
+              todoUndoTimerRef.current = null;
+            }} onBlur={scheduleTodoUndoExpiry} onClick={() => void undoTodoAction()}><Undo2 size={14} />되돌리기</button></div> : null}
+            {showMemoUndo ? <div className={undoToastClass}><p className="min-w-0">“{pendingMemo.label}” 메모 삭제 대기</p><button type="button" className="btn-secondary shrink-0 px-2.5 text-xs" onClick={planner.undoDeleteMemo}><Undo2 size={14} />되돌리기</button></div> : null}
           </div>
         ) : null}
       </div>

@@ -13,13 +13,14 @@ const refLabel = (ref: { requested: string | null; restored: string | null }) =>
 const countLabel = (value: { requested: number; restored: number }) =>
   value.requested ? `${value.restored}/${value.requested}개 복원` : "연결 없음";
 
-export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
+export function TrashPage({ onRestored, onOpenTodo }: { onRestored: () => Promise<void>; onOpenTodo: (id: string) => void }) {
   const [items, setItems] = useState<TodoTrashEntry[]>([]);
   const [preview, setPreview] = useState<TodoRestorePreview | null>(null);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
+  const [restoredTodo, setRestoredTodo] = useState<{ id: string; title: string } | null>(null);
   const normalizedQuery = query.trim().toLocaleLowerCase("ko-KR");
   const visibleItems = items.filter((item) => !normalizedQuery || item.title.toLocaleLowerCase("ko-KR").includes(normalizedQuery));
 
@@ -55,9 +56,10 @@ export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
     if (!preview?.restorable) return;
     setWorking(true);
     try {
-      await api(`/api/trash/todos/${preview.id}/restore`, { method: "POST" });
+      const result = await api<{ todoId: string }>(`/api/trash/todos/${preview.id}/restore`, { method: "POST" });
       setPreview(null);
       await Promise.all([loadTrash(), onRestored()]);
+      setRestoredTodo({ id: result.todoId, title: preview.title });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Todo를 복원하지 못했습니다.");
     } finally {
@@ -95,6 +97,10 @@ export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
 
   return (
     <div className="page-shell trash-page">
+      {restoredTodo ? <div className="mb-3 flex flex-wrap items-center gap-2 text-sm" role="status">
+        <span>“{restoredTodo.title}”을 복원했습니다.</span>
+        <button type="button" className="btn-secondary text-xs" onClick={() => onOpenTodo(restoredTodo.id)}>복원한 Todo 열기</button>
+      </div> : null}
       <section className="page-header sm:items-end">
         <div>
           <h1 className="text-[23px] font-semibold tracking-tight text-ink-100">휴지통</h1>

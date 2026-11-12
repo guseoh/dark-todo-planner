@@ -2620,7 +2620,6 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
 
 
 .project-switcher-progress { display: none; }
-.project-milestone-timeline { min-height: 40px; padding-top: 5px; }
 
 @media (min-width: 1280px) {
   .project-page .project-v4-workspace { grid-template-columns: 200px minmax(0, 1fr); gap: 24px; }
@@ -2636,7 +2635,7 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
     background: var(--surface-3);
   }
   .project-switcher-progress > span { display: block; height: 100%; }
-  .project-page .project-v4-board { min-width: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .project-page .project-v4-board { min-width: 784px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .project-page .project-v4-board[data-done-collapsed="true"] {
     grid-template-columns: repeat(3, minmax(0, 1fr)) 36px;
   }
@@ -2650,6 +2649,19 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
   .project-page .project-kanban-column[data-collapsed="true"] button { writing-mode: vertical-rl; margin-inline: auto; }
   .project-page .project-kanban-column__header { flex-wrap: wrap; }
 }
+
+@media (min-width: 1151px) and (max-width: 1359px) {
+  .project-page .project-v4-workspace { display: block; }
+  .project-page .project-v4-switcher { display: flex; align-items: center; gap: 8px; position: static; border: 0; padding: 0 0 8px; }
+  .project-page .project-v4-switcher__title, .project-page .project-v4-switcher__nav { display: none; }
+  .project-page .project-v4-compact-select { display: block; width: min(100%, 320px); }
+}
+
+.project-page .project-kanban-card .project-actions-menu > summary {
+  min-width: 28px;
+  min-height: 32px;
+}
+.project-page .project-kanban-card:has(.project-actions-menu[open]) { position: relative; z-index: 2; }
 
 
 .calendar-month-right:not(.is-open), .calendar-month-ranges, .calendar-unscheduled { display: none; }

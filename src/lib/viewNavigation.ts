@@ -1,4 +1,5 @@
 import { appViewIds, type AppView } from "../components/layout/Sidebar";
+import { parseDateKey } from "./date";
 
 const VIEW_PREFIX = "#/";
 export type CalendarMode = "month" | "week";
@@ -17,4 +18,9 @@ export function viewFromHash(hash: string): AppView {
 export function calendarModeFromHash(hash: string): CalendarMode {
   hash = hash.split("?")[0];
   return hash === "#/week" || hash === "#/calendar/week" ? "week" : "month";
+}
+
+export function calendarDateFromHash(hash: string): string | undefined {
+  const date = new URLSearchParams(hash.split("?")[1]).get("date");
+  return date && /^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(parseDateKey(date).getTime()) ? date : undefined;
 }

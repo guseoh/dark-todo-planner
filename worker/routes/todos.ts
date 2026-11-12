@@ -6,6 +6,7 @@ import { serializeCategory, serializeTodos } from "../serializers";
 import type { Bindings, Variables } from "../types";
 import { newId, normalizeIcon, nowIso, optional, pagination } from "../utils";
 import { bulkTodoUpdateSchema, categoryInputSchema, todoInputSchema } from "../validation";
+import { detachTodoSchema, planTodoDetach, restoreTodoLinksSchema, writeTodoProjectLinks } from "./todoProjectLinks";
 
 export const todoRoutes = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -183,6 +184,26 @@ todoRoutes.post("/todos/bulk-update", async (c) => {
 todoRoutes.patch("/todos/reorder", async (c) => {
   const { ids } = await c.req.json<{ ids: string[] }>(); const now = nowIso(); const userId = c.get("userId");
   await c.env.DB.batch(ids.map((id, order) => c.env.DB.prepare("UPDATE todos SET sort_order = ?, updated_at = ? WHERE id = ? AND user_id = ?").bind(order, now, id, userId))); return c.json({ ok: true });
+});
+todoRoutes.post("/todos/:id/detach-project", async (c) => {
+  const { projectId, includeChildren } = detachTodoSchema.parse(await c.req.json());
+  const userId = c.get("userId");
+  const db = c.env.DB;
+  const changes = await planTodoDetach(db, userId, c.req.param("id"), projectId, includeChildren);
+  if (!changes.length) return c.json({ message: "프로젝트에서 작업을 찾을 수 없습니다." }, 404);
+  if (changes.length > 500) return c.json({ message: "연결된 작업이 너무 많습니다." }, 400);
+  if (!await writeTodoProjectLinks(db, userId, changes, true)) {
+    return c.json({ message: "작업 연결이 변경되었습니다. 목록을 새로고침하고 다시 시도하세요." }, 409);
+  }
+  return c.json({ changes });
+});
+todoRoutes.post("/todos/restore-project-links", async (c) => {
+  const { changes } = restoreTodoLinksSchema.parse(await c.req.json());
+  const reversed = changes.map(({ id, before, after }) => ({ id, before: after, after: before }));
+  if (!await writeTodoProjectLinks(c.env.DB, c.get("userId"), reversed, false)) {
+    return c.json({ message: "작업 연결이나 복구 대상이 변경되어 되돌리지 못했습니다." }, 409);
+  }
+  return c.json({ changes: reversed });
 });
 todoRoutes.get("/todos/:id", async (c) => {
   const db = drizzle(c.env.DB); const [row] = await db.select().from(todos).where(and(eq(todos.id, c.req.param("id")), eq(todos.userId, c.get("userId")))).limit(1);

@@ -339,7 +339,7 @@ export function TodayPage({
                   onClick={() => void moveOverdue(toDateKey(addDays(parseDateKey(today), 1)))}>전부 내일로</button>
                 <button type="button" className="today-overdue-banner__action hidden xl:inline-flex" disabled={movingOverdue}
                   onClick={() => void moveOverdue(today)}>전부 오늘로</button>
-                <button type="button" className="today-overdue-banner__action" onClick={() => setShowOverdueImport(true)}>하나씩 검토</button>
+                <button type="button" className="today-overdue-banner__action" onClick={() => setShowOverdueImport(true)}>지난 일정 검토</button>
               </div>
             </div>
           ) : null}

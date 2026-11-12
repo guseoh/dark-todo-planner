@@ -72,7 +72,7 @@ try {
       oldDashboardCount: document.querySelectorAll(".today-overview__stat").length,
       planningPanelPresent: Boolean(planningPanel),
       workspaceLayout: getComputedStyle(document.querySelector(".today-workspace")).display,
-      todayWidth: document.querySelector(".today-page").getBoundingClientRect().width,
+      executionWidth: document.querySelector(".today-workspace__main").getBoundingClientRect().width,
       hasSidebar: Boolean(document.querySelector(".today-sidebar")),
       primaryBackground: getComputedStyle(primary).backgroundColor,
       accent: rootStyle.getPropertyValue("--accent").trim(),
@@ -87,10 +87,10 @@ try {
   assert.ok(visualSystem.headerHeight <= 90, "Today heading/status must be compact.");
   assert.ok(visualSystem.captureOffset <= 145, "Quick capture should appear close to the header in V4.");
   assert.equal(visualSystem.oldDashboardCount, 0, "Old KPI grid must not return.");
-  assert.ok(visualSystem.headerText.includes("완료"), "Concise completion summary must remain visible.");
+  assert.match(visualSystem.headerText, /진행\s*\d+\s*\/\s*\d+/, "Concise progress summary must remain visible.");
   assert.equal(visualSystem.workspaceLayout, "grid", "Today must be able to show a task lane and an actionable planning lane.");
   assert.equal(visualSystem.hasSidebar, false, "Today must not retain a disconnected right rail.");
-  assert.ok(visualSystem.todayWidth <= 840, "Default Today should retain a compact, readable desktop width.");
+  assert.ok(visualSystem.executionWidth <= 740, "The desktop execution list remains readable beside the planning rail.");
   assert.equal(visualSystem.planningPanelPresent, false, "Planning is hidden by default, not a permanent second column.");
   const captureFirst = await page.evaluate(() => {
     const capture = document.querySelector(".today-capture-section");
@@ -433,7 +433,7 @@ try {
   await page.getByRole("group", { name: "오늘 작업 현황", exact: true }).waitFor();
   await page.getByText(/오늘 예정된 일이 없습니다/).waitFor();
   assert.equal(await page.getByText("첫 작업", { exact: true }).count(), 0, "Empty state should be a single calm line.");
-  assert.equal(await page.getByRole("heading", { name: "오늘의 핵심 작업" }).count(), 0, "Do not render empty focus card.");
+  assert.equal(await page.getByRole("heading", { name: "지금 집중" }).count(), 0, "Do not render empty focus card.");
   assert.equal(await page.getByText("미완료 Todo가 없습니다.", { exact: true }).count(), 0, "Do not repeat zero-state placeholders.");
   assert.equal(await page.getByRole("button", { name: "카테고리 관리" }).count(), 1, "Keep category management discoverable even when Today is empty.");
   assert.equal(await page.locator('section[aria-label="오늘 Todo"]').count(), 1, "Todo entry must remain available while empty.");
@@ -667,9 +667,9 @@ try {
       focusAction: !!row.querySelector("button.today-focus-toggle"),
     };
   });
-  assert.ok(todoVisual.size >= 14.5 && todoVisual.size <= 15.5 && todoVisual.lineHeight >= 22,
-    "Today task titles should read at a restrained but legible 15px/22px.");
-  assert.ok(todoVisual.height >= 48 && todoVisual.height <= 70,
+  assert.ok(todoVisual.size >= 14 && todoVisual.size <= 15 && todoVisual.lineHeight >= 20,
+    "Today task titles must remain readable in the compact desktop layout.");
+  assert.ok(todoVisual.height >= 36 && todoVisual.height <= 70,
     `Today list rows should stay comfortably compact: ${todoVisual.height}px`);
   assert.equal(todoVisual.divider, "1px", "Todo rows must have a real separator.");
   assert.equal(todoVisual.todayVariant, true, "Today Todo rows must use the dedicated editorial presentation.");
@@ -782,16 +782,16 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await nav.getByRole("button", { name: "오늘", exact: true }).click();
   await page.getByRole("group", { name: "오늘 작업 현황" }).waitFor();
-  assert.ok((await page.getByRole("group", { name: "오늘 작업 현황" }).innerText()).includes("완료"),
-    "Today keeps a concise completion summary instead of a KPI progress meter.");
+  assert.match(await page.getByRole("group", { name: "오늘 작업 현황" }).innerText(), /진행\s*\d+\s*\/\s*\d+/,
+    "Today keeps a concise progress summary.");
   // Direct star selection is a desktop affordance; mobile retains the more menu to avoid cramped rows.
   await page.setViewportSize({ width: 1440, height: 900 });
   const focusRow = () => page.locator(".todo-row--today").filter({ has: page.getByRole("heading", { name: title, exact: true }) });
   await focusRow().getByRole("button", { name: `핵심 작업 선택: ${title}` }).click();
-  await page.getByRole("heading", { name: "오늘의 핵심 작업" }).waitFor();
+  await page.getByRole("heading", { name: "지금 집중" }).waitFor();
   assert.equal(await focusRow().count(), 1, "Pinned Todo must not be rendered twice.");
   await focusRow().getByRole("button", { name: `핵심 작업 해제: ${title}` }).click();
-  assert.equal(await page.getByRole("heading", { name: "오늘의 핵심 작업" }).count(), 0,
+  assert.equal(await page.getByRole("heading", { name: "지금 집중" }).count(), 0,
     "Focus section should collapse after removing the last pinned Todo.");
   await page.setViewportSize({ width: 390, height: 844 });
   // The more menu still exposes the remaining task actions.
@@ -895,8 +895,7 @@ try {
   await editGoal.waitFor({ state: "hidden" });
   await page.unroute("**/api/goals/*");
 
-  // Project workspace should remain usable while its formerly crowded
-  // sections are hidden behind purpose-built tabs.
+  // Project workspace opens directly on the board.
   await nav.getByRole("button", { name: "프로젝트", exact: true }).click();
   await page.getByRole("heading", { name: "프로젝트", exact: true }).waitFor();
   await page.getByRole("button", { name: "프로젝트 추가" }).click();
@@ -906,7 +905,7 @@ try {
   // Project creation is async. Tabs for a previously selected project may
   // already be visible before the newly created project has been selected.
   // Wait for the actual new project header/rail selection, not any old tab.
-  await page.locator(".project-v4-toolbar h2").getByText("UX Regression Project", { exact: true }).waitFor();
+  await page.getByRole("heading", { name: "UX Regression Project", exact: true }).waitFor();
   await newProjectInput.waitFor({ state: "detached" });
   const projectSwitcher = page.locator(".project-v4-switcher");
   // The wide-screen project rail is intentionally hidden at the 390px smoke
@@ -914,20 +913,16 @@ try {
   const selectedProjectNav = projectSwitcher.locator('.project-v4-switcher__item[aria-pressed="true"]');
   assert.match((await selectedProjectNav.textContent()) || "", /UX Regression Project/,
     "Async project creation must select the newly created project");
-  await page.getByRole("tab", { name: /프로젝트 관리/ }).click();
   const projectManageMenu = page.locator(".project-actions-menu");
   await projectManageMenu.locator("summary").waitFor();
   await projectManageMenu.locator("summary").click();
   assert.equal(await projectManageMenu.getAttribute("open"), "", "Project management actions should expand on demand.");
   await projectManageMenu.getByRole("button", { name: "삭제", exact: true }).waitFor();
   await projectManageMenu.locator("summary").click();
-  await page.getByRole("tab", { name: /마일스톤/ }).click();
-  await page.getByRole("heading", { name: "마일스톤" }).waitFor();
-  await page.getByRole("tab", { name: /결정 기록/ }).click();
-  await page.getByRole("tab", { name: /프로젝트 관리/ }).click();
-  await page.getByRole("heading", { name: "프로젝트 상태" }).waitFor();
-  await page.getByRole("tab", { name: /작업/ }).click();
-  await page.getByText("아직 등록한 프로젝트 작업이 없습니다.", { exact: true }).waitFor();
+  assert.equal(await page.getByRole("tab").count(), 0, "Project workspace has a single board.");
+  assert.equal(await page.getByLabel("프로젝트 목표일").count(), 0);
+  assert.equal(await page.getByLabel("마일스톤 타임라인").count(), 0);
+  await page.locator(".project-v4-board").waitFor();
   assert.equal(await page.locator(".project-v4-workspace").count(), 1, "V4 project selection and workbench must share a layout.");
   assert.equal(await page.locator(".project-v4-switcher__nav").count(), 1, "Wide layouts expose a separate project navigation rail.");
   // Inputs previously expanded across the entire desktop toolbar because
@@ -935,17 +930,13 @@ try {
   await page.setViewportSize({ width: 1280, height: 844 });
   const kanbanFilterWidths = await page.evaluate(() => {
     const search = document.querySelector('input[aria-label="프로젝트 작업 검색"]');
-    const milestone = document.querySelector('select[aria-label="마일스톤 필터"]');
-    if (!search || !milestone) return null;
+    if (!search) return null;
     return { search: search.getBoundingClientRect().width,
-      milestone: milestone.getBoundingClientRect().width,
       viewport: window.innerWidth, document: document.documentElement.scrollWidth };
   });
-  assert.ok(kanbanFilterWidths, "Project search and milestone controls must exist.");
+  assert.ok(kanbanFilterWidths, "Project search must exist.");
   assert.ok(kanbanFilterWidths.search >= 180 && kanbanFilterWidths.search <= 300,
-    `Project search width must be controlled: ${JSON.stringify(kanbanFilterWidths)}`);
-  assert.ok(kanbanFilterWidths.milestone >= 150 && kanbanFilterWidths.milestone <= 225,
-    `Milestone filter must not fill the toolbar: ${JSON.stringify(kanbanFilterWidths)}`);
+    "Project search width must be controlled.");
   assert.ok(kanbanFilterWidths.document <= kanbanFilterWidths.viewport + 2,
     "Project controls must not overflow the desktop viewport.");
   // V4 project cards stay concise; the right-side inspector owns subtask creation.
@@ -966,7 +957,7 @@ try {
   assert.ok(projectFixture.todo?.id, "Project parent task persisted");
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "프로젝트", exact: true }).waitFor();
-  await page.locator(".project-v4-switcher__nav").getByRole("button", { name: /UX Regression Project/ }).click();
+  await page.getByRole("combobox", { name: "프로젝트 선택" }).selectOption(projectFixture.projectId);
   const taskCard = page.locator(".project-kanban-card").filter({ has: page.getByRole("button", { name: parentTaskTitle, exact: true }) });
   await taskCard.waitFor();
   assert.equal(await taskCard.locator("select").count(), 0, "Kanban cards must not contain inline milestone editors");
@@ -1070,11 +1061,40 @@ try {
     "Failed workflow PUT must restore the previous lane and server state.");
   await page.unroute("**/api/todos/*");
 
+  const taskMenu = taskCard.getByLabel(parentTaskTitle + " 작업 메뉴");
+  await taskMenu.click();
+  await taskCard.getByRole("button", { name: "프로젝트에서 제외", exact: true }).click();
+  const detachDialog = page.getByRole("dialog", { name: "프로젝트에서 제외" });
+  await detachDialog.getByRole("button", { name: "이 작업만 제외" }).click();
+  await taskCard.waitFor({ state: "detached" });
+  const detachedParent = await findServerTodo(parentTaskTitle);
+  assert.ok(!detachedParent.projectId && detachedParent.date === projectFixture.todo.date);
+  assert.ok(!(await findServerTodo(childTitle)).parentTodoId, "Remaining child loses its parent link");
+  await page.getByRole("button", { name: "되돌리기", exact: true }).click();
+  await taskCard.waitFor();
+  assert.equal((await findServerTodo(childTitle)).parentTodoId, projectFixture.todo.id);
+
+  await taskMenu.click();
+  await taskCard.getByRole("button", { name: "프로젝트에서 제외", exact: true }).click();
+  await detachDialog.getByRole("button", { name: "하위 작업과 함께 제외" }).click();
+  await taskCard.waitFor({ state: "detached" });
+  const detachedChild = await findServerTodo(childTitle);
+  assert.ok(!detachedChild.projectId && detachedChild.parentTodoId === projectFixture.todo.id);
+  await page.getByRole("button", { name: "되돌리기", exact: true }).click();
+  await taskCard.waitFor();
+
+  await taskMenu.click();
+  await taskCard.getByRole("button", { name: "휴지통으로 이동", exact: true }).click();
+  await taskCard.waitFor({ state: "detached" });
+  await page.getByRole("button", { name: "되돌리기", exact: true }).click();
+  await taskCard.waitFor();
+
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole("tab", { name: /프로젝트 관리/ }).click();
-  const resourceDisclosure = page.locator("details").filter({ hasText: "자료 링크" }).first();
-  await resourceDisclosure.locator("summary").click();
-  assert.equal(await resourceDisclosure.evaluate((node) => node.open), true);
+  await projectManageMenu.locator("summary").click();
+  await projectManageMenu.getByRole("button", { name: "자료 링크", exact: true }).click();
+  const resourceDialog = page.getByRole("dialog", { name: "자료 링크" });
+  await resourceDialog.waitFor();
+  await resourceDialog.getByRole("button", { name: "자료 링크 닫기" }).click();
 
   // Memo: browser drafts, Markdown preview, linked Todo metadata, and partial
   // server-save failure must not create duplicate records.
