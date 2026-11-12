@@ -8,6 +8,7 @@ type WeekPageProps = {
   embedded?: boolean;
   selectedDate: string;
   onSelectDate: (date: string) => void;
+  onReloadTodos: () => Promise<void>;
   todos?: Todo[];
   projects?: Project[];
   getTodosByDate: (date: string) => Todo[];
@@ -27,6 +28,7 @@ export function WeekPage({
   embedded = false,
   selectedDate,
   onSelectDate,
+  onReloadTodos,
   todos,
   projects,
   getTodosByDate,
@@ -49,7 +51,7 @@ export function WeekPage({
           <p className="mt-1 text-sm text-ink-500">한 주의 작업 분포를 보고, 선택한 날짜의 Todo를 집중해서 관리합니다.</p>
         </section>
       ) : null}
-      <WeeklyView todos={todos} projects={projects} selectedDate={selectedDate} onSelectDate={onSelectDate}
+      <WeeklyView todos={todos} projects={projects} selectedDate={selectedDate} onSelectDate={onSelectDate} onReloadTodos={onReloadTodos}
         getTodosByDate={getTodosByDate}
         onAdd={onAdd}
         onToggle={onToggle}

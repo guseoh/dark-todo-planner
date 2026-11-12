@@ -789,8 +789,7 @@ try {
   await page.getByRole("heading", { name: "지금 집중" }).waitFor();
   assert.equal(await focusRow().count(), 1, "Pinned Todo must not be rendered twice.");
   await focusRow().getByRole("button", { name: `핵심 작업 해제: ${title}` }).click();
-  assert.equal(await page.getByRole("heading", { name: "지금 집중" }).count(), 0,
-    "Focus section should collapse after removing the last pinned Todo.");
+  await page.getByRole("heading", { name: "지금 집중" }).waitFor({ state: "hidden" });
   await page.setViewportSize({ width: 390, height: 844 });
   // The more menu still exposes the remaining task actions.
   const openTodoActions = async () => {

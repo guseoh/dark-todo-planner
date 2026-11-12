@@ -8,6 +8,7 @@ import type { Bindings, Variables } from "../types";
 import { newId, nowIso } from "../utils";
 
 export const timeRoutes = new Hono<{ Bindings: Bindings; Variables: Variables }>();
+export const timeBlockRoutes = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
 const defaultSettings = {
   focusMinutes: 25,
@@ -29,6 +30,10 @@ const validateTodo = async (db: ReturnType<typeof drizzle>, userId: string, todo
   const [todo] = await db.select({ id: todos.id, title: todos.title }).from(todos).where(and(eq(todos.id, todoId), eq(todos.userId, userId))).limit(1);
   return todo;
 };
+
+const scheduleBlockTodo = (db: ReturnType<typeof drizzle>, userId: string, todoId: string, date: string, updatedAt: string) =>
+  db.update(todos).set({ date, planningState: "SCHEDULED", updatedAt })
+    .where(and(eq(todos.id, todoId), eq(todos.userId, userId)));
 
 timeRoutes.get("/focus-sessions", async (c) => {
   const db = drizzle(c.env.DB);
@@ -91,7 +96,7 @@ timeRoutes.put("/timer-settings", async (c) => {
   return c.json({ timerSettings: row });
 });
 
-timeRoutes.get("/time-blocks", async (c) => {
+timeBlockRoutes.get("/time-blocks", async (c) => {
   const db = drizzle(c.env.DB);
   const filters = [eq(timeBlocks.userId, c.get("userId"))];
   const date = c.req.query("date");
@@ -106,7 +111,7 @@ timeRoutes.get("/time-blocks", async (c) => {
   return c.json({ timeBlocks: rows });
 });
 
-timeRoutes.post("/time-blocks", async (c) => {
+timeBlockRoutes.post("/time-blocks", async (c) => {
   const input = timeBlockInputSchema.parse(await c.req.json());
   const db = drizzle(c.env.DB);
   const userId = c.get("userId");
@@ -120,11 +125,13 @@ timeRoutes.post("/time-blocks", async (c) => {
     startTime: input.startTime, endTime: input.endTime, plannedMinutes: minutes,
     completed: input.completed || false, createdAt: now, updatedAt: now,
   };
-  await db.insert(timeBlocks).values(row);
+  const insert = db.insert(timeBlocks).values(row);
+  if (input.scheduleTodo && todo) await db.batch([insert, scheduleBlockTodo(db, userId, todo.id, input.date, now)]);
+  else await insert;
   return c.json({ timeBlock: { ...row, todoId: row.todoId || undefined } }, 201);
 });
 
-timeRoutes.put("/time-blocks/:id", async (c) => {
+timeBlockRoutes.put("/time-blocks/:id", async (c) => {
   const input = timeBlockInputSchema.parse(await c.req.json());
   const db = drizzle(c.env.DB);
   const id = c.req.param("id"), userId = c.get("userId");
@@ -134,15 +141,18 @@ timeRoutes.put("/time-blocks/:id", async (c) => {
   if (minutes <= 0) return c.json({ message: "종료 시간은 시작 시간보다 뒤여야 합니다." }, 400);
   const todo = await validateTodo(db, userId, input.todoId);
   if (input.todoId && !todo) return c.json({ message: "Todo를 찾을 수 없습니다." }, 400);
-  await db.update(timeBlocks).set({
+  const now = nowIso();
+  const update = db.update(timeBlocks).set({
     todoId: todo?.id || null, title: input.title, date: input.date, startTime: input.startTime, endTime: input.endTime,
-    plannedMinutes: minutes, completed: input.completed ?? existing.completed, updatedAt: nowIso(),
-  }).where(eq(timeBlocks.id, id));
+    plannedMinutes: minutes, completed: input.completed ?? existing.completed, updatedAt: now,
+  }).where(and(eq(timeBlocks.id, id), eq(timeBlocks.userId, userId)));
+  if (input.scheduleTodo && todo) await db.batch([update, scheduleBlockTodo(db, userId, todo.id, input.date, now)]);
+  else await update;
   const [row] = await db.select().from(timeBlocks).where(eq(timeBlocks.id, id));
   return c.json({ timeBlock: { ...row, todoId: row.todoId || undefined } });
 });
 
-timeRoutes.delete("/time-blocks/:id", async (c) => {
+timeBlockRoutes.delete("/time-blocks/:id", async (c) => {
   const db = drizzle(c.env.DB);
   await db.delete(timeBlocks).where(and(eq(timeBlocks.id, c.req.param("id")), eq(timeBlocks.userId, c.get("userId"))));
   return c.json({ ok: true });

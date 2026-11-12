@@ -23,11 +23,11 @@
 | 영역 | 현재 코드 | 상태 및 이유 |
 | --- | --- | --- |
 | 계획·주간 리뷰·저장된 보기·템플릿 | `PlanningHubPage`, `PlanningPage`, `worker/routes/planning.ts` | `AppContent`와 `worker/index.ts`에 각각 연결되지 않음; 활성 기능으로 홍보하지 않음 |
-| Focus Timer·Time Blocking | `TimePlanningPanel`, `worker/routes/time.ts` | 별도 화면·API 미등록; 데이터 모델/백업 호환성을 위해 보존 |
+| Focus Timer | `TimePlanningPanel`, `worker/routes/time.ts` | 별도 화면·타이머 API 미등록; 데이터 모델과 백업 호환성 유지 |
 | Insights | `InsightsPage` | 내비게이션·화면 분기 미연결; Focus/Time API 미등록 상태라 단독 노출하지 않음 |
 | 개별 Todo 리마인더 | `todo_reminders` 스키마 및 관련 저장 코드 | 개별 예약 UI·5분 Cron 경로가 활성화되지 않음; 매일 21:00 일괄 Discord만 제공 |
 
-`planning.ts`, `time.ts`의 핸들러가 파일에 정의되어 있어도 **`worker/index.ts`에 `app.route`로 등록되지 않았기 때문에** 현재 Worker의 해당 API는 정상 호출할 수 없습니다. 향후 재개하려면 UI·라우트·저장 데이터·E2E를 함께 검증해야 합니다.
+오늘의 집중 순서와 주간 캘린더 시간표에는 `/api/daily-plans`와 `/api/time-blocks`를 사용합니다. 주간 리뷰, 저장 보기 API, 템플릿, 타이머 라우터는 별도 기능으로 남아 있습니다.
 
 ## 3. 레거시 API/자료 — 즉시 삭제하지 않음
 

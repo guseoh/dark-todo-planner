@@ -8,6 +8,7 @@ import type { Bindings, Variables } from "../types";
 import { newId, nowIso, optional } from "../utils";
 
 export const planningRoutes = new Hono<{ Bindings: Bindings; Variables: Variables }>();
+export const dailyPlanRoutes = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
 const parseArray = (value: string) => {
   try {
@@ -54,7 +55,7 @@ const serializeTaskTemplate = (row: typeof taskTemplates.$inferSelect) => ({
   todo: parseObject(row.todoJson, { title: row.name }),
 });
 
-planningRoutes.get("/daily-plans", async (c) => {
+dailyPlanRoutes.get("/daily-plans", async (c) => {
   const db = drizzle(c.env.DB);
   const date = c.req.query("date");
   const filters = [eq(dailyPlans.userId, c.get("userId"))];
@@ -63,23 +64,22 @@ planningRoutes.get("/daily-plans", async (c) => {
   return c.json({ dailyPlans: rows.map(serializeDailyPlan) });
 });
 
-planningRoutes.put("/daily-plans/:date", async (c) => {
+dailyPlanRoutes.put("/daily-plans/:date", async (c) => {
   const input = dailyPlanInputSchema.parse(await c.req.json());
   const db = drizzle(c.env.DB);
   const userId = c.get("userId");
   const date = c.req.param("date");
   const uniqueIds = Array.from(new Set(input.topTodoIds));
-  const validIds = uniqueIds.length
-    ? (await db.select({ id: todos.id }).from(todos).where(and(eq(todos.userId, userId), inArray(todos.id, uniqueIds)))).map((row) => row.id)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return c.json({ message: "올바른 날짜를 입력하세요." }, 400);
+  const owned = uniqueIds.length
+    ? await db.select({ id: todos.id }).from(todos).where(and(eq(todos.userId, userId), inArray(todos.id, uniqueIds)))
     : [];
+  const ownedIds = new Set(owned.map(({ id }) => id));
+  const validIds = uniqueIds.filter((id) => ownedIds.has(id));
   const now = nowIso();
-  const [existing] = await db.select().from(dailyPlans).where(and(eq(dailyPlans.userId, userId), eq(dailyPlans.date, date))).limit(1);
-  if (existing) {
-    await db.update(dailyPlans).set({ focusText: optional(input.focusText), topTodoIdsJson: JSON.stringify(validIds), updatedAt: now }).where(eq(dailyPlans.id, existing.id));
-  } else {
-    await db.insert(dailyPlans).values({ id: newId(), userId, date, focusText: optional(input.focusText), topTodoIdsJson: JSON.stringify(validIds), createdAt: now, updatedAt: now });
-  }
-  const [row] = await db.select().from(dailyPlans).where(and(eq(dailyPlans.userId, userId), eq(dailyPlans.date, date))).limit(1);
+  const values = { focusText: optional(input.focusText), topTodoIdsJson: JSON.stringify(validIds), updatedAt: now };
+  const [row] = await db.insert(dailyPlans).values({ id: newId(), userId, date, createdAt: now, ...values })
+    .onConflictDoUpdate({ target: [dailyPlans.userId, dailyPlans.date], set: values }).returning();
   return c.json({ dailyPlan: serializeDailyPlan(row) });
 });
 

@@ -23,9 +23,10 @@ type Props = {
   onSelect: (date: string) => void;
   onOpenTodo: (todo: Todo) => void;
   onSchedule: (todo: Todo, date: string) => Promise<boolean>;
+  onReloadTodos: () => Promise<void>;
 };
 
-export function WeeklyTimetable({ dates, selectedDate, todos, projects, onSelect, onOpenTodo, onSchedule }: Props) {
+export function WeeklyTimetable({ dates, selectedDate, todos, projects, onSelect, onOpenTodo, onSchedule, onReloadTodos }: Props) {
   const [visible, setVisible] = useState(() => window.matchMedia("(min-width: 1280px)").matches);
   const [blocks, setBlocks] = useState<TimeBlock[]>([]);
   const [loadedWeek, setLoadedWeek] = useState("");
@@ -63,14 +64,13 @@ export function WeeklyTimetable({ dates, selectedDate, todos, projects, onSelect
     writeInProgress.current = true;
     setError("");
     try {
-      if (todo && (todo.date !== input.date || todo.planningState !== "SCHEDULED")) {
-        if (!await onSchedule(todo, input.date)) throw new Error("할 일의 날짜를 변경하지 못했습니다.");
-      }
+      const scheduleTodo = Boolean(todo && (todo.date !== input.date || todo.planningState !== "SCHEDULED"));
       const path = block ? `/api/time-blocks/${block.id}` : "/api/time-blocks";
       const { timeBlock } = await api<{ timeBlock: TimeBlock }>(path, {
-        method: block ? "PUT" : "POST", ...jsonBody(input),
+        method: block ? "PUT" : "POST", ...jsonBody({ ...input, scheduleTodo }),
       });
       setBlocks((items) => [...items.filter(({ id }) => id !== timeBlock.id), timeBlock]);
+      if (scheduleTodo) await onReloadTodos().catch(() => setError("시간 블록은 저장했습니다. 최신 할 일을 불러오지 못했습니다."));
     } catch (err) {
       setError(err instanceof Error ? err.message : "시간 블록을 저장하지 못했습니다.");
     } finally {

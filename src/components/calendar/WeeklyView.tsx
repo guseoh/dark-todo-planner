@@ -17,6 +17,7 @@ import { TodoRow } from "../todo/TodoRow";
 type WeeklyViewProps = {
   selectedDate: string;
   onSelectDate: (date: string) => void;
+  onReloadTodos: () => Promise<void>;
   todos?: Todo[];
   projects?: Project[];
   getTodosByDate: (date: string) => Todo[];
@@ -41,6 +42,7 @@ const dayLabelTone = (index: number) => {
 export function WeeklyView({
   selectedDate,
   onSelectDate: setSelectedDate,
+  onReloadTodos,
   todos = [],
   projects = [],
   getTodosByDate,
@@ -179,7 +181,7 @@ export function WeeklyView({
       </section>
 
       <WeeklyTimetable dates={weekDateKeys} selectedDate={selectedDate} todos={todos} projects={projects}
-        onSelect={setSelectedDate} onOpenTodo={setEditingTodo} onSchedule={schedule} />
+        onSelect={setSelectedDate} onOpenTodo={setEditingTodo} onSchedule={schedule} onReloadTodos={onReloadTodos} />
       <section className="app-card calendar-week-right py-4" aria-labelledby="selected-day-title">
         <UnscheduledCalendarTodos todos={todos} />
         <div className="calendar-week-right__heading flex flex-col gap-3 border-b border-ink-700/55 pb-3 sm:flex-row sm:items-center sm:justify-between">
