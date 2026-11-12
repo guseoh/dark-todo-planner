@@ -333,9 +333,6 @@ try {
   assert.equal((await findServerTodo(legacyTitle))?.planningState, "INBOX", "Local D1 fixture should survive reload.");
   await page.getByRole("heading", { name: "전체 Todo", exact: true }).waitFor();
   assert.equal(new URL(page.url()).hash, "#/all", "Old Inbox bookmarks must redirect to All Todo.");
-  // The view renders before asynchronous Todo hydration finishes.
-  // Wait for the legacy fixture to become visible before checking its count control.
-  await page.getByRole("heading", { name: legacyTitle, exact: true }).waitFor();
   const unplannedButton = page.getByRole("button", { name: /미계획 \d+개 보기/ });
   await unplannedButton.click();
   const legacyRow = page.locator(".todo-row").filter({ has: page.getByRole("heading", { name: legacyTitle, exact: true }) });
@@ -734,7 +731,7 @@ try {
   const calendarDetails = page.getByRole("complementary", { name: "선택한 날짜 상세" });
   const addInput = calendarDetails.getByPlaceholder("이 날짜에 추가할 Todo");
   await addInput.fill(calendarTitle);
-  await addInput.locator("xpath=..").getByRole("button", { name: "추가", exact: true }).click();
+  await addInput.locator("xpath=ancestor::form").getByRole("button", { name: "추가", exact: true }).click();
   await monthGrid.getByRole("button", { name: calendarTitle, exact: true }).waitFor();
   assert.equal((await findServerTodo(calendarTitle))?.date, quickDate, "Calendar quick-add must use selected day.");
 
@@ -1320,7 +1317,7 @@ try {
     await page.setViewportSize({ width, height: 844 });
     for (const view of ["today", "calendar", "projects", "settings", "memo", "scratchpad"]) {
       await page.evaluate((next) => { window.location.hash = "#/" + next; }, view);
-      if (view === "today") await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
+      if (view === "today") await page.getByRole("group", { name: "오늘 작업 현황" }).waitFor();
       if (view === "calendar") await page.getByRole("heading", { name: "캘린더", exact: true }).waitFor();
       if (view === "projects") await page.getByRole("heading", { name: "프로젝트", exact: true }).waitFor();
       if (view === "settings") await page.getByRole("heading", { name: "설정", exact: true }).waitFor();
@@ -1347,7 +1344,8 @@ try {
       await page.setViewportSize({ width, height: 844 });
       for (const [view, heading] of Object.entries(screenLabels)) {
         await page.evaluate((next) => { window.location.hash = "#/" + next; }, view);
-        if (view === "scratchpad") await page.getByRole("textbox", { name: "낙서장 편집기" }).waitFor();
+        if (view === "today") await page.getByRole("group", { name: "오늘 작업 현황" }).waitFor();
+        else if (view === "scratchpad") await page.getByRole("textbox", { name: "낙서장 편집기" }).waitFor();
         else await page.getByRole("heading", { name: heading, exact: true }).first().waitFor();
         if (view === "today") {
           const composer = page.locator(".today-composer").getByRole("form", { name: "Todo 빠른 추가" });
