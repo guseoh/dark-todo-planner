@@ -839,6 +839,8 @@ try {
   await page.getByRole("tab", { name: "주간", exact: true }).click();
   await page.getByRole("heading", { name: "캘린더", exact: true }).waitFor();
   const weeklySummary = page.locator('section[aria-labelledby="week-summary-title"]');
+  await weeklySummary.getByRole("button", { name: "오늘", exact: true }).click();
+  await page.locator(".calendar-v4-week-goals > summary").click();
   const goalCard = page.getByRole("region", { name: "이번 주 목표" });
   await goalCard.waitFor();
   const widths = await page.evaluate(() => {
@@ -852,8 +854,8 @@ try {
   const currentWeek = await page.locator("#week-summary-title").innerText();
   await page.getByRole("button", { name: "이전 주" }).click();
   assert.notEqual(await page.locator("#week-summary-title").innerText(), currentWeek, "Previous week must change the date range.");
-  await page.getByRole("button", { name: "이번 주", exact: true }).click();
-  assert.equal(await page.locator("#week-summary-title").innerText(), currentWeek, "This week button must restore the visible date range.");
+  await weeklySummary.getByRole("button", { name: "오늘", exact: true }).click();
+  assert.equal(await page.locator("#week-summary-title").innerText(), currentWeek, "Today button must restore the current week.");
 
   const goalTitle = `Weekly E2E ${randomUUID().slice(0, 8)}`;
   const goalDraft = goalCard.getByRole("textbox", { name: "이번 주에 끝낼 핵심 목표" });
