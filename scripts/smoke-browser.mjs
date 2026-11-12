@@ -912,7 +912,7 @@ try {
   const selectedProjectNav = projectSwitcher.locator('.project-v4-switcher__item[aria-pressed="true"]');
   assert.match((await selectedProjectNav.textContent()) || "", /UX Regression Project/,
     "Async project creation must select the newly created project");
-  const projectManageMenu = page.locator(".project-actions-menu");
+  const projectManageMenu = page.locator(".project-overview .project-actions-menu");
   await projectManageMenu.locator("summary").waitFor();
   await projectManageMenu.locator("summary").click();
   assert.equal(await projectManageMenu.getAttribute("open"), "", "Project management actions should expand on demand.");
@@ -1413,7 +1413,7 @@ try {
   assert.deepEqual(denseResults, [], "All dense-layout fixtures should persist to local D1");
   await page.evaluate(() => { window.location.hash = "#/today"; });
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
+  await page.getByRole("group", { name: "오늘 작업 현황" }).waitFor();
   await page.waitForFunction(() => document.querySelectorAll(".today-task-section .todo-row--today").length >= 20);
   for (const width of [390, 1280]) {
     await page.setViewportSize({ width, height: 844 });
