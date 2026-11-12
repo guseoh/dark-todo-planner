@@ -1,3 +1,4 @@
+import { UnscheduledCalendarTodos } from "./UnscheduledCalendarTodos";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, PanelRightOpen } from "lucide-react";
 import { TodoEditModal } from "../todo/TodoEditModal";
@@ -17,6 +18,8 @@ import { MonthlyCalendar } from "../monthly/MonthlyCalendar";
 import { MonthlySidePanel } from "../monthly/MonthlySidePanel";
 
 type MonthlyViewProps = {
+  selectedDate: string;
+  onSelectDate: (date: string) => void;
   todos: Todo[];
   projects?: Project[];
   milestones?: Milestone[];
@@ -42,6 +45,8 @@ const filterOptions: Array<{ key: keyof CalendarVisibility; label: string }> = [
 ];
 
 export function MonthlyView({
+  selectedDate,
+  onSelectDate,
   todos,
   projects = [],
   milestones = [],
@@ -59,8 +64,7 @@ export function MonthlyView({
   onUpdateCategory,
   onDeleteCategory,
 }: MonthlyViewProps) {
-  const [currentMonth, setCurrentMonth] = useState(() => parseDateKey(todayKey()));
-  const [selectedDate, setSelectedDate] = useState(todayKey);
+  const currentMonth = useMemo(() => parseDateKey(selectedDate.slice(0, 7) + "-01"), [selectedDate]);
   const [panelOpen, setPanelOpen] = useState(false);
   const [quickAdd, setQuickAdd] = useState(false);
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
@@ -77,7 +81,7 @@ export function MonthlyView({
     return () => window.removeEventListener("keydown", onEscape);
   }, [panelOpen]);
   const monthDays = useMemo(() => getMonthGrid(currentMonth), [currentMonth]);
-  const events = useMemo(() => buildCalendarEvents(todos, projects, milestones), [todos, projects, milestones]);
+  const events = useMemo(() => buildCalendarEvents(todos, projects, milestones, categories), [todos, projects, milestones, categories]);
   const eventsByDate = useMemo(() => groupCalendarEvents(events, visibility), [events, visibility]);
   const selectedEvents = eventsByDate.get(selectedDate) ?? [];
   const selectedTodos = getTodosByDate(selectedDate);
@@ -104,11 +108,7 @@ export function MonthlyView({
   };
 
   const selectDate = (dateKey: string) => {
-    setSelectedDate(dateKey);
-    const date = parseDateKey(dateKey);
-    if (date.getMonth() !== currentMonth.getMonth() || date.getFullYear() !== currentMonth.getFullYear()) {
-      setCurrentMonth(date);
-    }
+    onSelectDate(dateKey);
     setPanelOpen(true);
     setQuickAdd(false);
     window.requestAnimationFrame(() => selectedPanelRef.current?.focus());
@@ -140,13 +140,10 @@ export function MonthlyView({
   };
 
   const changeMonth = (date: Date) => {
-    setCurrentMonth(date);
-    setSelectedDate(toDateKey(date));
+    onSelectDate(toDateKey(date));
   };
   const goToToday = () => {
-    const today = todayKey();
-    setCurrentMonth(parseDateKey(today));
-    setSelectedDate(today);
+    onSelectDate(todayKey());
   };
 
   return (
@@ -167,8 +164,9 @@ export function MonthlyView({
             >{visibility[key] ? <Check size={13} aria-hidden="true" /> : null}{label}</button>
           ))}
         </div>
+        <span className="hidden text-xs text-ui-muted xl:inline-flex"><span className="mr-1 text-success" aria-hidden="true">●</span>기록한 날</span>
         {!panelOpen ? (
-          <button type="button" className="btn-secondary min-h-9 text-xs" onClick={() => setPanelOpen(true)}>
+          <button type="button" className="calendar-open-day btn-secondary min-h-9 text-xs" onClick={() => setPanelOpen(true)}>
             <PanelRightOpen size={15} /> 선택한 날짜 보기
           </button>
         ) : null}
@@ -182,6 +180,7 @@ export function MonthlyView({
           selectedDate={selectedDate}
           goals={goals}
           eventsByDate={eventsByDate}
+          rangeEvents={visibility.project ? events.filter(({ startDate }) => startDate) : []}
           onMonthChange={changeMonth}
           onToday={goToToday}
           onSelectDate={selectDate}
@@ -191,12 +190,12 @@ export function MonthlyView({
           onMoveTodo={(id, date) => { void moveTodo(id, date); }}
           draggingDisabled={Boolean(movingTodoId)}
         />
-        {panelOpen ? (
-          <>
+        <div className={`calendar-month-right ${panelOpen ? "is-open" : ""}`}>
           <button type="button" className="calendar-v4-date-backdrop" aria-label="날짜 상세 바깥 영역 닫기"
             onClick={() => { setPanelOpen(false); setQuickAdd(false); }} />
           <div ref={selectedPanelRef} tabIndex={-1}
             className="calendar-month-panel calendar-v4-date-drawer min-w-0">
+            <UnscheduledCalendarTodos todos={todos} />
             <MonthlySidePanel
               selectedDate={selectedDate}
               monthEndLabel={selectedMonthEndLabel}
@@ -218,8 +217,7 @@ export function MonthlyView({
               onDeleteCategory={onDeleteCategory}
             />
           </div>
-          </>
-        ) : null}
+        </div>
       </div>
       <TodoEditModal
         todo={todos.find((todo) => todo.id === editingTodoId) ?? null}

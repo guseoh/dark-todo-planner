@@ -3,7 +3,7 @@ import type { ReactNode, RefObject } from "react";
 import { CalendarDays, Check, ChevronDown, Flag, FolderKanban, Plus, SlidersHorizontal, Tags } from "lucide-react";
 import { addDays } from "date-fns";
 import { parseDateKey, todayKey, toDateKey } from "../../lib/date";
-import { parseQuickTodoTitle } from "../../lib/quickAdd";
+import { parseQuickTodoDraft } from "../../lib/quickAdd";
 import type { Category } from "../../types/category";
 import type { Project } from "../../types/project";
 import type { Todo, TodoInput, TodoPlanningState, TodoPriority } from "../../types/todo";
@@ -81,6 +81,10 @@ type TodoFormProps = {
   collapsible?: boolean;
   /** Display the inline composer immediately and retain it after adding a task. */
   alwaysOpen?: boolean;
+  onCancel?: () => void;
+  placeholder?: string;
+  autoFocus?: boolean;
+  layout?: "inline" | "stacked";
 };
 
 export function TodoForm({
@@ -97,6 +101,10 @@ export function TodoForm({
   lockCategory = false,
   collapsible = false,
   alwaysOpen = false,
+  onCancel,
+  placeholder,
+  autoFocus = false,
+  layout = "inline",
 }: TodoFormProps) {
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -105,6 +113,7 @@ export function TodoForm({
   const projectMenuRef = useRef<HTMLDetailsElement | null>(null);
   const categoryMenuRef = useRef<HTMLDetailsElement | null>(null);
   const detailsId = useId();
+  const [titleFocused, setTitleFocused] = useState(false);
   const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
   const [date, setDate] = useState(defaultDate || todayKey());
@@ -138,6 +147,12 @@ export function TodoForm({
     return () => document.removeEventListener("pointerdown", handleOutsidePointer);
   }, [collapsible, expanded]);
 
+  const today = todayKey();
+  const { todo: parsed, chips } = parseQuickTodoDraft(title, today, {
+    categories: lockCategory ? [] : categories,
+    projects,
+  });
+
   const reset = () => {
     setTitle("");
     setMemo("");
@@ -153,10 +168,6 @@ export function TodoForm({
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (saving || composing) return;
-    const parsed = parseQuickTodoTitle(title, todayKey(), {
-      categories: lockCategory ? [] : categories,
-      projects,
-    });
     if (!parsed.title) {
       titleInputRef.current?.focus();
       return;
@@ -193,7 +204,6 @@ export function TodoForm({
     }
   };
 
-  const today = todayKey();
   const tomorrow = toDateKey(addDays(parseDateKey(today), 1));
   const dateLabel = planningState === "SOMEDAY" ? "언젠가"
     : planningState === "WAITING" ? "대기"
@@ -231,11 +241,16 @@ export function TodoForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className={`todo-composer-form ${collapsible ? "todo-composer-form--inline" : ""}`}
+    <form onSubmit={handleSubmit} className={`todo-composer-form ${collapsible ? "todo-composer-form--inline" : ""} ${layout === "stacked" ? "todo-composer-form--stacked" : ""}`}
       aria-label="Todo 빠른 추가"
       onKeyDown={(event) => {
         if (event.key === "Enter" && (event.nativeEvent.isComposing || event.keyCode === 229 || composing)) {
           event.preventDefault();
+          return;
+        }
+        if (event.key === "Escape" && onCancel && !saving && !event.nativeEvent.isComposing && !composing) {
+          event.preventDefault();
+          onCancel();
           return;
         }
         if (event.key === "Escape" && collapsible && !alwaysOpen && !saving && !event.nativeEvent.isComposing && !composing) {
@@ -254,7 +269,11 @@ export function TodoForm({
             onChange={(event) => { setTitle(event.target.value); if (saveError) setSaveError(""); }}
             onCompositionStart={() => setComposing(true)}
             onCompositionEnd={() => setComposing(false)}
-            placeholder={alwaysOpen ? "할 일을 입력하고 Enter" : collapsible ? "할 일 이름" : "무엇을 할 예정인가요?"}
+            autoFocus={autoFocus}
+            onFocus={() => setTitleFocused(true)}
+            onBlur={() => setTitleFocused(false)}
+            onKeyDown={(event) => { if (event.key === "Tab" && !event.shiftKey && window.matchMedia("(min-width: 1280px)").matches) setShowDetails(true); }}
+            placeholder={placeholder ?? (alwaysOpen ? "할 일을 입력하고 Enter" : collapsible ? "할 일 이름" : "무엇을 할 예정인가요?")}
             aria-label="Todo 제목"
           />
         </div>
@@ -270,7 +289,7 @@ export function TodoForm({
             {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
           </select>
         ) : null}
-        {!collapsible ? <button type="submit" className="btn-primary ui-button--primary todo-composer-form__submit" disabled={saving}>
+        {!collapsible ? <button type="submit" className="btn-secondary todo-composer-form__submit" disabled={saving}>
           <Plus size={16} aria-hidden="true" />{saving ? "저장 중..." : submitLabel}
         </button> : null}
       </div>
@@ -322,6 +341,7 @@ export function TodoForm({
           {collapsible ? <SlidersHorizontal size={14} aria-hidden="true" /> : <ChevronDown className={showDetails ? "rotate-180 transition-transform" : "transition-transform"} size={14} aria-hidden="true" />}
           {showDetails ? "상세 옵션 닫기" : "상세 옵션"}
         </button>
+        {onCancel ? <button type="button" className="todo-composer-form__toggle" onClick={onCancel} disabled={saving}>취소</button> : null}
         {collapsible && !alwaysOpen ? (
           <div className="todo-composer-form__actions">
             <button type="button" className="todo-composer-form__toggle todo-composer-form__cancel" onClick={closeComposer} disabled={saving}>취소</button>
@@ -329,8 +349,21 @@ export function TodoForm({
         ) : !showDetails && !showSyntaxHint && !collapsible ? <span className="todo-composer-form__hint">Enter로 추가 · Esc로 닫기</span> : null}
       </div>
       </div>
+      {chips.length > 0 ? (
+        <div className="mt-2 flex flex-wrap gap-1" role="group" aria-label="빠른 문법 적용">
+          {chips.map(({ start, end, text, value }) => (
+            <button key={start} type="button" className="todo-composer-chip rounded-full" aria-label={`${text} 제거`}
+              onClick={() => {
+                setTitle(title.slice(0, start) + title.slice(end));
+                titleInputRef.current?.focus();
+              }}>
+              {text === value ? text : `${text} · ${value}`}
+            </button>
+          ))}
+        </div>
+      ) : null}
       {saveError ? <p role="alert" className="mt-2 text-xs font-semibold text-danger">{saveError}</p> : null}
-      {showSyntaxHint ? <p className="todo-composer-form__syntax-hint mt-2 text-[11px] leading-5 text-ui-muted">빠른 문법: 내일 · !high · @프로젝트 · +카테고리 · due:내일 · date:2026-08-20 · someday/waiting · 공백 이름은 @{"{"}프로젝트 이름{"}"} / +{"{"}카테고리 이름{"}"}</p> : null}
+      {showSyntaxHint && titleFocused ? <p className="todo-composer-form__syntax-hint mt-2 text-[11px] leading-5 text-ui-muted">빠른 문법: 내일 · !high · @프로젝트 · +카테고리 · due:내일 · date:2026-08-20 · someday/waiting · 공백 이름은 @{"{"}프로젝트 이름{"}"} / +{"{"}카테고리 이름{"}"}</p> : null}
       <div id={detailsId} hidden={!showDetails}>
         {showDetails ? (
           <TodoDetailFields
@@ -343,7 +376,7 @@ export function TodoForm({
             memo={memo}
             categories={categories}
             projects={projects}
-            showCategory={collapsible && !lockCategory}
+            showCategory={!lockCategory}
             onDateChange={setDate}
             onDueDateChange={setDueDate}
             onPriorityChange={setPriority}

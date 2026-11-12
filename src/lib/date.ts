@@ -80,6 +80,9 @@ export const getMonthEndLabel = (date: Date, currentMonth: Date) => {
   return remainingDays === 0 ? "월말" : `월말 D-${remainingDays}`;
 };
 
+export const getDaysPast = (dateKey: string, plannerToday = todayKey()) =>
+  Math.max(0, differenceInCalendarDays(parseDateKey(plannerToday), parseDateKey(dateKey)));
+
 export const getDdayLabel = (dateKey: string) => {
   const diff = differenceInCalendarDays(parseDateKey(dateKey), parseDateKey(todayKey()));
   if (diff === 0) return "D-Day";

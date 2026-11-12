@@ -86,10 +86,7 @@ export function ActivityPage() {
 
   return (
     <div className="page-shell activity-page space-y-5">
-      <PageHeader title="개발 활동" description="GitHub 기여와 Codex 작업 기록을 별도로 확인합니다. 작업 관리 화면에는 표시하지 않습니다." />
-      <div className="activity-page__intro">
-        <p>각 잔디는 서로 다른 활동을 측정합니다. GitHub는 공개 프로필의 기여 기록이며, Codex는 내 PC에서 내보낸 세션 또는 토큰 집계입니다.</p>
-      </div>
+      <PageHeader title="개발 활동" />
       <div className="activity-page__panels">
         <ActivityHeatmap title="GitHub 활동" subtitle="공개 기여 달력 · @guseoh"
           palette="github" metric="contributions"

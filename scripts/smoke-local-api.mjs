@@ -114,7 +114,24 @@ try {
   const afterBackup = expectStatus(await request("/api/backup/export"), 200, "Backup after induced rollback");
   assert.deepEqual(afterBackup.routineTemplates, beforeAtomicFailure.routineTemplates, "Late routine phase must leave no partially changed routines");
 
-  console.log("LOCAL E2E PASS: health, auth, UUID CRUD, trash restore, atomic rollback after late D1 failure, successful local JSON round trip.");
+  const planPath = "/api/daily-plans/" + today;
+  const focus = expectStatus(await request(planPath, "PUT", { topTodoIds: [id] }), 200, "Persist Today focus");
+  assert.deepEqual(focus.dailyPlan.topTodoIds, [id]);
+  const { dailyPlans } = expectStatus(await request("/api/daily-plans?date=" + today), 200, "Reload Today focus");
+  assert.deepEqual(dailyPlans[0].topTodoIds, [id]);
+  expectStatus(await request(planPath, "PUT", { topTodoIds: [] }), 200, "Clear Today focus");
+
+  const blockDate = "2099-11-13";
+  const blockInput = { title: "Local time block", todoId: id, date: blockDate, startTime: "09:00", endTime: "10:00", scheduleTodo: true };
+  expectStatus(await request("/api/time-blocks", "POST", { ...blockInput, endTime: "08:30" }), 400, "Reject reversed time block");
+  assert.equal(expectStatus(await request("/api/todos/" + id), 200, "Check date after rejected time block").todo.date, today);
+  const { timeBlock } = expectStatus(await request("/api/time-blocks", "POST", blockInput), 201, "Save time block and schedule Todo");
+  assert.equal(expectStatus(await request("/api/todos/" + id), 200, "Check date after saving time block").todo.date, blockDate);
+  const { timeBlocks } = expectStatus(await request("/api/time-blocks?date=" + blockDate), 200, "Reload time block");
+  assert.ok(timeBlocks.some((block) => block.id === timeBlock.id));
+  expectStatus(await request("/api/time-blocks/" + timeBlock.id, "DELETE"), 200, "Remove isolated time block");
+
+  console.log("LOCAL E2E PASS: auth, CRUD, trash recovery, atomic backup, Today focus, and time block scheduling.");
 } finally {
   if (created) {
     // Only loopback URLs can reach this cleanup path.

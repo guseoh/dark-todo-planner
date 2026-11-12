@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Category } from "../types/category";
 import type { Todo, TodoBulkAction, TodoFilters, TodoInput } from "../types/todo";
+import type { TodoProjectLinkChange } from "../types/todoProjectLinks";
 import { api, apiAllPages, jsonBody } from "../lib/api/client";
 import { getMonthGrid, getPlannerToday, getWeekDays, todayKey, toDateKey } from "../lib/date";
 import {
@@ -22,7 +23,7 @@ import {
   type OverdueTodoImportResult,
 } from "../lib/todoRecovery";
 
-const DELETE_UNDO_MS = 6000;
+const DELETE_UNDO_MS = 5000;
 const BULK_TRASH_CHUNK_SIZE = 3;
 
 export const defaultFilters: TodoFilters = {
@@ -111,6 +112,7 @@ export function useTodos() {
   const [error, setError] = useState("");
   const [pendingDelete, setPendingDelete] = useState<PendingTodoDelete | null>(null);
   const deleteTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const pausedDeleteIdRef = useRef<string | null>(null);
   const deletedSnapshotsRef = useRef(new Map<string, Todo>());
   // Drag/status edits are shown immediately. Keep in-flight changes visible if
   // a background reload races with the server write, and serialize edits to
@@ -251,6 +253,29 @@ export function useTodos() {
     }
   }, [allTodos]);
 
+  const applyProjectLinkChange = useCallback(async (path: string, payload: object) => {
+    try {
+      if (shouldQueueTodoMutation()) throw new Error("프로젝트 연결 변경은 온라인 상태에서만 가능합니다.");
+      const { changes } = await api<{ changes: TodoProjectLinkChange[] }>(path, { method: "POST", ...jsonBody(payload) });
+      const byId = new Map(changes.map(({ id, after }) => [id, after]));
+      setAllTodos((current) => current.map((todo) => {
+        const links = byId.get(todo.id);
+        if (!links) return todo;
+        return { ...todo, projectId: links.projectId ?? undefined, milestoneId: links.milestoneId ?? undefined, parentTodoId: links.parentTodoId ?? undefined };
+      }));
+      setError("");
+      return changes;
+    } catch (err) {
+      setError(getMessage(err));
+      return undefined;
+    }
+  }, []);
+
+  const detachTodo = (id: string, projectId: string, includeChildren: boolean) =>
+    applyProjectLinkChange(`/api/todos/${encodeURIComponent(id)}/detach-project`, { projectId, includeChildren });
+  const restoreTodoProjectLinks = (changes: TodoProjectLinkChange[]) =>
+    applyProjectLinkChange("/api/todos/restore-project-links", { changes });
+
   const finalizeDelete = useCallback(async (id: string) => {
     const snapshot = deletedSnapshotsRef.current.get(id);
     try {
@@ -260,6 +285,7 @@ export function useTodos() {
       setError("");
     } catch (err) {
       if (snapshot) setAllTodos((current) => current.some((todo) => todo.id === id) ? current : [snapshot, ...current]);
+      deletedSnapshotsRef.current.delete(id);
       setError(getMessage(err));
     } finally {
       deleteTimersRef.current.delete(id);
@@ -270,6 +296,11 @@ export function useTodos() {
   const deleteTodo = useCallback((id: string) => {
     const todo = allTodos.find((item) => item.id === id);
     if (!todo) return;
+    const paused = pausedDeleteIdRef.current;
+    if (paused && paused !== id) {
+      pausedDeleteIdRef.current = null;
+      deleteTimersRef.current.set(paused, setTimeout(() => void finalizeDelete(paused), DELETE_UNDO_MS));
+    }
     const existingTimer = deleteTimersRef.current.get(id);
     if (existingTimer) clearTimeout(existingTimer);
     deletedSnapshotsRef.current.set(id, todo);
@@ -285,11 +316,26 @@ export function useTodos() {
     const timer = deleteTimersRef.current.get(pending.id);
     if (timer) clearTimeout(timer);
     deleteTimersRef.current.delete(pending.id);
+    if (pausedDeleteIdRef.current === pending.id) pausedDeleteIdRef.current = null;
     const snapshot = deletedSnapshotsRef.current.get(pending.id);
     deletedSnapshotsRef.current.delete(pending.id);
     if (snapshot) setAllTodos((current) => current.some((todo) => todo.id === snapshot.id) ? current : [snapshot, ...current]);
     setPendingDelete(null);
   }, [pendingDelete]);
+
+  const setDeleteUndoPaused = useCallback((paused: boolean) => {
+    if (!pendingDelete) return;
+    const { id } = pendingDelete;
+    const timer = deleteTimersRef.current.get(id);
+    if (paused && timer) {
+      clearTimeout(timer);
+      deleteTimersRef.current.delete(id);
+      pausedDeleteIdRef.current = id;
+    } else if (!paused && pausedDeleteIdRef.current === id) {
+      pausedDeleteIdRef.current = null;
+      deleteTimersRef.current.set(id, setTimeout(() => void finalizeDelete(id), DELETE_UNDO_MS));
+    }
+  }, [pendingDelete, finalizeDelete]);
 
   const deleteTodos = useCallback(async (ids: string[]) => {
     const uniqueIds = Array.from(new Set(ids.map((id) => id.trim()).filter(Boolean)));
@@ -298,6 +344,7 @@ export function useTodos() {
       const timer = deleteTimersRef.current.get(id);
       if (timer) clearTimeout(timer);
       deleteTimersRef.current.delete(id);
+      if (pausedDeleteIdRef.current === id) pausedDeleteIdRef.current = null;
       deletedSnapshotsRef.current.delete(id);
     }
     setPendingDelete((current) => current && uniqueIds.includes(current.id) ? null : current);
@@ -502,7 +549,7 @@ export function useTodos() {
 
   return {
     allTodos, todos, archivedTodos, inboxTodos, duplicateTodoIds, stats, loading, saving, error, pendingDelete,
-    loadTodos, addTodo, updateTodo, reorderTodos, deleteTodo, undoDeleteTodo, deleteTodos, bulkUpdateTodos, toggleTodo, archiveTodo, unarchiveTodo,
+    loadTodos, addTodo, updateTodo, reorderTodos, deleteTodo, undoDeleteTodo, setDeleteUndoPaused, deleteTodos, bulkUpdateTodos, toggleTodo, archiveTodo, unarchiveTodo, detachTodo, restoreTodoProjectLinks,
     syncCategory, removeCategoryFromTodos, getTodosByDate, getTodayTodos, getOverdueIncompleteTodos, getWeekTodos, getMonthTodos, filterTodos, bringOverdueTodosToToday,
   };
 }

@@ -1,10 +1,11 @@
-import { FormEvent, useEffect, useMemo, useState, type KeyboardEvent } from "react";
-import { Archive, ArchiveRestore, CheckCircle2, ChevronDown, CircleDot, ExternalLink, FolderKanban, Link2, MoreHorizontal, PauseCircle, Pencil, Plus, Save, Target, Trash2, X } from "lucide-react";
+import { Modal } from "../components/common/Modal";
+import { entityColors, getEntityColor } from "../lib/entityColor";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Archive, ArchiveRestore, CheckCircle2, CircleDot, ExternalLink, MoreHorizontal, PauseCircle, Pencil, Plus, Save, Target, Trash2, X } from "lucide-react";
 import { ProjectDecisionLog } from "../components/project/ProjectDecisionLog";
 import { PageHeader } from "../components/common/PageHeader";
 import { ProjectKanban } from "../components/project/ProjectKanban";
 import { ProjectOverviewTools } from "../components/project/ProjectOverviewTools";
-import { TodoForm } from "../components/todo/TodoForm";
 import type { ProjectDuplicateMode } from "../hooks/useProjects";
 import type { Category } from "../types/category";
 import type { Milestone, MilestoneInput, Project, ProjectDecision, ProjectDecisionInput, ProjectInput, ProjectResource, ProjectStatus } from "../types/project";
@@ -51,7 +52,10 @@ type ProjectPageProps = {
   onDeleteDecision: (id: string) => Promise<boolean> | boolean;
   onAddTodo: (input: TodoInput) => Promise<Todo | undefined> | Todo | undefined;
   onUpdateTodo: (id: string, input: Partial<Omit<Todo, "id" | "createdAt">>) => Promise<Todo | undefined> | Todo | undefined;
+  onDeleteTodo: (id: string) => void;
   onToggleTodo: (id: string) => void;
+  onDetachTodo: (id: string, projectId: string, includeChildren: boolean) => Promise<boolean>;
+  onOpenProjectTodos: (projectId: string) => void;
 };
 
 export function ProjectPage({
@@ -76,39 +80,29 @@ export function ProjectPage({
   onAddTodo,
   onUpdateTodo,
   onToggleTodo,
+  onDeleteTodo,
+  onDetachTodo,
+  onOpenProjectTodos,
 }: ProjectPageProps) {
   const activeProjects = useMemo(() => projects.filter((project) => !project.archived), [projects]);
   const archivedProjects = useMemo(() => projects.filter((project) => project.archived), [projects]);
   const [showArchived, setShowArchived] = useState(false);
-  const [projectTab, setProjectTab] = useState<"work" | "milestones" | "decisions" | "manage">("work");
   const visibleProjects = showArchived ? archivedProjects : activeProjects;
   const [selectedId, setSelectedId] = useState("");
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [newName, setNewName] = useState("");
-  const [newTargetDate, setNewTargetDate] = useState("");
   const [milestoneTitle, setMilestoneTitle] = useState("");
   const [milestoneDate, setMilestoneDate] = useState("");
-  const [newTodoMilestoneId, setNewTodoMilestoneId] = useState("");
   const [editingProject, setEditingProject] = useState(false);
   const [projectName, setProjectName] = useState("");
   const [projectDescription, setProjectDescription] = useState("");
   const [projectStartDate, setProjectStartDate] = useState("");
-  const [projectTargetDate, setProjectTargetDate] = useState("");
-  const [projectColor, setProjectColor] = useState("#9b9ba0");
+  const [projectColor, setProjectColor] = useState("");
   const [resourceLabel, setResourceLabel] = useState("");
   const [resourceUrl, setResourceUrl] = useState("");
   const [resourceError, setResourceError] = useState("");
   const [deletingProject, setDeletingProject] = useState(false);
-  const projectTabIds = ["work", "milestones", "decisions", "manage"] as const;
-  const onProjectTabKey = (event: KeyboardEvent<HTMLButtonElement>) => {
-    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-    event.preventDefault();
-    const index = projectTabIds.indexOf(projectTab);
-    const next = event.key === "Home" ? projectTabIds[0] : event.key === "End" ? projectTabIds[3]
-      : projectTabIds[(index + (event.key === "ArrowRight" ? 1 : projectTabIds.length - 1)) % projectTabIds.length];
-    setProjectTab(next);
-    document.getElementById(`project-tab-${next}`)?.focus();
-  };
+  const [projectDialog, setProjectDialog] = useState<"milestones" | "decisions" | "resources" | null>(null);
 
   useEffect(() => {
     const candidates = showArchived ? archivedProjects : activeProjects;
@@ -125,12 +119,11 @@ export function ProjectPage({
   }, [focusedProjectId, projects, onSearchTargetOpened]);
 
   useEffect(() => {
-    setProjectTab("work");
+    setProjectDialog(null);
     setEditingProject(false);
     setResourceLabel("");
     setResourceUrl("");
     setResourceError("");
-    setNewTodoMilestoneId("");
   }, [selectedId]);
 
   const selected = projects.find((project) => project.id === selectedId);
@@ -138,6 +131,7 @@ export function ProjectPage({
   const projectMilestones = useMemo(() => milestones.filter((milestone) => milestone.projectId === selectedId), [milestones, selectedId]);
   const projectDecisions = useMemo(() => decisions.filter((decision) => decision.projectId === selectedId), [decisions, selectedId]);
   const completed = projectTodos.filter((todo) => todo.completed).length;
+  const [showDuplicate, setShowDuplicate] = useState(false);
   const progress = projectTodos.length ? Math.round((completed / projectTodos.length) * 100) : 0;
   const unassignedMilestoneTodos = projectTodos.filter((todo) => !todo.milestoneId).length;
 
@@ -147,7 +141,6 @@ export function ProjectPage({
 
     const created = await onAddProject({
       name: newName.trim(),
-      targetDate: newTargetDate || undefined,
       status: "ACTIVE",
       resources: [],
     });
@@ -155,7 +148,6 @@ export function ProjectPage({
 
     setSelectedId(created.id);
     setNewName("");
-    setNewTargetDate("");
     setShowCreateProject(false);
     setShowArchived(false);
   };
@@ -181,8 +173,7 @@ export function ProjectPage({
     setProjectName(selected.name);
     setProjectDescription(selected.description || "");
     setProjectStartDate(selected.startDate || "");
-    setProjectTargetDate(selected.targetDate || "");
-    setProjectColor(selected.color || "#9b9ba0");
+    setProjectColor(selected.color || "");
     setEditingProject(true);
   };
 
@@ -194,7 +185,6 @@ export function ProjectPage({
       name: projectName.trim(),
       description: projectDescription.trim() || undefined,
       startDate: projectStartDate || undefined,
-      targetDate: projectTargetDate || undefined,
       color: projectColor,
     });
     if (updated) setEditingProject(false);
@@ -256,39 +246,25 @@ export function ProjectPage({
     setMilestoneDate("");
   };
 
-  const addProjectTodo = async (input: TodoInput) => {
-    if (!selected) return undefined;
-    const projectId = input.projectId || selected.id;
-    return onAddTodo({
-      ...input,
-      projectId,
-      milestoneId: projectId === selected.id ? (newTodoMilestoneId || undefined) : undefined,
-    });
-  };
-
   return (
     <div className="page-shell project-page">
-      <PageHeader title="프로젝트" description="칸반에서 작업을 관리하고, 필요할 때 마일스톤과 기록을 확인합니다."
+      <PageHeader title="프로젝트"
         meta={`진행 ${activeProjects.length}개`}
         actions={<>
 
             {!showArchived ? (
-              <button type="button" className="btn-primary" onClick={() => setShowCreateProject((value) => !value)}>
+              <button type="button" className="btn-secondary" onClick={() => setShowCreateProject((value) => !value)}>
                 <Plus size={16} />{showCreateProject ? "추가 닫기" : "프로젝트 추가"}
               </button>
             ) : null}
-            <button type="button" className="btn-secondary" onClick={() => { setShowArchived((value) => !value); setShowCreateProject(false); }}>
-              {showArchived ? <ArchiveRestore size={16} /> : <Archive size={16} />}
-              {showArchived ? "진행 프로젝트" : `보관함 ${archivedProjects.length}`}
-            </button>
+
         </>}
       />
 
       {showCreateProject && !showArchived ? (
-        <form className="grid gap-2 border-b border-ui-divider py-4 sm:grid-cols-[minmax(0,1fr)_11rem_auto]" onSubmit={createProject}>
+        <form className="grid gap-2 border-b border-ui-divider py-4 sm:grid-cols-[minmax(0,1fr)_auto]" onSubmit={createProject}>
           <input className="field" value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="새 프로젝트 이름" autoFocus />
-          <input className="field" type="date" value={newTargetDate} onChange={(event) => setNewTargetDate(event.target.value)} aria-label="프로젝트 목표일" />
-          <button className="btn-primary" type="submit" disabled={!newName.trim()}><Plus size={16} />추가</button>
+          <button className="btn-secondary" type="submit" disabled={!newName.trim()}><Plus size={16} />추가</button>
         </form>
       ) : null}
 
@@ -307,53 +283,43 @@ export function ProjectPage({
                 </select>
               </label>
               <nav className="project-v4-switcher__nav" aria-label={showArchived ? "보관 프로젝트 선택" : "진행 프로젝트 선택"}>
-                {visibleProjects.map((project) => (
-                  <button key={project.id} type="button" onClick={() => setSelectedId(project.id)}
+                {visibleProjects.map((project) => {
+                  const tasks = todos.filter((todo) => todo.projectId === project.id && !todo.archived);
+                  const done = tasks.filter((todo) => todo.completed).length;
+                  return <button key={project.id} type="button" onClick={() => setSelectedId(project.id)}
                     aria-pressed={selectedId === project.id} aria-label={`${project.name} (${projectStatusLabel[project.status]})`}
                     className="project-v4-switcher__item">
-                    <span className="project-v4-switcher__dot" style={{ backgroundColor: project.color || "var(--text-muted)" }} aria-hidden="true" />
+                    <span className="project-v4-switcher__dot" style={{ backgroundColor: getEntityColor(project, projects) }} aria-hidden="true" />
                     <span className="truncate">{project.name}</span>
-                    <span className="project-v4-switcher__status">{projectStatusLabel[project.status]}</span>
-                  </button>
-                ))}
+                    <span className="project-v4-switcher__status">{done}/{tasks.length}</span>
+                    <span className="project-switcher-progress"><span style={{ width: tasks.length ? `${done / tasks.length * 100}%` : 0, background: getEntityColor(project, projects) }} /></span>
+                  </button>;
+                })}
               </nav>
             </>
           ) : <p className="project-v4-switcher__empty">{showArchived ? "보관된 프로젝트가 없습니다." : "프로젝트를 추가해 시작하세요."}</p>}
+            <button type="button" className="btn-secondary" onClick={() => { setShowArchived((value) => !value); setShowCreateProject(false); }}>
+              {showArchived ? <ArchiveRestore size={16} /> : <Archive size={16} />}
+              {showArchived ? "진행 프로젝트" : `보관 ${archivedProjects.length}`}
+            </button>
         </aside>
         <div className="project-v4-main min-w-0">
       {selected ? (
         <div className="project-detail min-w-0 space-y-3">
-          <div className="project-v4-toolbar">
-            <div className="min-w-0">
-              <h2>{selected.name}</h2>
-              <p>{completed}/{projectTodos.length}개 완료 · {projectStatusLabel[selected.status]}</p>
-            </div>
-            <button type="button" className="btn-secondary" onClick={() => setProjectTab("manage")}>프로젝트 정보</button>
-          </div>
-          {projectTab === "manage" ? <section className="project-overview app-card py-3">
+          <section className="project-overview py-3">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <FolderKanban size={19} className="text-ui-secondary" />
-                  <h3 className="text-lg font-semibold tracking-tight text-ink-100">{selected.name}</h3>
+                  <span className="project-v4-switcher__dot" style={{ backgroundColor: getEntityColor(selected, projects) }} aria-hidden="true" />
+                  <h2 className="text-xl font-semibold tracking-tight text-ui-text">{selected.name}</h2>
                 </div>
-                <details className="mt-1 group">
-                  <summary className="flex min-h-8 w-fit cursor-pointer items-center gap-2 rounded px-1 text-xs font-semibold text-ink-400 hover:bg-ink-800/65 hover:text-ink-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
-                    프로젝트 설명 <ChevronDown size={14} className="transition-transform group-open:rotate-180" />
-                  </summary>
-                  <p className="max-w-4xl px-1 pt-1 text-sm leading-6 text-ink-300">{selected.description || "설명이 없습니다."}</p>
-                </details>
                 <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-400">
                   <span><strong className="font-medium text-ui-text">{completed}/{projectTodos.length}개 완료</strong>{projectTodos.length > 0 ? ` · ${progress}%` : ""}</span>
                   {selected.startDate ? <span>시작일 {selected.startDate}</span> : null}
-                  {selected.targetDate ? <span>목표일 {selected.targetDate}</span> : null}
-                  <span>마일스톤 {projectMilestones.length}개</span>
-                  <span>결정 {projectDecisions.length}개</span>
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {!selected.archived ? <button type="button" className="btn-secondary" onClick={beginProjectEdit}><Pencil size={15} />정보 수정</button> : null}
                 <select aria-label="프로젝트 상태" className="field min-h-10 w-auto py-1.5 text-sm" value={selected.status} onChange={(event) => void onUpdateProject(selected.id, { status: event.target.value as ProjectStatus })} disabled={selected.archived || deletingProject}>
                   <option value="PLANNING">계획</option>
                   <option value="ACTIVE">진행 중</option>
@@ -364,7 +330,16 @@ export function ProjectPage({
                   <summary className="btn-secondary" aria-label="프로젝트 관리 메뉴" title="프로젝트 관리 메뉴">
                     <MoreHorizontal size={17} aria-hidden="true" />
                   </summary>
-                  <div className="project-actions-menu__panel" role="group" aria-label="프로젝트 관리">
+                  <div className="project-actions-menu__panel" role="group" aria-label="프로젝트 관리" onClick={(event) => {
+                    const menu = event.currentTarget.closest("details");
+                    if (menu) menu.open = false;
+                  }}>
+                    {!selected.archived ? <button type="button" onClick={beginProjectEdit}><Pencil size={15} />정보 및 색상 수정</button> : null}
+                    <button type="button" onClick={() => onOpenProjectTodos(selected.id)}>전체 Todo에서 보기</button>
+                    <button type="button" onClick={() => setProjectDialog("resources")}>자료 링크</button>
+                    <button type="button" onClick={() => setProjectDialog("milestones")}>마일스톤 관리</button>
+                    {projectDecisions.length ? <button type="button" onClick={() => setProjectDialog("decisions")}>기존 결정 기록</button> : null}
+                    <button type="button" onClick={() => setShowDuplicate(true)}>복제</button>
                     {selected.archived ? (
                       <button type="button" onClick={() => void onUnarchiveProject(selected.id)} disabled={deletingProject}>
                         <ArchiveRestore size={15} />복원
@@ -385,26 +360,34 @@ export function ProjectPage({
             {editingProject ? (
               <form className="mt-4 grid gap-3 border-t border-ui-divider pt-4 lg:grid-cols-2" onSubmit={saveProjectInfo}>
                 <label className="text-xs font-semibold text-ink-400">프로젝트 이름<input className="field mt-1.5" value={projectName} onChange={(event) => setProjectName(event.target.value)} maxLength={120} /></label>
-                <label className="text-xs font-semibold text-ink-400">색상<div className="mt-1.5 flex gap-2"><input className="h-10 w-14 rounded-md border border-ink-700 bg-ink-950 p-1" type="color" value={projectColor} onChange={(event) => setProjectColor(event.target.value)} /><input className="field" value={projectColor} onChange={(event) => setProjectColor(event.target.value)} maxLength={20} /></div></label>
+                <fieldset className="text-xs font-semibold text-ink-400">
+                  <legend>색상</legend>
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {entityColors.map((color, index) => (
+                      <button type="button" key={color} aria-label={["파랑", "초록", "황갈색", "장밋빛", "보라", "청록"][index]}
+                        aria-pressed={projectColor === color} onClick={() => setProjectColor(color)}
+                        className="grid h-8 w-8 place-items-center rounded-md border border-ui-divider aria-pressed:border-ui-focus">
+                        <span className="h-4 w-4 rounded-full" style={{ background: `var(--entity-${color})` }} />
+                      </button>
+                    ))}
+                  </div>
+                  <input className="field mt-1" aria-label="직접 색상 입력" placeholder="자동 색상" value={projectColor} onChange={(event) => setProjectColor(event.target.value)} maxLength={20} />
+                </fieldset>
                 <label className="text-xs font-semibold text-ink-400">시작일<input className="field mt-1.5" type="date" value={projectStartDate} onChange={(event) => setProjectStartDate(event.target.value)} /></label>
-                <label className="text-xs font-semibold text-ink-400">목표일<input className="field mt-1.5" type="date" value={projectTargetDate} onChange={(event) => setProjectTargetDate(event.target.value)} /></label>
                 <label className="text-xs font-semibold text-ink-400 lg:col-span-2">설명<textarea className="field mt-1.5 min-h-24 resize-y" value={projectDescription} onChange={(event) => setProjectDescription(event.target.value)} maxLength={1000} placeholder="프로젝트의 목표와 범위를 짧게 기록하세요." /></label>
                 <div className="flex justify-end gap-2 lg:col-span-2">
                   <button type="button" className="btn-secondary" onClick={() => setEditingProject(false)}><X size={15} />취소</button>
-                  <button type="submit" className="btn-primary" disabled={!projectName.trim()}><Save size={15} />저장</button>
+                  <button type="submit" className="btn-secondary" disabled={!projectName.trim()}><Save size={15} />저장</button>
                 </div>
               </form>
             ) : null}
 
             {projectTodos.length > 0 ? <div role="progressbar" aria-label="프로젝트 완료율" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="project-overview__progress mt-4 h-1 overflow-hidden bg-ink-800">
-              <div className="h-full bg-accent-500 transition-[width]" style={{ width: `${progress}%` }} />
+              <div className="h-full" style={{ width: `${progress}%`, background: getEntityColor(selected, projects) }} />
             </div> : null}
 
-            {projectTab === "manage" ? <details className="project-resources mt-2 border-t border-ink-800/80 pt-2" key={selected.id}>
-              <summary className="flex min-h-9 cursor-pointer list-none flex-wrap items-center justify-between gap-2 rounded-sm px-1 text-xs font-medium text-ink-300 hover:bg-ink-800/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
-                <span className="flex items-center gap-2"><Link2 size={16} className="text-accent-300" />자료 링크 <span className="text-xs font-medium text-ink-400">{(selected.resources || []).length}/12</span></span>
-                <span className="flex items-center gap-1 text-xs font-medium text-ink-400">GitHub · 배포 · 문서 <ChevronDown size={15} /></span>
-              </summary>
+          </section>
+          {projectDialog === "resources" ? <Modal title="자료 링크" onClose={() => setProjectDialog(null)}>
 
               {(selected.resources || []).length ? (
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -428,26 +411,9 @@ export function ProjectPage({
                   {resourceError ? <p className="text-xs font-semibold text-danger lg:col-span-3">{resourceError}</p> : null}
                 </form>
               ) : null}
-            </details> : null}
-          </section> : null}
+          </Modal> : null}
 
-          <nav className="page-tabs" aria-label="프로젝트 세부 화면" role="tablist">
-            {([
-              { id: "work", label: "작업", count: projectTodos.length },
-              { id: "milestones", label: "마일스톤", count: projectMilestones.length },
-              { id: "decisions", label: "결정 기록", count: projectDecisions.length },
-              { id: "manage", label: "프로젝트 관리", count: null },
-            ] as const).map((tab) => (
-              <button type="button" role="tab" key={tab.id} id={`project-tab-${tab.id}`} aria-selected={projectTab === tab.id}
-                tabIndex={projectTab === tab.id ? 0 : -1} onKeyDown={onProjectTabKey}
-                onClick={() => setProjectTab(tab.id)}
-                className="page-tab">
-                {tab.label}{tab.count !== null ? <span className="ml-1.5 text-xs opacity-80">{tab.count}</span> : null}
-              </button>
-            ))}
-          </nav>
-
-          {projectTab === "manage" ? <ProjectOverviewTools
+          {showDuplicate ? <Modal title="프로젝트 복제" onClose={() => setShowDuplicate(false)}><ProjectOverviewTools duplicateOnly
             project={selected}
             todos={projectTodos}
             milestones={projectMilestones}
@@ -455,30 +421,13 @@ export function ProjectPage({
             onUpdateProject={onUpdateProject}
             onDuplicateProject={onDuplicateProject}
             onDuplicated={(project) => {
+              setShowDuplicate(false);
               setShowArchived(false);
               setSelectedId(project.id);
             }}
-          /> : null}
+          /></Modal> : null}
 
-          {projectTab === "work" && !selected.archived ? (
-            <section className="project-v4-quick-add border-b border-ui-divider py-3" aria-label="프로젝트 작업 추가">
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <h4 className="text-sm font-semibold text-ui-text">새 작업</h4>
-                {projectMilestones.length > 0 ? (
-                  <label className="flex min-w-0 items-center gap-2 text-xs text-ui-secondary">
-                    <span className="shrink-0">마일스톤</span>
-                    <select className="field min-h-9 w-44 max-w-full py-1.5 text-xs" value={newTodoMilestoneId} onChange={(event) => setNewTodoMilestoneId(event.target.value)} aria-label="새 Todo 마일스톤">
-                      <option value="">미지정</option>
-                      {projectMilestones.map((milestone) => <option key={milestone.id} value={milestone.id}>{milestone.title}</option>)}
-                    </select>
-                  </label>
-                ) : null}
-              </div>
-              <TodoForm compact submitLabel="추가" categories={categories} projects={activeProjects} defaultProjectId={selected.id} onAdd={addProjectTodo} />
-            </section>
-          ) : null}
-
-          {projectTab === "milestones" ? <section className="app-card py-4">
+          {projectDialog === "milestones" ? <Modal title="마일스톤 관리" onClose={() => setProjectDialog(null)}><section className="py-2">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2"><Target size={17} className="text-accent-300" /><h3 className="font-bold text-ink-100">마일스톤</h3></div>
               {projectTodos.length ? <span className="text-xs text-ink-400">미지정 Todo {unassignedMilestoneTodos}개</span> : null}
@@ -509,7 +458,7 @@ export function ProjectPage({
                           <span className="text-[11px] font-semibold text-ink-400">{milestoneCompleted}/{milestoneTodos.length} · {milestoneProgress}%</span>
                         </div>
                         <div className="mt-1 flex flex-wrap gap-2 text-xs text-ink-400">
-                          {milestone.targetDate ? <span>목표일 {milestone.targetDate}</span> : null}
+                          {milestone.targetDate ? <span>일정 {milestone.targetDate}</span> : null}
                           <span>Todo {milestoneTodos.length}개</span>
                         </div>
                       </div>
@@ -535,10 +484,10 @@ export function ProjectPage({
                 );
               }) : <p className="py-4 text-center text-sm text-ink-500">아직 마일스톤이 없습니다.</p>}
             </div>
-          </section> : null}
+          </section></Modal> : null}
 
-          {projectTab === "decisions" ? <ProjectDecisionLog projectId={selected.id} archived={selected.archived} decisions={projectDecisions} onAdd={onAddDecision} onDelete={onDeleteDecision} /> : null}
-          {projectTab === "work" ? <ProjectKanban project={selected} todos={projectTodos} milestones={projectMilestones} categories={categories} projects={projects} onAddTodo={onAddTodo} onUpdateTodo={onUpdateTodo} onToggleTodo={onToggleTodo} /> : null}
+          {projectDialog === "decisions" ? <Modal title="기존 결정 기록" onClose={() => setProjectDialog(null)}><ProjectDecisionLog projectId={selected.id} archived decisions={projectDecisions} onAdd={onAddDecision} onDelete={onDeleteDecision} /></Modal> : null}
+          <ProjectKanban key={selected.id} project={selected} todos={projectTodos} milestones={projectMilestones} categories={categories} projects={projects} onAddTodo={onAddTodo} onUpdateTodo={onUpdateTodo} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} onDetachTodo={onDetachTodo} />
         </div>
       ) : (
         <div className="app-card flex min-h-56 items-center justify-center p-6 text-center">

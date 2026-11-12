@@ -6,6 +6,8 @@ import { MonthlyView } from "../components/calendar/MonthlyView";
 
 type MonthPageProps = {
   embedded?: boolean;
+  selectedDate: string;
+  onSelectDate: (date: string) => void;
   todos: Todo[];
   projects?: Project[];
   milestones?: Milestone[];
@@ -26,6 +28,8 @@ type MonthPageProps = {
 
 export function MonthPage({
   embedded = false,
+  selectedDate,
+  onSelectDate,
   todos,
   projects = [],
   milestones = [],
@@ -52,6 +56,8 @@ export function MonthPage({
         </section>
       ) : null}
       <MonthlyView
+        selectedDate={selectedDate}
+        onSelectDate={onSelectDate}
         todos={todos}
         projects={projects}
         milestones={milestones}

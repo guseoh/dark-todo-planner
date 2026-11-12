@@ -138,7 +138,7 @@ async function buildRestoreState(env: Bindings, userId: string, trashId: string)
   const [conflict, category, project, milestone, parent] = await Promise.all([
     env.DB.prepare("SELECT id FROM todos WHERE id = ? AND user_id = ? LIMIT 1").bind(originalTodoId, userId).first<{ id: string }>(),
     categoryId ? env.DB.prepare("SELECT id FROM categories WHERE id = ? AND user_id = ? LIMIT 1").bind(categoryId, userId).first<{ id: string }>() : Promise.resolve(undefined),
-    projectId ? env.DB.prepare("SELECT id FROM projects WHERE id = ? AND user_id = ? LIMIT 1").bind(projectId, userId).first<{ id: string }>() : Promise.resolve(undefined),
+    projectId ? env.DB.prepare("SELECT id, name FROM projects WHERE id = ? AND user_id = ? LIMIT 1").bind(projectId, userId).first<{ id: string; name: string }>() : Promise.resolve(undefined),
     milestoneId ? env.DB.prepare("SELECT id, project_id AS projectId FROM milestones WHERE id = ? AND user_id = ? LIMIT 1").bind(milestoneId, userId).first<{ id: string; projectId: string }>() : Promise.resolve(undefined),
     parentTodoId ? env.DB.prepare("SELECT id, project_id AS projectId FROM todos WHERE id = ? AND user_id = ? LIMIT 1").bind(parentTodoId, userId).first<{ id: string; projectId: string | null }>() : Promise.resolve(undefined),
   ]);
@@ -196,6 +196,8 @@ async function buildRestoreState(env: Bindings, userId: string, trashId: string)
       title: trash.title,
       deletedAt: trash.deletedAt,
       restorable: !conflict,
+      originalDate: typeof todo.date === "string" && todo.date !== "9999-12-31" ? todo.date : undefined,
+      projectName: project?.name,
       refs: {
         category: { requested: categoryId || null, restored: category ? categoryId : null },
         project: { requested: projectId || null, restored: effectiveProjectId || null },

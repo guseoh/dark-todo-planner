@@ -1,3 +1,4 @@
+import { arrayMove } from "@dnd-kit/sortable";
 import type { Todo } from "../types/todo";
 
 /** Today candidates are existing tasks, not copies or changes to deadlines. */
@@ -22,4 +23,12 @@ export function selectTodayCandidates(todos: readonly Todo[], plannerToday: stri
   const first = planned.slice(0, plannedQuota);
   const second = unplanned.slice(0, maxItems - first.length);
   return [...first, ...second, ...planned.slice(first.length, first.length + maxItems - first.length - second.length)];
+}
+
+
+export function moveFocusTodo(ids: string[], active: string, over?: string) {
+  if (!over || active === over) return undefined;
+  const from = ids.indexOf(active);
+  const to = ids.indexOf(over);
+  return from >= 0 && to >= 0 ? arrayMove(ids, from, to) : undefined;
 }

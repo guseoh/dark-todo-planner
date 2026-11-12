@@ -1,3 +1,6 @@
+import { WeeklyTimetable } from "./WeeklyTimetable";
+import { UnscheduledCalendarTodos } from "./UnscheduledCalendarTodos";
+import type { Project } from "../../types/project";
 import { useEffect, useMemo, useState } from "react";
 import { CalendarCheck2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus } from "lucide-react";
 import { addWeeks } from "date-fns";
@@ -12,11 +15,16 @@ import { TodoEditModal } from "../todo/TodoEditModal";
 import { TodoRow } from "../todo/TodoRow";
 
 type WeeklyViewProps = {
+  selectedDate: string;
+  onSelectDate: (date: string) => void;
+  onReloadTodos: () => Promise<void>;
+  todos?: Todo[];
+  projects?: Project[];
   getTodosByDate: (date: string) => Todo[];
   onAdd: (todo: TodoInput) => Promise<Todo | undefined> | Todo | undefined;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => void;
+  onUpdate: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => Promise<Todo | undefined> | Todo | undefined | void;
   onAddGoal: (input: Partial<Goal> & { title: string }) => Promise<Goal | undefined>;
   onUpdateGoal: (id: string, updates: Partial<Omit<Goal, "id" | "createdAt">>) => Promise<Goal | undefined>;
   onToggleGoal: (id: string) => Promise<boolean>;
@@ -32,6 +40,11 @@ const dayLabelTone = (index: number) => {
 };
 
 export function WeeklyView({
+  selectedDate,
+  onSelectDate: setSelectedDate,
+  onReloadTodos,
+  todos = [],
+  projects = [],
   getTodosByDate,
   onAdd,
   onToggle,
@@ -47,25 +60,21 @@ export function WeeklyView({
   // The 03:00 planner-day rollover triggers a rerender in App; derive visible
   // dates from the current planner day rather than freezing them at mount.
   const today = todayKey();
-  const [weekOffset, setWeekOffset] = useState(0);
+  const currentWeek = toDateKey(getWeekDays(parseDateKey(today))[0]);
   const weekDays = useMemo(
-    () => getWeekDays(addWeeks(parseDateKey(today), weekOffset)),
-    [today, weekOffset],
+    () => getWeekDays(parseDateKey(selectedDate)),
+    [selectedDate],
   );
   const weekDateKeys = useMemo(() => weekDays.map(toDateKey), [weekDays]);
   const weekStart = weekDateKeys[0];
   const weekEnd = weekDateKeys[6];
-  const [selectedDate, setSelectedDate] = useState(today);
   const weekTodos = useMemo(() => weekDateKeys.flatMap((date) => getTodosByDate(date)), [weekDateKeys, getTodosByDate]);
 
   const moveWeek = (delta: number) => {
-    const offset = weekOffset + delta;
-    const dates = getWeekDays(addWeeks(parseDateKey(today), offset));
-    setWeekOffset(offset);
-    setSelectedDate(offset === 0 ? today : toDateKey(dates[0]));
+    const next = toDateKey(addWeeks(parseDateKey(weekStart), delta));
+    setSelectedDate(next === currentWeek ? today : next);
   };
   const backToThisWeek = () => {
-    setWeekOffset(0);
     setSelectedDate(today);
   };
   const [addingDate, setAddingDate] = useState<string | null>(null);
@@ -101,20 +110,19 @@ export function WeeklyView({
   });
 
   useEffect(() => {
-    if (!weekDateKeys.includes(selectedDate)) setSelectedDate(weekOffset === 0 ? today : weekStart);
-  }, [selectedDate, today, weekDateKeys, weekOffset, weekStart]);
-
-  useEffect(() => {
     setAddingDate(null);
     setShowCompleted(false);
   }, [selectedDate]);
+
+  const schedule = async (todo: Todo, date: string) =>
+    Boolean(await onUpdate(todo.id, { date, planningState: "SCHEDULED" }));
 
   return (
     <div className="weekly-workspace calendar-v4-week space-y-4">
       <section className="calendar-v4-week-toolbar" aria-labelledby="week-summary-title">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <span className="text-xs text-ui-secondary">{weekOffset === 0 ? "이번 주" : "선택한 주"}</span>
+            <span className="text-xs text-ui-secondary">{weekStart === currentWeek ? "이번 주" : "선택한 주"}</span>
             <h3 id="week-summary-title" className="text-lg font-semibold text-ui-text">
               {formatKoreanDate(weekStart, "M.d")} ~ {formatKoreanDate(weekEnd, "M.d")}
             </h3>
@@ -122,14 +130,14 @@ export function WeeklyView({
           <div className="flex items-center gap-1.5" aria-label="주간 이동">
             <button type="button" className="icon-btn min-h-9 min-w-9" onClick={() => moveWeek(-1)} aria-label="이전 주"><ChevronLeft size={17} /></button>
             <button type="button" className="icon-btn min-h-9 min-w-9" onClick={() => moveWeek(1)} aria-label="다음 주"><ChevronRight size={17} /></button>
-            {weekOffset !== 0 ? <button type="button" className="btn-secondary min-h-9 px-2 text-xs" onClick={backToThisWeek}>이번 주</button> : null}
+            <button type="button" className="btn-secondary min-h-9 px-2 text-xs" onClick={backToThisWeek}>오늘</button>
           </div>
         </div>
         <p className="mt-2 text-xs text-ui-secondary">
           {weekActiveCount}개 미완료 · {formatCompletionRate(weekTodos.length, weekRate)} 완료 · 주간 목표 {completedWeeklyGoals}/{weeklyGoals.length}
         </p>
       </section>
-      <section className="space-y-3" aria-labelledby="week-days-title">
+      <section className="space-y-3 xl:hidden" aria-labelledby="week-days-title">
         <div className="flex items-end justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
@@ -172,18 +180,21 @@ export function WeeklyView({
         </div></div>
       </section>
 
-      <section className="app-card py-4" aria-labelledby="selected-day-title">
-        <div className="flex flex-col gap-3 border-b border-ink-700/55 pb-3 sm:flex-row sm:items-center sm:justify-between">
+      <WeeklyTimetable dates={weekDateKeys} selectedDate={selectedDate} todos={todos} projects={projects}
+        onSelect={setSelectedDate} onOpenTodo={setEditingTodo} onSchedule={schedule} onReloadTodos={onReloadTodos} />
+      <section className="app-card calendar-week-right py-4" aria-labelledby="selected-day-title">
+        <UnscheduledCalendarTodos todos={todos} />
+        <div className="calendar-week-right__heading flex flex-col gap-3 border-b border-ink-700/55 pb-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 id="selected-day-title" className="text-base font-bold text-ink-100">{formatKoreanDate(selectedDate, "M월 d일 EEEE")}</h3>
             <p className="mt-0.5 text-xs text-ink-500">미완료 {selectedActiveTodos.length}개 · 완료 {selectedCompletedTodos.length}개</p>
           </div>
           <button
             type="button"
-            className={addingDate === selectedDate ? "btn-secondary" : "btn-primary"}
+            className="btn-secondary text-xs"
             onClick={() => setAddingDate((current) => current === selectedDate ? null : selectedDate)}
           >
-            <Plus size={15} />{addingDate === selectedDate ? "추가 닫기" : `${formatKoreanDate(selectedDate, "M월 d일")} Todo 추가`}
+            <Plus size={15} />{addingDate === selectedDate ? "추가 닫기" : "이 날짜에 추가"}
           </button>
         </div>
 
@@ -254,15 +265,15 @@ export function WeeklyView({
         ) : null}
       </section>
 
-      <details className="calendar-v4-week-goals" open>
+      <details className="calendar-v4-week-goals">
         <summary className="flex min-h-9 cursor-pointer items-center justify-between gap-2 text-sm font-semibold text-ui-secondary">
-          <span>이번 주 목표 · {completedWeeklyGoals}/{weeklyGoals.length}</span>
+          <span>이번 주 목표 {completedWeeklyGoals}/{weeklyGoals.length}{weeklyGoals[0] ? ` · ${weeklyGoals[0].title}` : ""}</span>
           <ChevronDown size={15} aria-hidden="true" />
         </summary>
         <div className="mt-3">
 <div className="w-full">
         <GoalChecklist
-          title={weekOffset === 0 ? "이번 주 목표" : "선택한 주 목표"}
+          title={weekStart === currentWeek ? "이번 주 목표" : "선택한 주 목표"}
           goals={weeklyGoals}
           type="WEEKLY"
           addDefaults={{ weekStartDate: weekStart, weekEndDate: weekEnd, dueDate: weekEnd }}
@@ -280,6 +291,7 @@ export function WeeklyView({
       <TodoEditModal
         todo={editingTodo}
         categories={categories}
+        projects={projects}
         onClose={() => setEditingTodo(null)}
         onSave={onUpdate}
       />

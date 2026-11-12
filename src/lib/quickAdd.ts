@@ -47,7 +47,7 @@ const resolveNamedReference = (
   source: string,
   marker: "@" | "+",
   items: QuickTodoReference[] = [],
-): { source: string; id?: string } => {
+): { source: string; id?: string; match?: RegExpMatchArray } => {
   if (!items.length) return { source };
   const pattern = marker === "@"
     ? /(?:^|\s)@\{([^}]+)\}(?=\s|$)|(?:^|\s)@([^\s@{}]+)(?=\s|$)/g
@@ -58,46 +58,65 @@ const resolveNamedReference = (
     const item = items.find((entry) => normalizeReferenceName(entry.name) === normalizeReferenceName(candidate));
     if (!item || match.index === undefined) continue;
     return {
-      source: `${source.slice(0, match.index)} ${source.slice(match.index + match[0].length)}`,
+      source: `${source.slice(0, match.index)}${" ".repeat(match[0].length)}${source.slice(match.index + match[0].length)}`,
       id: item.id,
+      match,
     };
   }
   return { source };
 };
 
-export function parseQuickTodoTitle(raw: string, plannerToday: string, context: QuickTodoContext = {}): QuickTodoTokens {
-  let source = raw.trim();
+export type QuickTodoChip = { start: number; end: number; text: string; value: string };
+
+export function parseQuickTodoDraft(raw: string, plannerToday: string, context: QuickTodoContext = {}) {
+  let source = raw;
+  const chips: QuickTodoChip[] = [];
+  const record = (match: RegExpMatchArray | undefined, value: string) => {
+    if (match?.index === undefined) return;
+    const text = match[0].trim();
+    const start = match.index + match[0].indexOf(text);
+    chips.push({ start, end: start + text.length, text, value });
+  };
+  const mask = (match: string) => " ".repeat(match.length);
 
   const projectReference = resolveNamedReference(source, "@", context.projects);
   source = projectReference.source;
+  record(projectReference.match, context.projects?.find(({ id }) => id === projectReference.id)?.name ?? "");
   const categoryReference = resolveNamedReference(source, "+", context.categories);
   source = categoryReference.source;
+  record(categoryReference.match, context.categories?.find(({ id }) => id === categoryReference.id)?.name ?? "");
 
   let priority: TodoPriority | undefined;
   for (const [pattern, value] of priorityTokens) {
-    if (pattern.test(source)) priority = value;
-    pattern.lastIndex = 0;
-    source = source.replace(pattern, " ");
+    for (const match of source.matchAll(pattern)) {
+      priority = value;
+      record(match, { HIGH: "높음", MEDIUM: "보통", LOW: "낮음" }[value]);
+    }
+    source = source.replace(pattern, mask);
   }
 
   let planningState: TodoPlanningState | undefined;
   for (const [pattern, value] of planningTokens) {
-    if (pattern.test(source)) planningState = value;
-    pattern.lastIndex = 0;
-    source = source.replace(pattern, " ");
+    for (const match of source.matchAll(pattern)) {
+      planningState = value;
+      record(match, value === "SOMEDAY" ? "언젠가" : "대기");
+    }
+    source = source.replace(pattern, mask);
   }
 
   let date: string | undefined;
   const explicitDateToken = source.match(/(?:date:|일정:)(\d{4}-\d{2}-\d{2}|오늘|내일|모레)(?=\s|$)/i);
   if (explicitDateToken) {
     date = parseRelativeDate(explicitDateToken[1], plannerToday);
-    source = source.replace(explicitDateToken[0], " ");
+    record(explicitDateToken, date);
+    source = source.replace(explicitDateToken[0], mask);
     planningState = "SCHEDULED";
   } else {
     const dateToken = source.match(/(?:^|\s)(오늘|내일|모레)(?=\s|$)/);
     if (dateToken) {
       date = parseRelativeDate(dateToken[1], plannerToday);
-      source = source.replace(dateToken[0], " ");
+      record(dateToken, date);
+      source = source.replace(dateToken[0], mask);
       planningState = "SCHEDULED";
     }
   }
@@ -106,7 +125,8 @@ export function parseQuickTodoTitle(raw: string, plannerToday: string, context: 
   const dueToken = source.match(/(?:due:|마감:)(\d{4}-\d{2}-\d{2}|오늘|내일|모레)(?=\s|$)/i);
   if (dueToken) {
     dueDate = parseRelativeDate(dueToken[1], plannerToday);
-    source = source.replace(dueToken[0], " ");
+    record(dueToken, dueDate);
+    source = source.replace(dueToken[0], mask);
   }
 
   const result: QuickTodoTokens = {
@@ -118,5 +138,9 @@ export function parseQuickTodoTitle(raw: string, plannerToday: string, context: 
   if (planningState) result.planningState = planningState;
   if (categoryReference.id) result.categoryId = categoryReference.id;
   if (projectReference.id) result.projectId = projectReference.id;
-  return result;
+  return { todo: result, chips: chips.sort((a, b) => a.start - b.start) };
+}
+
+export function parseQuickTodoTitle(raw: string, plannerToday: string, context: QuickTodoContext = {}): QuickTodoTokens {
+  return parseQuickTodoDraft(raw, plannerToday, context).todo;
 }

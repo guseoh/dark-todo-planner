@@ -103,7 +103,7 @@ try {
   await page.locator('input[autocomplete="username"]').fill(process.env.SMOKE_USERNAME);
   await page.locator('input[autocomplete="current-password"]').fill(process.env.SMOKE_PASSWORD);
   await page.getByRole("button", { name: "로그인" }).click();
-  await page.getByRole("heading", { name: "오늘", exact: true }).waitFor();
+  await page.getByRole("group", { name: "오늘 작업 현황" }).waitFor();
 
   // T27: keyboard-only command palette, dialog focus containment and Escape.
   await page.keyboard.press("Control+k");
@@ -143,7 +143,9 @@ try {
       await page.setViewportSize({ width, height: 844 });
       for (const [view, heading] of screens) {
         await page.evaluate((name) => { window.location.hash = "#/" + name; }, view);
-        if (view === "scratchpad") {
+        if (view === "today") {
+          await page.getByRole("group", { name: "오늘 작업 현황" }).waitFor();
+        } else if (view === "scratchpad") {
           await page.getByRole("textbox", { name: "낙서장 편집기" }).waitFor();
         } else {
           await page.getByRole("heading", { name: heading, exact: true }).first().waitFor();

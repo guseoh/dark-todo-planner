@@ -1,3 +1,4 @@
+import { getEntityColor } from "../../lib/entityColor";
 import { useState } from "react";
 import { Plus, X } from "lucide-react";
 import { InlineTodoAdd } from "../todo/InlineTodoAdd";
@@ -143,7 +144,7 @@ export function MonthlySidePanel({
                         {group.category ? (
                           <IconRenderer
                             icon={group.category.icon}
-                            color={group.category.color || "#a0a0a6"}
+                            color={getEntityColor(group.category, categories)}
                             name={group.category.name}
                             className={group.category.icon ? "h-6 w-6 border-0 bg-transparent" : "h-2 w-2"}
                             iconClassName="h-4 w-4"

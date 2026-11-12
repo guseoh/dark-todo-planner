@@ -17,6 +17,8 @@ export type RestoreCountPreview = {
 
 export type TodoRestorePreview = TodoTrashEntry & {
   restorable: boolean;
+  originalDate?: string;
+  projectName?: string;
   refs: {
     category: RestoreRefPreview;
     project: RestoreRefPreview;

@@ -2,8 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: Inter;
+  src: url("/fonts/InterVariable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Pretendard;
+  src: url("/fonts/PretendardVariable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 45 920;
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
+  --entity-blue: #79a7f7;
+  --entity-green: #67be9b;
+  --entity-amber: #e5b66d;
+  --entity-rose: #de858e;
+  --entity-violet: #a99af0;
+  --entity-teal: #6cc4c9;
 
   --app-bg: #09090B;
   --sidebar-bg: #111113;
@@ -86,13 +108,19 @@
 
   background: var(--app-bg);
   color: var(--text-primary);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Inter, Pretendard, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 
 /* Resolved theme is written before React renders. System follows OS preference. */
 :root[data-theme="light"] {
   color-scheme: light;
+  --entity-blue: #305d9e;
+  --entity-green: #2d7156;
+  --entity-amber: #835813;
+  --entity-rose: #963f50;
+  --entity-violet: #63509b;
+  --entity-teal: #28686f;
   --app-bg: #FAFAFA;
   --sidebar-bg: #F4F4F5;
   --surface-1: #FFFFFF;
@@ -2478,3 +2506,286 @@ button:disabled {
 }
 /* Show the quick-syntax cheat sheet only while the composer is in use. */
 form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
+
+
+.todo-composer-form--stacked .todo-composer-form__main {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.todo-row[data-todo-row]:focus-visible {
+  outline: none;
+  border-inline-start: 2px solid var(--accent);
+  background: var(--surface-2);
+}
+
+.todo-row__title.todo-row__title--completed { color: var(--text-disabled); }
+
+@media (min-width: 1280px) {
+  main { font-variant-numeric: tabular-nums; }
+  .page-header h1 { font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+  main :is(.btn-primary, .btn-secondary, .ui-button) { border-radius: 6px; }
+  main :is(.app-card, .todo-composer-form) { border-radius: 8px; box-shadow: none; }
+  .todo-composer-form :is(.todo-composer-form__category, .todo-composer-form__chips) { display: none; }
+  .todo-composer-form .todo-composer-form__main:has(.todo-composer-form__category) {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .todo-composer-form--stacked .todo-composer-form__main:has(.todo-composer-form__category) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .todo-composer-form .todo-composer-chip { border-radius: 999px; }
+  main .todo-row { min-height: 36px; padding-block: 0; }
+  main .todo-row > div { align-items: center; }
+  main .todo-row > div > :first-child:not(.todo-row__content),
+  main .todo-row .todo-row__more > summary { height: 35px; }
+  main .todo-row .todo-row__content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-block: 0;
+  }
+  main .todo-row .todo-row__title {
+    min-width: 5ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 400;
+  }
+  main .todo-row .todo-row__memo { display: none; }
+  main .todo-row .todo-row__meta {
+    min-width: 0;
+    margin: 0;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+  main .todo-row:is(:hover, :focus-within) { background: var(--surface-1); }
+  main .todo-row:focus-visible { background: var(--surface-2); }
+  .todo-row :is(.todo-row__actions, .todo-row__more) { opacity: 0; }
+  .todo-row:is(:hover, :focus-within) :is(.todo-row__actions, .todo-row__more),
+  .todo-row .todo-row__more[open] { opacity: 1; }
+}
+
+
+.today-desktop-rail, .today-desktop-progress progress { display: none; }
+
+@media (min-width: 1280px) {
+  .page-shell.today-page { max-width: 984px; }
+  .today-page .today-workspace {
+    max-width: none;
+    grid-template-columns: minmax(0, 720px) 240px;
+    gap: 24px;
+  }
+  .today-page .today-planning-panel {
+    position: fixed;
+    z-index: 31;
+    inset: 60px 0 0 auto;
+    width: 320px;
+    overflow-y: auto;
+    padding: 16px;
+    background: var(--app-bg);
+  }
+  .today-page .today-planning-backdrop {
+    display: block;
+    position: fixed;
+    z-index: 30;
+    inset: 60px 0 0;
+    background: rgb(0 0 0 / .35);
+  }
+  .today-page .today-workspace__main > :not([hidden]) ~ :not([hidden]) { margin-top: 24px; }
+  .today-page .today-header__identity { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .today-page .today-header__identity h1 { font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+  .today-desktop-progress progress {
+    display: block;
+    width: 100%;
+    height: 4px;
+    accent-color: var(--accent);
+    margin-top: 4px;
+  }
+  .today-desktop-rail {
+    display: grid;
+    align-self: start;
+    gap: 24px;
+    min-width: 0;
+    padding-inline-start: 12px;
+    border-inline-start: 1px solid var(--ui-divider);
+  }
+  .today-desktop-rail h2 { margin-bottom: 8px; font-size: 13px; font-weight: 600; }
+  .today-week-current { background: var(--accent); color: var(--app-bg); }
+  .today-page .today-focus-list .todo-row { min-height: 44px; }
+}
+
+
+.project-switcher-progress { display: none; }
+
+@media (min-width: 1280px) {
+  .project-page .project-v4-workspace { grid-template-columns: 200px minmax(0, 1fr); gap: 24px; }
+  .project-page .project-v4-switcher__item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 4px 8px;
+  }
+  .project-switcher-progress {
+    display: block;
+    grid-column: 2 / -1;
+    height: 3px;
+    background: var(--surface-3);
+  }
+  .project-switcher-progress > span { display: block; height: 100%; }
+  .project-page .project-v4-board { min-width: 784px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .project-page .project-v4-board[data-done-collapsed="true"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) 36px;
+  }
+  .project-page .project-kanban-column { border-top: 2px solid var(--surface-3); }
+  .project-page .project-kanban-column[data-status="IN_PROGRESS"] { border-top-color: var(--accent); }
+  .project-page .project-kanban-column[data-status="BLOCKED"] { border-top-color: var(--danger); }
+  .project-page .project-kanban-column[data-status="DONE"] { border-top-color: var(--success); }
+  .project-page .project-kanban-column[data-over-limit="true"] h4 { color: var(--warning); }
+  .project-page .project-kanban-column[data-collapsed="true"] { padding-inline: 0; }
+  .project-page .project-kanban-column[data-collapsed="true"] :is(.project-kanban-column__count, details, p) { display: none; }
+  .project-page .project-kanban-column[data-collapsed="true"] button { writing-mode: vertical-rl; margin-inline: auto; }
+  .project-page .project-kanban-column__header { flex-wrap: wrap; }
+}
+
+@media (min-width: 1151px) and (max-width: 1359px) {
+  .project-page .project-v4-workspace { display: block; }
+  .project-page .project-v4-switcher { display: flex; align-items: center; gap: 8px; position: static; border: 0; padding: 0 0 8px; }
+  .project-page .project-v4-switcher__title, .project-page .project-v4-switcher__nav { display: none; }
+  .project-page .project-v4-compact-select { display: block; width: min(100%, 320px); }
+}
+
+.project-page .project-kanban-card .project-actions-menu > summary {
+  min-width: 28px;
+  min-height: 32px;
+}
+.project-page .project-kanban-card:has(.project-actions-menu[open]) { position: relative; z-index: 2; }
+
+
+.calendar-month-right:not(.is-open), .calendar-month-ranges, .calendar-unscheduled { display: none; }
+
+@media (min-width: 1280px) {
+  .calendar-page .calendar-v4-month-stage,
+  .calendar-page .calendar-v4-week {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 200px;
+    align-items: start;
+    gap: 16px;
+  }
+  .calendar-page .calendar-v4-week > * { margin-top: 0; }
+  .calendar-v4-week-toolbar, .calendar-v4-week-goals { grid-column: 1 / -1; }
+  .calendar-v4-week-goals { grid-row: 2; }
+  .calendar-week-right { grid-column: 2; grid-row: 3; min-width: 0; }
+  .calendar-week-timetable { grid-row: 3; }
+  .calendar-page .calendar-month-right { display: block; min-width: 0; }
+  .calendar-page .calendar-v4-date-drawer {
+    position: static;
+    width: auto;
+    max-width: none;
+    max-height: none;
+    padding: 0 0 0 8px;
+    box-shadow: none;
+    overflow: visible;
+    border-inline-start: 1px solid var(--ui-divider);
+  }
+  .calendar-page .calendar-v4-date-backdrop,
+  .calendar-page .calendar-open-day,
+  .calendar-page .calendar-v4-date-drawer [aria-label="날짜 상세 닫기"] { display: none; }
+  .calendar-unscheduled { display: block; padding: 0 0 12px; margin-bottom: 12px; border-bottom: 1px solid var(--ui-divider); }
+  .calendar-month-ranges:not(:empty) {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px;
+    padding: 2px;
+  }
+  .calendar-page .calendar-day[data-weekend="true"] { background: var(--surface-1); }
+  .calendar-page .calendar-day[data-today="true"] { box-shadow: none; border-color: var(--ui-divider); }
+  .calendar-page .calendar-day[data-today="true"] .calendar-date-number {
+    background: var(--accent);
+    color: var(--app-bg);
+    border-radius: 999px;
+  }
+  .calendar-page .calendar-day-status {
+    position: absolute;
+    top: 4px;
+    right: 2px;
+    min-width: 12px;
+    min-height: 14px;
+    border: 0;
+    background: transparent;
+  }
+  .calendar-page .calendar-day-status span { display: none; }
+  .calendar-page .calendar-day-status::after {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
+  .calendar-page .calendar-day-status[data-day-status="O"]::after,
+  .calendar-page .calendar-day-status[data-day-status="X"]::after { background: var(--success); }
+  .calendar-page .calendar-day .calendar-date-number + div { padding-right: 14px; }
+  .calendar-page [data-calendar-event] { background: var(--surface-1); color: var(--text-primary); }
+  .calendar-page [data-calendar-event][data-past="true"] { color: var(--danger); }
+  .calendar-time-grid {
+    display: grid;
+    grid-template-columns: 40px repeat(7, minmax(0, 1fr));
+    border-top: 1px solid var(--ui-divider);
+    border-inline-start: 1px solid var(--ui-divider);
+  }
+  .calendar-time-grid > * {
+    min-width: 0;
+    border-inline-end: 1px solid var(--ui-divider);
+    border-bottom: 1px solid var(--ui-divider);
+  }
+  .calendar-time-grid [data-today="true"] {
+    background-color: color-mix(in srgb, var(--accent) 8%, var(--app-bg));
+  }
+  .calendar-time-heading[aria-pressed="true"] { box-shadow: inset 0 -2px var(--accent); }
+  .calendar-all-day { min-height: 32px; padding: 3px; }
+  .calendar-all-day button { background: var(--surface-1); padding-block: 2px; margin-bottom: 2px; }
+  .calendar-hour-labels, .calendar-time-day { height: 480px; }
+  .calendar-hour-labels { display: grid; grid-template-rows: repeat(10, 1fr); text-align: center; }
+  .calendar-time-day {
+    position: relative;
+    touch-action: none;
+    user-select: none;
+    background-image: repeating-linear-gradient(to bottom, var(--ui-divider) 0 1px, transparent 1px 48px);
+  }
+  .calendar-time-block, .calendar-time-selection {
+    position: absolute;
+    inset-inline: 2px;
+    overflow: hidden;
+    padding: 2px 3px;
+    border-inline-start: 2px solid;
+    border-radius: 4px;
+    cursor: grab;
+    font-size: 12px;
+  }
+  .calendar-time-resize { position: absolute; inset: auto 0 0; height: 7px; cursor: ns-resize; }
+  .calendar-time-selection { pointer-events: none; background: color-mix(in srgb, var(--accent) 25%, transparent); color: var(--accent); }
+  .calendar-now-line { position: absolute; inset-inline: 0; height: 1.5px; pointer-events: none; background: var(--danger); }
+  .calendar-week-right .todo-row__actions { flex-wrap: nowrap; }
+  .calendar-page :is(.calendar-week-right, .calendar-month-right) .todo-row__content { display: block; }
+  .calendar-page :is(.calendar-week-right, .calendar-month-right) .todo-row__actions { position: absolute; right: 2px; background: var(--surface-1); }
+  .calendar-page :is(.calendar-week-right, .calendar-month-right) .todo-row { position: relative; }
+}
+
+
+@media (min-width: 1280px) {
+  .calendar-page .calendar-week-right__heading { flex-direction: column; align-items: stretch; gap: 8px; }
+  .calendar-page :is(.calendar-week-right, .calendar-month-right) .todo-row__title {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .calendar-page :is(.calendar-week-right, .calendar-month-right) .todo-row__meta { flex-wrap: wrap; }
+  .calendar-page .calendar-selected-panel { padding-inline: 0; }
+  .today-page .today-desktop-rail section[aria-label="주간 목표"] { padding-inline: 0; }
+  .today-desktop-rail section[aria-label="주간 목표"] form { flex: 0 0 100%; }
+  .today-desktop-rail section[aria-label="주간 목표"] form input { min-width: 0; }
+  .today-page .todo-row.todo-row--today { min-height: 36px; padding-block: 0; }
+  .today-page .today-focus-list .todo-row.todo-row--today { min-height: 44px; }
+}

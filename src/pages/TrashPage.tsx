@@ -13,13 +13,14 @@ const refLabel = (ref: { requested: string | null; restored: string | null }) =>
 const countLabel = (value: { requested: number; restored: number }) =>
   value.requested ? `${value.restored}/${value.requested}개 복원` : "연결 없음";
 
-export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
+export function TrashPage({ onRestored, onOpenTodo }: { onRestored: () => Promise<void>; onOpenTodo: (id: string) => void }) {
   const [items, setItems] = useState<TodoTrashEntry[]>([]);
   const [preview, setPreview] = useState<TodoRestorePreview | null>(null);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
+  const [restoredTodo, setRestoredTodo] = useState<{ id: string; title: string } | null>(null);
   const normalizedQuery = query.trim().toLocaleLowerCase("ko-KR");
   const visibleItems = items.filter((item) => !normalizedQuery || item.title.toLocaleLowerCase("ko-KR").includes(normalizedQuery));
 
@@ -55,9 +56,10 @@ export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
     if (!preview?.restorable) return;
     setWorking(true);
     try {
-      await api(`/api/trash/todos/${preview.id}/restore`, { method: "POST" });
+      const result = await api<{ todoId: string }>(`/api/trash/todos/${preview.id}/restore`, { method: "POST" });
       setPreview(null);
       await Promise.all([loadTrash(), onRestored()]);
+      setRestoredTodo({ id: result.todoId, title: preview.title });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Todo를 복원하지 못했습니다.");
     } finally {
@@ -95,6 +97,10 @@ export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
 
   return (
     <div className="page-shell trash-page">
+      {restoredTodo ? <div className="mb-3 flex flex-wrap items-center gap-2 text-sm" role="status">
+        <span>“{restoredTodo.title}”을 복원했습니다.</span>
+        <button type="button" className="btn-secondary text-xs" onClick={() => onOpenTodo(restoredTodo.id)}>복원한 Todo 열기</button>
+      </div> : null}
       <section className="page-header sm:items-end">
         <div>
           <h1 className="text-[23px] font-semibold tracking-tight text-ink-100">휴지통</h1>
@@ -147,12 +153,12 @@ export function TrashPage({ onRestored }: { onRestored: () => Promise<void> }) {
           <div className="space-y-4">
             <div className="border-b border-ink-700/45 pb-3">
               <p className="font-bold text-ink-100">{preview.title}</p>
-              <p className="mt-1 text-xs text-ink-500">원본 Todo ID: {preview.originalTodoId}</p>
+              {preview.originalDate ? <p className="mt-1 text-xs text-ui-secondary">기존 예정일 {preview.originalDate}</p> : null}
             </div>
 
             <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
               <div className="border-b border-ink-700/35 py-2.5"><p className="text-xs font-semibold text-ink-500">카테고리</p><p className="mt-1 text-sm text-ink-200">{refLabel(preview.refs.category)}</p></div>
-              <div className="border-b border-ink-700/35 py-2.5"><p className="text-xs font-semibold text-ink-500">프로젝트</p><p className="mt-1 text-sm text-ink-200">{refLabel(preview.refs.project)}</p></div>
+              <div className="border-b border-ink-700/35 py-2.5"><p className="text-xs font-semibold text-ink-500">프로젝트</p><p className="mt-1 text-sm text-ink-200">{preview.projectName ? preview.projectName + " · " : ""}{refLabel(preview.refs.project)}</p></div>
               <div className="border-b border-ink-700/35 py-2.5"><p className="text-xs font-semibold text-ink-500">마일스톤</p><p className="mt-1 text-sm text-ink-200">{refLabel(preview.refs.milestone)}</p></div>
               <div className="border-b border-ink-700/35 py-2.5"><p className="text-xs font-semibold text-ink-500">상위 Todo</p><p className="mt-1 text-sm text-ink-200">{refLabel(preview.refs.parentTodo)}</p></div>
             </div>

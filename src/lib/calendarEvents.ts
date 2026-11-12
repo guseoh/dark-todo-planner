@@ -1,3 +1,5 @@
+import { getEntityColor } from "./entityColor";
+import type { Category } from "../types/category";
 import type { Milestone, Project } from "../types/project";
 import type { Todo } from "../types/todo";
 
@@ -11,6 +13,8 @@ export type CalendarEvent = {
   relatedTodoId?: string;
   dueOnDate?: boolean;
   projectName?: string;
+  color?: string;
+  startDate?: string;
 };
 export type CalendarVisibility = {
   todo: boolean;
@@ -40,11 +44,15 @@ export const buildCalendarEvents = (
   todos: Todo[],
   projects: Project[],
   milestones: Milestone[],
+  categories: Category[] = [],
 ): CalendarEvent[] => {
   const result: CalendarEvent[] = [];
   const visibleProjects = new Map(projects.filter((project) => !project.archived).map((project) => [project.id, project]));
   for (const todo of todos) {
     if (todo.archived) continue;
+    const project = visibleProjects.get(todo.projectId ?? "");
+    const category = categories.find(({ id }) => id === todo.categoryId);
+    const color = project ? getEntityColor(project, projects) : getEntityColor(category, categories);
     if ((!todo.planningState || todo.planningState === "SCHEDULED") && isDateKey(todo.date)) {
       result.push({
         id: `todo:${todo.id}`,
@@ -53,6 +61,7 @@ export const buildCalendarEvents = (
         title: todo.title,
         completed: todo.completed,
         relatedTodoId: todo.id,
+        color,
         dueOnDate: todo.dueDate === todo.date,
       });
     }
@@ -64,6 +73,7 @@ export const buildCalendarEvents = (
         title: todo.title,
         completed: todo.completed,
         relatedTodoId: todo.id,
+        color,
       });
     }
   }
@@ -76,6 +86,8 @@ export const buildCalendarEvents = (
         title: project.name,
         completed: project.status === "DONE",
         projectName: project.name,
+        color: getEntityColor(project, projects),
+        startDate: isDateKey(project.startDate) && project.startDate < project.targetDate ? project.startDate : undefined,
       });
     }
   }
@@ -89,6 +101,7 @@ export const buildCalendarEvents = (
       title: milestone.title,
       completed: milestone.status === "DONE",
       projectName: project.name,
+      color: getEntityColor(project, projects),
     });
   }
   return result.sort((a, b) =>
@@ -114,3 +127,24 @@ export const groupCalendarEvents = (events: CalendarEvent[], visibility: Calenda
   }
   return byDate;
 };
+
+
+export function placeCalendarSpans(events: CalendarEvent[], dates: string[]) {
+  if (!dates.length) return [];
+  const weekStart = dates[0];
+  const weekEnd = dates[dates.length - 1];
+  const rows: number[] = [];
+  return events.filter((event) => event.startDate && event.startDate <= weekEnd && event.date >= weekStart)
+    .map((event) => ({
+      event,
+      first: dates.findIndex((date) => date >= event.startDate!),
+      last: dates.filter((date) => date <= event.date).length - 1,
+    }))
+    .sort((a, b) => a.first - b.first || b.last - a.last)
+    .map(({ event, first, last }) => {
+      const available = rows.findIndex((end) => end < first);
+      const row = available < 0 ? rows.length : available;
+      rows[row] = last;
+      return { event, first, last, row };
+    });
+}
