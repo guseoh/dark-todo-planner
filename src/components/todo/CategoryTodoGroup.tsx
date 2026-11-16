@@ -7,6 +7,7 @@ import { CategoryHeader } from "../category/CategoryHeader";
 import { EmptyState } from "../common/EmptyState";
 import { InlineTodoAdd } from "./InlineTodoAdd";
 import { TodoRow } from "./TodoRow";
+import { groupSelectionState } from "../../lib/selection";
 
 export type TodoGroup = {
   category: Category | null;
@@ -38,6 +39,8 @@ type CategoryTodoGroupProps = {
   selectionMode?: boolean;
   selectedIds?: ReadonlySet<string>;
   onSelectTodo?: (id: string) => void;
+  /** Selects or clears every Todo of this group at once (selection mode only). */
+  onToggleGroupSelection?: (ids: string[]) => void;
 };
 
 export function CategoryTodoGroup({
@@ -62,6 +65,7 @@ export function CategoryTodoGroup({
   selectionMode = false,
   selectedIds = new Set<string>(),
   onSelectTodo,
+  onToggleGroupSelection,
 }: CategoryTodoGroupProps) {
   const [adding, setAdding] = useState(false);
   const [showAllTodos, setShowAllTodos] = useState(false);
@@ -96,6 +100,20 @@ export function CategoryTodoGroup({
 
       {!collapsed ? (
         <div className={variant === "card" ? "border-l border-ink-700/70 pl-2.5 lg:max-w-4xl" : "pl-1"}>
+          {selectionMode && onToggleGroupSelection && group.todos.length ? (() => {
+            const ids = group.todos.map((todo) => todo.id);
+            const state = groupSelectionState(ids, selectedIds);
+            const name = group.category?.name ?? "미분류";
+            return (
+              <label className="group-select">
+                <input type="checkbox" className="h-4 w-4 accent-accent-500" checked={state === "all"}
+                  ref={(element) => { if (element) element.indeterminate = state === "some"; }}
+                  onChange={() => onToggleGroupSelection(ids)} aria-label={`${name} 그룹 전체 선택`} />
+                <span>{name} 그룹 전체</span>
+                <span className="tabular-nums text-ink-500">{ids.filter((id) => selectedIds.has(id)).length}/{ids.length}</span>
+              </label>
+            );
+          })() : null}
           <div className="space-y-1">
             {group.todos.length ? (
               visibleTodos.map((todo) => (

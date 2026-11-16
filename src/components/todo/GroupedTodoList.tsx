@@ -59,6 +59,7 @@ type GroupedTodoListProps = {
   selectionMode?: boolean;
   selectedIds?: ReadonlySet<string>;
   onSelectTodo?: (id: string) => void;
+  onToggleGroupSelection?: (ids: string[]) => void;
 };
 
 const readCollapsedState = (): CollapsedState => {
@@ -173,6 +174,7 @@ export function GroupedTodoList({
   selectionMode = false,
   selectedIds = new Set<string>(),
   onSelectTodo,
+  onToggleGroupSelection,
 }: GroupedTodoListProps) {
   const [collapsedGroups, setCollapsedGroups] = useState<CollapsedState>(() => readCollapsedState());
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);

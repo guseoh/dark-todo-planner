@@ -1,6 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { api, jsonBody } from "../../lib/api/client";
-import type { ActiveTimer, TimeEntry } from "../../types/timeTracking";
+import type { ActiveTimer, TimeEntry, TimerTarget } from "../../types/timeTracking";
 
 type StartResponse = { activeTimer: ActiveTimer; serverNow: string; switchedFrom?: ActiveTimer; timeEntries: TimeEntry[] };
 type StopResponse = { activeTimer: null; timeEntries: TimeEntry[]; capped?: boolean; discarded?: boolean; serverNow: string };
@@ -14,7 +14,8 @@ export type TimeTracking = {
   version: number;
   notice: string;
   clearNotice: () => void;
-  start: (todoId: string) => Promise<boolean>;
+  /** A bare string is a Todo id. */
+  start: (target: string | TimerTarget) => Promise<boolean>;
   stop: () => Promise<boolean>;
   reload: () => Promise<void>;
   bump: () => void;
@@ -72,8 +73,9 @@ export function useTimeTrackingController(goal: { dailyGoalMinutes: number; onCh
     }
   }, []);
 
-  const start = useCallback((todoId: string) => run(async () => {
-    const result = await api<StartResponse>("/api/timer/start", { method: "POST", ...jsonBody({ todoId }) });
+  const start = useCallback((target: string | TimerTarget) => run(async () => {
+    const body = typeof target === "string" ? { todoId: target } : target;
+    const result = await api<StartResponse>("/api/timer/start", { method: "POST", ...jsonBody(body) });
     setActive(result.activeTimer);
     setOffsetMs(Date.parse(result.serverNow) - Date.now());
     if (result.switchedFrom) {
@@ -92,11 +94,15 @@ export function useTimeTrackingController(goal: { dailyGoalMinutes: number; onCh
     return true;
   }), [run]);
 
-  return {
-    active, offsetMs, busy, version, notice, reload, start, stop,
-    clearNotice: () => setNotice(""),
-    bump: () => setVersion((value) => value + 1),
-    dailyGoalMinutes: goal.dailyGoalMinutes,
-    setDailyGoalMinutes: goal.onChangeGoal,
-  };
+  // The value is shared by every Todo row, so it must keep its identity between unrelated App renders.
+  const goalRef = useRef(goal);
+  goalRef.current = goal;
+  const setDailyGoalMinutes = useCallback((minutes: number) => goalRef.current.onChangeGoal(minutes), []);
+  const clearNotice = useCallback(() => setNotice(""), []);
+  const bump = useCallback(() => setVersion((value) => value + 1), []);
+
+  return useMemo(() => ({
+    active, offsetMs, busy, version, notice, reload, start, stop, clearNotice, bump,
+    dailyGoalMinutes: goal.dailyGoalMinutes, setDailyGoalMinutes,
+  }), [active, offsetMs, busy, version, notice, reload, start, stop, clearNotice, bump, goal.dailyGoalMinutes, setDailyGoalMinutes]);
 }

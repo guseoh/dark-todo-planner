@@ -18,14 +18,17 @@ export function ElapsedClock({ startedAt, offsetMs, className }: { startedAt: st
   return <span className={`tabular-nums ${className ?? ""}`}>{formatClock(elapsed)}</span>;
 }
 
-/** Current time, refreshed every second only while `enabled` (a timer is running). */
-export function useNowMs(enabled: boolean): number {
+/**
+ * Current time for totals and timelines, refreshed only while `enabled` (a timer is running).
+ * These views show minutes, so a coarse tick is enough; only the clock text itself ticks every second.
+ */
+export function useNowMs(enabled: boolean, intervalMs = 15_000): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!enabled) return;
     setNow(Date.now());
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    const timer = window.setInterval(() => setNow(Date.now()), intervalMs);
     return () => window.clearInterval(timer);
-  }, [enabled]);
+  }, [enabled, intervalMs]);
   return now;
 }

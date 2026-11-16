@@ -14,8 +14,8 @@ import {
 } from "../../lib/date";
 import { placeCalendarSpans, type CalendarEvent } from "../../lib/calendarEvents";
 import type { Goal } from "../../types/goal";
-import { getDayStatus, isDayStatusGoal } from "../../lib/goals";
-import { formatDuration } from "../../lib/timeTracking";
+import { getDayStatus } from "../../lib/goals";
+import { formatDuration, formatShortDuration } from "../../lib/timeTracking";
 
 type MonthlyCalendarProps = {
   currentMonth: Date;
@@ -169,10 +169,6 @@ export function MonthlyCalendar({
           const events = eventsByDate.get(dateKey) ?? [];
           const activeCount = events.filter((event) => !event.completed).length;
           const measuredMs = measuredMsByDate?.get(dateKey) ?? 0;
-          const dayGoals = goals.filter((goal) =>
-            goal.type === "DAILY"
-            && !isDayStatusGoal(goal)
-            && (goal.targetDate === dateKey || goal.dueDate === dateKey));
           const selected = dateKey === selectedDate;
           const today = isTodayDate(day);
           const inMonth = isCurrentMonth(day, currentMonth);
@@ -202,7 +198,20 @@ export function MonthlyCalendar({
                     today ? "bg-accent-500 text-ink-950" : holidayName || isSunday ? "text-danger" : isSaturday ? "text-info" : "text-ink-200"
                   }`}>{formatKoreanDate(day, "d")}</span>
                   <div className="pointer-events-auto flex shrink-0 items-center gap-0.5">
+                    {measuredMs ? (
+                      <span className={`hidden whitespace-nowrap text-[10px] sm:inline ${dailyGoalMinutes && measuredMs >= dailyGoalMinutes * 60_000 ? "font-semibold text-success" : "text-ink-400"}`}
+                        title={`측정 ${formatDuration(measuredMs)}${dailyGoalMinutes ? ` / 목표 ${formatDuration(dailyGoalMinutes * 60_000)}` : ""}`}>
+                        ⏱ {formatShortDuration(measuredMs)}
+                      </span>
+                    ) : null}
                     {events.length > 0 ? <span className="hidden truncate text-[10px] text-ink-400 sm:inline">{activeCount ? `${activeCount} 남음` : `${events.length} 완료`}</span> : null}
+                    <button type="button" onClick={() => onCycleDayStatus(dateKey)} aria-label={statusActionLabel} title="일일 수행 상태 O → X → 미설정"
+                      data-day-status={dayStatus ?? ""}
+                      className={`calendar-day-status pointer-events-auto inline-flex min-h-6 min-w-6 items-center justify-center rounded border px-1 text-[10px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
+                        dayStatus === "O" ? "border-success/55 bg-success/[0.10] text-success" : dayStatus === "X" ? "border-danger/55 bg-danger/[0.10] text-danger" : "calendar-day-action--quiet border-transparent text-ink-600 hover:border-ink-700 hover:text-ink-300"
+                      }`}>
+                      <span>{dayStatus ?? "–"}</span>
+                    </button>
                     <button type="button" className={`inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-500 transition-opacity hover:bg-ink-800 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${!selected ? "calendar-day-action--quiet" : ""}`} onClick={() => onQuickAdd(dateKey)} aria-label={`${formattedDate} Todo 추가`} title="이 날짜에 Todo 추가">
                       <Plus size={14} />
                     </button>
@@ -229,19 +238,6 @@ export function MonthlyCalendar({
                       +{events.length - 2}개 더보기
                     </button>
                   ) : null}
-                </div>
-                <div className="mt-auto flex items-center justify-between gap-1 pt-1">
-                  <span className={`hidden truncate text-[10px] sm:block ${measuredMs && dailyGoalMinutes && measuredMs >= dailyGoalMinutes * 60_000 ? "font-semibold text-success" : "text-ink-500"}`}
-                    title={measuredMs ? `측정 ${formatDuration(measuredMs)}${dailyGoalMinutes ? ` / 목표 ${formatDuration(dailyGoalMinutes * 60_000)}` : ""}` : undefined}>
-                    {[measuredMs ? `측정 ${formatDuration(measuredMs)}` : "", dayGoals.length ? `목표 ${dayGoals.length}` : ""].filter(Boolean).join(" · ")}
-                  </span>
-                  <button type="button" onClick={() => onCycleDayStatus(dateKey)} aria-label={statusActionLabel} title="일일 수행 상태 O → X → 미설정"
-                    data-day-status={dayStatus ?? ""}
-                    className={`calendar-day-status pointer-events-auto ml-auto inline-flex min-h-6 min-w-6 items-center justify-center rounded border px-1 text-[10px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
-                      dayStatus === "O" ? "border-success/55 bg-success/[0.10] text-success" : dayStatus === "X" ? "border-danger/55 bg-danger/[0.10] text-danger" : "calendar-day-action--quiet border-transparent text-ink-600 hover:border-ink-700 hover:text-ink-300"
-                    }`}>
-                    <span>{dayStatus ?? "–"}</span>
-                  </button>
                 </div>
               </div>
             </article>

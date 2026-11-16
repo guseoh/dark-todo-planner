@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, type ReactNode } from "react";
 import type { Project } from "../../types/project";
 import type { Category } from "../../types/category";
 import type { Todo } from "../../types/todo";
@@ -19,8 +19,13 @@ export function TodoQuickActionsProvider({
   snoozeTodo, projects, categories,
   children,
 }: TodoQuickActionsContextValue & { children: ReactNode }) {
+  // Every Todo row reads this context: keep the value stable so unrelated App renders do not redraw all rows.
+  const snoozeRef = useRef(snoozeTodo);
+  snoozeRef.current = snoozeTodo;
+  const stableSnooze = useCallback((todo: Todo, target: TodoSnoozeTarget) => snoozeRef.current(todo, target), []);
+  const value = useMemo(() => ({ snoozeTodo: stableSnooze, projects, categories }), [stableSnooze, projects, categories]);
   return (
-    <TodoQuickActionsContext.Provider value={{ snoozeTodo, projects, categories }}>
+    <TodoQuickActionsContext.Provider value={value}>
       {children}
     </TodoQuickActionsContext.Provider>
   );

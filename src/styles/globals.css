@@ -2811,3 +2811,55 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
 @media (max-width: 639px) {
   .todo-row .timer-toggle:not(.is-running) { display: none; }
 }
+
+/* Composer: with the quick chips always visible, the details row only holds the due date and a short memo. */
+.todo-composer-details--compact { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: .75rem; align-items: start; padding: .5rem 0 .25rem; }
+.todo-composer-details--compact .todo-composer-details__field { display: grid; gap: .25rem; font-size: .72rem; font-weight: 600; color: var(--ui-text-secondary); }
+.todo-composer-details--compact textarea.field { min-height: 36px; resize: vertical; font-weight: 400; }
+
+/* Today list: compact rows and the fold button for long category lists. */
+.today-task-section[data-density="compact"] .todo-row { padding-block: 2px; }
+.today-task-section[data-density="compact"] .todo-row .h-10 { height: 2rem; }
+.today-task-section[data-density="compact"] .todo-row .w-10 { width: 2rem; }
+.today-task-section[data-density="compact"] .todo-row :is(.todo-row__memo, .todo-row__meta) { display: none; }
+.today-task-section[data-density="compact"] .todo-row__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.5rem; }
+.today-task-section[data-density="compact"] :is(.today-focus-toggle, .timer-toggle, .todo-row__more > summary) { height: 2rem; min-height: 2rem; }
+.today-fold-toggle { display: flex; align-items: center; justify-content: center; gap: .4rem; width: 100%; min-height: 40px; border-top: 1px solid var(--ui-divider); color: var(--ui-text-secondary); font-size: .8rem; font-weight: 600; }
+.today-fold-toggle:hover { background: var(--ui-hover); color: var(--ui-text-primary); }
+.today-fold-toggle:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: -2px; }
+
+/* All Todo selection: whole-group checkbox and the "select / exclude a group" chips. */
+.group-select { display: flex; align-items: center; gap: .6rem; padding: .35rem .5rem; margin-bottom: .25rem; border-bottom: 1px solid var(--ui-divider); font-size: .78rem; font-weight: 600; color: var(--ui-text-secondary); cursor: pointer; }
+.group-select:hover { background: var(--ui-hover); }
+.selection-chip { display: inline-flex; align-items: center; gap: .4rem; min-height: 32px; padding: 0 .65rem; border: 1px solid var(--ui-divider); border-radius: 999px; font-size: .75rem; font-weight: 600; color: var(--ui-text-secondary); }
+.selection-chip[data-state="all"] { border-color: var(--ui-focus); background: var(--ui-selected); color: var(--ui-text-primary); }
+.selection-chip[data-state="some"] { border-style: dashed; color: var(--ui-text-primary); }
+.selection-chip:hover:not(:disabled) { background: var(--ui-hover); }
+.selection-chip:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 1px; }
+
+/* Calendar: the date panel scales with the window instead of a fixed 200px (titles wrapped one character per line). */
+@media (min-width: 1280px) {
+  .calendar-page .calendar-v4-month-stage { grid-template-columns: minmax(0, 1fr) clamp(280px, 22vw, 380px); }
+  .calendar-page .calendar-v4-week { grid-template-columns: minmax(0, 1fr) clamp(240px, 18vw, 320px); }
+  /* Row actions (start timer, snooze, edit...) overlay the title, so they only appear on hover or keyboard focus. */
+  .calendar-page :is(.calendar-week-right, .calendar-month-right) .todo-row:not(:hover):not(:focus-within) .todo-row__actions { opacity: 0; pointer-events: none; }
+}
+
+/* Timers on a category or project: header quick start and the labelled toggle. */
+.timer-toggle--target { min-width: 0; padding: 0 .65rem; height: 32px; border: 1px solid var(--ui-divider); }
+.quick-timer { position: relative; }
+.quick-timer__summary {
+  display: inline-flex; align-items: center; gap: .35rem; height: 32px; padding: 0 .7rem; border: 1px solid var(--ui-divider);
+  border-radius: 999px; color: var(--ui-text-secondary); font-size: .78rem; cursor: pointer; list-style: none;
+}
+.quick-timer__summary::-webkit-details-marker { display: none; }
+.quick-timer__summary:hover { background: var(--ui-hover); color: var(--ui-text-primary); }
+.quick-timer__summary:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 1px; }
+.quick-timer__menu {
+  position: absolute; left: 0; top: calc(100% + 6px); z-index: 50; display: grid; gap: 1px; min-width: 12rem; max-width: 18rem;
+  max-height: min(24rem, 70vh); overflow-y: auto; padding: .35rem; border: 1px solid var(--ui-divider); border-radius: 8px;
+  background: var(--ui-surface); box-shadow: 0 10px 30px rgb(0 0 0 / .35);
+}
+.quick-timer__menu button { padding: .4rem .6rem; border-radius: 5px; color: var(--ui-text-primary); font-size: .8rem; text-align: left; }
+.quick-timer__menu button:hover:not(:disabled) { background: var(--ui-hover); }
+.quick-timer__heading { padding: .35rem .6rem .15rem; color: var(--text-muted); font-size: .68rem; font-weight: 600; }

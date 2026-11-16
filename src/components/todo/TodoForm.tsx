@@ -272,7 +272,6 @@ export function TodoForm({
             autoFocus={autoFocus}
             onFocus={() => setTitleFocused(true)}
             onBlur={() => setTitleFocused(false)}
-            onKeyDown={(event) => { if (event.key === "Tab" && !event.shiftKey && window.matchMedia("(min-width: 1280px)").matches) setShowDetails(true); }}
             placeholder={placeholder ?? (alwaysOpen ? "할 일을 입력하고 Enter" : collapsible ? "할 일 이름" : "무엇을 할 예정인가요?")}
             aria-label="Todo 제목"
           />
@@ -294,7 +293,7 @@ export function TodoForm({
         </button> : null}
       </div>
       <div className={collapsible ? "todo-composer-form__meta-row" : "todo-composer-form__meta-row--standard"}>
-      {collapsible && !showDetails ? (
+      {collapsible ? (
         <div className="todo-composer-form__chips" role="group" aria-label="빠른 일정 및 분류">
           <details className="todo-composer-chip-menu todo-composer-chip-menu--date" ref={dateMenuRef}>
             <summary className="todo-composer-chip" aria-label="날짜 선택" title="실행 날짜 및 계획 상태 지정" onClick={() => closeMenus(dateMenuRef.current)}>
@@ -377,6 +376,7 @@ export function TodoForm({
             categories={categories}
             projects={projects}
             showCategory={!lockCategory}
+            compact={collapsible}
             onDateChange={setDate}
             onDueDateChange={setDueDate}
             onPriorityChange={setPriority}

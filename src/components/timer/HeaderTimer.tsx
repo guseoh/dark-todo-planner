@@ -1,12 +1,45 @@
-import { useEffect } from "react";
-import { Square } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { Play, Square } from "lucide-react";
 import { getEntityColor } from "../../lib/entityColor";
 import { formatClock } from "../../lib/timeTracking";
+import type { TimerTarget } from "../../types/timeTracking";
 import { useTodoQuickActions } from "../todo/TodoQuickActionsContext";
 import { ElapsedClock, useElapsedMs } from "./ElapsedClock";
 import { useTimeTracking } from "./TimeTrackingContext";
 
 const BASE_TITLE = "Todo Planner";
+
+/** Idle state: pick a category or project to measure without opening a Todo. */
+function QuickStart() {
+  const timer = useTimeTracking();
+  const quick = useTodoQuickActions();
+  const menuRef = useRef<HTMLDetailsElement>(null);
+  if (!timer || !quick) return null;
+  const categories = quick.categories;
+  const projects = quick.projects.filter((project) => !project.archived);
+  if (!categories.length && !projects.length) return null;
+  const begin = (target: TimerTarget) => {
+    if (menuRef.current) menuRef.current.open = false;
+    void timer.start(target);
+  };
+  return (
+    <details ref={menuRef} className="quick-timer">
+      <summary className="quick-timer__summary" title="카테고리·프로젝트 시간 측정 시작" aria-label="시간 측정 시작">
+        <Play size={13} fill="currentColor" aria-hidden="true" /><span className="hidden sm:inline">측정</span>
+      </summary>
+      <div className="quick-timer__menu" role="menu" aria-label="측정할 대상">
+        {categories.length ? <p className="quick-timer__heading">카테고리</p> : null}
+        {categories.map((category) => (
+          <button key={category.id} type="button" role="menuitem" disabled={timer.busy} onClick={() => begin({ categoryId: category.id })}>{category.name}</button>
+        ))}
+        {projects.length ? <p className="quick-timer__heading">프로젝트</p> : null}
+        {projects.map((project) => (
+          <button key={project.id} type="button" role="menuitem" disabled={timer.busy} onClick={() => begin({ projectId: project.id })}>{project.name}</button>
+        ))}
+      </div>
+    </details>
+  );
+}
 
 /** Always-visible running timer: category, task, elapsed time and a stop button. */
 export function HeaderTimer() {
@@ -22,7 +55,8 @@ export function HeaderTimer() {
     return () => { document.title = BASE_TITLE; };
   }, [active, elapsed]);
 
-  if (!timer || !active) return null;
+  if (!timer) return null;
+  if (!active) return <QuickStart />;
   const category = categories.find(({ id }) => id === active.categoryId);
   const color = category ? getEntityColor(category, categories) : "var(--text-muted)";
   return (

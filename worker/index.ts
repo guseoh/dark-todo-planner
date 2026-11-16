@@ -69,6 +69,26 @@ app.use("/api/*", async (c, next) => {
 });
 app.use("/api/trash/todos/*", todoReferenceTrashRestoreMiddleware);
 
+/**
+ * First-screen data in one round trip. The existing list handlers run in-process (no new queries to
+ * keep in sync), so the browser skips the per-request network and auth cost of ~9 separate calls.
+ */
+app.get("/api/bootstrap", async (c) => {
+  const date = c.req.query("date");
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return c.json({ message: "date 쿼리가 필요합니다." }, 400);
+  const paths = [
+    "/api/categories?limit=100", "/api/todos?archived=all&limit=100", "/api/projects?archived=all&limit=100",
+    "/api/planner-settings", "/api/timer", "/api/goals?limit=100", "/api/routines",
+    `/api/time-entries?from=${date}&to=${date}`, `/api/daily-plans?date=${date}&limit=100`,
+  ];
+  const headers = new Headers({ cookie: c.req.header("cookie") ?? "" });
+  const entries = await Promise.all(paths.map(async (path) => {
+    const response = await app.request(path, { headers }, c.env, c.executionCtx);
+    return response.ok ? [path, await response.json()] as const : undefined;
+  }));
+  return c.json({ data: Object.fromEntries(entries.filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))) });
+});
+
 app.get("/api/health", async (c) => {
   await c.env.DB.prepare("SELECT 1").first();
   return c.json({ status: "ok", database: "connected" });

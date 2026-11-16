@@ -14,6 +14,8 @@ type TodoDetailFieldsProps = {
   categories: Category[];
   projects?: Project[];
   showCategory?: boolean;
+  /** With the quick chips visible, only what the chips cannot set (due date, memo) is shown, in one compact row. */
+  compact?: boolean;
   onDateChange: (value: string) => void;
   onDueDateChange: (value: string) => void;
   onPriorityChange: (value: TodoPriority) => void;
@@ -34,6 +36,7 @@ export function TodoDetailFields({
   categories,
   projects = [],
   showCategory = true,
+  compact = false,
   onDateChange,
   onDueDateChange,
   onPriorityChange,
@@ -42,6 +45,19 @@ export function TodoDetailFields({
   onPlanningStateChange,
   onMemoChange,
 }: TodoDetailFieldsProps) {
+  if (compact) {
+    return (
+      <div className="todo-composer-details todo-composer-details--compact" role="group" aria-label="Todo 상세 옵션">
+        <label className="todo-composer-details__field todo-composer-details__field--due">마감일
+          <input className="field" type="date" value={dueDate} onChange={(event) => onDueDateChange(event.target.value)} />
+        </label>
+        <label className="todo-composer-details__field todo-composer-details__field--memo">메모
+          <textarea className="field" rows={1} value={memo} maxLength={2000} aria-label="Todo 메모"
+            placeholder="필요한 내용만 간단히 기록하세요" onChange={(event) => onMemoChange(event.target.value)} />
+        </label>
+      </div>
+    );
+  }
   return (
     <div className="todo-composer-details" role="group" aria-label="Todo 상세 옵션">
       <fieldset className="todo-composer-details__group">

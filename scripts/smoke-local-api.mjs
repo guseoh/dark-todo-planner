@@ -40,6 +40,8 @@ for (let attempt = 0; attempt < 50; attempt += 1) {
 assert.ok(ready, "Local Worker did not become healthy. Check wrangler dev and local D1 migrations.");
 
 expectStatus(await request("/api/todos"), 401, "Unauthorized Todo list");
+const anonymousBoot = await request("/api/bootstrap?date=2026-10-08");
+assert.deepEqual(anonymousBoot.data.data ?? {}, {}, "Bootstrap must not return data without a session.");
 const login = await request("/api/auth/login", "POST", { username: process.env.SMOKE_USERNAME, password: process.env.SMOKE_PASSWORD });
 expectStatus(login, 200, "Sign-in");
 cookie = login.response.headers.get("set-cookie")?.split(";")[0] || "";
@@ -136,6 +138,38 @@ try {
   assert.equal(expectStatus(await request("/api/timer"), 200, "Read running timer").activeTimer.todoId, id);
   assert.equal(expectStatus(await request("/api/timer/stop", "POST"), 200, "Stop timer immediately").discarded, true, "Sub-30s timers are discarded.");
   assert.equal(expectStatus(await request("/api/timer"), 200, "Timer cleared after stop").activeTimer, null);
+  // Timers can run on a whole category or project; starting another target switches instead of running two.
+  const timerCategory = expectStatus(await request("/api/categories", "POST", { name: "Local timer category" }), 201, "Create category for timer").category;
+  const timerProject = expectStatus(await request("/api/projects", "POST", { name: "Local timer project", status: "ACTIVE" }), 201, "Create project for timer").project;
+  expectStatus(await request("/api/timer/start", "POST", {}), 400, "Reject a timer without a target");
+  expectStatus(await request("/api/timer/start", "POST", { categoryId: randomUUID() }), 404, "Unknown category cannot be measured");
+  expectStatus(await request("/api/timer/start", "POST", { projectId: randomUUID() }), 404, "Unknown project cannot be measured");
+  const categoryTimer = expectStatus(await request("/api/timer/start", "POST", { categoryId: timerCategory.id }), 200, "Start category timer").activeTimer;
+  assert.equal(categoryTimer.categoryId, timerCategory.id);
+  assert.equal(categoryTimer.todoId, undefined);
+  assert.equal(categoryTimer.todoTitle, "Local timer category");
+  const repeatedStart = expectStatus(await request("/api/timer/start", "POST", { categoryId: timerCategory.id }), 200, "Restarting the running category is idempotent").activeTimer;
+  assert.equal(repeatedStart.startedAt, categoryTimer.startedAt, "Same target keeps the original start time.");
+  const projectTimer = expectStatus(await request("/api/timer/start", "POST", { projectId: timerProject.id, categoryId: timerCategory.id }), 200, "Switch to project timer");
+  assert.equal(projectTimer.switchedFrom?.categoryId, timerCategory.id);
+  assert.equal(projectTimer.activeTimer.projectId, timerProject.id);
+  assert.equal(projectTimer.activeTimer.categoryId, timerCategory.id);
+  assert.equal(expectStatus(await request("/api/timer/stop", "POST"), 200, "Stop project timer").discarded, true);
+  expectStatus(await request("/api/projects/" + timerProject.id, "DELETE"), 200, "Remove timer project");
+
+  // One call must return the same data the individual endpoints do, and stay behind sign-in.
+  const boot = expectStatus(await request("/api/bootstrap?date=" + today), 200, "Bootstrap").data;
+  for (const key of ["/api/categories?limit=100", "/api/todos?archived=all&limit=100", "/api/projects?archived=all&limit=100", "/api/planner-settings", "/api/timer", "/api/goals?limit=100", "/api/routines"]) {
+    assert.ok(boot[key], "Bootstrap is missing " + key);
+  }
+  assert.deepEqual(boot["/api/categories?limit=100"], expectStatus(await request("/api/categories?limit=100"), 200, "Categories for bootstrap comparison"));
+  assert.deepEqual(
+    boot["/api/todos?archived=all&limit=100"].todos.map((todo) => todo.id),
+    expectStatus(await request("/api/todos?archived=all&limit=100"), 200, "Todos for bootstrap comparison").todos.map((todo) => todo.id),
+    "Bootstrap keeps the same Todo order as the list endpoint",
+  );
+  expectStatus(await request("/api/bootstrap?date=not-a-date"), 400, "Bootstrap rejects a malformed date");
+
   const night = expectStatus(await request("/api/time-entries", "POST", {
     title: "Local night session", startedAt: "2025-01-01T13:00:00.000Z", endedAt: "2025-01-01T20:00:00.000Z",
   }), 201, "Create entry crossing the 03:00 KST planner-day boundary").timeEntries;

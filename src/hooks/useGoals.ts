@@ -10,6 +10,13 @@ const normalizeGoalInput = (input: Partial<Goal> & { title: string }) => ({
   progress: clampProgress(input.progress),
 });
 
+// The first load, the deferred load and the Today rail all ask for goals at about the same time.
+let goalsInFlight: Promise<Goal[]> | null = null;
+const fetchGoals = () => {
+  if (!goalsInFlight) goalsInFlight = apiAllPages<Goal>("/api/goals", "goals").finally(() => { goalsInFlight = null; });
+  return goalsInFlight;
+};
+
 export function useGoals() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(false);
@@ -19,7 +26,7 @@ export function useGoals() {
   const loadGoals = useCallback(async () => {
     setLoading(true);
     try {
-      const goals = await apiAllPages<Goal>("/api/goals", "goals");
+      const goals = await fetchGoals();
       setGoals(goals);
       setError("");
       return goals;

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, Maximize2, RefreshCw } from "lucide-react";
 import { useGithubActivity } from "../../hooks/useGithubActivity";
 import { activitySummary, getActivityWeeks, localActivityDate } from "../../lib/activity";
@@ -10,7 +10,13 @@ const COMPACT_WEEKS = 16;
 
 /** GitHub contribution grass as a compact widget; the full 365-day view opens in a dialog. */
 export function GithubGrassCard() {
-  const { data, loading, error, reload } = useGithubActivity();
+  // The widget is decoration: let the task list and its own data load first (GitHub itself can take seconds).
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setReady(true), 2500);
+    return () => window.clearTimeout(timer);
+  }, []);
+  const { data, loading, error, reload } = useGithubActivity(ready);
   const [open, setOpen] = useState(false);
   const { recentFrom, today } = useMemo(() => {
     const { weeks, to } = getActivityWeeks();

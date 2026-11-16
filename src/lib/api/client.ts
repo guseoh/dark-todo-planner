@@ -1,3 +1,5 @@
+import { takePrimed } from "./bootstrap";
+
 export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) { super(message); this.status = status; }
@@ -7,6 +9,10 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, ""
 const resolveApiPath = (path: string) => /^https?:\/\//.test(path) ? path : `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+  if ((options.method ?? "GET") === "GET" && !options.signal) {
+    const primed = await takePrimed<T>(path);
+    if (primed !== undefined) return primed;
+  }
   const response = await fetch(resolveApiPath(path), { ...options, credentials: "include", headers: { ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }), ...options.headers } });
   const text = await response.text(); const data = text ? JSON.parse(text) : {};
   if (!response.ok) {

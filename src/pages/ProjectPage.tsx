@@ -7,6 +7,7 @@ import { PageHeader } from "../components/common/PageHeader";
 import { ProjectKanban, type ProjectWipLimits } from "../components/project/ProjectKanban";
 import { ProjectSwitcher, type ProjectSwitcherItem } from "../components/project/ProjectSwitcher";
 import { useProjectTimeTotals } from "../hooks/useTimeEntries";
+import { TargetTimerButton } from "../components/timer/TargetTimerButton";
 import { getWeekRange, parseDateKey, todayKey } from "../lib/date";
 import { formatDuration } from "../lib/timeTracking";
 import { ProjectOverviewTools } from "../components/project/ProjectOverviewTools";
@@ -305,7 +306,8 @@ export function ProjectPage({
                     <ProjectSwitcher items={switcherItems} selectedId={selectedId} onSelect={setSelectedId} />
                   </h2>
                 </div>
-                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-400">
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-400">
+                  {!selected.archived ? <TargetTimerButton target={{ projectId: selected.id }} label={selected.name} /> : null}
                   <span><strong className="font-medium text-ui-text">{completed}/{projectTodos.length}개 완료</strong>{projectTodos.length > 0 ? ` · ${progress}%` : ""}</span>
                   {selected.startDate ? <span>시작일 {selected.startDate}</span> : null}
                   {timeTotals.get(selected.id) ? <span title="이 프로젝트의 Todo에서 측정한 시간">{weekTotals.get(selected.id) ? `이번 주 ${formatDuration(weekTotals.get(selected.id)! * 60_000)} · ` : ""}누적 측정 {formatDuration(timeTotals.get(selected.id)! * 60_000)}</span> : null}
