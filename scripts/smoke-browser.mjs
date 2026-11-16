@@ -87,7 +87,8 @@ try {
   assert.ok(visualSystem.headerHeight <= 90, "Today heading/status must be compact.");
   assert.ok(visualSystem.captureOffset <= 145, "Quick capture should appear close to the header in V4.");
   assert.equal(visualSystem.oldDashboardCount, 0, "Old KPI grid must not return.");
-  assert.match(visualSystem.headerText, /진행\s*\d+\s*\/\s*\d+/, "Concise progress summary must remain visible.");
+  // The progress meter only appears once Today has tasks; an empty Today must not show "0 / 0".
+  assert.doesNotMatch(visualSystem.headerText, /진행\s*0\s*\/\s*0(?!\d)/, "An empty Today must not show a meaningless 0 / 0 progress meter.");
   assert.equal(visualSystem.workspaceLayout, "grid", "Today must be able to show a task lane and an actionable planning lane.");
   assert.equal(visualSystem.hasSidebar, false, "Today must not retain a disconnected right rail.");
   assert.ok(visualSystem.executionWidth <= 740, "The desktop execution list remains readable beside the planning rail.");

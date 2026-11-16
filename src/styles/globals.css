@@ -2430,7 +2430,7 @@ button:disabled {
 .activity-heatmap__day--unknown {
   background: transparent; outline: 1px dashed var(--border-default); outline-offset: -1px;
 }
-.activity-panel--github .activity-heatmap__day--0,
+.activity-panel--github .activity-heatmap__day--0 { background: var(--ui-inset); }
 .activity-panel--github .activity-heatmap__day--1 { background: #17472D; }
 .activity-panel--github .activity-heatmap__day--2 { background: #216C48; }
 .activity-panel--github .activity-heatmap__day--3 { background: #339867; }
