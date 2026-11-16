@@ -55,6 +55,12 @@ const PUBLIC_API_PATHS = new Set(["/api/health", "/api/auth/login", "/api/auth/l
 const isPublicApiPath = (path: string) => PUBLIC_API_PATHS.has(path) || path.startsWith("/api/auth/");
 
 app.use("*", securityHeaders);
+// Server-Timing lets the browser (and `dtpPerf()` in the console) tell server time from network time.
+app.use("/api/*", async (c, next) => {
+  const started = performance.now();
+  await next();
+  c.res.headers.append("Server-Timing", `app;dur=${Math.round(performance.now() - started)}`);
+});
 app.use("/api/*", preventApiCaching);
 app.use("/api/*", enforceSameOriginMutations);
 app.use("/api/*", async (c, next) => {
@@ -79,6 +85,7 @@ app.get("/api/bootstrap", async (c) => {
   const paths = [
     "/api/categories?limit=100", "/api/todos?archived=all&limit=100", "/api/projects?archived=all&limit=100",
     "/api/planner-settings", "/api/timer", "/api/goals?limit=100", "/api/routines",
+    "/api/memos?limit=100", "/api/milestones?limit=100", "/api/project-decisions?limit=100",
     `/api/time-entries?from=${date}&to=${date}`, `/api/daily-plans?date=${date}&limit=100`,
   ];
   const headers = new Headers({ cookie: c.req.header("cookie") ?? "" });
@@ -90,7 +97,9 @@ app.get("/api/bootstrap", async (c) => {
 });
 
 app.get("/api/health", async (c) => {
+  const started = performance.now();
   await c.env.DB.prepare("SELECT 1").first();
+  c.header("Server-Timing", `db;dur=${Math.round(performance.now() - started)}`);
   return c.json({ status: "ok", database: "connected" });
 });
 

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { bootstrapPaths, clearBootstrap, startBootstrap, takePrimed } from "./bootstrap";
+import { bootstrapPaths, clearBootstrap, noteMutation, onRevalidated, snapshotAvailable, startBootstrap, takePrimed } from "./bootstrap";
+import type { Snapshot, SnapshotStore } from "./snapshot";
 
 const respond = (data: Record<string, unknown>, ok = true) =>
   vi.fn(async () => ({ ok, json: async () => ({ data }) }) as unknown as Response) as unknown as typeof fetch;
@@ -26,7 +27,7 @@ describe("bootstrap cache", () => {
 
   it("does not delay or answer paths that were not bootstrapped", async () => {
     await startBootstrap(respond({}), "2026-11-16");
-    expect(await takePrimed("/api/memos?limit=100")).toBeUndefined();
+    expect(await takePrimed("/api/trash/todos")).toBeUndefined();
   });
 
   it("falls back silently when the bootstrap fails", async () => {
@@ -53,5 +54,113 @@ describe("bootstrap cache", () => {
     vi.advanceTimersByTime(2_000);
     const result = await takePrimed<{ serverNow: string }>(timerPath);
     expect(result?.serverNow).toBe("2026-11-16T10:00:02.000Z");
+  });
+});
+
+const memoryStore = (initial: Snapshot | null = null) => {
+  const state = { current: initial, cleared: 0 };
+  const store: SnapshotStore = {
+    read: async () => state.current,
+    write: async (snapshot) => { state.current = snapshot; },
+    clear: async () => { state.current = null; state.cleared += 1; },
+  };
+  return { state, store };
+};
+const snapshotOf = (data: Record<string, unknown>): Snapshot => ({ savedAt: Date.now(), date: "2026-11-16", data });
+const deferred = () => {
+  let resolve: (value: Response) => void = () => undefined;
+  const fetcher = vi.fn(() => new Promise<Response>((done) => { resolve = done; })) as unknown as typeof fetch;
+  return { fetcher, answer: (data: Record<string, unknown>, status = 200) => resolve({ ok: status === 200, status, json: async () => ({ data }) } as unknown as Response) };
+};
+const flush = () => new Promise((done) => setTimeout(done, 0));
+
+describe("snapshot, stale first", () => {
+  const paths = bootstrapPaths("2026-11-16");
+  const [categories, todos, , , timerPath] = paths;
+
+  it("serves the saved answer before the network answers", async () => {
+    const { store } = memoryStore(snapshotOf({ [todos]: { todos: ["old"] } }));
+    const network = deferred();
+    void startBootstrap(network.fetcher, "2026-11-16", store);
+    expect(await snapshotAvailable()).toBe(true);
+    expect(await takePrimed(todos)).toEqual({ todos: ["old"] });
+  });
+
+  it("never serves live state (running timer) from the snapshot", async () => {
+    const { store } = memoryStore(snapshotOf({ [timerPath]: { activeTimer: { todoTitle: "old" } }, [todos]: { todos: [] } }));
+    const network = deferred();
+    void startBootstrap(network.fetcher, "2026-11-16", store);
+    await snapshotAvailable();
+    const waiting = takePrimed(timerPath);
+    network.answer({ [timerPath]: { activeTimer: null, serverNow: new Date().toISOString() } });
+    expect(await waiting).toMatchObject({ activeTimer: null });
+  });
+
+  it("tells listeners to reload when the fresh answer differs, and hands them the fresh data", async () => {
+    const { store, state } = memoryStore(snapshotOf({ [todos]: { todos: ["old"] }, [categories]: { categories: [] } }));
+    const network = deferred();
+    const seen = vi.fn();
+    const stop = onRevalidated(seen);
+    const request = startBootstrap(network.fetcher, "2026-11-16", store);
+    await snapshotAvailable();
+    await takePrimed(todos); await takePrimed(categories);
+    network.answer({ [todos]: { todos: ["new"] }, [categories]: { categories: [] } });
+    await request;
+    expect(seen).toHaveBeenCalledTimes(1);
+    expect(await takePrimed(todos)).toEqual({ todos: ["new"] });
+    expect(await takePrimed(categories)).toBeUndefined();
+    expect(state.current?.data[todos]).toEqual({ todos: ["new"] });
+    stop();
+  });
+
+  it("stays quiet when the fresh answer matches what was shown", async () => {
+    const { store } = memoryStore(snapshotOf({ [todos]: { todos: ["same"] } }));
+    const network = deferred();
+    const seen = vi.fn();
+    const stop = onRevalidated(seen);
+    const request = startBootstrap(network.fetcher, "2026-11-16", store);
+    await snapshotAvailable();
+    await takePrimed(todos);
+    network.answer({ [todos]: { todos: ["same"] } });
+    await request;
+    expect(seen).not.toHaveBeenCalled();
+    stop();
+  });
+
+  it("does not trust a fresh answer that a user write may have raced", async () => {
+    const { store, state } = memoryStore(snapshotOf({ [todos]: { todos: ["old"] } }));
+    const network = deferred();
+    const seen = vi.fn();
+    const stop = onRevalidated(seen);
+    const request = startBootstrap(network.fetcher, "2026-11-16", store);
+    await snapshotAvailable();
+    await takePrimed(todos);
+    noteMutation();
+    network.answer({ [todos]: { todos: ["predates the write"] } });
+    await request;
+    expect(seen).toHaveBeenCalledTimes(1);
+    expect(await takePrimed(todos)).toBeUndefined();
+    expect(state.current?.data[todos]).toEqual({ todos: ["old"] });
+    stop();
+  });
+
+  it("forgets the snapshot when the session is gone", async () => {
+    const { store, state } = memoryStore(snapshotOf({ [todos]: { todos: [] } }));
+    const network = deferred();
+    const request = startBootstrap(network.fetcher, "2026-11-16", store);
+    network.answer({}, 401);
+    await request; await flush();
+    expect(state.cleared).toBe(1);
+  });
+
+  it("works without any snapshot", async () => {
+    const { store } = memoryStore(null);
+    const network = deferred();
+    const request = startBootstrap(network.fetcher, "2026-11-16", store);
+    expect(await snapshotAvailable()).toBe(false);
+    const waiting = takePrimed(todos);
+    network.answer({ [todos]: { todos: ["first"] } });
+    await request;
+    expect(await waiting).toEqual({ todos: ["first"] });
   });
 });

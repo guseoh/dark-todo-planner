@@ -1,6 +1,7 @@
 import { getEntityColor } from "../lib/entityColor";
 import { addDays } from "date-fns";
 import { api, apiAllPages, jsonBody } from "../lib/api/client";
+import { onRevalidated } from "../lib/api/bootstrap";
 import type { DailyPlan } from "../types/planning";
 import { TodayPlanningRail } from "../components/today/TodayPlanningRail";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -217,6 +218,9 @@ export function TodayPage({
     return !value;
   });
 
+  const [planEpoch, setPlanEpoch] = useState(0);
+  // Today's focus list may have been drawn from the previous visit's snapshot; reload it when the server disagrees.
+  useEffect(() => onRevalidated(() => setPlanEpoch((value) => value + 1)), []);
   useEffect(() => {
     let live = true;
     setFocusError("");
@@ -224,7 +228,7 @@ export function TodayPage({
       if (live) setFocusPlan(plan ?? { date: today, topTodoIds: readFocusIds(today) });
     }).catch(() => { if (live) setFocusError("집중 목록을 불러오지 못했습니다."); });
     return () => { live = false; };
-  }, [today]);
+  }, [today, planEpoch]);
 
   const saveFocus = async (topTodoIds: string[]) => {
     if (focusPlan?.date !== today || focusWrite.current) return;
