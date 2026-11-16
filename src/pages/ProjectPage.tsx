@@ -4,8 +4,10 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Archive, ArchiveRestore, CheckCircle2, CircleDot, ExternalLink, MoreHorizontal, PauseCircle, Pencil, Plus, Save, Target, Trash2, X } from "lucide-react";
 import { ProjectDecisionLog } from "../components/project/ProjectDecisionLog";
 import { PageHeader } from "../components/common/PageHeader";
-import { ProjectKanban } from "../components/project/ProjectKanban";
+import { ProjectKanban, type ProjectWipLimits } from "../components/project/ProjectKanban";
 import { ProjectSwitcher, type ProjectSwitcherItem } from "../components/project/ProjectSwitcher";
+import { useProjectTimeTotals } from "../hooks/useTimeEntries";
+import { formatDuration } from "../lib/timeTracking";
 import { ProjectOverviewTools } from "../components/project/ProjectOverviewTools";
 import type { ProjectDuplicateMode } from "../hooks/useProjects";
 import type { Category } from "../types/category";
@@ -57,6 +59,9 @@ type ProjectPageProps = {
   onToggleTodo: (id: string) => void;
   onDetachTodo: (id: string, projectId: string, includeChildren: boolean) => Promise<boolean>;
   onOpenProjectTodos: (projectId: string) => void;
+  onReorderTodos: (ids: string[]) => Promise<boolean>;
+  wipLimits: ProjectWipLimits;
+  onChangeWipLimits: (next: ProjectWipLimits) => void;
 };
 
 export function ProjectPage({
@@ -84,6 +89,9 @@ export function ProjectPage({
   onDeleteTodo,
   onDetachTodo,
   onOpenProjectTodos,
+  onReorderTodos,
+  wipLimits,
+  onChangeWipLimits,
 }: ProjectPageProps) {
   const activeProjects = useMemo(() => projects.filter((project) => !project.archived), [projects]);
   const archivedProjects = useMemo(() => projects.filter((project) => project.archived), [projects]);
@@ -135,13 +143,15 @@ export function ProjectPage({
   const [showDuplicate, setShowDuplicate] = useState(false);
   const progress = projectTodos.length ? Math.round((completed / projectTodos.length) * 100) : 0;
   const unassignedMilestoneTodos = projectTodos.filter((todo) => !todo.milestoneId).length;
+  const timeTotals = useProjectTimeTotals();
   const switcherItems = useMemo<ProjectSwitcherItem[]>(() => visibleProjects.map((project) => {
     const tasks = todos.filter((todo) => todo.projectId === project.id && !todo.archived);
     return {
       id: project.id, name: project.name, statusLabel: projectStatusLabel[project.status],
       done: tasks.filter((todo) => todo.completed).length, total: tasks.length, color: getEntityColor(project, projects),
+      trackedLabel: timeTotals.get(project.id) ? formatDuration(timeTotals.get(project.id)! * 60_000) : undefined,
     };
-  }), [projects, todos, visibleProjects]);
+  }), [projects, timeTotals, todos, visibleProjects]);
 
   const createProject = async (event: FormEvent) => {
     event.preventDefault();
@@ -295,6 +305,7 @@ export function ProjectPage({
                 <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-400">
                   <span><strong className="font-medium text-ui-text">{completed}/{projectTodos.length}개 완료</strong>{projectTodos.length > 0 ? ` · ${progress}%` : ""}</span>
                   {selected.startDate ? <span>시작일 {selected.startDate}</span> : null}
+                  {timeTotals.get(selected.id) ? <span title="이 프로젝트의 Todo에서 측정한 누적 시간">누적 측정 {formatDuration(timeTotals.get(selected.id)! * 60_000)}</span> : null}
                 </div>
               </div>
 
@@ -466,7 +477,7 @@ export function ProjectPage({
           </section></Modal> : null}
 
           {projectDialog === "decisions" ? <Modal title="기존 결정 기록" onClose={() => setProjectDialog(null)}><ProjectDecisionLog projectId={selected.id} archived decisions={projectDecisions} onAdd={onAddDecision} onDelete={onDeleteDecision} /></Modal> : null}
-          <ProjectKanban key={selected.id} project={selected} todos={projectTodos} milestones={projectMilestones} categories={categories} projects={projects} onAddTodo={onAddTodo} onUpdateTodo={onUpdateTodo} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} onDetachTodo={onDetachTodo} />
+          <ProjectKanban key={selected.id} project={selected} todos={projectTodos} milestones={projectMilestones} categories={categories} projects={projects} onAddTodo={onAddTodo} onUpdateTodo={onUpdateTodo} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} onDetachTodo={onDetachTodo} onReorderTodos={onReorderTodos} wipLimits={wipLimits} onChangeWipLimits={onChangeWipLimits} />
         </div>
       ) : (
         <div className="app-card flex min-h-56 items-center justify-center p-6 text-center">

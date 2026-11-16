@@ -31,6 +31,11 @@ type ProjectKanbanProps = {
   onToggleTodo: (id: string) => void;
   onDeleteTodo: (id: string) => void;
   onDetachTodo: (id: string, projectId: string, includeChildren: boolean) => Promise<boolean>;
+  /** Persists a new relative order for the given Todo ids (the visible cards of one column). */
+  onReorderTodos: (ids: string[]) => Promise<boolean>;
+  /** WIP limits are saved with the planner settings so they follow the user across browsers. */
+  wipLimits: ProjectWipLimits;
+  onChangeWipLimits: (next: ProjectWipLimits) => void;
 };
 
 const statusOf = (todo: Todo): TodoWorkflowStatus => todo.workflowStatus || (todo.completed ? "DONE" : "TODO");
@@ -39,13 +44,27 @@ const statusOf = (todo: Todo): TodoWorkflowStatus => todo.workflowStatus || (tod
 // Rect intersection is the fallback for keyboard/synthetic drag interactions.
 const columnCollision: CollisionDetection = (args) => {
   const pointer = pointerWithin(args);
+  // A card under the pointer means "insert here"; otherwise the column itself is the target.
+  const card = pointer.find(({ id }) => String(id).startsWith("card:"));
+  if (card) return [card];
   return pointer.length ? pointer : rectIntersection(args);
 };
+/** Groups a column's cards by milestone (project milestone order first, unassigned last). */
+function groupByMilestoneOrder(items: Todo[], milestones: Milestone[]) {
+  const groups: Array<{ key: string; title: string; items: Todo[] }> = milestones
+    .map((milestone) => ({ key: milestone.id, title: milestone.title, items: items.filter((todo) => todo.milestoneId === milestone.id) }))
+    .filter((group) => group.items.length);
+  const known = new Set(milestones.map(({ id }) => id));
+  const rest = items.filter((todo) => !todo.milestoneId || !known.has(todo.milestoneId));
+  if (rest.length) groups.push({ key: "none", title: "마일스톤 없음", items: rest });
+  return groups;
+}
+const byOrder = (a: Todo, b: Todo) => (a.order ?? 0) - (b.order ?? 0) || b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id);
 const WIP_LIMITS_KEY = "dark-todo-planner:project-wip-limits";
 const DONE_COLUMN_KEY = "dark-todo-planner:collapsed-done-columns";
 const COMPACT_KEY = "dark-todo-planner:kanban-compact";
-type WipLimits = Partial<Record<TodoWorkflowStatus, number>>;
-type ProjectWipLimits = Record<string, WipLimits>;
+export type WipLimits = Partial<Record<TodoWorkflowStatus, number>>;
+export type ProjectWipLimits = Record<string, WipLimits>;
 
 function readWipLimits(): ProjectWipLimits {
   try {
@@ -142,15 +161,17 @@ const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, paren
   onDetach: (todo: Todo) => void;
   onDelete: (id: string) => void;
 }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({
     id: todo.id, disabled: project.archived,
   });
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id: `card:${todo.id}`, disabled: project.archived });
+  const setNodeRef = useCallback((node: HTMLElement | null) => { setDragRef(node); setDropRef(node); }, [setDragRef, setDropRef]);
   const overdue = isOverdueByDeadline(todo, today);
   const dueSoon = isDueSoon(todo, today);
   const status = statusOf(todo);
   return (
     <article ref={setNodeRef} data-v4-card="true"
-      data-dragging={isDragging ? "true" : "false"} className="project-kanban-card">
+      data-dragging={isDragging ? "true" : "false"} data-drop-target={isOver && !isDragging ? "true" : "false"} className="project-kanban-card">
       <div className="project-v4-card__top">
         <button type="button" disabled={project.archived} onClick={() => onToggleTodo(todo.id)}
           className="project-v4-card__check" aria-label={`${todo.title} 완료 토글`}>
@@ -197,7 +218,7 @@ const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, paren
   );
 });
 
-export function ProjectKanban({ project, todos, milestones, categories = [], projects = [], onAddTodo, onUpdateTodo, onToggleTodo, onDeleteTodo, onDetachTodo }: ProjectKanbanProps) {
+export function ProjectKanban({ project, todos, milestones, categories = [], projects = [], onAddTodo, onUpdateTodo, onToggleTodo, onDeleteTodo, onDetachTodo, onReorderTodos, wipLimits, onChangeWipLimits }: ProjectKanbanProps) {
   const today = todayKey();
   const [addingTo, setAddingTo] = useState<TodoWorkflowStatus | null>(null);
   const [priorityFilter, setPriorityFilter] = useState("ALL");
@@ -234,14 +255,21 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
   const toggleRef = useRef(onToggleTodo);
   toggleRef.current = onToggleTodo;
   const stableToggle = useCallback((id: string) => toggleRef.current(id), []);
-  const [wipLimitsByProject, setWipLimitsByProject] = useState<ProjectWipLimits>(readWipLimits);
+  const wipLimitsByProject = wipLimits;
+  const [groupByMilestone, setGroupByMilestone] = useState(false);
   const [compact, setCompact] = useState(readCompact);
   const [collapsedDoneColumns, setCollapsedDoneColumns] = useState<Record<string, boolean>>(readCollapsedDoneColumns);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
+  // One-time move of limits that older versions kept only in this browser.
   useEffect(() => {
-    try { localStorage.setItem(WIP_LIMITS_KEY, JSON.stringify(wipLimitsByProject)); } catch { /* WIP guidance remains usable for the current session. */ }
-  }, [wipLimitsByProject]);
+    if (Object.keys(wipLimits).length) return;
+    const local = readWipLimits();
+    if (!Object.keys(local).length) return;
+    onChangeWipLimits(local);
+    try { localStorage.removeItem(WIP_LIMITS_KEY); } catch { /* nothing to clean up */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     try { localStorage.setItem(DONE_COLUMN_KEY, JSON.stringify(collapsedDoneColumns)); } catch { /* Keep the board usable when browser storage is unavailable. */ }
@@ -253,23 +281,26 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
   });
 
   const changeWipLimit = (status: TodoWorkflowStatus, value: number) => {
-    setWipLimitsByProject((current) => {
-      const projectLimits = { ...current[project.id] };
-      if (value === 0) delete projectLimits[status];
-      else projectLimits[status] = value;
-      return { ...current, [project.id]: projectLimits };
-    });
+    const projectLimits = { ...wipLimitsByProject[project.id] };
+    if (value === 0) delete projectLimits[status];
+    else projectLimits[status] = value;
+    const next = { ...wipLimitsByProject };
+    if (Object.keys(projectLimits).length) next[project.id] = projectLimits;
+    else delete next[project.id];
+    onChangeWipLimits(next);
   };
 
+  // Manual card order (saved as each Todo's sort order); priority sort overrides it for display.
+  const orderedTodos = useMemo(() => [...todos].sort(byOrder), [todos]);
   const visibleTodos = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
-    const filtered = todos.filter((todo) => {
+    const filtered = orderedTodos.filter((todo) => {
       const matchesQuery = !normalizedQuery || `${todo.title} ${todo.memo || ""}`.toLocaleLowerCase().includes(normalizedQuery);
       return matchesQuery && (priorityFilter === "ALL" || todo.priority === priorityFilter);
     });
     const priorityRank = { HIGH: 0, MEDIUM: 1, LOW: 2 };
     return sortPriority ? filtered.sort((a, b) => priorityRank[a.priority] - priorityRank[b.priority] || a.createdAt.localeCompare(b.createdAt)) : filtered;
-  }, [priorityFilter, query, sortPriority, todos]);
+  }, [orderedTodos, priorityFilter, query, sortPriority]);
 
   const indexed = useMemo(() => {
     const todoById = new Map(todos.map((todo) => [todo.id, todo]));
@@ -296,13 +327,32 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     setActiveDragId(null);
-    const overId = over?.id;
-    if (typeof overId !== "string" || !overId.startsWith("column:")) return;
-    const nextStatus = overId.slice("column:".length) as TodoWorkflowStatus;
-    if (!workflowColumns.some((column) => column.status === nextStatus)) return;
+    const overId = typeof over?.id === "string" ? over.id : "";
     const todo = indexed.todoById.get(String(active.id));
-    if (!todo || project.archived || statusOf(todo) === nextStatus) return;
-    moveTodo(todo, nextStatus);
+    if (!todo || project.archived) return;
+    let nextStatus: TodoWorkflowStatus;
+    let beforeId: string | undefined;
+    if (overId.startsWith("card:")) {
+      const target = indexed.todoById.get(overId.slice("card:".length));
+      if (!target || target.id === todo.id) return;
+      nextStatus = statusOf(target);
+      beforeId = target.id;
+    } else if (overId.startsWith("column:")) {
+      nextStatus = overId.slice("column:".length) as TodoWorkflowStatus;
+    } else return;
+    if (!workflowColumns.some((column) => column.status === nextStatus)) return;
+    const statusChanged = statusOf(todo) !== nextStatus;
+    if (statusChanged) moveTodo(todo, nextStatus);
+    // Dropping on a card also fixes the position, unless the board is auto-sorted or grouped.
+    if (!beforeId || sortPriority || groupByMilestone) return;
+    const column = visibleByStatus.get(nextStatus) ?? [];
+    const oldIndex = column.findIndex(({ id }) => id === todo.id);
+    const targetIndex = column.findIndex(({ id }) => id === beforeId);
+    const ids = column.filter(({ id }) => id !== todo.id).map(({ id }) => id);
+    // Moving down inside a column lands after the card dropped on; everything else lands before it.
+    const insertAt = ids.indexOf(beforeId) + (!statusChanged && oldIndex >= 0 && oldIndex < targetIndex ? 1 : 0);
+    ids.splice(insertAt, 0, todo.id);
+    if (ids.length > 1) void onReorderTodos(ids);
   };
   const activeDragTodo = activeDragId ? indexed.todoById.get(activeDragId) : undefined;
 
@@ -318,6 +368,8 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
             <option value="ALL">모든 우선순위</option><option value="HIGH">높음</option><option value="MEDIUM">보통</option><option value="LOW">낮음</option>
           </select>
           <button type="button" className="btn-secondary text-xs" aria-pressed={sortPriority} onClick={() => setSortPriority((value) => !value)}>우선순위 순</button>
+          <button type="button" className="btn-secondary text-xs" aria-pressed={groupByMilestone} onClick={() => setGroupByMilestone((value) => !value)}
+            title="각 열의 카드를 마일스톤별로 묶어 봅니다 (이 상태에서는 카드 순서 변경이 꺼집니다)">마일스톤별 묶기</button>
           <button type="button" className="btn-secondary text-xs" aria-pressed={compact} onClick={toggleCompact}
             title="카드를 한 줄로 줄여 더 많이 봅니다">{compact ? "자세히 보기" : "간단히 보기"}</button>
           <span className="shrink-0 text-xs text-ui-muted" aria-live="polite">{visibleTodos.length}개</span>
@@ -338,21 +390,26 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
               const count = indexed.byStatus.get(column.status)?.length ?? 0;
               return (
                 <KanbanColumn key={column.status} status={column.status} label={column.label} count={count} visibleCount={items.length} wipLimit={wipLimitsByProject[project.id]?.[column.status]} onWipLimitChange={changeWipLimit} collapsed={column.status === "DONE" && (collapsedDoneColumns[project.id] ?? true)} onToggleCollapse={column.status === "DONE" ? () => setCollapsedDoneColumns((current) => ({ ...current, [project.id]: !(current[project.id] ?? true) })) : undefined}>
-                  {items.map((todo) => (
-                    <ProjectKanbanCard
-                      key={todo.id}
-                      project={project}
-                      todo={todo}
-                      parent={todo.parentTodoId ? indexed.todoById.get(todo.parentTodoId) : undefined}
-                      childCount={indexed.childCountByParentId.get(todo.id) || 0}
-                      milestone={todo.milestoneId ? indexed.milestoneById.get(todo.milestoneId) : undefined}
-                      today={today}
-                      onToggleTodo={stableToggle}
-                      onOpenDetails={openDetails}
-                      onMove={moveTodo}
-                      onDetach={openDetach}
-                      onDelete={onDeleteTodo}
-                    />
+                  {(groupByMilestone ? groupByMilestoneOrder(items, milestones) : [{ key: "all", title: "", items }]).map((group) => (
+                    <div key={group.key} className="project-kanban-group">
+                      {group.title ? <h5 className="project-kanban-group__title">{group.title}<span>{group.items.length}</span></h5> : null}
+                      {group.items.map((todo) => (
+                        <ProjectKanbanCard
+                          key={todo.id}
+                          project={project}
+                          todo={todo}
+                          parent={todo.parentTodoId ? indexed.todoById.get(todo.parentTodoId) : undefined}
+                          childCount={indexed.childCountByParentId.get(todo.id) || 0}
+                          milestone={todo.milestoneId ? indexed.milestoneById.get(todo.milestoneId) : undefined}
+                          today={today}
+                          onToggleTodo={stableToggle}
+                          onOpenDetails={openDetails}
+                          onMove={moveTodo}
+                          onDetach={openDetach}
+                          onDelete={onDeleteTodo}
+                        />
+                      ))}
+                    </div>
                   ))}
                   {!project.archived ? addingTo === column.status ? (
                     <TodoForm compact autoFocus layout="stacked" defaultProjectId={project.id} categories={categories}

@@ -15,20 +15,24 @@
 | 휴지통 | 메뉴 `trash` | 복원 경로와 데이터 보존을 위해 유지 |
 | 설정 | 메뉴 `settings` | Routine, PWA, ICS, JSON 백업·복원, Discord 일괄 설정 유지 |
 | 시간 측정 | `TimeTrackingContext`, `HeaderTimer`, `DayTimeline`, `WeeklyTimetable`, `worker/routes/timeTracking.ts` | Todo의 ▶ 버튼(또는 S)으로 측정을 시작하면 그 Todo의 카테고리로 시간이 쌓인다. 진행 중 타이머는 `active_timers` 한 행, 끝난 기록은 `focus_sessions`(FOCUS)에 새벽 3시(KST) 경계로 나눠 저장한다. 하루 타임라인과 주간 캘린더에서 계획과 실제를 함께 본다. 포모도로는 제공하지 않는다. |
+| 하루 회고 | `DayCloseModal`, `worker/routes/reflections.ts` | `오늘 정리`(할 일이 없으면 `하루 회고`)에서 완료 수·측정 시간을 보고 한 줄 회고를 남긴다. 기존 `reflections`(DAILY)에 저장하고 하루 타임라인에도 표시한다. |
 | Todo 오프라인 큐 | `src/lib/offlineTodoQueue.ts`, `/api/offline/todos/:id` | 부분 오프라인 동기화 유지; 전체 오프라인 앱이라고 소개하지 않음 |
 
 공통 API는 `worker/index.ts`에서 등록된 Todo, 프로젝트, 메모, 캘린더, 설정, Routine, 낙서장, 휴지통, 백업 라우트입니다.
 
-## 2. 화면 코드 존재하지만 비활성 — 보류
+## 2. 정리된 비활성 코드 (2026-11-16)
 
-| 영역 | 현재 코드 | 상태 및 이유 |
+화면에 연결되지 않았던 코드는 아래처럼 정리했다. **D1 테이블, 백업 형식, 기존 데이터는 그대로 보존한다.**
+
+| 영역 | 정리 내용 | 남겨 둔 것 |
 | --- | --- | --- |
-| 계획·주간 리뷰·저장된 보기·템플릿 | `PlanningHubPage`, `PlanningPage`, `worker/routes/planning.ts` | `AppContent`와 `worker/index.ts`에 각각 연결되지 않음; 활성 기능으로 홍보하지 않음 |
-| Focus Timer | `TimePlanningPanel`, `worker/routes/time.ts` | 별도 화면·타이머 API 미등록; 데이터 모델과 백업 호환성 유지 |
-| Insights | `InsightsPage` | 내비게이션·화면 분기 미연결; Focus/Time API 미등록 상태라 단독 노출하지 않음 |
-| 개별 Todo 리마인더 | `todo_reminders` 스키마 및 관련 저장 코드 | 개별 예약 UI·5분 Cron 경로가 활성화되지 않음; 매일 21:00 일괄 Discord만 제공 |
+| 계획·주간 리뷰·저장된 보기·템플릿 | `PlanningHubPage`, `PlanningPage`, `usePlanning`, 미등록 `planningRoutes` 삭제 | `/api/daily-plans`(오늘의 집중 순서), `weekly_reviews`·`saved_views`·`task_templates` 테이블과 백업 |
+| Focus Timer(포모도로) | `TimePlanningPanel`, `useTimePlanning`, 미등록 `timeRoutes`(`/focus-sessions`, `/timer-settings`) 삭제 | `timer_settings` 테이블과 백업. `focus_sessions`는 시간 측정이 재사용 |
+| Insights | `InsightsPage`, `lib/insights` 삭제 | - |
+| 미사용 컴포넌트·유틸 | `GoalCard`, `TodoList`, `TodoItem`, `TodoDeleteNoticeModal`, `SmartViewSidebarSection`, `SmartViewDirectPanel`, `lib/id`, `lib/storage`, `lib/storageKeys`, `lib/shareTarget`, 미사용 `types/*` 삭제 | - |
+| 개별 Todo 리마인더 | 변경 없음 | `todo_reminders` 스키마 및 저장 코드. 개별 예약 UI·5분 Cron 경로는 비활성; 매일 21:00 일괄 Discord만 제공 |
 
-오늘의 집중 순서와 주간 캘린더 시간표에는 `/api/daily-plans`와 `/api/time-blocks`를 사용합니다. 주간 리뷰, 저장 보기 API, 템플릿, 타이머 라우터는 별도 기능으로 남아 있습니다.
+오늘의 집중 순서와 주간 캘린더 시간표에는 `/api/daily-plans`와 `/api/time-blocks`를 사용한다. 반복 할 일은 `4b5ea3d`에서 의도적으로 제거되어 다시 넣지 않았다.
 
 ## 3. 레거시 API/자료 — 즉시 삭제하지 않음
 

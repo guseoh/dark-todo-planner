@@ -10,6 +10,10 @@ export const plannerSettings = sqliteTable("planner_settings", {
   reminderOverdueEnabled: integer("reminder_overdue_enabled", { mode: "boolean" }).notNull().default(false),
   reminderDueSoonEnabled: integer("reminder_due_soon_enabled", { mode: "boolean" }).notNull().default(false),
   reminderDueSoonDays: integer("reminder_due_soon_days").notNull().default(3),
+  /** Daily time-tracking goal in minutes; 0 means no goal. */
+  dailyGoalMinutes: integer("daily_goal_minutes").notNull().default(0),
+  /** Kanban WIP limits as JSON: { [projectId]: { [workflowStatus]: limit } }. */
+  wipLimitsJson: text("wip_limits_json").notNull().default("{}"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });

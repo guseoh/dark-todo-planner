@@ -323,6 +323,11 @@ export function TodayPage({
               title="명시적으로 선택한 일정만 내일이나 언젠가로 이동합니다">
               <MoonStar size={15} aria-hidden="true" />오늘 정리
             </Button>
+          ) : stats.todayCompleted > 0 && onOpenDayClose ? (
+            <Button variant="secondary" size="sm" className="today-header__action" onClick={onOpenDayClose}
+              title="오늘 한 일을 돌아보고 한 줄 회고를 남깁니다">
+              <MoonStar size={15} aria-hidden="true" />하루 회고
+            </Button>
           ) : null}
         </div>
       </header>
@@ -337,9 +342,11 @@ export function TodayPage({
               </span>
               <div className="flex flex-wrap gap-1">
                 <button type="button" className="today-overdue-banner__action" disabled={movingOverdue}
-                  onClick={() => void moveOverdue(toDateKey(addDays(parseDateKey(today), 1)))}>전부 내일로</button>
+                  title={`지난 일정 ${overdueTodos.length}개를 모두 내일(${formatKoreanDate(toDateKey(addDays(parseDateKey(today), 1)), "M월 d일")})로 옮깁니다`}
+                  onClick={() => void moveOverdue(toDateKey(addDays(parseDateKey(today), 1)))}>전부 내일로 · {overdueTodos.length}개</button>
                 <button type="button" className="today-overdue-banner__action" disabled={movingOverdue}
-                  onClick={() => void moveOverdue(today)}>전부 오늘로</button>
+                  title={`지난 일정 ${overdueTodos.length}개를 모두 오늘(${formatKoreanDate(today, "M월 d일")})로 옮깁니다`}
+                  onClick={() => void moveOverdue(today)}>전부 오늘로 · {overdueTodos.length}개</button>
                 <button type="button" className="today-overdue-banner__action" onClick={() => setShowOverdueImport(true)}>지난 일정 검토</button>
               </div>
             </div>

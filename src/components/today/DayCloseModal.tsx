@@ -1,7 +1,10 @@
 import { addDays } from "date-fns";
 import { MoonStar } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useDailyReflection } from "../../hooks/useDailyReflection";
+import { useMeasuredByDate } from "../../hooks/useTimeEntries";
 import { formatKoreanDate, parseDateKey, todayKey, toDateKey } from "../../lib/date";
+import { formatDuration } from "../../lib/timeTracking";
 import type { Todo } from "../../types/todo";
 import { Modal } from "../common/Modal";
 
@@ -9,11 +12,20 @@ export type DayCloseDecision = "TOMORROW" | "SOMEDAY" | "KEEP";
 
 type DayCloseModalProps = {
   todos: Todo[];
+  /** Tasks already finished today, for the recap line. */
+  completedCount: number;
   onClose: () => void;
   onApply: (decisions: Record<string, DayCloseDecision>) => Promise<{ ok: boolean; message?: string }>;
 };
 
-export function DayCloseModal({ todos, onClose, onApply }: DayCloseModalProps) {
+export function DayCloseModal({ todos, completedCount, onClose, onApply }: DayCloseModalProps) {
+  const today = todayKey();
+  const measuredMs = useMeasuredByDate(today, today).get(today) ?? 0;
+  const reflection = useDailyReflection(today);
+  const [note, setNote] = useState("");
+  const [noteTouched, setNoteTouched] = useState(false);
+  useEffect(() => { if (reflection.loaded && !noteTouched) setNote(reflection.content); }, [reflection.content, reflection.loaded, noteTouched]);
+  const noteDirty = noteTouched && note.trim() !== reflection.content;
   const [decisions, setDecisions] = useState<Record<string, DayCloseDecision>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -34,7 +46,14 @@ export function DayCloseModal({ todos, onClose, onApply }: DayCloseModalProps) {
   const apply = async () => {
     setSaving(true);
     setError("");
-    const result = await onApply(decisions);
+    try {
+      if (noteDirty) await reflection.save(note.trim());
+    } catch {
+      setSaving(false);
+      setError("회고를 저장하지 못했습니다. 연결을 확인하고 다시 시도하세요.");
+      return;
+    }
+    const result = changesCount ? await onApply(decisions) : { ok: true };
     setSaving(false);
     if (result.ok) {
       onClose();
@@ -71,6 +90,20 @@ export function DayCloseModal({ todos, onClose, onApply }: DayCloseModalProps) {
           </div>
         </div>
 
+        <div className="rounded-lg border border-ink-700/70 bg-ink-950/45 p-3">
+          <p className="text-xs text-ui-secondary" data-testid="day-recap">
+            오늘 완료 <strong className="text-ui-text">{completedCount}개</strong>
+            {measuredMs ? <> · 측정 <strong className="text-ui-text">{formatDuration(measuredMs)}</strong></> : null}
+            {" · "}남은 할 일 <strong className="text-ui-text">{todos.length}개</strong>
+          </p>
+          <label className="mt-2 grid gap-1 text-xs font-semibold text-ui-secondary">오늘의 한 줄 회고 (선택)
+            <textarea className="field min-h-16 resize-y text-sm font-normal" value={note} maxLength={1000} disabled={saving}
+              onChange={(event) => { setNote(event.target.value); setNoteTouched(true); }}
+              placeholder="무엇을 했고, 내일 이어갈 것은 무엇인가요?" />
+          </label>
+        </div>
+
+        {todos.length ? null : <p className="text-xs text-ui-muted">남은 할 일이 없습니다. 회고만 저장할 수 있습니다.</p>}
         <div className="max-h-[min(56vh,34rem)] space-y-2 overflow-y-auto pr-1">
           {todos.map((todo) => (
             <div key={todo.id} className="flex flex-col gap-2 rounded-lg border border-ink-800 bg-ink-950/25 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
@@ -97,7 +130,7 @@ export function DayCloseModal({ todos, onClose, onApply }: DayCloseModalProps) {
           <p className="text-xs text-ink-500">내일 {tomorrowCount} · Someday {somedayCount} · 유지 {keepCount}</p>
           <div className="flex justify-end gap-2">
             <button type="button" className="btn-secondary" disabled={saving} onClick={onClose}>취소</button>
-            <button type="button" className="btn-primary" disabled={saving || !changesCount} onClick={() => void apply()}>{saving ? "반영 중..." : `선택한 ${changesCount}개 반영`}</button>
+            <button type="button" className="btn-primary" disabled={saving || (!changesCount && !noteDirty)} onClick={() => void apply()}>{saving ? "저장 중..." : changesCount ? `선택한 ${changesCount}개 반영${noteDirty ? " + 회고 저장" : ""}` : noteDirty ? "회고 저장" : "선택한 0개 반영"}</button>
           </div>
         </div>
 

@@ -215,7 +215,7 @@ export function WeeklyTimetable({ dates, selectedDate, todos, projects, onSelect
             className="calendar-time-heading px-1 py-1.5 text-xs font-semibold" data-today={date === today}
             onClick={() => onSelect(date)}>
             <span className="block truncate">{formatKoreanDate(date, "E M/d")}</span>
-            <span className="block truncate text-[11px] font-normal tabular-nums text-ui-muted">{total ? formatDuration(total) : " "}</span>
+            <span className={`block truncate text-[11px] font-normal tabular-nums ${timer?.dailyGoalMinutes && total >= timer.dailyGoalMinutes * 60_000 ? "font-semibold text-success" : "text-ui-muted"}`}>{total ? formatDuration(total) : " "}</span>
           </button>;
         })}
         <span className="pt-1 text-xs text-ui-muted">종일</span>

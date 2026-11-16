@@ -192,3 +192,15 @@ timeTrackingRoutes.delete("/time-entries/:id", async (c) => {
   await c.env.DB.prepare("DELETE FROM focus_sessions WHERE id = ? AND user_id = ? AND mode = 'FOCUS'").bind(c.req.param("id"), c.get("userId")).run();
   return c.json({ ok: true });
 });
+
+const optionalRange = z.object({ from: dateKey.optional(), to: dateKey.optional() });
+
+/** Cumulative measured minutes per project (all time, or within a planner-date range). */
+timeTrackingRoutes.get("/time-summary", async (c) => {
+  const { from, to } = optionalRange.parse({ from: c.req.query("from"), to: c.req.query("to") });
+  const { results } = await c.env.DB.prepare(
+    "SELECT project_id, SUM(duration_minutes) AS minutes FROM focus_sessions WHERE user_id = ? AND mode = 'FOCUS' AND (? IS NULL OR planner_date >= ?) AND (? IS NULL OR planner_date <= ?) GROUP BY project_id",
+  ).bind(c.get("userId"), from ?? null, from ?? null, to ?? null, to ?? null).all<{ project_id: string | null; minutes: number }>();
+  const byProject = results.filter((row) => row.project_id).map((row) => ({ projectId: row.project_id as string, minutes: Number(row.minutes) }));
+  return c.json({ byProject, totalMinutes: results.reduce((sum, row) => sum + Number(row.minutes), 0) });
+});
