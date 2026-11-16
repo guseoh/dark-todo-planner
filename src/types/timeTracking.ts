@@ -8,6 +8,12 @@ export type ActiveTimer = {
   startedAt: string;
 };
 
+/** What a timer can run on: one Todo, a whole category, or a project (optionally tagged with a category). */
+export type TimerTarget =
+  | { todoId: string }
+  | { categoryId: string }
+  | { projectId: string; categoryId?: string };
+
 /** A finished, measured work interval. Every entry belongs to exactly one planner day. */
 export type TimeEntry = {
   id: string;

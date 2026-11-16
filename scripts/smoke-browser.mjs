@@ -546,11 +546,15 @@ try {
     "Entered draft enables the compact Add button.");
   await composerToggle.click();
   await composer.getByRole("group", { name: "Todo 상세 옵션" }).waitFor();
-  for (const name of ["일정", "분류", "메모"]) {
-    assert.equal(await composer.getByRole("group", { name, exact: true }).count(), 1,
-      "Advanced options must group fields by purpose: " + name);
-  }
-  await composer.getByRole("group", { name: "분류" }).getByLabel("우선순위").selectOption("HIGH");
+  // With the quick chips visible the details are the compact variant: only due date and memo, no duplicated fields.
+  const compactDetails = composer.getByRole("group", { name: "Todo 상세 옵션" });
+  assert.equal(await composer.locator(".todo-composer-details--compact").count(), 1, "Details open as the compact variant");
+  assert.equal(await compactDetails.getByLabel("마감일").count(), 1);
+  assert.equal(await compactDetails.getByRole("textbox", { name: "Todo 메모" }).count(), 1);
+  assert.equal(await compactDetails.locator("fieldset, select").count(), 0, "Compact details must not repeat the chip fields.");
+  assert.ok((await compactDetails.boundingBox()).height < 120, "Compact details stay a single short row.");
+  await priorityChip.click();
+  await priorityOptions.getByRole("button", { name: "높음" }).click();
   await composer.getByRole("button", { name: "상세 옵션 닫기", exact: true }).click();
   assert.equal(await composer.getByRole("group", { name: "Todo 상세 옵션" }).count(), 0);
   assert.equal(await composer.locator('[data-composer-selection="우선순위"]').getAttribute("data-selected-value"), "HIGH",
@@ -1450,6 +1454,26 @@ try {
   await headerTimer.waitFor({ state: "detached" });
   await page.getByText("30초 미만의 측정은 기록하지 않았습니다.").waitFor();
 
+  // Timer on a whole category: the Today category tab gets its own start button, and the header names the category.
+  await page.locator(".today-category-nav").getByRole("button", { name: new RegExp(`Flow ${flowTag}`) }).first().click();
+  await page.getByRole("button", { name: `Flow ${flowTag} 시간 측정 시작`, exact: true }).click();
+  await headerTimer.waitFor();
+  assert.match(await headerTimer.innerText(), new RegExp(`Flow ${flowTag} · Flow ${flowTag}`), "Header timer shows the category as the target.");
+  const runningTimer = await page.evaluate(async () => (await (await fetch("/api/timer", { credentials: "same-origin" })).json()).activeTimer);
+  assert.ok(runningTimer && !runningTimer.todoId && !runningTimer.projectId, "A category timer is not tied to a Todo or project.");
+  assert.equal(await page.getByRole("button", { name: `Flow ${flowTag} 시간 측정 정지`, exact: true }).getAttribute("aria-pressed"), "true");
+  await page.getByRole("button", { name: "시간 측정 정지", exact: true }).click();
+  await headerTimer.waitFor({ state: "detached" });
+  // With nothing running, the header offers a quick start for any category or project.
+  const quickStart = page.locator(".quick-timer");
+  await quickStart.locator("summary").click();
+  await quickStart.getByRole("menuitem", { name: `Flow Project ${flowTag}`, exact: true }).click();
+  await headerTimer.waitFor();
+  assert.match(await headerTimer.innerText(), new RegExp(`Flow Project ${flowTag}`), "Quick start can measure a project.");
+  await page.getByRole("button", { name: "시간 측정 정지", exact: true }).click();
+  await headerTimer.waitFor({ state: "detached" });
+  await page.locator(".today-category-nav").getByRole("button", { name: /^전체/ }).first().click();
+
   // Daily goal from the Today time card.
   const timeCard = page.getByRole("region", { name: "오늘 측정 시간" });
   await timeCard.getByRole("button", { name: /일일 목표 시간 정하기/ }).click();
@@ -1469,6 +1493,24 @@ try {
   const savedReflection = reflectionRows.find((row) => row.content === `Reflection ${flowTag}`);
   assert.ok(savedReflection, "The one-line reflection is stored.");
 
+  // 전체 Todo bulk selection: a whole group can be selected, or excluded again, with one click.
+  await page.evaluate(() => { window.location.hash = "#/all"; });
+  await page.getByRole("heading", { name: "전체 Todo", exact: true }).waitFor();
+  await page.getByRole("button", { name: "선택 작업", exact: true }).click();
+  const groupChip = page.getByRole("group", { name: "그룹별 선택" }).getByRole("button", { name: new RegExp(`^Flow ${flowTag}`) });
+  await groupChip.waitFor();
+  assert.equal(await groupChip.getAttribute("aria-pressed"), "false");
+  await groupChip.click();
+  assert.equal(await groupChip.getAttribute("aria-pressed"), "true", "One click selects the whole group.");
+  assert.match(await groupChip.innerText(), /3\/3/);
+  await page.getByRole("button", { name: /^현재 결과 \d+개 선택$/ }).click();
+  await groupChip.click();
+  assert.equal(await groupChip.getAttribute("data-state"), "none", "Clicking a fully selected group excludes it from the selection.");
+  await page.getByRole("button", { name: "선택 반전", exact: true }).click();
+  assert.equal(await groupChip.getAttribute("data-state"), "all", "Invert selection flips the excluded group back in.");
+  await page.getByRole("button", { name: "선택 종료", exact: true }).click();
+  await page.evaluate(() => { window.location.hash = "#/today"; });
+
   // Kanban: drag-to-reorder, quick "to top" action, order stored on the server.
   await page.evaluate(() => { window.location.hash = "#/projects"; });
   await page.locator(".project-v4-board").waitFor();
@@ -1477,6 +1519,13 @@ try {
   const flowColumn = page.locator('.project-kanban-column[data-status="TODO"]');
   const flowTitles = async () => (await flowColumn.locator(".project-v4-card__title").allInnerTexts()).map((text) => text.trim());
   await flowColumn.locator(".project-kanban-card").nth(2).waitFor();
+  // The project header has its own timer button.
+  await page.getByRole("button", { name: `Flow Project ${flowTag} 시간 측정 시작`, exact: true }).click();
+  await headerTimer.waitFor();
+  const projectTimer = await page.evaluate(async () => (await (await fetch("/api/timer", { credentials: "same-origin" })).json()).activeTimer);
+  assert.equal(projectTimer?.projectId, flow.project.id, "The project timer is attributed to the project.");
+  await page.getByRole("button", { name: "시간 측정 정지", exact: true }).click();
+  await headerTimer.waitFor({ state: "detached" });
   const flowCard = (name) => flowColumn.locator(".project-kanban-card").filter({ hasText: `${name} ${flowTag}` });
   const initialOrder = await flowTitles();
   assert.equal(initialOrder.length, 3, "The flow project shows its three cards.");

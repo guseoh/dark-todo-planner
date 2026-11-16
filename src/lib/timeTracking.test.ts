@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Category } from "../types/category";
 import type { TimeEntry } from "../types/timeTracking";
-import { clockLabel, formatClock, formatDuration, hourlyBuckets, intervalOnDay, totalsByCategory } from "./timeTracking";
+import { clockLabel, formatClock, formatDuration, formatShortDuration, isTargetRunning, hourlyBuckets, intervalOnDay, totalsByCategory } from "./timeTracking";
 
 const at = (date: string, time: string) => new Date(`${date}T${time}`).toISOString();
 const category = (id: string, name: string, color: string): Category => ({
@@ -22,6 +22,24 @@ describe("formatting", () => {
     expect(formatDuration(45 * 60_000)).toBe("45분");
     expect(formatDuration(125 * 60_000)).toBe("2시간 5분");
     expect(formatDuration(120 * 60_000)).toBe("2시간");
+  });
+  it("matches the running timer to its todo, category or project target", () => {
+    const todo = { todoId: "t1", todoTitle: "x", categoryId: "c1", startedAt: "2026-01-01T00:00:00Z" };
+    const category = { todoTitle: "Java", categoryId: "c1", startedAt: "2026-01-01T00:00:00Z" };
+    const project = { todoTitle: "Devpedia", projectId: "p1", categoryId: "c1", startedAt: "2026-01-01T00:00:00Z" };
+    expect(isTargetRunning(todo, { todoId: "t1" })).toBe(true);
+    expect(isTargetRunning(todo, { categoryId: "c1" })).toBe(false);
+    expect(isTargetRunning(category, { categoryId: "c1" })).toBe(true);
+    expect(isTargetRunning(category, { projectId: "p1" })).toBe(false);
+    expect(isTargetRunning(project, { projectId: "p1" })).toBe(true);
+    expect(isTargetRunning(project, { categoryId: "c1" })).toBe(false);
+    expect(isTargetRunning(null, { categoryId: "c1" })).toBe(false);
+  });
+
+  it("formats compact durations for calendar cells", () => {
+    expect(formatShortDuration(45 * 60_000)).toBe("45m");
+    expect(formatShortDuration(90 * 60_000)).toBe("1h 30m");
+    expect(formatShortDuration(120 * 60_000)).toBe("2h");
   });
   it("labels minutes from the 03:00 planner-day start", () => {
     expect(clockLabel(0)).toBe("03:00");

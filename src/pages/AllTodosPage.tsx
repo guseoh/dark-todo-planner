@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Activity, CalendarDays, Flag, FolderKanban, ListChecks, Settings2, Trash2, X } from "lucide-react";
 import { defaultFilters } from "../hooks/useTodos";
 import { todayKey } from "../lib/date";
+import { groupSelectionState, invertSelection, selectionGroups, toggleGroupSelection } from "../lib/selection";
 import { workflowStatusLabels } from "../lib/todoLabels";
 import type { Category } from "../types/category";
 import type { Project } from "../types/project";
@@ -68,6 +69,20 @@ export function AllTodosPage({
     setActionError("");
     setActionMessage("");
   };
+
+  const toggleGroup = (ids: readonly string[]) => {
+    setSelectedIds((current) => toggleGroupSelection(current, ids));
+    setActionError("");
+    setActionMessage("");
+  };
+
+  const invertShown = () => {
+    setSelectedIds((current) => invertSelection(filteredTodos.map((todo) => todo.id), current));
+    setActionError("");
+    setActionMessage("");
+  };
+
+  const groups = useMemo(() => selectionGroups(filteredTodos, selectedIds), [filteredTodos, selectedIds]);
 
   const selectTodos = (todos: Todo[]) => {
     setSelectedIds(new Set(todos.map((todo) => todo.id)));
@@ -149,9 +164,27 @@ export function AllTodosPage({
             </div>
             <div className="flex flex-wrap gap-1.5">
               <button type="button" className="btn-secondary px-2.5 text-xs" onClick={() => selectTodos(filteredTodos)} disabled={!filteredTodos.length || deleting || updating}>현재 결과 {filteredTodos.length}개 선택</button>
+              <button type="button" className="btn-secondary px-2.5 text-xs" onClick={invertShown} disabled={!filteredTodos.length || deleting || updating}>선택 반전</button>
               <button type="button" className="btn-secondary px-2.5 text-xs" onClick={() => setSelectedIds(new Set())} disabled={!selectedIds.size || deleting || updating}>선택 해제</button>
             </div>
           </div>
+
+          {groups.length > 1 ? (
+            <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-ink-700/55 pt-3" role="group" aria-label="그룹별 선택">
+              <span className="mr-1 text-xs text-ink-500">그룹별 선택·제외</span>
+              {groups.map((group) => {
+                const name = group.categoryId ? categories.find(({ id }) => id === group.categoryId)?.name ?? "카테고리" : "미분류";
+                return (
+                  <button key={group.key} type="button" className="selection-chip" aria-pressed={groupSelectionState(group.ids, selectedIds) === "all"}
+                    data-state={groupSelectionState(group.ids, selectedIds)} disabled={deleting || updating}
+                    title={groupSelectionState(group.ids, selectedIds) === "all" ? `${name} 그룹 선택 해제` : `${name} 그룹 전체 선택`}
+                    onClick={() => toggleGroup(group.ids)}>
+                    {name} <span className="tabular-nums">{group.selected}/{group.ids.length}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
 
           <div className="mt-3 flex flex-wrap gap-2 border-t border-ink-700/55 pt-3">
             <button type="button" className="btn-danger" onClick={() => void deleteIds([...selectedIds], "선택한 Todo")} disabled={!selectedIds.size || deleting || updating}>
@@ -223,6 +256,7 @@ export function AllTodosPage({
         selectionMode={selectionMode}
         selectedIds={selectedIds}
         onSelectTodo={toggleSelected}
+        onToggleGroupSelection={toggleGroup}
       />
     </div>
   );

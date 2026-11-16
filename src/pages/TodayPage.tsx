@@ -22,6 +22,7 @@ import { formatCompletionRate } from "../lib/todo";
 import type { OverdueTodoImportMode, OverdueTodoImportResult } from "../lib/todoRecovery";
 import type { Category } from "../types/category";
 import type { Project } from "../types/project";
+import { TargetTimerButton } from "../components/timer/TargetTimerButton";
 import type { Todo, TodoInput } from "../types/todo";
 
 type TodayPageProps = {
@@ -63,6 +64,10 @@ type CategoryFilter = "all" | "uncategorized" | string;
 const categoryButtonClass = "inline-flex min-h-9 shrink-0 items-center gap-1.5 border-b-2 px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus";
 const activeCategoryButtonClass = "border-ui-text text-ui-text font-semibold";
 const idleCategoryButtonClass = "border-transparent text-ui-muted hover:border-ui-divider hover:text-ui-text";
+const COMPACT_ROWS_KEY = "dark-todo-planner:today-compact";
+/** A long category list folds after this many rows; folding is skipped when only a couple would be hidden. */
+const FOLD_LIMIT = 8;
+const FOLD_SLACK = 2;
 const FOCUS_STORAGE_PREFIX = "dark-todo-planner:focus:";
 const readFocusIds = (date: string): string[] => {
   try {
@@ -129,6 +134,8 @@ export function TodayPage({
   const [activeCategoryId, setActiveCategoryId] = useState<CategoryFilter>("all");
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [showAllRows, setShowAllRows] = useState(false);
+  const [compactRows, setCompactRows] = useState(() => { try { return localStorage.getItem(COMPACT_ROWS_KEY) === "1"; } catch { return false; } });
   const [focusPlan, setFocusPlan] = useState<Pick<DailyPlan, "date" | "focusText" | "topTodoIds">>();
   const [focusError, setFocusError] = useState("");
   const [focusSaving, setFocusSaving] = useState(false);
@@ -198,7 +205,17 @@ export function TodayPage({
 
   useEffect(() => {
     setShowCompleted(false);
+    setShowAllRows(false);
   }, [activeCategoryId]);
+
+  // Long lists fold; the drag-and-drop order below only covers the rows that are shown.
+  const foldable = activeCategoryId !== "all" && remainingTodos.length > FOLD_LIMIT + FOLD_SLACK;
+  const folded = foldable && !showAllRows;
+  const shownTodos = useMemo(() => folded ? remainingTodos.slice(0, FOLD_LIMIT) : remainingTodos, [folded, remainingTodos]);
+  const toggleCompactRows = () => setCompactRows((value) => {
+    try { localStorage.setItem(COMPACT_ROWS_KEY, value ? "0" : "1"); } catch { /* display preference only */ }
+    return !value;
+  });
 
   useEffect(() => {
     let live = true;
@@ -284,7 +301,7 @@ export function TodayPage({
 
   const handleTodoDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return;
-    const ids = remainingTodos.map((todo) => todo.id);
+    const ids = shownTodos.map((todo) => todo.id);
     const from = ids.indexOf(String(active.id));
     const to = ids.indexOf(String(over.id));
     if (from < 0 || to < 0) return;
@@ -383,7 +400,7 @@ export function TodayPage({
             </section>
           ) : null}
 
-          <section className="today-task-section space-y-2" aria-label="오늘 Todo">
+          <section className="today-task-section space-y-2" aria-label="오늘 Todo" data-density={compactRows ? "compact" : "comfortable"}>
             <div className="today-task-heading">
               <h3 className="text-[17px] font-semibold tracking-tight text-ui-text">{focusedTodos.length ? "나머지 할 일" : "오늘 할 일"}</h3>
               {activeTodos.length > 1 ? <span className="today-task-count">{activeTodos.length}개 남음</span> : null}
@@ -417,6 +434,11 @@ export function TodayPage({
                       ) : null}
                     </div>
                   </div>
+                  {activeCategoryId !== "all" && activeCategoryId !== "uncategorized" ? (
+                    <TargetTimerButton target={{ categoryId: activeCategoryId }} label={categories.find(({ id }) => id === activeCategoryId)?.name ?? "카테고리"} className="shrink-0" />
+                  ) : null}
+                  <button type="button" className="btn-secondary shrink-0 text-xs" aria-pressed={compactRows} onClick={toggleCompactRows}
+                    title="할 일을 한 줄로 줄여 더 많이 봅니다">{compactRows ? "자세히 보기" : "간단히 보기"}</button>
                   <IconButton label="카테고리 관리" onClick={() => setShowCategoryManager(true)} title="카테고리 관리" size="md" className="shrink-0">
                     <Settings2 size={16} />
                   </IconButton>
@@ -437,13 +459,19 @@ export function TodayPage({
 
                 {remainingTodos.length ? (
                   <div className="border-t border-[var(--ui-row-divider)]">
-                    {remainingTodos.length > 1 ? (
+                    {shownTodos.length > 1 ? (
                       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleTodoDragEnd}>
-                        <SortableContext items={remainingTodos.map((todo) => todo.id)} strategy={verticalListSortingStrategy}>
-                          {remainingTodos.map((todo) => <SortableTodayRow key={todo.id} todo={todo} render={renderTodo} />)}
+                        <SortableContext items={shownTodos.map((todo) => todo.id)} strategy={verticalListSortingStrategy}>
+                          {shownTodos.map((todo) => <SortableTodayRow key={todo.id} todo={todo} render={renderTodo} />)}
                         </SortableContext>
                       </DndContext>
-                    ) : remainingTodos.map((todo) => renderTodo(todo))}
+                    ) : shownTodos.map((todo) => renderTodo(todo))}
+                    {foldable ? (
+                      <button type="button" className="today-fold-toggle" aria-expanded={!folded} onClick={() => setShowAllRows((value) => !value)}>
+                        {folded ? `나머지 ${remainingTodos.length - FOLD_LIMIT}개 더 보기` : "접기"}
+                        <ChevronDown size={14} className={folded ? "" : "rotate-180"} aria-hidden="true" />
+                      </button>
+                    ) : null}
                   </div>
                 ) : activeTodos.length ? (
                   <p className="py-2 text-xs text-ink-400">미완료 Todo는 상단 핵심 작업에 모두 표시되어 있습니다.</p>

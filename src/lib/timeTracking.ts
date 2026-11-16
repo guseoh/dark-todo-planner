@@ -1,6 +1,6 @@
 import { PLANNER_DAY_START_HOUR, parseDateKey } from "./date";
 import type { Category } from "../types/category";
-import type { ActiveTimer, TimeEntry } from "../types/timeTracking";
+import type { ActiveTimer, TimeEntry, TimerTarget } from "../types/timeTracking";
 import { getEntityColor } from "./entityColor";
 
 const MINUTE_MS = 60_000;
@@ -28,6 +28,24 @@ export function formatDuration(ms: number): string {
   const rest = minutes % 60;
   if (!hours) return `${rest}분`;
   return rest ? `${hours}시간 ${rest}분` : `${hours}시간`;
+}
+
+/** True when the running timer was started on exactly this target. */
+export function isTargetRunning(active: ActiveTimer | null | undefined, target: TimerTarget): boolean {
+  if (!active) return false;
+  if ("todoId" in target) return active.todoId === target.todoId;
+  if (active.todoId) return false;
+  if ("projectId" in target) return active.projectId === target.projectId;
+  return !active.projectId && active.categoryId === target.categoryId;
+}
+
+/** "1h 30m", "45m", "2h" — for tight spots such as calendar day cells. */
+export function formatShortDuration(ms: number): string {
+  const minutes = Math.max(0, Math.round(ms / MINUTE_MS));
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (!hours) return `${rest}m`;
+  return rest ? `${hours}h ${rest}m` : `${hours}h`;
 }
 
 export type DayInterval = { start: number; end: number };

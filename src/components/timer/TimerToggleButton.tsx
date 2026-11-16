@@ -1,5 +1,6 @@
 import { Play, Square } from "lucide-react";
 import type { Todo } from "../../types/todo";
+import { isTargetRunning } from "../../lib/timeTracking";
 import { ElapsedClock } from "./ElapsedClock";
 import { useTimeTracking } from "./TimeTrackingContext";
 
@@ -9,7 +10,7 @@ type Props = { todo: Pick<Todo, "id" | "title" | "completed" | "archived">; clas
 export function TimerToggleButton({ todo, className = "" }: Props) {
   const timer = useTimeTracking();
   if (!timer || todo.completed || todo.archived) return null;
-  const running = timer.active?.todoId === todo.id;
+  const running = isTargetRunning(timer.active, { todoId: todo.id });
   return (
     <button type="button" disabled={timer.busy} aria-pressed={running}
       className={`timer-toggle ${running ? "is-running" : ""} ${className}`}

@@ -15,7 +15,12 @@ const MAX_ENTRY_MS = 24 * 3_600_000;
 const dateKey = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const isoInstant = z.iso.datetime({ offset: true });
 
-const startSchema = z.object({ todoId: z.string().min(1) });
+// A timer runs on one Todo, on a whole category, or on a project (optionally tagged with a category).
+const startSchema = z.union([
+  z.object({ todoId: z.string().min(1) }),
+  z.object({ projectId: z.string().min(1), categoryId: z.string().min(1).nullable().optional() }),
+  z.object({ categoryId: z.string().min(1) }),
+]);
 const rangeSchema = z.object({ from: dateKey, to: dateKey });
 const entryTimesSchema = z.object({ startedAt: isoInstant, endedAt: isoInstant });
 const createEntrySchema = entryTimesSchema.extend({
@@ -56,6 +61,34 @@ const todoMeta = async (db: D1Database, userId: string, todoId: string) => {
 };
 const categoryName = (db: D1Database, userId: string, categoryId: string) =>
   db.prepare("SELECT name FROM categories WHERE id = ? AND user_id = ?").bind(categoryId, userId).first<{ name: string }>();
+const projectMeta = (db: D1Database, userId: string, projectId: string) =>
+  db.prepare("SELECT name, archived FROM projects WHERE id = ? AND user_id = ?").bind(projectId, userId).first<{ name: string; archived: number }>();
+
+type Target = { todoId: string | null; title: string; categoryId: string | null; categoryName: string | null; projectId: string | null };
+type Resolved = { target: Target } | { error: { message: string; status: 400 | 404 } };
+
+/** Turns a start request into the snapshot stored on the running timer. */
+const resolveTarget = async (db: D1Database, userId: string, input: z.infer<typeof startSchema>): Promise<Resolved> => {
+  if ("todoId" in input) {
+    const todo = await todoMeta(db, userId, input.todoId);
+    if (!todo) return { error: { message: "Todo를 찾을 수 없습니다.", status: 404 } };
+    if (todo.archived) return { error: { message: "보관된 Todo는 측정할 수 없습니다.", status: 400 } };
+    return { target: { todoId: todo.id, title: todo.title, categoryId: todo.category_id, categoryName: todo.category_name, projectId: todo.project_id } };
+  }
+  if ("projectId" in input) {
+    const project = await projectMeta(db, userId, input.projectId);
+    if (!project) return { error: { message: "프로젝트를 찾을 수 없습니다.", status: 404 } };
+    if (project.archived) return { error: { message: "보관된 프로젝트는 측정할 수 없습니다.", status: 400 } };
+    const category = input.categoryId ? await categoryName(db, userId, input.categoryId) : null;
+    return { target: { todoId: null, title: project.name, categoryId: category ? input.categoryId ?? null : null, categoryName: category?.name ?? null, projectId: input.projectId } };
+  }
+  const category = await categoryName(db, userId, input.categoryId);
+  if (!category) return { error: { message: "카테고리를 찾을 수 없습니다.", status: 404 } };
+  return { target: { todoId: null, title: category.name, categoryId: input.categoryId, categoryName: category.name, projectId: null } };
+};
+
+const sameTarget = (active: ActiveRow, target: Target) =>
+  active.todo_id === target.todoId && active.project_id === target.projectId && (target.todoId !== null || active.category_id === target.categoryId);
 
 const insertSegments = (db: D1Database, userId: string, meta: Meta, segments: SessionSegment[], createdAt: string) => {
   const ids = segments.map(() => newId());
@@ -81,13 +114,13 @@ timeTrackingRoutes.get("/timer", async (c) => {
 });
 
 timeTrackingRoutes.post("/timer/start", async (c) => {
-  const { todoId } = startSchema.parse(await c.req.json());
+  const input = startSchema.parse(await c.req.json());
   const userId = c.get("userId"); const db = c.env.DB;
-  const todo = await todoMeta(db, userId, todoId);
-  if (!todo) return c.json({ message: "Todo를 찾을 수 없습니다." }, 404);
-  if (todo.archived) return c.json({ message: "보관된 Todo는 측정할 수 없습니다." }, 400);
+  const resolved = await resolveTarget(db, userId, input);
+  if ("error" in resolved) return c.json({ message: resolved.error.message }, resolved.error.status);
+  const { target } = resolved;
   const active = await getActive(db, userId);
-  if (active?.todo_id === todo.id) return c.json({ activeTimer: serializeActive(active), serverNow: nowIso(), stopped: [] });
+  if (active && sameTarget(active, target)) return c.json({ activeTimer: serializeActive(active), serverNow: nowIso(), stopped: [] });
 
   const nowMs = Date.now(); const now = new Date(nowMs).toISOString();
   const statements: D1PreparedStatement[] = [];
@@ -101,10 +134,10 @@ timeTrackingRoutes.post("/timer/start", async (c) => {
   }
   statements.push(db.prepare(
     "INSERT INTO active_timers (user_id, todo_id, todo_title, category_id, category_name, project_id, started_at) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET todo_id = excluded.todo_id, todo_title = excluded.todo_title, category_id = excluded.category_id, category_name = excluded.category_name, project_id = excluded.project_id, started_at = excluded.started_at",
-  ).bind(userId, todo.id, todo.title, todo.category_id, todo.category_name, todo.project_id, now));
+  ).bind(userId, target.todoId, target.title, target.categoryId, target.categoryName, target.projectId, now));
   await db.batch(statements);
   return c.json({
-    activeTimer: serializeActive({ todo_id: todo.id, todo_title: todo.title, category_id: todo.category_id, category_name: todo.category_name, project_id: todo.project_id, started_at: now }),
+    activeTimer: serializeActive({ todo_id: target.todoId, todo_title: target.title, category_id: target.categoryId, category_name: target.categoryName, project_id: target.projectId, started_at: now }),
     serverNow: now, switchedFrom: active ? serializeActive(active) : undefined,
     timeEntries: await loadEntries(db, userId, stoppedIds),
   });
