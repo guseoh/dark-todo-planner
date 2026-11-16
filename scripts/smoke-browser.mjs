@@ -885,11 +885,9 @@ try {
   // Wait for the actual new project header/rail selection, not any old tab.
   await page.getByRole("heading", { name: "UX Regression Project", exact: true }).waitFor();
   await newProjectInput.waitFor({ state: "detached" });
-  const projectSwitcher = page.locator(".project-v4-switcher");
-  // The wide-screen project rail is intentionally hidden at the 390px smoke
-  // viewport; verify its selected state without requiring visual visibility.
-  const selectedProjectNav = projectSwitcher.locator('.project-v4-switcher__item[aria-pressed="true"]');
-  assert.match((await selectedProjectNav.textContent()) || "", /UX Regression Project/,
+  // Projects switch from a dropdown in the project header; its trigger shows the selected project.
+  const projectSwitcher = page.locator(".project-switcher__trigger");
+  assert.match((await projectSwitcher.textContent()) || "", /UX Regression Project/,
     "Async project creation must select the newly created project");
   const projectManageMenu = page.locator(".project-overview .project-actions-menu");
   await projectManageMenu.locator("summary").waitFor();
@@ -902,7 +900,7 @@ try {
   assert.equal(await page.getByLabel("마일스톤 타임라인").count(), 0);
   await page.locator(".project-v4-board").waitFor();
   assert.equal(await page.locator(".project-v4-workspace").count(), 1, "V4 project selection and workbench must share a layout.");
-  assert.equal(await page.locator(".project-v4-switcher__nav").count(), 1, "Wide layouts expose a separate project navigation rail.");
+  assert.equal(await page.locator(".project-v4-switcher").count(), 0, "Projects switch from a header dropdown, not a permanent left rail.");
   // Inputs previously expanded across the entire desktop toolbar because
   // .field.field overrode explicit Tailwind width utilities.
   await page.setViewportSize({ width: 1280, height: 844 });
@@ -917,6 +915,16 @@ try {
     "Project search width must be controlled.");
   assert.ok(kanbanFilterWidths.document <= kanbanFilterWidths.viewport + 2,
     "Project controls must not overflow the desktop viewport.");
+  // The board fits the window and each column scrolls on its own instead of stretching the page.
+  const boardFit = await page.evaluate(() => {
+    const viewport = document.querySelector(".project-v4-board-viewport");
+    const list = document.querySelector(".project-kanban-column__list");
+    return viewport ? { height: viewport.getBoundingClientRect().height, window: window.innerHeight,
+      listScrolls: list ? getComputedStyle(list).overflowY : "" } : null;
+  });
+  assert.ok(boardFit, "Project board viewport must exist.");
+  assert.ok(boardFit.height <= boardFit.window, "Project board height must fit within the window.");
+  assert.equal(boardFit.listScrolls, "auto", "Kanban columns scroll internally.");
   // V4 project cards stay concise; the right-side inspector owns subtask creation.
   const parentTaskTitle = `Project inspector ${randomUUID().slice(0, 8)}`;
   const projectFixture = await page.evaluate(async ({ title, date }) => {
@@ -935,7 +943,8 @@ try {
   assert.ok(projectFixture.todo?.id, "Project parent task persisted");
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "프로젝트", exact: true }).waitFor();
-  await page.getByRole("combobox", { name: "프로젝트 선택" }).selectOption(projectFixture.projectId);
+  await page.locator(".project-switcher__trigger").click();
+  await page.locator(`.project-switcher__option[data-project-id="${projectFixture.projectId}"]`).click();
   const taskCard = page.locator(".project-kanban-card").filter({ has: page.getByRole("button", { name: parentTaskTitle, exact: true }) });
   await taskCard.waitFor();
   assert.equal(await taskCard.locator("select").count(), 0, "Kanban cards must not contain inline milestone editors");

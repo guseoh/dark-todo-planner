@@ -43,6 +43,7 @@ const columnCollision: CollisionDetection = (args) => {
 };
 const WIP_LIMITS_KEY = "dark-todo-planner:project-wip-limits";
 const DONE_COLUMN_KEY = "dark-todo-planner:collapsed-done-columns";
+const COMPACT_KEY = "dark-todo-planner:kanban-compact";
 type WipLimits = Partial<Record<TodoWorkflowStatus, number>>;
 type ProjectWipLimits = Record<string, WipLimits>;
 
@@ -60,6 +61,10 @@ function readWipLimits(): ProjectWipLimits {
   } catch {
     return {};
   }
+}
+
+function readCompact(): boolean {
+  try { return localStorage.getItem(COMPACT_KEY) === "1"; } catch { return false; }
 }
 
 function readCollapsedDoneColumns(): Record<string, boolean> {
@@ -87,7 +92,7 @@ function KanbanColumn({ status, label, count, visibleCount, wipLimit, onWipLimit
   const overLimit = exceedsWipLimit(count, wipLimit);
   return (
     <section ref={setNodeRef} data-status={status} data-collapsed={collapsed} data-over-limit={overLimit} data-drag-over={isOver ? "true" : "false"}
-      className="project-kanban-column min-h-[10rem] w-[17rem] shrink-0 px-3 py-3 transition sm:w-auto">
+      className="project-kanban-column px-3 py-3 transition">
       <div className="project-kanban-column__header">
         <div className="project-kanban-column__identity">
           {onToggleCollapse ? <button type="button" className="inline-flex min-h-9 items-center gap-1 rounded-[4px] px-1 text-sm font-semibold text-ink-100 hover:bg-ink-850 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70"
@@ -119,7 +124,7 @@ function KanbanColumn({ status, label, count, visibleCount, wipLimit, onWipLimit
       </p> : null}
       {collapsed ? <p className="border-t border-ink-700/35 px-2 py-5 text-center text-xs text-ink-500">
         완료 작업 {count}개 · 열을 펼쳐 확인하세요
-      </p> : <div className="space-y-2">{children}</div>}
+      </p> : <div className="project-kanban-column__list space-y-2">{children}</div>}
     </section>
   );
 }
@@ -154,7 +159,7 @@ const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, paren
         <div className="min-w-0 flex-1">
           {parent ? <span className="project-v4-card__parent">↳ {parent.title}</span> : null}
           <button type="button" className={`project-v4-card__title ${todo.completed ? "line-through opacity-60" : ""}`}
-            onClick={() => onOpenDetails(todo)}>{todo.title}</button>
+            onClick={() => onOpenDetails(todo)} title={todo.title}>{todo.title}</button>
         </div>
         {!project.archived ? <TimerToggleButton todo={todo} className="project-v4-card__timer" /> : null}
         {!project.archived ? <button type="button" className="project-v4-card__drag"
@@ -230,6 +235,7 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
   toggleRef.current = onToggleTodo;
   const stableToggle = useCallback((id: string) => toggleRef.current(id), []);
   const [wipLimitsByProject, setWipLimitsByProject] = useState<ProjectWipLimits>(readWipLimits);
+  const [compact, setCompact] = useState(readCompact);
   const [collapsedDoneColumns, setCollapsedDoneColumns] = useState<Record<string, boolean>>(readCollapsedDoneColumns);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -240,6 +246,11 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
   useEffect(() => {
     try { localStorage.setItem(DONE_COLUMN_KEY, JSON.stringify(collapsedDoneColumns)); } catch { /* Keep the board usable when browser storage is unavailable. */ }
   }, [collapsedDoneColumns]);
+
+  const toggleCompact = () => setCompact((value) => {
+    try { localStorage.setItem(COMPACT_KEY, value ? "0" : "1"); } catch { /* display preference only */ }
+    return !value;
+  });
 
   const changeWipLimit = (status: TodoWorkflowStatus, value: number) => {
     setWipLimitsByProject((current) => {
@@ -307,6 +318,8 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
             <option value="ALL">모든 우선순위</option><option value="HIGH">높음</option><option value="MEDIUM">보통</option><option value="LOW">낮음</option>
           </select>
           <button type="button" className="btn-secondary text-xs" aria-pressed={sortPriority} onClick={() => setSortPriority((value) => !value)}>우선순위 순</button>
+          <button type="button" className="btn-secondary text-xs" aria-pressed={compact} onClick={toggleCompact}
+            title="카드를 한 줄로 줄여 더 많이 봅니다">{compact ? "자세히 보기" : "간단히 보기"}</button>
           <span className="shrink-0 text-xs text-ui-muted" aria-live="polite">{visibleTodos.length}개</span>
         </div>
         {!project.archived ? <button type="button" className="btn-primary shrink-0" onClick={() => setShowAdd((value) => !value)}>
@@ -317,8 +330,8 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
         categories={categories} projects={projects} onAdd={onAddTodo} /> : null}
 
       <DndContext sensors={sensors} collisionDetection={columnCollision} onDragStart={onDragStart} onDragCancel={onDragCancel} onDragEnd={handleDragEnd}>
-        <div className="overflow-x-auto pb-2">
-          <div data-done-collapsed={collapsedDoneColumns[project.id] ?? true} className="project-v4-board grid min-w-[68rem] grid-cols-4 gap-3">
+        <div className="project-v4-board-viewport">
+          <div data-done-collapsed={collapsedDoneColumns[project.id] ?? true} data-density={compact ? "compact" : "comfortable"} className="project-v4-board grid grid-cols-4 gap-3">
             {workflowColumns.map((column) => {
               const items = visibleByStatus.get(column.status) ?? [];
               // WIP count is the total project count, not the filtered subset.

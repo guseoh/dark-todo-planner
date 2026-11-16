@@ -5,6 +5,7 @@ import { Archive, ArchiveRestore, CheckCircle2, CircleDot, ExternalLink, MoreHor
 import { ProjectDecisionLog } from "../components/project/ProjectDecisionLog";
 import { PageHeader } from "../components/common/PageHeader";
 import { ProjectKanban } from "../components/project/ProjectKanban";
+import { ProjectSwitcher, type ProjectSwitcherItem } from "../components/project/ProjectSwitcher";
 import { ProjectOverviewTools } from "../components/project/ProjectOverviewTools";
 import type { ProjectDuplicateMode } from "../hooks/useProjects";
 import type { Category } from "../types/category";
@@ -134,6 +135,13 @@ export function ProjectPage({
   const [showDuplicate, setShowDuplicate] = useState(false);
   const progress = projectTodos.length ? Math.round((completed / projectTodos.length) * 100) : 0;
   const unassignedMilestoneTodos = projectTodos.filter((todo) => !todo.milestoneId).length;
+  const switcherItems = useMemo<ProjectSwitcherItem[]>(() => visibleProjects.map((project) => {
+    const tasks = todos.filter((todo) => todo.projectId === project.id && !todo.archived);
+    return {
+      id: project.id, name: project.name, statusLabel: projectStatusLabel[project.status],
+      done: tasks.filter((todo) => todo.completed).length, total: tasks.length, color: getEntityColor(project, projects),
+    };
+  }), [projects, todos, visibleProjects]);
 
   const createProject = async (event: FormEvent) => {
     event.preventDefault();
@@ -252,6 +260,10 @@ export function ProjectPage({
         meta={`진행 ${activeProjects.length}개`}
         actions={<>
 
+            <button type="button" className="btn-secondary" onClick={() => { setShowArchived((value) => !value); setShowCreateProject(false); }}>
+              {showArchived ? <ArchiveRestore size={16} /> : <Archive size={16} />}
+              {showArchived ? "진행 프로젝트" : `보관 ${archivedProjects.length}`}
+            </button>
             {!showArchived ? (
               <button type="button" className="btn-secondary" onClick={() => setShowCreateProject((value) => !value)}>
                 <Plus size={16} />{showCreateProject ? "추가 닫기" : "프로젝트 추가"}
@@ -269,40 +281,6 @@ export function ProjectPage({
       ) : null}
 
       <div className="project-v4-workspace">
-        <aside className="project-v4-switcher" aria-label="프로젝트 전환">
-          <div className="project-v4-switcher__title">
-            <span>프로젝트 목록</span>
-            <span>{visibleProjects.length}</span>
-          </div>
-          {visibleProjects.length ? (
-            <>
-              <label className="project-v4-compact-select">
-                <span className="sr-only">프로젝트 선택</span>
-                <select className="field" aria-label="프로젝트 선택" value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
-                  {visibleProjects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
-                </select>
-              </label>
-              <nav className="project-v4-switcher__nav" aria-label={showArchived ? "보관 프로젝트 선택" : "진행 프로젝트 선택"}>
-                {visibleProjects.map((project) => {
-                  const tasks = todos.filter((todo) => todo.projectId === project.id && !todo.archived);
-                  const done = tasks.filter((todo) => todo.completed).length;
-                  return <button key={project.id} type="button" onClick={() => setSelectedId(project.id)}
-                    aria-pressed={selectedId === project.id} aria-label={`${project.name} (${projectStatusLabel[project.status]})`}
-                    className="project-v4-switcher__item">
-                    <span className="project-v4-switcher__dot" style={{ backgroundColor: getEntityColor(project, projects) }} aria-hidden="true" />
-                    <span className="truncate">{project.name}</span>
-                    <span className="project-v4-switcher__status">{done}/{tasks.length}</span>
-                    <span className="project-switcher-progress"><span style={{ width: tasks.length ? `${done / tasks.length * 100}%` : 0, background: getEntityColor(project, projects) }} /></span>
-                  </button>;
-                })}
-              </nav>
-            </>
-          ) : <p className="project-v4-switcher__empty">{showArchived ? "보관된 프로젝트가 없습니다." : "프로젝트를 추가해 시작하세요."}</p>}
-            <button type="button" className="btn-secondary" onClick={() => { setShowArchived((value) => !value); setShowCreateProject(false); }}>
-              {showArchived ? <ArchiveRestore size={16} /> : <Archive size={16} />}
-              {showArchived ? "진행 프로젝트" : `보관 ${archivedProjects.length}`}
-            </button>
-        </aside>
         <div className="project-v4-main min-w-0">
       {selected ? (
         <div className="project-detail min-w-0 space-y-3">
@@ -310,8 +288,9 @@ export function ProjectPage({
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="project-v4-switcher__dot" style={{ backgroundColor: getEntityColor(selected, projects) }} aria-hidden="true" />
-                  <h2 className="text-xl font-semibold tracking-tight text-ui-text">{selected.name}</h2>
+                  <h2 className="min-w-0 text-xl font-semibold tracking-tight text-ui-text">
+                    <ProjectSwitcher items={switcherItems} selectedId={selectedId} onSelect={setSelectedId} />
+                  </h2>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-400">
                   <span><strong className="font-medium text-ui-text">{completed}/{projectTodos.length}개 완료</strong>{projectTodos.length > 0 ? ` · ${progress}%` : ""}</span>
@@ -493,7 +472,7 @@ export function ProjectPage({
         <div className="app-card flex min-h-56 items-center justify-center p-6 text-center">
           <div>
             <PauseCircle className="mx-auto text-ink-600" />
-            <p className="mt-3 text-sm font-semibold text-ink-400">프로젝트를 선택하거나 새로 만들어보세요.</p>
+            <p className="mt-3 text-sm font-semibold text-ink-400">{showArchived ? "보관된 프로젝트가 없습니다." : "프로젝트를 추가해 시작하세요."}</p>
           </div>
         </div>
       )}

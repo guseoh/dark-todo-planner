@@ -34,3 +34,9 @@
 3. 칸반 머리글과 보드 배치를 정리한다. 1280·1440·1920px, 라이트·다크, 키보드 조작, 모바일 기존 동작을 확인한다.
 
 카드 액션·열 설정은 [GitHub Projects 보드](https://docs.github.com/en/issues/planning-and-tracking-with-projects/customizing-views-in-your-project/customizing-the-board-layout), 날짜와 Task 연결은 [Linear 마일스톤](https://linear.app/docs/project-milestones)을 참고했다.
+
+## 구현 메모 (2026-11-16)
+
+- **프로젝트 전환**: 좌측 프로젝트 목록을 없애고 머리글의 프로젝트 이름을 드롭다운으로 바꿨다. 목록에는 상태와 진행률이 보이고, 7개를 넘으면 검색 입력이 나타난다. 보관 프로젝트는 머리글의 `보관 N` 버튼으로 전환한다.
+- **보드 높이**: 보드는 창 높이에 맞추고 열 안에서만 스크롤한다(열 헤더는 고정). 열 폭은 유동이며 `완료` 열은 기본 접힘이다.
+- **카드 밀도**: `간단히 보기`는 카드를 한 줄로 줄이고 메타 줄을 숨긴다. 선택은 브라우저에 저장된다.
