@@ -1,7 +1,7 @@
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { CalendarCheck2 } from "lucide-react";
 import { api, ApiError, jsonBody } from "../../lib/api/client";
-import { clearBootstrap, startBootstrap } from "../../lib/api/bootstrap";
+import { clearBootstrap, discardSnapshot, snapshotAvailable, startBootstrap } from "../../lib/api/bootstrap";
 
 type Session = { authenticated: boolean; username?: string };
 export function AuthGate({ children }: { children: (logout: () => Promise<void>) => ReactNode }) {
@@ -13,8 +13,16 @@ export function AuthGate({ children }: { children: (logout: () => Promise<void>)
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    api<Session>("/api/auth/session").then(setSession).catch(() => setSession({ authenticated: false }));
-    const expire = () => setSession({ authenticated: false });
+    let verified = false;
+    api<Session>("/api/auth/session").then((next) => {
+      verified = true;
+      if (!next.authenticated) void discardSnapshot();
+      setSession(next);
+    }).catch(() => { verified = true; setSession({ authenticated: false }); });
+    // A snapshot only exists after a successful sign-in on this browser and is wiped on logout, so draw the
+    // app from it right away; the session check still decides, and signs out below if it fails.
+    void snapshotAvailable().then((available) => { if (available && !verified) setSession((current) => current ?? { authenticated: true }); });
+    const expire = () => { void discardSnapshot(); setSession({ authenticated: false }); };
     window.addEventListener("auth:unauthorized", expire);
     return () => window.removeEventListener("auth:unauthorized", expire);
   }, []);
@@ -41,6 +49,7 @@ export function AuthGate({ children }: { children: (logout: () => Promise<void>)
     try {
       await api("/api/auth/logout", { method: "POST" });
       clearBootstrap();
+      await discardSnapshot();
       setSession({ authenticated: false });
     } catch (cause) {
       const message = cause instanceof ApiError ? cause.message : "서버에 연결하지 못했습니다.";

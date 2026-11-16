@@ -1511,6 +1511,47 @@ try {
   await page.getByRole("button", { name: "선택 종료", exact: true }).click();
   await page.evaluate(() => { window.location.hash = "#/today"; });
 
+  // Snapshot: the app draws from the previous visit before the server answers, then quietly catches up.
+  const readSnapshot = () => page.evaluate(() => new Promise((resolve) => {
+    const open = indexedDB.open("dark-todo-planner-snapshot", 1);
+    open.onerror = () => resolve(null);
+    open.onupgradeneeded = () => { open.transaction.abort(); resolve(null); };
+    open.onsuccess = () => {
+      const get = open.result.transaction("snapshots").objectStore("snapshots").get("bootstrap");
+      get.onsuccess = () => { open.result.close(); resolve(get.result ? JSON.stringify(get.result.data) : null); };
+      get.onerror = () => resolve(null);
+    };
+  }));
+  for (let attempt = 0; attempt < 40 && !(await readSnapshot())?.includes(`Alpha ${flowTag}`); attempt += 1) await sleep(500);
+  assert.ok((await readSnapshot())?.includes(`Alpha ${flowTag}`), "The last bootstrap answer is stored for the next visit.");
+  // A change made from "another device": the stored snapshot does not know about it.
+  const lateTodo = await page.evaluate(async ({ tag, date }) => {
+    const response = await fetch("/api/todos", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ title: "Late " + tag, date, planningState: "SCHEDULED" }) });
+    if (!response.ok) throw new Error("late todo " + response.status);
+    return (await response.json()).todo;
+  }, { tag: flowTag, date: savedInlineTodo.date });
+  const holdBootstrap = async (route) => { await sleep(4_000); await route.continue(); };
+  await page.route("**/api/bootstrap?*", holdBootstrap);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: `Alpha ${flowTag}`, exact: true }).waitFor({ timeout: 3_500 });
+  assert.equal(await page.getByRole("heading", { name: `Late ${flowTag}`, exact: true }).count(), 0, "Stale first: the app is drawn before the server answers.");
+  await page.getByRole("heading", { name: `Late ${flowTag}`, exact: true }).waitFor({ timeout: 15_000 });
+  assert.ok(lateTodo.id, "The fresh answer replaces the snapshot without a manual reload.");
+  await page.unroute("**/api/bootstrap?*", holdBootstrap);
+  // A snapshot never outlives a rejected session: draw optimistically, then fall back to the sign-in form.
+  const rejectSession = async (route) => {
+    await sleep(2_500);
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ authenticated: false }) });
+  };
+  await page.route("**/api/auth/session", rejectSession);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: `Alpha ${flowTag}`, exact: true }).waitFor({ timeout: 2_300 });
+  await page.getByRole("button", { name: "로그인", exact: true }).waitFor({ timeout: 8_000 });
+  assert.equal(await readSnapshot(), null, "A rejected session wipes the stored snapshot.");
+  await page.unroute("**/api/auth/session", rejectSession);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: `Alpha ${flowTag}`, exact: true }).waitFor();
+
   // Kanban: drag-to-reorder, quick "to top" action, order stored on the server.
   await page.evaluate(() => { window.location.hash = "#/projects"; });
   await page.locator(".project-v4-board").waitFor();

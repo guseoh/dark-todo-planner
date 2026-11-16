@@ -159,7 +159,7 @@ try {
 
   // One call must return the same data the individual endpoints do, and stay behind sign-in.
   const boot = expectStatus(await request("/api/bootstrap?date=" + today), 200, "Bootstrap").data;
-  for (const key of ["/api/categories?limit=100", "/api/todos?archived=all&limit=100", "/api/projects?archived=all&limit=100", "/api/planner-settings", "/api/timer", "/api/goals?limit=100", "/api/routines"]) {
+  for (const key of ["/api/categories?limit=100", "/api/todos?archived=all&limit=100", "/api/projects?archived=all&limit=100", "/api/planner-settings", "/api/timer", "/api/goals?limit=100", "/api/routines", "/api/memos?limit=100", "/api/milestones?limit=100", "/api/project-decisions?limit=100"]) {
     assert.ok(boot[key], "Bootstrap is missing " + key);
   }
   assert.deepEqual(boot["/api/categories?limit=100"], expectStatus(await request("/api/categories?limit=100"), 200, "Categories for bootstrap comparison"));
@@ -169,6 +169,8 @@ try {
     "Bootstrap keeps the same Todo order as the list endpoint",
   );
   expectStatus(await request("/api/bootstrap?date=not-a-date"), 400, "Bootstrap rejects a malformed date");
+  const timed = await request("/api/timer");
+  assert.match(timed.response.headers.get("server-timing") ?? "", /app;dur=\d+/, "API responses report their server time.");
 
   const night = expectStatus(await request("/api/time-entries", "POST", {
     title: "Local night session", startedAt: "2025-01-01T13:00:00.000Z", endedAt: "2025-01-01T20:00:00.000Z",

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { onRevalidated } from "../lib/api/bootstrap";
+import { markStartup } from "../lib/perf";
 import { classifyPlannerErrors } from "../lib/plannerLoadState";
 import type { Category } from "../types/category";
 import { useCategories } from "./useCategories";
@@ -14,6 +16,17 @@ const DEFERRED_LOAD_DELAY_MS = 80;
 const scheduleDeferredTask = (task: () => void): (() => void) => {
   if (typeof window === "undefined") return () => {};
   const id = globalThis.setTimeout(task, DEFERRED_LOAD_DELAY_MS);
+  return () => globalThis.clearTimeout(id);
+};
+
+/** Carry-over / auto-archive is housekeeping: run it when the browser is idle instead of racing the first paint. */
+const scheduleIdleTask = (task: () => void): (() => void) => {
+  if (typeof window === "undefined") return () => {};
+  if (typeof window.requestIdleCallback === "function") {
+    const id = window.requestIdleCallback(task, { timeout: 3_000 });
+    return () => window.cancelIdleCallback(id);
+  }
+  const id = globalThis.setTimeout(task, 1_000);
   return () => globalThis.clearTimeout(id);
 };
 
@@ -106,23 +119,36 @@ export function usePlannerData() {
 
   useEffect(() => {
     let cancelDeferred: () => void = () => {};
+    let cancelIdle: () => void = () => {};
     let active = true;
 
     void loadInitial().then((success) => {
       if (!active || !success) return;
+      markStartup("data-ready");
       cancelDeferred = scheduleDeferredTask(() => {
-        // The UI is now usable. Load supporting pages and apply carry-over /
-        // auto-archive in the background; the latter refreshes Todos if needed.
+        // The UI is now usable. Load supporting pages in the background.
         void loadDeferredData().catch(() => undefined);
-        void runPlannerAutomations().catch(() => undefined);
       });
+      // Apply carry-over / auto-archive when idle; it refreshes Todos if anything moved.
+      cancelIdle = scheduleIdleTask(() => { void runPlannerAutomations().catch(() => undefined); });
     });
 
     return () => {
       active = false;
       cancelDeferred();
+      cancelIdle();
     };
   }, [loadDeferredData, loadInitial, runPlannerAutomations]);
+
+  // The first screen came from the last visit's snapshot and the server's answer differs: reload quietly.
+  useEffect(() => onRevalidated(() => {
+    void Promise.all([
+      loadCoreData(),
+      goalsState.loadGoals(),
+      memosState.loadMemos(),
+      projectsState.loadProjectDetails(),
+    ]).catch(() => undefined);
+  }), [goalsState.loadGoals, loadCoreData, memosState.loadMemos, projectsState.loadProjectDetails]);
 
   const addCategory = useCallback(async (input: { name: string; description?: string; color?: string; icon?: string }) => {
     await categoriesState.addCategory(input);

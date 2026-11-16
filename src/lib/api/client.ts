@@ -1,4 +1,4 @@
-import { takePrimed } from "./bootstrap";
+import { noteMutation, takePrimed } from "./bootstrap";
 
 export class ApiError extends Error {
   status: number;
@@ -9,7 +9,10 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, ""
 const resolveApiPath = (path: string) => /^https?:\/\//.test(path) ? path : `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
-  if ((options.method ?? "GET") === "GET" && !options.signal) {
+  const method = options.method ?? "GET";
+  // Housekeeping (carry-over) is not a user edit and reloads Todos itself, so it must not invalidate the startup answer.
+  if (method !== "GET" && !/^\/api\/(auth\/|planner-automations\/)/.test(path)) noteMutation();
+  if (method === "GET" && !options.signal) {
     const primed = await takePrimed<T>(path);
     if (primed !== undefined) return primed;
   }
