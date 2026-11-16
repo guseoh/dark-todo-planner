@@ -1385,7 +1385,36 @@ try {
   await page.getByText("검색 조건에 맞는 삭제된 Todo가 없습니다.", { exact: true }).waitFor();
   await trashSearch.fill(trashSearchFixtureTitle);
   await page.getByText(trashSearchFixtureTitle, { exact: true }).waitFor();
+  // Dense Today with 20 additional local-only tasks remains readable on narrow and wide displays.
+  const denseLabel = "Dense today " + randomUUID().slice(0, 6);
+  const denseResults = await page.evaluate(async ({ date, prefix }) => {
+    const errors = [];
+    for (let index = 0; index < 20; index += 1) {
+      const response = await fetch("/api/todos", {
+        method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ title: prefix + " " + index, date, planningState: "SCHEDULED", priority: "MEDIUM" }),
+      });
+      if (!response.ok) errors.push(response.status);
+    }
+    return errors;
+  }, { date: savedInlineTodo.date, prefix: denseLabel });
+  assert.deepEqual(denseResults, [], "All dense-layout fixtures should persist to local D1");
+  await page.evaluate(() => { window.location.hash = "#/today"; });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("group", { name: "오늘 작업 현황" }).waitFor();
+  await page.waitForFunction(() => document.querySelectorAll(".today-task-section .todo-row--today").length >= 20);
+  for (const width of [390, 1280]) {
+    await page.setViewportSize({ width, height: 844 });
+    const geometry = await page.evaluate(() => ({
+      width: window.innerWidth, scrollWidth: document.documentElement.scrollWidth,
+      count: document.querySelectorAll(".today-task-section .todo-row--today").length,
+    }));
+    assert.ok(geometry.count >= 20 && geometry.scrollWidth <= geometry.width + 2,
+      "Dense Today must preserve rows and avoid horizontal overflow: " + JSON.stringify(geometry));
+    await page.screenshot({ path: `test-artifacts/today-dense-${width}.png`, fullPage: true });
+  }
   // Time tracking, kanban ordering, daily goal, day reflection and project deletion through the real UI.
+  // Runs last: the server allows 120 mutations per minute and the dense-Today fixtures above need 20 of them.
   // Measured entries use a fixed past date so the checks do not depend on the clock or the 03:00 boundary.
   await page.setViewportSize({ width: 1440, height: 900 });
   const flowTag = randomUUID().slice(0, 6);
@@ -1487,34 +1516,6 @@ try {
     await send("/api/reflections/daily/" + date, "PUT", { content: "" });
   }, { date: savedReflection.date });
 
-  // Dense Today with 20 additional local-only tasks remains readable on narrow and wide displays.
-  const denseLabel = "Dense today " + randomUUID().slice(0, 6);
-  const denseResults = await page.evaluate(async ({ date, prefix }) => {
-    const errors = [];
-    for (let index = 0; index < 20; index += 1) {
-      const response = await fetch("/api/todos", {
-        method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin",
-        body: JSON.stringify({ title: prefix + " " + index, date, planningState: "SCHEDULED", priority: "MEDIUM" }),
-      });
-      if (!response.ok) errors.push(response.status);
-    }
-    return errors;
-  }, { date: savedInlineTodo.date, prefix: denseLabel });
-  assert.deepEqual(denseResults, [], "All dense-layout fixtures should persist to local D1");
-  await page.evaluate(() => { window.location.hash = "#/today"; });
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("group", { name: "오늘 작업 현황" }).waitFor();
-  await page.waitForFunction(() => document.querySelectorAll(".today-task-section .todo-row--today").length >= 20);
-  for (const width of [390, 1280]) {
-    await page.setViewportSize({ width, height: 844 });
-    const geometry = await page.evaluate(() => ({
-      width: window.innerWidth, scrollWidth: document.documentElement.scrollWidth,
-      count: document.querySelectorAll(".today-task-section .todo-row--today").length,
-    }));
-    assert.ok(geometry.count >= 20 && geometry.scrollWidth <= geometry.width + 2,
-      "Dense Today must preserve rows and avoid horizontal overflow: " + JSON.stringify(geometry));
-    await page.screenshot({ path: `test-artifacts/today-dense-${width}.png`, fullPage: true });
-  }
   console.log("BROWSER E2E PASS: functional flows, 24 responsive snapshots and 32 Dark/Light G2 screen snapshots.");
 } catch (error) {
   failed = true;
