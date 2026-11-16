@@ -64,16 +64,17 @@ export function useMeasuredByDate(from: string, to: string) {
 
 const shiftKey = (key: string) => toDateKey(addDays(parseDateKey(key), 1));
 
-/** All-time measured minutes per project (refetched when the timer stops or entries change). */
-export function useProjectTimeTotals() {
+/** Measured minutes per project, all time or within a planner-date range (refetched when entries change). */
+export function useProjectTimeTotals(range?: { from: string; to: string }) {
   const version = useTimeTracking()?.version ?? 0;
   const [totals, setTotals] = useState<Map<string, number>>(new Map());
   useEffect(() => {
     let live = true;
-    void api<{ byProject: Array<{ projectId: string; minutes: number }> }>("/api/time-summary")
+    const query = range ? `?from=${range.from}&to=${range.to}` : "";
+    void api<{ byProject: Array<{ projectId: string; minutes: number }> }>(`/api/time-summary${query}`)
       .then((result) => { if (live) setTotals(new Map(result.byProject.map((row) => [row.projectId, row.minutes]))); })
       .catch(() => { /* totals are optional decoration */ });
     return () => { live = false; };
-  }, [version]);
+  }, [version, range?.from, range?.to]);
   return totals;
 }

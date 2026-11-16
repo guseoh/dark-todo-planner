@@ -13,7 +13,7 @@
 - Worker `GET /api/activity/github`, 로그인 필요. 브라우저는 GitHub 토큰에 접근하지 않는다.
 - 기본은 `https://github.com/users/guseoh/contributions` 공개 달력 HTML을 파싱한다(비공식이라 형식이 바뀌면 수정 필요).
 - Worker Secret `GITHUB_ACTIVITY_TOKEN`이 있으면 공식 GraphQL `contributionCalendar`를 우선 사용한다. 토큰 설정은 자동으로 하지 않는다: `npx wrangler secret put GITHUB_ACTIVITY_TOKEN --env production`.
-- Worker isolate 메모리에 1시간 캐시하고 장애 시 마지막 캐시를 `stale: true`로 반환한다. 브라우저도 10분간 재요청을 줄인다.
+- GitHub 요청은 8초 안에 응답이 없으면 중단하고, Worker isolate 메모리에 1시간 캐시하고 장애 시 마지막 캐시를 `stale: true`로 반환한다. 브라우저도 10분간 재요청을 줄인다.
 - 비공개 활동의 세부 정보는 읽지 않는다.
 
 ## 참고

@@ -148,16 +148,19 @@ function KanbanColumn({ status, label, count, visibleCount, wipLimit, onWipLimit
   );
 }
 
-const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, parent, childCount, milestone, today, onToggleTodo, onOpenDetails, onMove, onDetach, onDelete }: {
+const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, parent, childCount, milestone, today, canReposition, onToggleTodo, onOpenDetails, onMove, onReposition, onDetach, onDelete }: {
   project: Project;
   todo: Todo;
   parent?: Todo;
   childCount: number;
   milestone?: Milestone;
   today: string;
+  /** Quick "to top / to bottom" actions need a manual order (off while sorted by priority or grouped). */
+  canReposition: boolean;
   onToggleTodo: ProjectKanbanProps["onToggleTodo"];
   onOpenDetails: (todo: Todo) => void;
   onMove: (todo: Todo, status: TodoWorkflowStatus) => void;
+  onReposition: (todo: Todo, edge: "top" | "bottom") => void;
   onDetach: (todo: Todo) => void;
   onDelete: (id: string) => void;
 }) {
@@ -199,6 +202,10 @@ const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, paren
             {workflowColumns.filter((column) => column.status !== status).map((column) => (
               <button key={column.status} type="button" onClick={() => onMove(todo, column.status)}>{column.label}으로 이동</button>
             ))}
+            {canReposition ? <>
+              <button type="button" onClick={() => onReposition(todo, "top")}>맨 위로 이동</button>
+              <button type="button" onClick={() => onReposition(todo, "bottom")}>맨 아래로 이동</button>
+            </> : null}
             <button type="button" onClick={() => onDetach(todo)}>프로젝트에서 제외</button>
             <button type="button" className="project-actions-menu__danger" onClick={() => onDelete(todo.id)}>휴지통으로 이동</button>
           </div>
@@ -320,6 +327,16 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
     return map;
   }, [visibleTodos]);
 
+  // Cards stay memoized: the handler reads the latest column lists through a ref.
+  const repositionRef = useRef<(todo: Todo, edge: "top" | "bottom") => void>(() => undefined);
+  repositionRef.current = (todo, edge) => {
+    const column = visibleByStatus.get(statusOf(todo)) ?? [];
+    const ids = column.filter(({ id }) => id !== todo.id).map(({ id }) => id);
+    if (edge === "top") ids.unshift(todo.id); else ids.push(todo.id);
+    if (ids.length > 1) void onReorderTodos(ids);
+  };
+  const stableReposition = useCallback((todo: Todo, edge: "top" | "bottom") => repositionRef.current(todo, edge), []);
+
   const onDragStart = useCallback(({ active }: DragStartEvent) => {
     setActiveDragId(String(active.id));
   }, []);
@@ -405,6 +422,8 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
                           childCount={indexed.childCountByParentId.get(todo.id) || 0}
                           milestone={todo.milestoneId ? indexed.milestoneById.get(todo.milestoneId) : undefined}
                           today={today}
+                          canReposition={!sortPriority && !groupByMilestone}
+                          onReposition={stableReposition}
                           onToggleTodo={stableToggle}
                           onOpenDetails={openDetails}
                           onMove={moveTodo}

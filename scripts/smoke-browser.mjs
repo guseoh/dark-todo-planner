@@ -1385,6 +1385,108 @@ try {
   await page.getByText("검색 조건에 맞는 삭제된 Todo가 없습니다.", { exact: true }).waitFor();
   await trashSearch.fill(trashSearchFixtureTitle);
   await page.getByText(trashSearchFixtureTitle, { exact: true }).waitFor();
+  // Time tracking, kanban ordering, daily goal, day reflection and project deletion through the real UI.
+  // Measured entries use a fixed past date so the checks do not depend on the clock or the 03:00 boundary.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const flowTag = randomUUID().slice(0, 6);
+  const flow = await page.evaluate(async ({ tag, date }) => {
+    const post = async (path, body) => {
+      const response = await fetch(path, { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      if (!response.ok) throw new Error(path + " " + response.status);
+      return response.json();
+    };
+    const category = (await post("/api/categories", { name: "Flow " + tag, color: "#3366ff" })).category;
+    const project = (await post("/api/projects", { name: "Flow Project " + tag, status: "ACTIVE" })).project;
+    const todos = [];
+    for (const name of ["Alpha", "Beta", "Gamma"]) {
+      todos.push((await post("/api/todos", { title: name + " " + tag, date, planningState: "SCHEDULED", projectId: project.id, categoryId: category.id })).todo);
+    }
+    await post("/api/time-entries", { todoId: todos[0].id, startedAt: "2025-01-05T01:00:00.000Z", endedAt: "2025-01-05T02:30:00.000Z" });
+    return { project, category, todos };
+  }, { tag: flowTag, date: savedInlineTodo.date });
+  await page.evaluate(() => { window.location.hash = "#/today"; });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: `Alpha ${flowTag}`, exact: true }).waitFor();
+
+  // Timer: start from the Todo row, see it in the header and tab title, stop it (a sub-30s tap is discarded).
+  await page.getByRole("button", { name: `"Alpha ${flowTag}" 시간 측정 시작` }).click();
+  const headerTimer = page.getByRole("timer");
+  await headerTimer.waitFor();
+  assert.match(await headerTimer.innerText(), new RegExp(`Flow ${flowTag} · Alpha ${flowTag}`), "Header timer shows the category and Todo.");
+  assert.match(await page.title(), new RegExp(`Alpha ${flowTag}`), "Tab title shows the running timer.");
+  await page.getByRole("button", { name: "시간 측정 정지", exact: true }).click();
+  await headerTimer.waitFor({ state: "detached" });
+  await page.getByText("30초 미만의 측정은 기록하지 않았습니다.").waitFor();
+
+  // Daily goal from the Today time card.
+  const timeCard = page.getByRole("region", { name: "오늘 측정 시간" });
+  await timeCard.getByRole("button", { name: /일일 목표 시간 정하기/ }).click();
+  await timeCard.getByLabel("일일 목표 시간(시간 단위)").fill("2");
+  await timeCard.getByRole("button", { name: "목표 저장" }).click();
+  await timeCard.getByRole("progressbar", { name: "일일 목표 달성률" }).waitFor();
+  assert.match(await timeCard.innerText(), /목표 2시간/);
+
+  // Day recap and one-line reflection.
+  await page.getByRole("button", { name: /오늘 정리/ }).click();
+  const recapDialog = page.getByRole("dialog", { name: "오늘 정리" });
+  await recapDialog.getByTestId("day-recap").waitFor();
+  await recapDialog.getByLabel(/오늘의 한 줄 회고/).fill(`Reflection ${flowTag}`);
+  await recapDialog.getByRole("button", { name: "회고 저장" }).click();
+  await recapDialog.waitFor({ state: "detached" });
+  const reflectionRows = await page.evaluate(async () => (await (await fetch("/api/reflections?from=2000-01-01&to=2100-01-01", { credentials: "same-origin" })).json()).reflections);
+  const savedReflection = reflectionRows.find((row) => row.content === `Reflection ${flowTag}`);
+  assert.ok(savedReflection, "The one-line reflection is stored.");
+
+  // Kanban: drag-to-reorder, quick "to top" action, order stored on the server.
+  await page.evaluate(() => { window.location.hash = "#/projects"; });
+  await page.locator(".project-v4-board").waitFor();
+  await page.locator(".project-switcher__trigger").click();
+  await page.locator(`.project-switcher__option[data-project-id="${flow.project.id}"]`).click();
+  const flowColumn = page.locator('.project-kanban-column[data-status="TODO"]');
+  const flowTitles = async () => (await flowColumn.locator(".project-v4-card__title").allInnerTexts()).map((text) => text.trim());
+  await flowColumn.locator(".project-kanban-card").nth(2).waitFor();
+  const flowCard = (name) => flowColumn.locator(".project-kanban-card").filter({ hasText: `${name} ${flowTag}` });
+  const initialOrder = await flowTitles();
+  assert.equal(initialOrder.length, 3, "The flow project shows its three cards.");
+  const lastTitle = initialOrder[2];
+  const lastHandle = await flowColumn.locator(".project-kanban-card").nth(2).locator(".project-v4-card__drag").boundingBox();
+  const firstBox = await flowColumn.locator(".project-kanban-card").nth(0).boundingBox();
+  await page.mouse.move(lastHandle.x + lastHandle.width / 2, lastHandle.y + lastHandle.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(lastHandle.x + lastHandle.width / 2 + 10, lastHandle.y + lastHandle.height / 2 + 12, { steps: 4 });
+  await page.mouse.move(firstBox.x + firstBox.width / 2, firstBox.y + firstBox.height * 0.3, { steps: 14 });
+  await page.waitForTimeout(150);
+  await page.mouse.up();
+  await page.waitForFunction((expected) => document.querySelector('.project-kanban-column[data-status="TODO"] .project-v4-card__title')?.textContent?.trim() === expected, lastTitle);
+  const secondTitle = (await flowTitles())[1];
+  await flowColumn.locator(".project-kanban-card").filter({ hasText: secondTitle }).getByLabel(secondTitle + " 작업 메뉴").click();
+  await flowColumn.getByRole("button", { name: "맨 아래로 이동" }).first().click();
+  await page.waitForFunction((expected) => {
+    const titles = [...document.querySelectorAll('.project-kanban-column[data-status="TODO"] .project-v4-card__title')].map((node) => node.textContent?.trim());
+    return titles[titles.length - 1] === expected;
+  }, secondTitle);
+  const shownOrder = await flowTitles();
+  await sleep(600);
+  const storedOrder = await page.evaluate(async (ids) => {
+    const todos = (await (await fetch("/api/todos?archived=all&limit=100", { credentials: "same-origin" })).json()).todos;
+    return todos.filter((todo) => ids.includes(todo.id)).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((todo) => todo.title);
+  }, flow.todos.map((todo) => todo.id));
+  assert.deepEqual(storedOrder, shownOrder, "Card order is saved on the server in the order shown.");
+
+  // The project header shows the cumulative measured time, then the project can be deleted from the menu.
+  assert.match(await page.locator(".project-overview").innerText(), /누적 측정 1시간 30분/);
+  page.once("dialog", (dialogEvent) => void dialogEvent.accept());
+  await page.locator(".project-overview .project-actions-menu summary").click();
+  await page.locator(".project-overview .project-actions-menu").getByRole("button", { name: "삭제", exact: true }).click();
+  await page.locator(`.project-switcher__trigger`).filter({ hasText: `Flow Project ${flowTag}` }).waitFor({ state: "detached" });
+  const projectsAfterDelete = await page.evaluate(async () => (await (await fetch("/api/projects", { credentials: "same-origin" })).json()).projects.map((project) => project.id));
+  assert.ok(!projectsAfterDelete.includes(flow.project.id), "Deleting a project from the UI removes it on the server.");
+  await page.evaluate(async ({ date }) => {
+    const send = (path, method, body) => fetch(path, { method, credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    await send("/api/planner-settings", "PATCH", { dailyGoalMinutes: 0 });
+    await send("/api/reflections/daily/" + date, "PUT", { content: "" });
+  }, { date: savedReflection.date });
+
   // Dense Today with 20 additional local-only tasks remains readable on narrow and wide displays.
   const denseLabel = "Dense today " + randomUUID().slice(0, 6);
   const denseResults = await page.evaluate(async ({ date, prefix }) => {
