@@ -87,7 +87,8 @@ try {
   assert.ok(visualSystem.headerHeight <= 90, "Today heading/status must be compact.");
   assert.ok(visualSystem.captureOffset <= 145, "Quick capture should appear close to the header in V4.");
   assert.equal(visualSystem.oldDashboardCount, 0, "Old KPI grid must not return.");
-  assert.match(visualSystem.headerText, /진행\s*\d+\s*\/\s*\d+/, "Concise progress summary must remain visible.");
+  // The progress meter only appears once Today has tasks; an empty Today must not show "0 / 0".
+  assert.doesNotMatch(visualSystem.headerText, /진행\s*0\s*\/\s*0(?!\d)/, "An empty Today must not show a meaningless 0 / 0 progress meter.");
   assert.equal(visualSystem.workspaceLayout, "grid", "Today must be able to show a task lane and an actionable planning lane.");
   assert.equal(visualSystem.hasSidebar, false, "Today must not retain a disconnected right rail.");
   assert.ok(visualSystem.executionWidth <= 740, "The desktop execution list remains readable beside the planning rail.");
@@ -124,7 +125,7 @@ try {
     assert.notEqual(buttonSystem.warningBackground, visualSystem.primaryBackground, "Day cleanup must use warning tone.");
   }
 
-  // Activity is a separate read-only workbench, not a widget in Today/Projects.
+  // GitHub grass is a Today side-rail widget; there is no dedicated activity tab.
   // Keep the GitHub source deterministic and independent of upstream rate limits.
   const githubDays = Array.from({ length: 365 }, (_, index) => ({
     date: new Date(Date.UTC(2025, 0, 1 + index)).toISOString().slice(0, 10),
@@ -137,44 +138,22 @@ try {
       fetchedAt: new Date().toISOString(),
     }) });
   });
-  const navActivity = page.getByRole("button", { name: "개발 활동", exact: true });
-  await navActivity.click();
-  await page.getByRole("heading", { name: "개발 활동", exact: true }).waitFor();
-  assert.equal(new URL(page.url()).hash, "#/activity");
-  await page.getByRole("region", { name: "GitHub 활동 최근 365일 활동 그래프" }).waitFor();
-  assert.ok((await page.locator(".activity-panel--github .activity-heatmap__day").count()) >= 365);
-  const emptyCodex = page.locator(".activity-panel--codex .activity-panel__empty");
-  await emptyCodex.getByText("아직 가져온 활동 기록이 없습니다.", { exact: true }).waitFor();
-  assert.equal(await page.locator(".activity-panel--codex .activity-heatmap__day").count(), 0,
-    "Unimported Codex data must NOT be silently shown as an all-zero heatmap.");
-  const localAggregate = {
-    version: 1, source: "codex-local-sessions", metric: "sessions",
-    days: [{ date: "2026-11-07", count: 2 }, { date: "2026-11-08", count: 1 }],
-  };
-  await page.getByLabel("Codex 집계 JSON 파일").setInputFiles({
-    name: "codex-activity.json", mimeType: "application/json",
-    buffer: Buffer.from(JSON.stringify(localAggregate)),
-  });
-  await page.getByRole("region", { name: "Codex 활동 최근 365일 활동 그래프" }).waitFor();
-  const storedActivity = await page.evaluate(() => localStorage.getItem("dark-todo-planner:codex-activity:v1"));
-  assert.ok(storedActivity && storedActivity.includes('"metric":"sessions"'),
-    "Only sanitized daily counts are stored in browser-local storage.");
-  assert.equal(await page.locator(".activity-panel--codex .activity-heatmap__day--2").count() >= 1, true,
-    "Codex session activity intensity is calculated from the aggregate file.");
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("region", { name: "Codex 활동 최근 365일 활동 그래프" }).waitFor();
-  await page.getByRole("button", { name: "지우기" }).click();
-  await emptyCodex.waitFor();
-  assert.equal(await page.evaluate(() => localStorage.getItem("dark-todo-planner:codex-activity:v1")), null,
-    "Clear removes Codex aggregates from the current browser without a server write.");
-  await page.getByLabel("Codex 집계 JSON 파일").setInputFiles({
-    name: "raw-session.json", mimeType: "application/json",
-    buffer: Buffer.from('{"payload":{"message":"sensitive conversation"}}'),
-  });
-  await page.locator(".activity-panel--codex .activity-panel__empty").getByText(
-    "Codex 세션 집계 또는 account/usage/read 결과만 가져올 수 있습니다.", { exact: true }).waitFor();
-  await page.unroute("**/api/activity/github");
+  assert.equal(await page.getByRole("button", { name: "개발 활동", exact: true }).count(), 0,
+    "The development-activity tab is retired; GitHub grass lives on Today.");
   await page.getByRole("button", { name: "오늘", exact: true }).click();
+  const grassCard = page.getByRole("region", { name: "GitHub 잔디", exact: true });
+  await grassCard.waitFor();
+  await grassCard.getByRole("button", { name: "GitHub 잔디 다시 불러오기" }).click();
+  await grassCard.getByRole("region", { name: "GitHub 최근 16주 활동 그래프" }).waitFor();
+  assert.ok((await grassCard.locator(".activity-heatmap__day:not(.activity-heatmap__day--outside)").count()) >= 100,
+    "Compact grass shows the most recent 16 weeks.");
+  await grassCard.getByRole("button", { name: "GitHub 잔디 365일 전체 보기" }).click();
+  const grassDialog = page.getByRole("dialog", { name: "GitHub 잔디" });
+  await grassDialog.getByRole("region", { name: "GitHub 최근 365일 활동 그래프" }).waitFor();
+  assert.ok((await grassDialog.locator(".activity-heatmap__day:not(.activity-heatmap__day--outside)").count()) >= 365);
+  await page.keyboard.press("Escape");
+  await grassDialog.waitFor({ state: "detached" });
+  await page.unroute("**/api/activity/github");
 
   // G6.7: overdue review uses flat date rows, and bulk trash must only remove selected IDs.
   // Fixture dates are deliberately long before today, using an isolated local D1 account.

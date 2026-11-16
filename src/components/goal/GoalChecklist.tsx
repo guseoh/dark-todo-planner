@@ -9,6 +9,8 @@ type GoalChecklistProps = {
   addDefaults: Partial<Goal>;
   placeholder: string;
   emptyTitle: string;
+  /** Narrow containers (e.g. the Today side rail) stack the heading above the input. */
+  layout?: "inline" | "stacked";
   onAdd: (input: Partial<Goal> & { title: string }) => Promise<Goal | undefined>;
   onUpdate: (id: string, updates: Partial<Omit<Goal, "id" | "createdAt">>) => Promise<Goal | undefined>;
   onToggle: (id: string) => Promise<boolean>;
@@ -16,9 +18,10 @@ type GoalChecklistProps = {
 };
 
 export function GoalChecklist({
-  title, goals, type, addDefaults, placeholder, emptyTitle,
+  title, goals, type, addDefaults, placeholder, emptyTitle, layout = "inline",
   onAdd, onUpdate, onToggle, onDelete,
 }: GoalChecklistProps) {
+  const stacked = layout === "stacked";
   const [newTitle, setNewTitle] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
@@ -87,12 +90,12 @@ export function GoalChecklist({
 
   return (
     <section className="app-card px-3.5 py-3" aria-label={title} aria-busy={busy}>
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+      <div className={stacked ? "flex flex-col gap-2.5" : "flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between"}>
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <h3 className="text-sm font-bold text-ink-100">{title}</h3>
-          <span className="text-xs text-ink-400">{completedCount}/{goals.length} 완료</span>
+          <h3 className="whitespace-nowrap text-sm font-bold text-ink-100">{title}</h3>
+          <span className="whitespace-nowrap text-xs text-ink-400">{completedCount}/{goals.length} 완료</span>
         </div>
-        <form onSubmit={(event) => { void submit(event); }} className="flex w-full min-w-0 gap-2 sm:w-auto sm:flex-1 sm:max-w-md">
+        <form onSubmit={(event) => { void submit(event); }} className={stacked ? "flex w-full min-w-0 gap-2" : "flex w-full min-w-0 gap-2 sm:w-auto sm:flex-1 sm:max-w-md"}>
           <input
             className="field min-h-10 min-w-0 flex-1 py-1.5"
             value={newTitle}
@@ -157,7 +160,7 @@ export function GoalChecklist({
           ))}
         </div>
       ) : (
-        <p className="mt-2 text-xs text-ink-500">{emptyTitle} 위 입력창에서 새 목표를 추가할 수 있습니다.</p>
+        <p className="mt-2 text-xs text-ink-500">{emptyTitle}</p>
       )}
     </section>
   );
