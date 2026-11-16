@@ -8,6 +8,8 @@ import { PriorityBadge } from "./PriorityBadge";
 import { getEntityColor } from "../../lib/entityColor";
 import { useTodoQuickActions } from "./TodoQuickActionsContext";
 import { QuickSnoozeMenu } from "./QuickSnoozeMenu";
+import { TimerToggleButton } from "../timer/TimerToggleButton";
+import { useTimeTracking } from "../timer/TimeTrackingContext";
 
 type TodoRowProps = {
   todo: Todo;
@@ -78,6 +80,7 @@ export function TodoRow({
   }, [menuOpen]);
 
   const actions = useTodoQuickActions();
+  const timer = useTimeTracking();
   const project = actions?.projects.find(({ id }) => id === todo.projectId);
   const projectName = project?.name ?? fallbackProjectName;
   const today = todayKey();
@@ -100,6 +103,7 @@ export function TodoRow({
         const key = event.key.toLowerCase();
         if (key === "x") onToggle(todo.id);
         else if (key === "t" && actions) void actions.snoozeTodo(todo, { type: "DATE", date: today });
+        else if (key === "s" && timer && !timer.busy && !todo.completed && !todo.archived) void (timer.active?.todoId === todo.id ? timer.stop() : timer.start(todo.id));
         else if (key === "e") onEdit(todo);
         else if (key === "delete") onDelete(todo.id);
         else if (key === "f" && onToggleFocus && !focusDisabled && !todo.completed) onToggleFocus(todo.id);
@@ -139,6 +143,7 @@ export function TodoRow({
 
         {!selectionMode && variant === "today" ? (
           <>
+          <TimerToggleButton todo={todo} />
           {onToggleFocus && !todo.completed ? (
             <button type="button" className={`today-focus-toggle h-9 w-9 shrink-0 items-center justify-center ${focusPinned ? "is-pinned" : ""}`}
               onClick={() => onToggleFocus(todo.id)} disabled={focusDisabled} aria-pressed={focusPinned}
@@ -173,6 +178,7 @@ export function TodoRow({
           </>
         ) : !selectionMode ? (
           <div className="todo-row__actions flex shrink-0 flex-wrap justify-end gap-0.5">
+            <TimerToggleButton todo={todo} />
             <QuickSnoozeMenu todo={todo} />
             {todo.referenceUrl ? <a href={todo.referenceUrl} target="_blank" rel="noreferrer" className="icon-btn h-8 w-8" aria-label={`"${todo.title}" 관련 링크 열기`} title={todo.referenceLabel || "관련 링크 열기"}><ExternalLink size={13} /></a> : null}
             {todo.archived && onUnarchive ? <button type="button" className="icon-btn h-8 w-8" onClick={() => onUnarchive(todo.id)} aria-label={`"${todo.title}" 보관 해제`}><RotateCcw size={13} /></button> : null}

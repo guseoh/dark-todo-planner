@@ -2,7 +2,7 @@ import { WeeklyTimetable } from "./WeeklyTimetable";
 import { UnscheduledCalendarTodos } from "./UnscheduledCalendarTodos";
 import type { Project } from "../../types/project";
 import { useEffect, useMemo, useState } from "react";
-import { CalendarCheck2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus } from "lucide-react";
+import { CalendarCheck2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Plus } from "lucide-react";
 import { addWeeks } from "date-fns";
 import { calculateRate, formatCompletionRate } from "../../lib/todo";
 import { formatKoreanDate, getWeekDays, parseDateKey, toDateKey, todayKey } from "../../lib/date";
@@ -10,6 +10,8 @@ import type { Todo, TodoInput } from "../../types/todo";
 import type { Category } from "../../types/category";
 import type { Goal } from "../../types/goal";
 import { GoalChecklist } from "../goal/GoalChecklist";
+import { Modal } from "../common/Modal";
+import { DayTimeline } from "../timer/DayTimeline";
 import { InlineTodoAdd } from "../todo/InlineTodoAdd";
 import { TodoEditModal } from "../todo/TodoEditModal";
 import { TodoRow } from "../todo/TodoRow";
@@ -80,6 +82,7 @@ export function WeeklyView({
   const [addingDate, setAddingDate] = useState<string | null>(null);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [showTimeline, setShowTimeline] = useState(false);
 
   const weekRate = calculateRate(weekTodos);
   const weekActiveCount = weekTodos.filter((todo) => !todo.completed).length;
@@ -189,13 +192,18 @@ export function WeeklyView({
             <h3 id="selected-day-title" className="text-base font-bold text-ink-100">{formatKoreanDate(selectedDate, "M월 d일 EEEE")}</h3>
             <p className="mt-0.5 text-xs text-ink-500">미완료 {selectedActiveTodos.length}개 · 완료 {selectedCompletedTodos.length}개</p>
           </div>
-          <button
-            type="button"
-            className="btn-secondary text-xs"
-            onClick={() => setAddingDate((current) => current === selectedDate ? null : selectedDate)}
-          >
-            <Plus size={15} />{addingDate === selectedDate ? "추가 닫기" : "이 날짜에 추가"}
-          </button>
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              className="btn-secondary text-xs"
+              onClick={() => setAddingDate((current) => current === selectedDate ? null : selectedDate)}
+            >
+              <Plus size={15} />{addingDate === selectedDate ? "추가 닫기" : "이 날짜에 추가"}
+            </button>
+            <button type="button" className="btn-secondary text-xs" onClick={() => setShowTimeline(true)}>
+              <Clock size={15} />하루 타임라인
+            </button>
+          </div>
         </div>
 
         {addingDate === selectedDate ? (
@@ -287,6 +295,12 @@ export function WeeklyView({
       </div>
         </div>
       </details>
+
+      {showTimeline ? (
+        <Modal title={`${formatKoreanDate(selectedDate, "M월 d일")} 하루 타임라인`} description="새벽 3시부터 다음 날 새벽 3시까지 측정한 시간을 카테고리별로 보여줍니다." size="lg" onClose={() => setShowTimeline(false)}>
+          <DayTimeline date={selectedDate} categories={categories} />
+        </Modal>
+      ) : null}
 
       <TodoEditModal
         todo={editingTodo}

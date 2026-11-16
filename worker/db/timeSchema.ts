@@ -12,6 +12,10 @@ export const focusSessionsV2 = sqliteTable("focus_sessions", {
   startedAt: text("started_at").notNull(),
   endedAt: text("ended_at").notNull(),
   completed: integer("completed", { mode: "boolean" }).notNull().default(true),
+  // Time tracking snapshots: sessions keep their category after the Todo or category is deleted.
+  categoryId: text("category_id"),
+  categoryName: text("category_name"),
+  projectId: text("project_id"),
   createdAt: text("created_at").notNull(),
 }, (table) => [
   index("focus_sessions_user_planner_date_idx").on(table.userId, table.plannerDate),
@@ -34,3 +38,14 @@ export const timeBlocks = sqliteTable("time_blocks", {
   index("time_blocks_user_date_start_idx").on(table.userId, table.date, table.startTime),
   index("time_blocks_todo_idx").on(table.todoId),
 ]);
+
+/** The single running timer per user; finished work is stored as focus_sessions rows. */
+export const activeTimers = sqliteTable("active_timers", {
+  userId: text("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  todoId: text("todo_id").references(() => todos.id, { onDelete: "set null" }),
+  todoTitle: text("todo_title").notNull(),
+  categoryId: text("category_id"),
+  categoryName: text("category_name"),
+  projectId: text("project_id"),
+  startedAt: text("started_at").notNull(),
+});
