@@ -131,7 +131,24 @@ try {
   assert.ok(timeBlocks.some((block) => block.id === timeBlock.id));
   expectStatus(await request("/api/time-blocks/" + timeBlock.id, "DELETE"), 200, "Remove isolated time block");
 
-  console.log("LOCAL E2E PASS: auth, CRUD, trash recovery, atomic backup, Today focus, and time block scheduling.");
+  // Time tracking: one running timer, accidental taps are dropped, and entries split at 03:00 KST.
+  expectStatus(await request("/api/timer/start", "POST", { todoId: id }), 200, "Start timer");
+  assert.equal(expectStatus(await request("/api/timer"), 200, "Read running timer").activeTimer.todoId, id);
+  assert.equal(expectStatus(await request("/api/timer/stop", "POST"), 200, "Stop timer immediately").discarded, true, "Sub-30s timers are discarded.");
+  assert.equal(expectStatus(await request("/api/timer"), 200, "Timer cleared after stop").activeTimer, null);
+  const night = expectStatus(await request("/api/time-entries", "POST", {
+    title: "Local night session", startedAt: "2025-01-01T13:00:00.000Z", endedAt: "2025-01-01T20:00:00.000Z",
+  }), 201, "Create entry crossing the 03:00 KST planner-day boundary").timeEntries;
+  assert.deepEqual(night.map((entry) => [entry.plannerDate, entry.durationMinutes]), [["2025-01-01", 300], ["2025-01-02", 120]]);
+  expectStatus(await request("/api/time-entries", "POST", {
+    title: "Future", startedAt: new Date(Date.now() + 3_600_000).toISOString(), endedAt: new Date(Date.now() + 7_200_000).toISOString(),
+  }), 400, "Reject future time entry");
+  expectStatus(await request("/api/time-entries/" + night[0].id, "PUT", { startedAt: "2025-01-01T13:00:00.000Z", endedAt: "2025-01-01T20:00:00.000Z" }), 400, "Reject edit across 03:00 KST");
+  const listed = expectStatus(await request("/api/time-entries?from=2025-01-01&to=2025-01-02"), 200, "List entries by planner date").timeEntries;
+  assert.equal(listed.filter((entry) => entry.title === "Local night session").length, 2);
+  for (const entry of night) expectStatus(await request("/api/time-entries/" + entry.id, "DELETE"), 200, "Remove isolated time entry");
+
+  console.log("LOCAL E2E PASS: auth, CRUD, trash recovery, atomic backup, Today focus, time block scheduling, and time tracking.");
 } finally {
   if (created) {
     // Only loopback URLs can reach this cleanup path.

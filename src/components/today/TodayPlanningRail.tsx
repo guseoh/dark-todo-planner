@@ -4,6 +4,7 @@ import { api, jsonBody } from "../../lib/api/client";
 import { getWeekDays, getWeekRange, parseDateKey, toDateKey, todayKey, weekdayLabels } from "../../lib/date";
 import type { Todo } from "../../types/todo";
 import { GithubGrassCard } from "../activity/GithubGrassCard";
+import { TodayTimeCard } from "../timer/TodayTimeCard";
 import { GoalChecklist } from "../goal/GoalChecklist";
 import type { Routine } from "../settings/RoutinePanel";
 
@@ -83,6 +84,7 @@ export function TodayPlanningRail({ todos, goals, dueSoonDays, onAddGoal, onUpda
           })}
         </div>
       </section>
+      <TodayTimeCard />
       <GoalChecklist title="주간 목표" type="WEEKLY" addDefaults={{ weekStartDate: start, weekEndDate: end, dueDate: end }}
         goals={goals.filter((goal) => goal.type === "WEEKLY" && (!goal.weekStartDate || goal.weekStartDate <= end) && (!goal.weekEndDate || goal.weekEndDate >= start))}
         placeholder="주간 목표 추가" emptyTitle="이번 주 목표가 아직 없습니다." layout="stacked" onAdd={onAddGoal}

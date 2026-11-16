@@ -2717,8 +2717,8 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
   .calendar-time-heading[aria-pressed="true"] { box-shadow: inset 0 -2px var(--accent); }
   .calendar-all-day { min-height: 32px; padding: 3px; }
   .calendar-all-day button { background: var(--surface-1); padding-block: 2px; margin-bottom: 2px; }
-  .calendar-hour-labels, .calendar-time-day { height: 480px; }
-  .calendar-hour-labels { display: grid; grid-template-rows: repeat(10, 1fr); text-align: center; }
+  .calendar-hour-labels, .calendar-time-day { height: calc(var(--time-rows, 10) * 48px); }
+  .calendar-hour-labels { display: grid; grid-template-rows: repeat(var(--time-rows, 10), 1fr); text-align: center; }
   .calendar-time-day {
     position: relative;
     touch-action: none;
@@ -2765,3 +2765,52 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
 .activity-panel--compact .activity-heatmap { --activity-cell: 10px; --activity-gap: 2px; }
 .activity-panel--compact .activity-heatmap__scroll { overflow: hidden; padding: 0; }
 .github-grass-card h2 { margin-bottom: 0; }
+
+/* Time tracking: header timer, row toggle, day timeline and weekly "actual" layer. */
+.header-timer {
+  display: inline-flex; align-items: center; gap: .6rem; min-width: 0; max-width: min(36rem, 100%); height: 36px;
+  padding: 0 .35rem 0 .8rem; border: 1px solid var(--ui-divider); border-radius: 999px; background: var(--ui-surface);
+}
+.header-timer__dot { width: 8px; height: 8px; flex: none; border-radius: 999px; animation: timer-pulse 2s ease-in-out infinite; }
+@keyframes timer-pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .header-timer__dot { animation: none; } }
+.header-timer__stop {
+  display: inline-flex; align-items: center; justify-content: center; flex: none; width: 28px; height: 28px;
+  border-radius: 999px; color: var(--ui-text-primary); background: var(--ui-hover);
+}
+.header-timer__stop:hover:not(:disabled) { background: var(--ui-selected); }
+.header-timer__stop:focus-visible, .timer-toggle:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 1px; }
+.timer-toggle {
+  display: inline-flex; align-items: center; justify-content: center; gap: .35rem; flex: none; min-width: 36px; height: 36px;
+  padding: 0 .5rem; border-radius: 6px; color: var(--text-muted);
+}
+.timer-toggle:hover:not(:disabled) { background: var(--ui-hover); color: var(--ui-text-primary); }
+.timer-toggle.is-running { color: var(--success); background: color-mix(in srgb, var(--success) 14%, transparent); }
+.day-timeline { display: grid; gap: .9rem; min-width: 0; }
+.day-timeline__totals { display: grid; gap: .45rem; font-size: .8rem; }
+.day-timeline__totals li { display: grid; grid-template-columns: .5rem minmax(0, 1fr) auto 7rem; align-items: center; gap: .6rem; }
+.day-timeline__bar { display: block; height: 4px; overflow: hidden; border-radius: 2px; background: var(--ui-inset); }
+.day-timeline__bar i { display: block; height: 100%; border-radius: 2px; }
+.day-timeline__totals .day-timeline__bar { grid-column: auto; }
+.day-timeline__grid { border: 1px solid var(--ui-divider); border-radius: 4px; background: var(--ui-surface); }
+.day-timeline__row { display: grid; grid-template-columns: 3.2rem minmax(0, 1fr); height: 24px; border-top: 1px solid var(--ui-divider); }
+.day-timeline__row:first-child { border-top: 0; }
+.day-timeline__label { padding: 0 .5rem; font-size: .7rem; line-height: 24px; color: var(--text-muted); font-variant-numeric: tabular-nums; border-right: 1px solid var(--ui-divider); }
+.day-timeline__track { position: relative; background-image: linear-gradient(to right, var(--ui-divider) 1px, transparent 1px); background-size: 25% 100%; }
+.day-timeline__block { position: absolute; top: 3px; bottom: 3px; min-width: 2px; border-radius: 2px; opacity: .92; }
+.day-timeline__block:hover:not(:disabled) { opacity: 1; outline: 1px solid var(--ui-text-primary); }
+.day-timeline__block:focus-visible { outline: 2px solid var(--ui-focus); }
+.day-timeline__block[data-running="true"] { animation: timer-pulse 2s ease-in-out infinite; cursor: default; }
+@media (prefers-reduced-motion: reduce) { .day-timeline__block[data-running="true"] { animation: none; } }
+
+@media (min-width: 1280px) {
+  .calendar-time-grid[data-has-actual="true"] .calendar-time-block { inset-inline-end: 34%; }
+  .calendar-time-actual { position: absolute; inset-inline-end: 2px; width: 30%; min-height: 3px; border-radius: 3px; opacity: .9; }
+  .calendar-time-actual:hover:not(:disabled) { opacity: 1; outline: 1px solid var(--ui-text-primary); }
+  .calendar-time-actual:focus-visible { outline: 2px solid var(--ui-focus); }
+  .calendar-time-actual[data-running="true"] { animation: timer-pulse 2s ease-in-out infinite; cursor: default; }
+  .calendar-week-totals { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin-bottom: .5rem; font-size: .75rem; color: var(--ui-text-secondary); }
+  .calendar-week-totals li { display: inline-flex; align-items: center; gap: .35rem; }
+}
+@media (prefers-reduced-motion: reduce) { .calendar-time-actual[data-running="true"] { animation: none; } }
+.project-kanban-card .timer-toggle { min-width: 28px; height: 28px; padding: 0 .3rem; }

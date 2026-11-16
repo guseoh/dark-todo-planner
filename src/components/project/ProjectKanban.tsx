@@ -11,6 +11,7 @@ import type { Milestone, Project } from "../../types/project";
 import type { Todo, TodoInput, TodoWorkflowStatus } from "../../types/todo";
 import { Modal } from "../common/Modal";
 import { TodoEditModal } from "../todo/TodoEditModal";
+import { TimerToggleButton } from "../timer/TimerToggleButton";
 
 const workflowColumns: Array<{ status: TodoWorkflowStatus; label: string }> = [
   { status: "TODO", label: workflowStatusLabels.TODO },
@@ -155,6 +156,7 @@ const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, paren
           <button type="button" className={`project-v4-card__title ${todo.completed ? "line-through opacity-60" : ""}`}
             onClick={() => onOpenDetails(todo)}>{todo.title}</button>
         </div>
+        {!project.archived ? <TimerToggleButton todo={todo} className="project-v4-card__timer" /> : null}
         {!project.archived ? <button type="button" className="project-v4-card__drag"
           title="잡고 다른 열로 드래그해 상태 변경" aria-label={`${todo.title} 상태 이동`}
           {...listeners} {...attributes}><GripVertical size={15} /></button> : null}

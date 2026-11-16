@@ -14,6 +14,7 @@
 | 메모 / 낙서장 | 메뉴 `memo` / `scratchpad` | 양쪽 모두 유지, 사용 빈도에 따라 후속 통합 검토 |
 | 휴지통 | 메뉴 `trash` | 복원 경로와 데이터 보존을 위해 유지 |
 | 설정 | 메뉴 `settings` | Routine, PWA, ICS, JSON 백업·복원, Discord 일괄 설정 유지 |
+| 시간 측정 | `TimeTrackingContext`, `HeaderTimer`, `DayTimeline`, `WeeklyTimetable`, `worker/routes/timeTracking.ts` | Todo의 ▶ 버튼(또는 S)으로 측정을 시작하면 그 Todo의 카테고리로 시간이 쌓인다. 진행 중 타이머는 `active_timers` 한 행, 끝난 기록은 `focus_sessions`(FOCUS)에 새벽 3시(KST) 경계로 나눠 저장한다. 하루 타임라인과 주간 캘린더에서 계획과 실제를 함께 본다. 포모도로는 제공하지 않는다. |
 | Todo 오프라인 큐 | `src/lib/offlineTodoQueue.ts`, `/api/offline/todos/:id` | 부분 오프라인 동기화 유지; 전체 오프라인 앱이라고 소개하지 않음 |
 
 공통 API는 `worker/index.ts`에서 등록된 Todo, 프로젝트, 메모, 캘린더, 설정, Routine, 낙서장, 휴지통, 백업 라우트입니다.

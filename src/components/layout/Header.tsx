@@ -2,6 +2,7 @@ import { AlertCircle, CalendarCheck2, Github, LogOut, Plus, Search, UserRound } 
 import { useRef } from "react";
 import { useDismissibleDetails } from "../../hooks/useDismissibleDetails";
 import { Button } from "../ui/Button";
+import { HeaderTimer } from "../timer/HeaderTimer";
 
 const REPOSITORY_URL = "https://github.com/guseoh/dark-todo-planner";
 
@@ -27,6 +28,7 @@ export function Header({ storageStatus = "server", onLogout, onQuickAdd, onSearc
             </div>
             <h1 className="truncate text-base font-bold text-ink-100">Todo Planner</h1>
           </div>
+          <HeaderTimer />
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
           {storageStatus === "offline" ? (

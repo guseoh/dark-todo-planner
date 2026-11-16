@@ -10,6 +10,7 @@ import { Header } from "./components/layout/Header";
 import { Sidebar, type AppView } from "./components/layout/Sidebar";
 import { DayCloseModal, type DayCloseDecision } from "./components/today/DayCloseModal";
 import { TodoForm } from "./components/todo/TodoForm";
+import { TimeTrackingContext, useTimeTrackingController } from "./components/timer/TimeTrackingContext";
 import { TodoQuickActionsProvider, type TodoSnoozeTarget } from "./components/todo/TodoQuickActionsContext";
 import { usePlannerData } from "./hooks/usePlannerData";
 import { getPlannerToday, parseDateKey, todayKey, toDateKey } from "./lib/date";
@@ -45,6 +46,13 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
   const todoUndoTimerRef = useRef<number | null>(null);
   const lastPlannerDayRef = useRef(getPlannerToday());
   const planner = usePlannerData();
+  const timeTracking = useTimeTrackingController();
+  const { active: activeTimer, stop: stopTimer, notice: timerNotice, clearNotice: clearTimerNotice } = timeTracking;
+  useEffect(() => {
+    if (!timerNotice) return;
+    const timeout = window.setTimeout(clearTimerNotice, 7000);
+    return () => window.clearTimeout(timeout);
+  }, [timerNotice, clearTimerNotice]);
 
   useEffect(() => {
     // pushState doesn't emit popstate: clicks update state immediately, while
@@ -213,6 +221,8 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
     const completed = !before.completed;
     const toggled = await planner.toggleTodo(id);
     if (!toggled) return false;
+    // Finishing the Todo that is being timed ends its measurement.
+    if (completed && activeTimer?.todoId === id) void stopTimer();
     registerTodoUndo([{ id, updates: { completed: before.completed, workflowStatus: before.workflowStatus } }], completed ? `“${before.title}”을 완료 처리했습니다.` : `“${before.title}”을 미완료로 되돌렸습니다.`);
     return true;
   };
@@ -320,6 +330,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
   };
 
   return (
+    <TimeTrackingContext.Provider value={timeTracking}>
     <TodoQuickActionsProvider snoozeTodo={snoozeTodo} projects={planner.projects} categories={planner.categories}>
       <div className="min-h-screen pb-20 sm:pb-0">
         <Header storageStatus={planner.connectionError ? "offline" : "server"} onLogout={onLogout} onQuickAdd={openQuickAdd} onSearch={openSearch} activeView={activeView} />
@@ -358,8 +369,15 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
               <dt>e</dt><dd>수정</dd>
               <dt>Delete</dt><dd>삭제</dd>
               <dt>f</dt><dd>오늘 화면에서 집중 작업에 넣기 / 빼기</dd>
+              <dt>s</dt><dd>이 할 일의 시간 측정 시작 / 정지</dd>
             </dl>
           </Modal>
+        ) : null}
+
+        {timerNotice ? (
+          <div className="fixed bottom-20 left-1/2 z-[90] w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 lg:bottom-4" role="status" aria-live="polite">
+            <div className={undoToastClass}><p className="min-w-0">{timerNotice}</p><button type="button" className="btn-secondary shrink-0 px-2.5 text-xs" onClick={clearTimerNotice}>확인</button></div>
+          </div>
         ) : null}
 
         {pendingTodoUndo || pendingDelete || planner.pendingMemoDelete ? (
@@ -374,6 +392,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
         ) : null}
       </div>
     </TodoQuickActionsProvider>
+    </TimeTrackingContext.Provider>
   );
 }
 
