@@ -15,6 +15,8 @@ import type { Goal } from "../../types/goal";
 import type { Milestone, Project } from "../../types/project";
 import { DAY_STATUS_GOAL_TITLE, getDayStatusGoal } from "../../lib/goals";
 import { MonthlyCalendar } from "../monthly/MonthlyCalendar";
+import { useTimeTracking } from "../timer/TimeTrackingContext";
+import { useMeasuredByDate } from "../../hooks/useTimeEntries";
 import { MonthlySidePanel } from "../monthly/MonthlySidePanel";
 
 type MonthlyViewProps = {
@@ -81,6 +83,8 @@ export function MonthlyView({
     return () => window.removeEventListener("keydown", onEscape);
   }, [panelOpen]);
   const monthDays = useMemo(() => getMonthGrid(currentMonth), [currentMonth]);
+  const dailyGoalMinutes = useTimeTracking()?.dailyGoalMinutes ?? 0;
+  const measuredMsByDate = useMeasuredByDate(toDateKey(monthDays[0]), toDateKey(monthDays[monthDays.length - 1]));
   const events = useMemo(() => buildCalendarEvents(todos, projects, milestones, categories), [todos, projects, milestones, categories]);
   const eventsByDate = useMemo(() => groupCalendarEvents(events, visibility), [events, visibility]);
   const selectedEvents = eventsByDate.get(selectedDate) ?? [];
@@ -177,6 +181,8 @@ export function MonthlyView({
         <MonthlyCalendar
           currentMonth={currentMonth}
           monthDays={monthDays}
+          measuredMsByDate={measuredMsByDate}
+          dailyGoalMinutes={dailyGoalMinutes}
           selectedDate={selectedDate}
           goals={goals}
           eventsByDate={eventsByDate}

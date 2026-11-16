@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
+import { useDailyReflection } from "../../hooks/useDailyReflection";
 import { useTimeEntries } from "../../hooks/useTimeEntries";
 import { formatDuration, clockLabel, entryCategoryName, entryColor, intervalOnDay, totalMs, totalsByCategory, activeAsEntry } from "../../lib/timeTracking";
 import { formatKoreanDate, todayKey } from "../../lib/date";
@@ -19,6 +20,8 @@ export function DayTimeline({ date, categories }: { date: string; categories: Ca
   const active = timer?.active ?? null;
   const now = useNowMs(Boolean(active));
   const isToday = date === todayKey();
+  const reflection = useDailyReflection(date);
+  const goalMinutes = timer?.dailyGoalMinutes ?? 0;
 
   const all = useMemo(
     () => active && isToday ? [...entries, activeAsEntry(active, now + (timer?.offsetMs ?? 0))] : entries,
@@ -42,6 +45,12 @@ export function DayTimeline({ date, categories }: { date: string; categories: Ca
         <button type="button" className="btn-secondary text-xs" onClick={() => setEditing("new")}><Plus size={14} />기록 추가</button>
       </div>
 
+      {goalMinutes > 0 && total ? (
+        <p className={`text-xs ${total >= goalMinutes * 60_000 ? "font-semibold text-success" : "text-ui-secondary"}`}>
+          일일 목표 {formatDuration(goalMinutes * 60_000)} 중 {Math.round(total / (goalMinutes * 60_000) * 100)}%{total >= goalMinutes * 60_000 ? " · 달성" : ""}
+        </p>
+      ) : null}
+      {reflection.content ? <p className="border-l-2 border-ui-divider pl-3 text-sm italic text-ui-secondary" aria-label="하루 회고">{reflection.content}</p> : null}
       {totals.length ? (
         <ul className="day-timeline__totals" aria-label="카테고리별 측정 시간">
           {totals.map((item) => (

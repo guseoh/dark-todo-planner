@@ -412,18 +412,24 @@ export function useTodos() {
 
   // Reorder only the visible subset; retain the relative position of every other Todo.
   // Normalize all saved order values in one request so category/date views stay consistent.
+  // Reorder may run right after another save (e.g. a board drop that also changes the lane).
+  // Read the latest list instead of the render this callback was created in, and only touch
+  // sort orders, so it can never overwrite a status change that landed in between.
+  const allTodosRef = useRef(allTodos);
+  allTodosRef.current = allTodos;
   const reorderTodos = useCallback(async (visibleIds: string[]): Promise<boolean> => {
     if (new Set(visibleIds).size !== visibleIds.length || visibleIds.length < 2) return false;
-    const ordered = [...allTodos].sort((a, b) =>
+    const latest = allTodosRef.current;
+    const ordered = [...latest].sort((a, b) =>
       (a.order ?? 0) - (b.order ?? 0) || b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id));
     const target = new Set(visibleIds);
     if (ordered.filter((todo) => target.has(todo.id)).length !== visibleIds.length) return false;
 
     let nextIndex = 0;
     const ids = ordered.map((todo) => target.has(todo.id) ? visibleIds[nextIndex++] : todo.id);
-    const before = allTodos;
-    const byId = new Map(allTodos.map((todo) => [todo.id, todo]));
-    setAllTodos(ids.map((id, index) => ({ ...byId.get(id)!, order: index })));
+    const previousOrder = new Map(latest.map((todo) => [todo.id, todo.order]));
+    const nextOrder = new Map(ids.map((id, index) => [id, index]));
+    setAllTodos((current) => current.map((todo) => nextOrder.has(todo.id) ? { ...todo, order: nextOrder.get(todo.id) } : todo));
     setSaving(true);
     try {
       if (shouldQueueTodoMutation()) throw new Error("순서 변경은 온라인에서만 저장할 수 있습니다.");
@@ -431,13 +437,13 @@ export function useTodos() {
       setError("");
       return true;
     } catch (err) {
-      setAllTodos(before);
+      setAllTodos((current) => current.map((todo) => previousOrder.has(todo.id) ? { ...todo, order: previousOrder.get(todo.id) } : todo));
       setError(getMessage(err));
       return false;
     } finally {
       setSaving(false);
     }
-  }, [allTodos]);
+  }, []);
 
   const toggleTodo = useCallback(async (id: string) => {
     const existing = allTodos.find((todo) => todo.id === id);

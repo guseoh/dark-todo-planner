@@ -258,5 +258,6 @@ export function usePlannerData() {
     updateProjectDecision: projectsState.updateDecision,
     deleteProjectDecision: projectsState.deleteDecision,
     savePlannerSettings: settingsState.saveSettings,
+    patchPlannerPreferences: settingsState.patchPreferences,
   };
 }

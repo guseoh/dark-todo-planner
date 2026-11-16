@@ -8,6 +8,8 @@ export type ProjectSwitcherItem = {
   done: number;
   total: number;
   color: string;
+  /** Cumulative measured time, e.g. "12시간 30분". */
+  trackedLabel?: string;
 };
 
 type Props = {
@@ -91,7 +93,7 @@ export function ProjectSwitcher({ items, selectedId, onSelect }: Props) {
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm text-ui-text">{item.name}</span>
                   <span className="project-switcher__meta">
-                    {item.statusLabel} · {item.done}/{item.total}
+                    {item.statusLabel} · {item.done}/{item.total}{item.trackedLabel ? ` · ${item.trackedLabel}` : ""}
                     <span className="project-switcher__bar" aria-hidden="true"><i style={{ width: item.total ? `${item.done / item.total * 100}%` : 0, backgroundColor: item.color }} /></span>
                   </span>
                 </span>

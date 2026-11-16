@@ -18,13 +18,16 @@ export type TimeTracking = {
   stop: () => Promise<boolean>;
   reload: () => Promise<void>;
   bump: () => void;
+  /** Daily goal in minutes (0 = none), stored in planner settings. */
+  dailyGoalMinutes: number;
+  setDailyGoalMinutes: (minutes: number) => Promise<boolean>;
 };
 
 export const TimeTrackingContext = createContext<TimeTracking | null>(null);
 /** Null outside the provider (e.g. isolated component tests) — callers render nothing then. */
 export const useTimeTracking = () => useContext(TimeTrackingContext);
 
-export function useTimeTrackingController(): TimeTracking {
+export function useTimeTrackingController(goal: { dailyGoalMinutes: number; onChangeGoal: (minutes: number) => Promise<boolean> }): TimeTracking {
   const [active, setActive] = useState<ActiveTimer | null>(null);
   const [offsetMs, setOffsetMs] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -93,5 +96,7 @@ export function useTimeTrackingController(): TimeTracking {
     active, offsetMs, busy, version, notice, reload, start, stop,
     clearNotice: () => setNotice(""),
     bump: () => setVersion((value) => value + 1),
+    dailyGoalMinutes: goal.dailyGoalMinutes,
+    setDailyGoalMinutes: goal.onChangeGoal,
   };
 }

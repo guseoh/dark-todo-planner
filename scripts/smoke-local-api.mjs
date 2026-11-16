@@ -148,7 +148,36 @@ try {
   assert.equal(listed.filter((entry) => entry.title === "Local night session").length, 2);
   for (const entry of night) expectStatus(await request("/api/time-entries/" + entry.id, "DELETE"), 200, "Remove isolated time entry");
 
-  console.log("LOCAL E2E PASS: auth, CRUD, trash recovery, atomic backup, Today focus, time block scheduling, and time tracking.");
+  // Project deletion, saved preferences (time goal + kanban WIP limits), daily reflection and per-project time totals.
+  const created1 = expectStatus(await request("/api/projects", "POST", { name: "Local delete project", status: "ACTIVE" }), 201, "Create project to delete").project;
+  expectStatus(await request("/api/projects/" + created1.id, "DELETE"), 200, "Delete project");
+  assert.equal(expectStatus(await request("/api/projects"), 200, "List projects after delete").projects.some((item) => item.id === created1.id), false);
+  expectStatus(await request("/api/projects/" + created1.id, "DELETE"), 404, "Deleting a missing project is a 404");
+
+  const tracked = expectStatus(await request("/api/projects", "POST", { name: "Local tracked project", status: "ACTIVE" }), 201, "Create tracked project").project;
+  const prefs = expectStatus(await request("/api/planner-settings", "PATCH", { dailyGoalMinutes: 240, wipLimits: { [tracked.id]: { TODO: 3 } } }), 200, "Save preferences").plannerSettings;
+  assert.equal(prefs.dailyGoalMinutes, 240);
+  assert.deepEqual(prefs.wipLimits[tracked.id], { TODO: 3 });
+  expectStatus(await request("/api/planner-settings", "PATCH", { wipLimits: { [tracked.id]: { TODO: 0 } } }), 400, "Reject a zero WIP limit");
+  expectStatus(await request("/api/planner-settings", "PATCH", {}), 400, "Reject an empty preferences patch");
+  assert.equal(expectStatus(await request("/api/planner-settings"), 200, "Reload settings").plannerSettings.dailyGoalMinutes, 240);
+  expectStatus(await request("/api/planner-settings", "PATCH", { dailyGoalMinutes: 0, wipLimits: {} }), 200, "Reset preferences");
+
+  expectStatus(await request("/api/reflections/daily/2025-01-03", "PUT", { content: "Local reflection" }), 200, "Save daily reflection");
+  const notes = expectStatus(await request("/api/reflections?from=2025-01-03&to=2025-01-03"), 200, "Read daily reflection").reflections;
+  assert.deepEqual(notes.map((note) => note.content), ["Local reflection"]);
+  expectStatus(await request("/api/reflections/daily/2025-01-03", "PUT", { content: "" }), 200, "Clear daily reflection");
+  assert.equal(expectStatus(await request("/api/reflections?from=2025-01-03&to=2025-01-03"), 200, "Reflection cleared").reflections.length, 0);
+
+  const trackedTodo = expectStatus(await request("/api/todos", "POST", { title: "Local tracked todo", date: today, planningState: "SCHEDULED", projectId: tracked.id }), 201, "Create tracked Todo").todo;
+  const hour = expectStatus(await request("/api/time-entries", "POST", { todoId: trackedTodo.id, startedAt: "2025-01-05T01:00:00.000Z", endedAt: "2025-01-05T02:30:00.000Z" }), 201, "Measure time on a project Todo").timeEntries;
+  const summary = expectStatus(await request("/api/time-summary?from=2025-01-05&to=2025-01-05"), 200, "Summarize time by project");
+  assert.equal(summary.byProject.find((row) => row.projectId === tracked.id)?.minutes, 90);
+  for (const entry of hour) expectStatus(await request("/api/time-entries/" + entry.id, "DELETE"), 200, "Remove tracked entry");
+  expectStatus(await request("/api/todos/" + trackedTodo.id, "DELETE"), 200, "Remove tracked Todo");
+  expectStatus(await request("/api/projects/" + tracked.id, "DELETE"), 200, "Remove tracked project");
+
+  console.log("LOCAL E2E PASS: auth, CRUD, trash recovery, atomic backup, Today focus, time block scheduling, time tracking, project deletion, preferences, and reflections.");
 } finally {
   if (created) {
     // Only loopback URLs can reach this cleanup path.
