@@ -235,9 +235,9 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
     setDetachTarget(todo);
     setDetachFailed(false);
   }, []);
-  const moveTodo = (todo: Todo, workflowStatus: TodoWorkflowStatus) => {
-    void onUpdateTodo(todo.id, { workflowStatus, completed: workflowStatus === "DONE" });
-  };
+  const moveTodoAsync = async (todo: Todo, workflowStatus: TodoWorkflowStatus): Promise<boolean> =>
+    Boolean(await onUpdateTodo(todo.id, { workflowStatus, completed: workflowStatus === "DONE" }));
+  const moveTodo = (todo: Todo, workflowStatus: TodoWorkflowStatus) => { void moveTodoAsync(todo, workflowStatus); };
   const detach = async (includeChildren: boolean) => {
     if (!detachTarget || detaching) return;
     setDetaching(true);
@@ -325,7 +325,7 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
   }, []);
   const onDragCancel = useCallback(() => setActiveDragId(null), []);
 
-  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+  const handleDragEnd = async ({ active, over }: DragEndEvent) => {
     setActiveDragId(null);
     const overId = typeof over?.id === "string" ? over.id : "";
     const todo = indexed.todoById.get(String(active.id));
@@ -342,9 +342,12 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
     } else return;
     if (!workflowColumns.some((column) => column.status === nextStatus)) return;
     const statusChanged = statusOf(todo) !== nextStatus;
-    if (statusChanged) moveTodo(todo, nextStatus);
     // Dropping on a card also fixes the position, unless the board is auto-sorted or grouped.
-    if (!beforeId || sortPriority || groupByMilestone) return;
+    const reposition = Boolean(beforeId) && !sortPriority && !groupByMilestone;
+    // The lane change is optimistic; only reposition after the server accepted it, so a rejected
+    // move keeps its error message and never reorders a card that is back in its old lane.
+    if (statusChanged && !await moveTodoAsync(todo, nextStatus)) return;
+    if (!reposition || !beforeId) return;
     const column = visibleByStatus.get(nextStatus) ?? [];
     const oldIndex = column.findIndex(({ id }) => id === todo.id);
     const targetIndex = column.findIndex(({ id }) => id === beforeId);
