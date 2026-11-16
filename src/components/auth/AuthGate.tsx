@@ -1,6 +1,7 @@
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { CalendarCheck2 } from "lucide-react";
 import { api, ApiError, jsonBody } from "../../lib/api/client";
+import { clearBootstrap, startBootstrap } from "../../lib/api/bootstrap";
 
 type Session = { authenticated: boolean; username?: string };
 export function AuthGate({ children }: { children: (logout: () => Promise<void>) => ReactNode }) {
@@ -26,6 +27,7 @@ export function AuthGate({ children }: { children: (logout: () => Promise<void>)
       const next = await api<Session>("/api/auth/login", { method: "POST", ...jsonBody({ username, password }) });
       setPassword("");
       setLogoutError("");
+      void startBootstrap();
       setSession(next);
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : "로그인에 실패했습니다.");
@@ -38,6 +40,7 @@ export function AuthGate({ children }: { children: (logout: () => Promise<void>)
     setLogoutError("");
     try {
       await api("/api/auth/logout", { method: "POST" });
+      clearBootstrap();
       setSession({ authenticated: false });
     } catch (cause) {
       const message = cause instanceof ApiError ? cause.message : "서버에 연결하지 못했습니다.";

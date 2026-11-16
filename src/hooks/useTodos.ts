@@ -12,7 +12,7 @@ import {
   shouldQueueTodoMutation,
   type QueuedTodoMutation,
 } from "../lib/offlineTodoQueue";
-import { calculateRate, priorityRank, todoOccursOnDate } from "../lib/todo";
+import { calculateRate, priorityRank, sortTodosByOrder, todoOccursOnDate } from "../lib/todo";
 import { replayQueuedTodoMutations } from "../lib/offlineTodoOverlay";
 import {
   dedupeTodosById,
@@ -137,9 +137,10 @@ export function useTodos() {
       const visible = replayQueuedTodoMutations(loaded, await listTodoMutations()).map((todo) =>
         pendingUpdateRef.current.get(todo.id) ?? todo
       );
-      setAllTodos(visible);
+      const ordered = sortTodosByOrder(visible);
+      setAllTodos(ordered);
       setError("");
-      return visible;
+      return ordered;
     } catch (err) {
       setError(getMessage(err));
       throw err;
@@ -186,7 +187,8 @@ export function useTodos() {
       const mutation: QueueMutationInput = { kind: "CREATE", method: "PUT", path: `/api/offline/todos/${clientId}`, body };
       const result = await runQueueableMutation<{ todo: Todo }>(mutation, () => api<{ todo: Todo }>(mutation.path, { method: "PUT", ...jsonBody(body) }));
       const todo = result.queued ? optimistic : result.data!.todo;
-      setAllTodos((current) => [todo, ...current.filter((item) => item.id !== todo.id)]);
+      // Same order the server returns on reload, so a new Todo does not jump position later.
+      setAllTodos((current) => sortTodosByOrder([todo, ...current.filter((item) => item.id !== todo.id)]));
       setError("");
       return todo;
     } catch (err) {
@@ -432,7 +434,8 @@ export function useTodos() {
     const ids = ordered.map((todo) => target.has(todo.id) ? visibleIds[nextIndex++] : todo.id);
     const previousOrder = new Map(latest.map((todo) => [todo.id, todo.order]));
     const nextOrder = new Map(ids.map((id, index) => [id, index]));
-    setAllTodos((current) => current.map((todo) => nextOrder.has(todo.id) ? { ...todo, order: nextOrder.get(todo.id) } : todo));
+    // Lists render in array order, so the array is re-sorted along with the new order values.
+    setAllTodos((current) => sortTodosByOrder(current.map((todo) => nextOrder.has(todo.id) ? { ...todo, order: nextOrder.get(todo.id) } : todo)));
     setSaving(true);
     try {
       if (shouldQueueTodoMutation()) throw new Error("순서 변경은 온라인에서만 저장할 수 있습니다.");
@@ -442,7 +445,7 @@ export function useTodos() {
       setError("");
       return true;
     } catch (err) {
-      setAllTodos((current) => current.map((todo) => previousOrder.has(todo.id) ? { ...todo, order: previousOrder.get(todo.id) } : todo));
+      setAllTodos((current) => sortTodosByOrder(current.map((todo) => previousOrder.has(todo.id) ? { ...todo, order: previousOrder.get(todo.id) } : todo)));
       setError(getMessage(err));
       return false;
     } finally {

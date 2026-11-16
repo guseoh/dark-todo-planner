@@ -118,6 +118,9 @@ export const clearSessionCookie = (context: Parameters<typeof deleteCookie>[0]) 
   sameSite: "Strict",
 });
 
+/** The single user row only needs to exist once per Worker instance; writing it on every request cost one D1 write each. */
+let userRowEnsured = false;
+
 export const requireAuth: MiddlewareHandler<{ Bindings: Bindings; Variables: Variables }> = async (context, next) => {
   const authenticated = await verifySessionToken(
     getCookie(context, SESSION_COOKIE),
@@ -130,8 +133,11 @@ export const requireAuth: MiddlewareHandler<{ Bindings: Bindings; Variables: Var
   }
 
   context.set("userId", USER_ID);
-  const now = new Date().toISOString();
-  await context.env.DB.prepare("INSERT OR IGNORE INTO users (id, email, nickname, created_at, updated_at) VALUES (?, ?, ?, ?, ?)")
-    .bind(USER_ID, "single-user@dark-todo-planner.local", "개인 사용자", now, now).run();
+  if (!userRowEnsured) {
+    const now = new Date().toISOString();
+    await context.env.DB.prepare("INSERT OR IGNORE INTO users (id, email, nickname, created_at, updated_at) VALUES (?, ?, ?, ?, ?)")
+      .bind(USER_ID, "single-user@dark-todo-planner.local", "개인 사용자", now, now).run();
+    userRowEnsured = true;
+  }
   await next();
 };

@@ -19,6 +19,12 @@ export const priorityClassName: Record<TodoPriority, string> = {
   LOW: "border-ink-700/60 bg-ink-900/50 text-ink-400",
 };
 
+/** The order the API returns Todos in: saved order, then newest first, then id. */
+export const compareTodoOrder = (a: Todo, b: Todo) =>
+  (a.order ?? 0) - (b.order ?? 0) || b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id);
+
+export const sortTodosByOrder = (todos: readonly Todo[]): Todo[] => [...todos].sort(compareTodoOrder);
+
 export const calculateRate = (todos: Todo[]) => {
   if (todos.length === 0) return 0;
   return Math.round((todos.filter((todo) => todo.completed).length / todos.length) * 100);

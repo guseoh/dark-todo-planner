@@ -5,8 +5,11 @@ import { AuthGate } from "./components/auth/AuthGate";
 import { OfflineSyncIndicator } from "./components/common/OfflineSyncIndicator";
 import "./styles/globals.css";
 import { initializeTheme } from "./lib/theme";
+import { startBootstrap } from "./lib/api/bootstrap";
 
 initializeTheme();
+// Fetch the first-screen data while the session check is still in flight.
+void startBootstrap();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

@@ -118,8 +118,8 @@ export function WeeklyTimetable({ dates, selectedDate, todos, projects, onSelect
     void api<{ timeBlocks: TimeBlock[] }>(`/api/time-blocks?from=${weekStart}&to=${shiftDate(weekEnd, 1)}`)
       .then(({ timeBlocks }) => { if (live) { setBlocks(timeBlocks); setLoadedWeek(weekStart); } })
       .catch(() => { if (live) setError("시간 블록을 불러오지 못했습니다."); });
-    // Re-render every second only while a timer runs; otherwise once a minute is enough.
-    const timerId = window.setInterval(() => setNow(new Date()), active ? 1000 : 60_000);
+    // The grid shows minutes: a running timer refreshes it every 15s instead of redrawing the whole week each second.
+    const timerId = window.setInterval(() => setNow(new Date()), active ? 15_000 : 60_000);
     return () => { live = false; window.clearInterval(timerId); };
   }, [visible, weekStart, weekEnd, active]);
 

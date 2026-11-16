@@ -55,6 +55,7 @@
     },
     "production": {
       "name": "dark-todo-planner",
+      "placement": { "mode": "smart" },
       "triggers": {
         "crons": ["0 12 * * *", "*/5 * * * *"]
       },

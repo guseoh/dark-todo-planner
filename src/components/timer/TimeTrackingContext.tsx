@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { api, jsonBody } from "../../lib/api/client";
 import type { ActiveTimer, TimeEntry } from "../../types/timeTracking";
 
@@ -92,11 +92,15 @@ export function useTimeTrackingController(goal: { dailyGoalMinutes: number; onCh
     return true;
   }), [run]);
 
-  return {
-    active, offsetMs, busy, version, notice, reload, start, stop,
-    clearNotice: () => setNotice(""),
-    bump: () => setVersion((value) => value + 1),
-    dailyGoalMinutes: goal.dailyGoalMinutes,
-    setDailyGoalMinutes: goal.onChangeGoal,
-  };
+  // The value is shared by every Todo row, so it must keep its identity between unrelated App renders.
+  const goalRef = useRef(goal);
+  goalRef.current = goal;
+  const setDailyGoalMinutes = useCallback((minutes: number) => goalRef.current.onChangeGoal(minutes), []);
+  const clearNotice = useCallback(() => setNotice(""), []);
+  const bump = useCallback(() => setVersion((value) => value + 1), []);
+
+  return useMemo(() => ({
+    active, offsetMs, busy, version, notice, reload, start, stop, clearNotice, bump,
+    dailyGoalMinutes: goal.dailyGoalMinutes, setDailyGoalMinutes,
+  }), [active, offsetMs, busy, version, notice, reload, start, stop, clearNotice, bump, goal.dailyGoalMinutes, setDailyGoalMinutes]);
 }
