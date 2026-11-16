@@ -3,6 +3,7 @@ import { useEffect, useState, type ComponentProps } from "react";
 import { api, jsonBody } from "../../lib/api/client";
 import { getWeekDays, getWeekRange, parseDateKey, toDateKey, todayKey, weekdayLabels } from "../../lib/date";
 import type { Todo } from "../../types/todo";
+import { GithubGrassCard } from "../activity/GithubGrassCard";
 import { GoalChecklist } from "../goal/GoalChecklist";
 import type { Routine } from "../settings/RoutinePanel";
 
@@ -24,11 +25,14 @@ export function TodayPlanningRail({ todos, goals, dueSoonDays, onAddGoal, onUpda
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [running, setRunning] = useState("");
   const [error, setError] = useState("");
+  // The rail is only displayed from 1280px; skip its network work below that.
+  const [wide, setWide] = useState(() => window.matchMedia("(min-width: 1280px)").matches);
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1280px)");
     let live = true;
     const load = () => {
+      setWide(media.matches);
       if (!media.matches) return;
       void api<{ routines: Routine[] }>("/api/routines")
         .then((result) => { if (live) setRoutines(result.routines); })
@@ -81,18 +85,19 @@ export function TodayPlanningRail({ todos, goals, dueSoonDays, onAddGoal, onUpda
       </section>
       <GoalChecklist title="주간 목표" type="WEEKLY" addDefaults={{ weekStartDate: start, weekEndDate: end, dueDate: end }}
         goals={goals.filter((goal) => goal.type === "WEEKLY" && (!goal.weekStartDate || goal.weekStartDate <= end) && (!goal.weekEndDate || goal.weekEndDate >= start))}
-        placeholder="주간 목표 추가" emptyTitle="주간 목표가 없습니다." onAdd={onAddGoal}
+        placeholder="주간 목표 추가" emptyTitle="이번 주 목표가 아직 없습니다." layout="stacked" onAdd={onAddGoal}
         onUpdate={onUpdateGoal} onToggle={onToggleGoal} onDelete={onDeleteGoal} />
-      <section aria-label="곧 마감">
-        <h2>곧 마감</h2>
-        <ul className="space-y-1">
-          {dueSoon.map(({ todo, days }) => <li key={todo.id} className="flex gap-2 text-xs">
-            <span className="min-w-0 flex-1 truncate" title={todo.title}>{todo.title}</span>
-            <span className={days <= 1 ? "text-warning" : "text-ui-muted"}>{days === 0 ? "D-Day" : `D-${days}`}</span>
-          </li>)}
-        </ul>
-        {!dueSoon.length ? <p className="text-xs text-ui-muted">임박한 마감이 없습니다.</p> : null}
-      </section>
+      {dueSoon.length ? (
+        <section aria-label="곧 마감">
+          <h2>곧 마감</h2>
+          <ul className="space-y-1">
+            {dueSoon.map(({ todo, days }) => <li key={todo.id} className="flex gap-2 text-xs">
+              <span className="min-w-0 flex-1 truncate" title={todo.title}>{todo.title}</span>
+              <span className={days <= 1 ? "text-warning" : "text-ui-muted"}>{days === 0 ? "D-Day" : `D-${days}`}</span>
+            </li>)}
+          </ul>
+        </section>
+      ) : null}
       <section aria-label="루틴 묶음">
         <h2>루틴 묶음</h2>
         <ul className="space-y-1">
@@ -102,9 +107,14 @@ export function TodayPlanningRail({ todos, goals, dueSoonDays, onAddGoal, onUpda
               onClick={() => void runRoutine(routine)}>{routine.lastRunDate === today ? "완료" : "불러오기"}</button>
           </li>)}
         </ul>
-        {!routines.length && !error ? <p className="text-xs text-ui-muted">저장된 루틴이 없습니다.</p> : null}
+        {!routines.length && !error ? (
+          <p className="text-xs text-ui-muted">
+            저장된 루틴이 없습니다. <a className="underline underline-offset-2 hover:text-ui-text" href="#/settings">설정에서 만들기</a>
+          </p>
+        ) : null}
         {error ? <p role="alert" className="text-xs text-danger">{error}</p> : null}
       </section>
+      {wide ? <GithubGrassCard /> : null}
     </aside>
   );
 }

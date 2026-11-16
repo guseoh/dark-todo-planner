@@ -297,7 +297,7 @@ export function TodayPage({
         <div className="today-header__identity">
           <h1 className="xl:hidden">오늘</h1>
           <span className="xl:hidden">{formatKoreanDate(today, "M월 d일 EEEE")}</span>
-          {toDateKey(new Date()) === today ? <span className="hidden xl:inline">오늘 · 새벽 3시 기준</span> : null}
+          {toDateKey(new Date()) === today ? <span className="hidden xl:inline" title={`하루는 새벽 ${PLANNER_DAY_START_HOUR}시에 바뀝니다.`}>오늘 · 새벽 {PLANNER_DAY_START_HOUR}시에 하루가 바뀝니다</span> : null}
           <h1 className="hidden xl:block">{formatKoreanDate(today, "M월 d일 EEEE")}</h1>
           {toDateKey(new Date()) !== today ? (
             <span className="today-header__day-start" title={`하루는 새벽 ${PLANNER_DAY_START_HOUR}시에 시작합니다. 그 전까지는 전날 일정으로 표시됩니다.`}>
@@ -306,16 +306,17 @@ export function TodayPage({
           ) : null}
         </div>
         <div className="today-header__status" role="group" aria-label="오늘 작업 현황">
-          <div className="today-desktop-progress">
-            <span className="today-header__completion">진행 <strong>{stats.todayCompleted}</strong> / {stats.todayTotal}</span>
-            <progress aria-label="오늘 진행률" max={Math.max(1, stats.todayTotal)} value={stats.todayCompleted} />
-          </div>
+          {stats.todayTotal > 0 ? (
+            <div className="today-desktop-progress">
+              <span className="today-header__completion">진행 <strong>{stats.todayCompleted}</strong> / {stats.todayTotal}</span>
+              <progress aria-label="오늘 진행률" max={stats.todayTotal} value={stats.todayCompleted} />
+            </div>
+          ) : null}
           <button type="button" className="today-plan-toggle" aria-label="오늘 계획하기"
             aria-expanded={planningOpen} aria-controls={planningOpen ? "today-plan-panel" : undefined}
             onClick={() => setPlanningOpen((open) => !open)}>
             <PanelRightOpen size={15} aria-hidden="true" />
             계획하기
-            {overdueTodos.length > 0 ? <span className="today-plan-toggle__count" aria-hidden="true">{overdueTodos.length}</span> : null}
           </button>
           {stats.todayActive > 0 && onOpenDayClose ? (
             <Button variant="warning" size="sm" className="today-header__action" onClick={onOpenDayClose}
@@ -335,9 +336,9 @@ export function TodayPage({
                 {oldestOverdueDate ? ` · ${formatKoreanDate(oldestOverdueDate, "M월 d일")}부터` : ""}
               </span>
               <div className="flex flex-wrap gap-1">
-                <button type="button" className="today-overdue-banner__action hidden xl:inline-flex" disabled={movingOverdue}
+                <button type="button" className="today-overdue-banner__action" disabled={movingOverdue}
                   onClick={() => void moveOverdue(toDateKey(addDays(parseDateKey(today), 1)))}>전부 내일로</button>
-                <button type="button" className="today-overdue-banner__action hidden xl:inline-flex" disabled={movingOverdue}
+                <button type="button" className="today-overdue-banner__action" disabled={movingOverdue}
                   onClick={() => void moveOverdue(today)}>전부 오늘로</button>
                 <button type="button" className="today-overdue-banner__action" onClick={() => setShowOverdueImport(true)}>지난 일정 검토</button>
               </div>
@@ -444,8 +445,10 @@ export function TodayPage({
                 )}
               </>
             ) : <div className="today-empty-state" role="status">
-              오늘 예정된 일이 없습니다. 새로 입력하거나 기존 작업에서 선택할 수 있습니다.
-              {!hasPlanningContent ? <a className="today-planning-panel__all-link block" href="#/all">전체 Todo에서 찾기</a> : null}
+              <p>오늘 예정된 일이 없습니다. 위에서 새로 입력하거나, 기존 작업을 오늘로 가져올 수 있습니다.</p>
+              {hasPlanningContent ? (
+                <button type="button" className="today-overdue-banner__action mt-2" onClick={() => setPlanningOpen(true)}>기존 작업에서 고르기</button>
+              ) : <a className="today-planning-panel__all-link block" href="#/all">전체 Todo에서 찾기</a>}
             </div>}
 
 
