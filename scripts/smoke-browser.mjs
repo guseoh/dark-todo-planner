@@ -1414,8 +1414,11 @@ try {
     await page.screenshot({ path: `test-artifacts/today-dense-${width}.png`, fullPage: true });
   }
   // Time tracking, kanban ordering, daily goal, day reflection and project deletion through the real UI.
-  // Runs last: the server allows 120 mutations per minute and the dense-Today fixtures above need 20 of them.
+  // Runs last, with a fresh budget: the server allows 120 mutations per minute, and everything above
+  // (including the 20 dense-Today fixtures) can still be inside that window on a fast CI runner, which
+  // made the later reorder request fail with HTTP 429. Wait for the window to drain first.
   // Measured entries use a fixed past date so the checks do not depend on the clock or the 03:00 boundary.
+  await sleep(61_000);
   await page.setViewportSize({ width: 1440, height: 900 });
   const flowTag = randomUUID().slice(0, 6);
   const flow = await page.evaluate(async ({ tag, date }) => {
