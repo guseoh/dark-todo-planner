@@ -1495,11 +1495,15 @@ try {
     return titles[titles.length - 1] === expected;
   }, secondTitle);
   const shownOrder = await flowTitles();
-  await sleep(600);
-  const storedOrder = await page.evaluate(async (ids) => {
+  const readStoredOrder = () => page.evaluate(async (ids) => {
     const todos = (await (await fetch("/api/todos?archived=all&limit=100", { credentials: "same-origin" })).json()).todos;
     return todos.filter((todo) => ids.includes(todo.id)).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((todo) => todo.title);
   }, flow.todos.map((todo) => todo.id));
+  let storedOrder = await readStoredOrder();
+  for (let attempt = 0; attempt < 30 && storedOrder.join() !== shownOrder.join(); attempt += 1) {
+    await sleep(200);
+    storedOrder = await readStoredOrder();
+  }
   assert.deepEqual(storedOrder, shownOrder, "Card order is saved on the server in the order shown.");
 
   // The project header shows the cumulative measured time, then the project can be deleted from the menu.
