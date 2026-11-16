@@ -79,11 +79,14 @@ export function parseGithubGraphqlCalendar(payload: unknown, now = new Date()): 
     total: days.reduce((sum, day) => sum + day.count, 0), fetchedAt: now.toISOString() };
 }
 
+/** A slow or silent GitHub must not leave the Today widget loading forever. */
+const UPSTREAM_TIMEOUT_MS = 8000;
+
 export async function fetchGithubActivity(githubToken?: string, now = new Date()): Promise<GithubActivity> {
   if (githubToken) {
     try {
       const response = await fetch("https://api.github.com/graphql", {
-        method: "POST",
+        method: "POST", signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
         headers: { Authorization: "Bearer " + githubToken, "Content-Type": "application/json",
           "User-Agent": "dark-todo-planner-activity" },
         body: JSON.stringify({ query: "query($login: String!) { user(login: $login) { contributionsCollection { contributionCalendar { weeks { contributionDays { date contributionCount contributionLevel } } } } } }", variables: { login: LOGIN } }),
@@ -93,6 +96,7 @@ export async function fetchGithubActivity(githubToken?: string, now = new Date()
   }
   const response = await fetch("https://github.com/users/" + LOGIN + "/contributions", {
     headers: { Accept: "text/html", "User-Agent": "dark-todo-planner-activity/1.0" },
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error("GitHub public contributions responded " + response.status);
   return parseGithubPublicCalendar(await response.text(), now);

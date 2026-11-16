@@ -417,6 +417,9 @@ export function useTodos() {
   // sort orders, so it can never overwrite a status change that landed in between.
   const allTodosRef = useRef(allTodos);
   allTodosRef.current = allTodos;
+  // Reorder requests are sent one at a time, so a quick second reorder can never reach the
+  // server before the first one and leave the older order stored.
+  const reorderChainRef = useRef<Promise<unknown>>(Promise.resolve());
   const reorderTodos = useCallback(async (visibleIds: string[]): Promise<boolean> => {
     if (new Set(visibleIds).size !== visibleIds.length || visibleIds.length < 2) return false;
     const latest = allTodosRef.current;
@@ -433,7 +436,9 @@ export function useTodos() {
     setSaving(true);
     try {
       if (shouldQueueTodoMutation()) throw new Error("순서 변경은 온라인에서만 저장할 수 있습니다.");
-      await api("/api/todos/reorder", { method: "PATCH", ...jsonBody({ ids }) });
+      const request = reorderChainRef.current.then(() => api("/api/todos/reorder", { method: "PATCH", ...jsonBody({ ids }) }));
+      reorderChainRef.current = request.catch(() => undefined);
+      await request;
       setError("");
       return true;
     } catch (err) {
