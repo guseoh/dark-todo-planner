@@ -37,7 +37,7 @@ export function AllTodosPage({
 }: AllTodosPageProps) {
   const [filters, setFilters] = useState<TodoFilters>(() => ({ ...defaultFilters, status: initialProjectId ? "ALL" : "ACTIVE", projectId: initialProjectId }));
   const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [selection, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [deleting, setDeleting] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [actionError, setActionError] = useState("");
@@ -47,8 +47,17 @@ export function AllTodosPage({
   const [workflowValue, setWorkflowValue] = useState<TodoWorkflowStatus>("TODO");
   const [priorityValue, setPriorityValue] = useState<TodoPriority>("MEDIUM");
   const filteredTodos = useMemo(() => filterTodos(filters), [filterTodos, filters]);
+  const selectedIds = useMemo(
+    () => new Set(filteredTodos.filter(({ id }) => selection.has(id)).map(({ id }) => id)),
+    [filteredTodos, selection],
+  );
   const unplannedCount = allTodos.filter((todo) => !todo.archived && todo.planningState === "INBOX").length;
   const showingUnplanned = filters.planningState === "INBOX";
+
+  const changeFilters = (next: TodoFilters) => {
+    setFilters(next);
+    setSelectedIds(new Set());
+  };
 
   const toggleSelectionMode = () => {
     if (deleting || updating) return;
@@ -132,7 +141,7 @@ export function AllTodosPage({
             type="button"
             className={`btn-secondary ${selectionMode ? "border-accent-500/45 bg-accent-500/10 text-accent-200" : ""}`}
             onClick={toggleSelectionMode}
-            disabled={allTodos.length === 0 || deleting || updating}
+            disabled={(!selectionMode && filteredTodos.length === 0) || deleting || updating}
           >
             {selectionMode ? <X size={15} /> : <ListChecks size={15} />}
             {selectionMode ? "선택 종료" : "선택 작업"}
@@ -140,19 +149,16 @@ export function AllTodosPage({
         }
       />
 
-      {!selectionMode ? <TodoForm key={filters.projectId} compact collapsible categories={categories} projects={projects.filter((project) => !project.archived)} defaultProjectId={filters.projectId || undefined} onAdd={onAddTodo} /> : null}
-
-      {unplannedCount > 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-ui-divider py-2.5">
-          <p className="text-sm text-ui-secondary">기존 미계획 Todo <strong className="font-semibold text-ui-text">{unplannedCount}개</strong> · 일정을 지정하기 전까지 그대로 보관됩니다.</p>
-          <button type="button" className="btn-secondary min-h-9 text-xs" aria-pressed={showingUnplanned} onClick={() => setFilters((current) => ({
-            ...current, planningState: showingUnplanned ? "ALL" : "INBOX", status: "ALL", archived: "ACTIVE",
-          }))}>{showingUnplanned ? "전체 보기" : `미계획 ${unplannedCount}개 보기`}</button>
-        </div>
-      ) : null}
       <div className="relative z-20 border-b border-ui-divider bg-ui-canvas py-2 lg:sticky lg:top-[60px]">
-        <TodoFilter filters={filters} onChange={(next) => { setFilters(next); setSelectedIds(new Set()); }} categories={categories} projects={projects} />
+        <TodoFilter filters={filters} onChange={changeFilters} categories={categories} projects={projects} />
+        {unplannedCount > 0 || showingUnplanned ? (
+          <button type="button" className="btn-secondary min-h-9 text-xs" aria-pressed={showingUnplanned} onClick={() => changeFilters({
+            ...filters, planningState: showingUnplanned ? "ALL" : "INBOX", status: "ALL", archived: "ACTIVE",
+          })}>{showingUnplanned ? "전체 보기" : `미계획 ${unplannedCount}개 보기`}</button>
+        ) : null}
       </div>
+
+      {!selectionMode ? <TodoForm key={filters.projectId} compact collapsible categories={categories} projects={projects.filter((project) => !project.archived)} defaultProjectId={filters.projectId || undefined} onAdd={onAddTodo} /> : null}
 
       {selectionMode ? (
         <section className="app-card py-3 sm:py-4" aria-label="Todo 선택 작업 도구">
@@ -251,6 +257,11 @@ export function AllTodosPage({
         onDeleteCategory={onDeleteCategory}
         emptyTitle="조건에 맞는 Todo가 없습니다."
         emptyDescription="검색·필터를 바꾸거나 새로운 Todo를 추가해보세요."
+        emptyAction={allTodos.length > 0 ? (
+          <button type="button" className="btn-secondary text-xs" onClick={() => changeFilters({ ...defaultFilters, archived: "ALL" })}>
+            모든 Todo 보기
+          </button>
+        ) : undefined}
         layout="list"
         showCategoryCreator={false}
         selectionMode={selectionMode}

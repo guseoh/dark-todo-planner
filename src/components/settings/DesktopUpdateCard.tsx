@@ -6,6 +6,7 @@ export function DesktopUpdateCard() {
   const [version, setVersion] = useState<string | null>();
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState("");
+  const [status, setStatus] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -19,10 +20,14 @@ export function DesktopUpdateCard() {
   const checkForUpdate = async () => {
     setChecking(true);
     setError("");
+    setStatus("");
     try {
-      await invoke<string>("desktop_update", { checkNow: true });
-    } catch {
-      setError("업데이트 확인을 시작할 수 없습니다. 트레이 메뉴에서 다시 시도하세요.");
+      const result = await invoke<string>("desktop_update", { checkNow: true });
+      if (result !== version) setStatus(result);
+    } catch (reason) {
+      setError(typeof reason === "string" && /[가-힣]/.test(reason)
+        ? reason
+        : "업데이트 확인을 시작할 수 없습니다. 트레이 메뉴에서 다시 시도하세요.");
     } finally {
       setChecking(false);
     }
@@ -51,6 +56,7 @@ export function DesktopUpdateCard() {
           </button>
         ) : null}
       </div>
+      <div role="status">{status ? <p className="mt-3 text-sm text-ui-secondary">{status}</p> : null}</div>
       {error ? <p className="mt-3 text-sm text-danger" role="alert">{error}</p> : null}
     </section>
   );

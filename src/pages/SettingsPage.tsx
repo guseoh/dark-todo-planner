@@ -125,6 +125,7 @@ export function SettingsPage({
 
       {section === "overview" ? (
       <div id="settings-panel-overview" role="tabpanel" aria-labelledby="settings-tab-overview" tabIndex={0} className="space-y-4">
+      {isTauri() ? <DesktopUpdateCard /> : null}
       <section className="work-section px-1 py-4" aria-labelledby="appearance-title">
         <h3 id="appearance-title" className="text-base font-semibold text-ui-text">화면 테마</h3>
         <p className="mt-1 text-sm text-ui-secondary">선택한 테마는 이 브라우저에 저장됩니다. 시스템 설정은 운영체제의 밝기 모드를 따릅니다.</p>
@@ -156,7 +157,7 @@ export function SettingsPage({
         </dl>
       </section>
 
-      {isTauri() ? <DesktopUpdateCard /> : <PwaInstallCard />}
+      {!isTauri() ? <PwaInstallCard /> : null}
       </div>
       ) : null}
 

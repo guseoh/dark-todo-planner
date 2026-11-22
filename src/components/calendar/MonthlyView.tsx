@@ -1,4 +1,5 @@
 import { UnscheduledCalendarTodos } from "./UnscheduledCalendarTodos";
+import { useDrawerFocus } from "../../hooks/useDrawerFocus";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, PanelRightOpen } from "lucide-react";
 import { TodoEditModal } from "../todo/TodoEditModal";
@@ -74,10 +75,14 @@ export function MonthlyView({
   const [moveFeedback, setMoveFeedback] = useState<{ kind: "error" | "success"; message: string } | null>(null);
   const [visibility, setVisibility] = useState<CalendarVisibility>(defaultCalendarVisibility);
   const selectedPanelRef = useRef<HTMLDivElement | null>(null);
+  useDrawerFocus(panelOpen, selectedPanelRef);
   useEffect(() => {
     if (!panelOpen) return;
     const onEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") { setPanelOpen(false); setQuickAdd(false); }
+      if (event.key === "Escape" && !event.defaultPrevented && !event.isComposing) {
+        setPanelOpen(false);
+        setQuickAdd(false);
+      }
     };
     window.addEventListener("keydown", onEscape);
     return () => window.removeEventListener("keydown", onEscape);
@@ -115,7 +120,6 @@ export function MonthlyView({
     onSelectDate(dateKey);
     setPanelOpen(true);
     setQuickAdd(false);
-    window.requestAnimationFrame(() => selectedPanelRef.current?.focus());
   };
 
   const openQuickAdd = (dateKey: string) => {
@@ -169,11 +173,10 @@ export function MonthlyView({
           ))}
         </div>
         <span className="hidden text-xs text-ui-muted xl:inline-flex"><span className="mr-1 text-success" aria-hidden="true">●</span>기록한 날</span>
-        {!panelOpen ? (
-          <button type="button" className="calendar-open-day btn-secondary min-h-9 text-xs" onClick={() => setPanelOpen(true)}>
-            <PanelRightOpen size={15} /> 선택한 날짜 보기
-          </button>
-        ) : null}
+        <button type="button" className="calendar-open-day btn-secondary min-h-9 text-xs"
+          aria-expanded={panelOpen} aria-controls="calendar-month-date-detail" onClick={() => setPanelOpen(true)}>
+          <PanelRightOpen size={15} aria-hidden="true" /> 선택한 날짜 보기
+        </button>
       </div>
 
       {moveFeedback ? <p role={moveFeedback.kind === "error" ? "alert" : "status"} className={`border-l-2 py-2 pl-3 text-xs ${moveFeedback.kind === "error" ? "border-danger/60 text-danger" : "border-success/60 text-ui-secondary"}`}>{moveFeedback.message}</p> : null}
@@ -197,9 +200,9 @@ export function MonthlyView({
           draggingDisabled={Boolean(movingTodoId)}
         />
         <div className={`calendar-month-right ${panelOpen ? "is-open" : ""}`}>
-          <button type="button" className="calendar-v4-date-backdrop" aria-label="날짜 상세 바깥 영역 닫기"
+          <button type="button" tabIndex={-1} className="calendar-v4-date-backdrop" aria-label="날짜 상세 바깥 영역 닫기"
             onClick={() => { setPanelOpen(false); setQuickAdd(false); }} />
-          <div ref={selectedPanelRef} tabIndex={-1}
+          <div ref={selectedPanelRef} id="calendar-month-date-detail" tabIndex={-1}
             className="calendar-month-panel calendar-v4-date-drawer min-w-0">
             <UnscheduledCalendarTodos todos={todos} />
             <MonthlySidePanel

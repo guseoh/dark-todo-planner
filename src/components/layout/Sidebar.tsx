@@ -31,8 +31,6 @@ const mobilePrimaryItems = navGroups[0].items;
 const mobileMoreItems = [...navGroups[1].items, settingsItem, trashItem];
 const SIDEBAR_MODE_KEY = "dark-todo-planner:sidebar-mode";
 const LEGACY_SIDEBAR_COLLAPSED_KEY = "dark-todo-planner:sidebar-collapsed";
-const HOVER_OPEN_DELAY_MS = 110;
-const HOVER_CLOSE_DELAY_MS = 140;
 
 const readInitialMode = (): SidebarMode => {
   if (typeof window === "undefined") return "expanded";
@@ -43,35 +41,20 @@ const readInitialMode = (): SidebarMode => {
 
 export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
   const [mode, setMode] = useState<SidebarMode>(readInitialMode);
-  const [hoverExpanded, setHoverExpanded] = useState(false);
+  const [compactExpanded, setCompactExpanded] = useState(false);
   const [compactWindow, setCompactWindow] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(max-width: 1099px)").matches,
   );
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const hoverOpenTimerRef = useRef<number | null>(null);
-  const hoverCloseTimerRef = useRef<number | null>(null);
-  const collapsed = mode === "collapsed" || compactWindow;
-  const inlineExpanded = !collapsed;
-  const showExpandedContent = inlineExpanded || hoverExpanded;
-
-  const clearHoverTimers = () => {
-    if (hoverOpenTimerRef.current !== null) { window.clearTimeout(hoverOpenTimerRef.current); hoverOpenTimerRef.current = null; }
-    if (hoverCloseTimerRef.current !== null) { window.clearTimeout(hoverCloseTimerRef.current); hoverCloseTimerRef.current = null; }
+  const inlineExpanded = compactWindow ? compactExpanded : mode === "expanded";
+  const toggleSidebar = () => {
+    if (compactWindow) {
+      setCompactExpanded((current) => !current);
+    } else {
+      setMode((current) => current === "expanded" ? "collapsed" : "expanded");
+    }
   };
-  const openHoverPanel = () => {
-    if (!collapsed) return;
-    if (hoverCloseTimerRef.current !== null) { window.clearTimeout(hoverCloseTimerRef.current); hoverCloseTimerRef.current = null; }
-    if (hoverExpanded || hoverOpenTimerRef.current !== null) return;
-    hoverOpenTimerRef.current = window.setTimeout(() => { setHoverExpanded(true); hoverOpenTimerRef.current = null; }, HOVER_OPEN_DELAY_MS);
-  };
-  const closeHoverPanel = () => {
-    if (!collapsed) return;
-    if (hoverOpenTimerRef.current !== null) { window.clearTimeout(hoverOpenTimerRef.current); hoverOpenTimerRef.current = null; }
-    if (!hoverExpanded || hoverCloseTimerRef.current !== null) return;
-    hoverCloseTimerRef.current = window.setTimeout(() => { setHoverExpanded(false); hoverCloseTimerRef.current = null; }, HOVER_CLOSE_DELAY_MS);
-  };
-
   useEffect(() => { localStorage.setItem(SIDEBAR_MODE_KEY, mode); }, [mode]);
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1099px)");
@@ -80,8 +63,6 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
     media.addEventListener("change", sync);
     return () => media.removeEventListener("change", sync);
   }, []);
-  useEffect(() => { if (!collapsed) setHoverExpanded(false); }, [collapsed]);
-  useEffect(() => () => clearHoverTimers(), []);
   useEffect(() => { setMobileMenuOpen(false); }, [activeView]);
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -103,30 +84,30 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
     const Icon = item.icon;
     const active = activeView === item.id;
     return (
-      <button key={item.id} type="button" onClick={() => onChangeView(item.id)} aria-label={item.label} aria-current={active ? "page" : undefined} title={collapsed && !hoverExpanded ? item.label : undefined}
-        className={`app-nav-button relative flex min-h-10 w-full items-center rounded-[6px] text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${active ? "bg-ui-selected font-semibold text-ui-text" : "text-ui-secondary hover:bg-ui-hover hover:text-ui-text"} ${showExpandedContent ? "gap-3 px-3 text-left" : "justify-center px-2"}`}>
+      <button key={item.id} type="button" onClick={() => onChangeView(item.id)} aria-label={item.label} aria-current={active ? "page" : undefined} title={!inlineExpanded ? item.label : undefined}
+        className={`app-nav-button relative flex min-h-10 w-full items-center rounded-[6px] text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${active ? "bg-ui-selected font-semibold text-ui-text" : "text-ui-secondary hover:bg-ui-hover hover:text-ui-text"} ${inlineExpanded ? "gap-3 px-3 text-left" : "justify-center px-2"}`}>
         {active ? <span aria-hidden="true" className="app-nav-indicator absolute bottom-2 left-0 top-2 w-0.5 bg-ui-focus" /> : null}
         <Icon size={17} className="shrink-0" />
-        {showExpandedContent ? <span className="truncate">{item.label}</span> : null}
+        {inlineExpanded ? <span className="truncate">{item.label}</span> : null}
       </button>
     );
   };
 
   return (
     <>
-      <aside className={`relative sticky top-14 z-20 hidden h-[calc(100vh-3.5rem)] shrink-0 self-start transition-[width] duration-150 ease-out sm:block ${inlineExpanded ? "w-[16.25rem]" : "w-[4.25rem]"}`} data-sidebar-mode={mode} data-compact-window={compactWindow ? "true" : "false"} data-sidebar-hover-expanded={hoverExpanded ? "true" : "false"}>
-        <nav className={`flex h-full min-h-0 flex-col border-r border-ui-divider bg-[var(--sidebar-bg)] px-2 py-2.5 ${!inlineExpanded && hoverExpanded ? "absolute left-0 top-0 z-30 w-[16.25rem] shadow-xl" : "w-full"}`} onMouseEnter={openHoverPanel} onMouseLeave={closeHoverPanel} onFocusCapture={openHoverPanel} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) closeHoverPanel(); }}>
-          <button type="button" onClick={() => onChangeView("today")} aria-label="Todo Planner 홈" title={collapsed && !hoverExpanded ? "Todo Planner" : undefined}
-            className={`mb-2 flex min-h-10 shrink-0 items-center rounded-lg text-left transition-colors hover:bg-ink-800/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${showExpandedContent ? "gap-2.5 px-2.5" : "justify-center px-2"}`}>
+      <aside className={`sticky top-14 z-30 hidden h-[calc(100vh-3.5rem)] shrink-0 self-start transition-[width] duration-150 ease-out sm:block ${inlineExpanded ? (compactWindow ? "w-48" : "w-[16.25rem]") : "w-[4.25rem]"}`} data-sidebar-mode={mode} data-compact-window={compactWindow ? "true" : "false"}>
+        <nav className="flex h-full min-h-0 w-full flex-col border-r border-ui-divider bg-[var(--sidebar-bg)] px-2 py-2.5">
+          <button type="button" onClick={() => onChangeView("today")} aria-label="Todo Planner 홈" title={!inlineExpanded ? "Todo Planner" : undefined}
+            className={`mb-2 flex min-h-10 shrink-0 items-center rounded-lg text-left transition-colors hover:bg-ink-800/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${inlineExpanded ? "gap-2.5 px-2.5" : "justify-center px-2"}`}>
             <span className="sidebar-brand-mark flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] border border-ui-divider bg-ui-surface text-ui-text"><CalendarCheck size={18} /></span>
-            {showExpandedContent ? <span className="min-w-0"><span className="block truncate text-sm font-bold text-ink-100">Todo Planner</span><span className="block truncate text-xs text-ink-500">개인 작업 관리</span></span> : null}
+            {inlineExpanded ? <span className="min-w-0"><span className="block truncate text-sm font-bold text-ink-100">Todo Planner</span><span className="block truncate text-xs text-ink-500">개인 작업 관리</span></span> : null}
           </button>
 
           <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-0.5">
             <div className="space-y-3">
               {navGroups.map((group, index) => (
-                <section key={group.label} className={!showExpandedContent && index > 0 ? "border-t border-ink-700/60 pt-3" : ""}>
-                  {showExpandedContent ? <p className="mb-1.5 px-3 text-xs font-medium text-ink-500">{group.label}</p> : null}
+                <section key={group.label} className={!inlineExpanded && index > 0 ? "border-t border-ink-700/60 pt-3" : ""}>
+                  {inlineExpanded ? <p className="mb-1.5 px-3 text-xs font-medium text-ink-500">{group.label}</p> : null}
                   <div className="space-y-1">{group.items.map(renderDesktopItem)}</div>
                 </section>
               ))}
@@ -137,11 +118,11 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
             <div className="space-y-1">
               {renderDesktopItem(settingsItem)}
               {renderDesktopItem(trashItem)}
-              {!compactWindow ? <button type="button" onClick={() => { clearHoverTimers(); setHoverExpanded(false); setMode((current) => current === "expanded" ? "collapsed" : "expanded"); }}
-                className={`flex min-h-10 w-full items-center rounded-lg text-sm font-semibold text-ink-400 transition-colors hover:bg-ink-800/75 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${showExpandedContent ? "justify-between gap-3 px-3 text-left" : "justify-center px-2"}`}
-                aria-label={collapsed ? "사이드바 펼쳐서 고정" : "사이드바 축소"} aria-pressed={!collapsed} title={collapsed && !hoverExpanded ? "사이드바 펼쳐서 고정" : undefined}>
-                {collapsed && !hoverExpanded ? <PanelLeftOpen size={17} /> : collapsed ? <><span>사이드바 펼쳐서 고정</span><PanelLeftOpen size={17} className="shrink-0" /></> : <><span>사이드바 축소</span><PanelLeftClose size={17} className="shrink-0" /></>}
-              </button> : null}
+              <button type="button" onClick={toggleSidebar}
+                className={`flex min-h-10 w-full items-center rounded-lg text-sm font-semibold text-ink-400 transition-colors hover:bg-ink-800/75 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${inlineExpanded ? "justify-between gap-3 px-3 text-left" : "justify-center px-2"}`}
+                aria-label={inlineExpanded ? "사이드바 축소" : "사이드바 펼치기"} aria-expanded={inlineExpanded} title={!inlineExpanded ? "사이드바 펼치기" : undefined}>
+                {inlineExpanded ? <><span>사이드바 축소</span><PanelLeftClose size={17} className="shrink-0" /></> : <PanelLeftOpen size={17} />}
+              </button>
             </div>
           </div>
         </nav>

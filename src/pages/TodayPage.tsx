@@ -17,6 +17,7 @@ import { OverdueTodoImportModal } from "../components/todo/OverdueTodoImportModa
 import { TodoEditModal } from "../components/todo/TodoEditModal";
 import { TodoForm } from "../components/todo/TodoForm";
 import { TodoRow } from "../components/todo/TodoRow";
+import { useDrawerFocus } from "../hooks/useDrawerFocus";
 import { formatKoreanDate, parseDateKey, PLANNER_DAY_START_HOUR, toDateKey, todayKey } from "../lib/date";
 import { moveFocusTodo } from "../lib/todayPlanning";
 import { formatCompletionRate } from "../lib/todo";
@@ -146,10 +147,12 @@ export function TodayPage({
   const [planningTodoId, setPlanningTodoId] = useState<string | null>(null);
   const [planningError, setPlanningError] = useState("");
   const [planningOpen, setPlanningOpen] = useState(false);
+  const planningPanel = useRef<HTMLElement>(null);
+  useDrawerFocus(planningOpen, planningPanel);
   useEffect(() => {
     if (!planningOpen) return;
     const onEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setPlanningOpen(false);
+      if (event.key === "Escape" && !event.defaultPrevented && !event.isComposing) setPlanningOpen(false);
     };
     window.addEventListener("keydown", onEscape);
     return () => window.removeEventListener("keydown", onEscape);
@@ -355,6 +358,13 @@ export function TodayPage({
 
       <div className={`today-workspace ${planningOpen ? "today-workspace--planning" : "today-workspace--single"}`}>
         <main className="today-workspace__main min-w-0 space-y-3">
+          <section className="today-capture-section" aria-label="빠른 작업 입력">
+            <div className="today-composer today-quick-capture">
+              <TodoForm onAdd={onAdd} defaultDate={today} defaultCategoryId={inlineCategoryId}
+                compact collapsible alwaysOpen submitLabel="추가"
+                categories={categories} projects={activeProjects} />
+            </div>
+          </section>
           {overdueTodos.length > 0 ? (
             <div className="today-overdue-banner" role="status">
               <span>
@@ -372,13 +382,6 @@ export function TodayPage({
               </div>
             </div>
           ) : null}
-          <section className="today-capture-section" aria-label="빠른 작업 입력">
-            <div className="today-composer today-quick-capture">
-              <TodoForm onAdd={onAdd} defaultDate={today} defaultCategoryId={inlineCategoryId}
-                compact collapsible alwaysOpen submitLabel="추가"
-                categories={categories} projects={activeProjects} />
-            </div>
-          </section>
           {focusError ? <p role="alert" className="text-xs text-danger">{focusError}</p> : null}
           {focusedTodos.length ? (
             <section className="today-focus-section" aria-labelledby="today-focus-title">
@@ -395,7 +398,7 @@ export function TodayPage({
                       <div key={todo.id} className="flex items-center gap-1">
                         <div className="min-w-0 flex-1"><SortableTodayRow todo={todo} render={renderTodo} /></div>
                         {todo.workflowStatus === "TODO" ? <button type="button" className="btn-secondary shrink-0 text-xs"
-                          onClick={() => onUpdate(todo.id, { workflowStatus: "IN_PROGRESS" })}>시작</button> : null}
+                          onClick={() => onUpdate(todo.id, { workflowStatus: "IN_PROGRESS" })}>진행 중으로</button> : null}
                       </div>
                     ))}
                   </div>
@@ -407,7 +410,7 @@ export function TodayPage({
           <section className="today-task-section space-y-2" aria-label="오늘 Todo" data-density={compactRows ? "compact" : "comfortable"}>
             <div className="today-task-heading">
               <h3 className="text-[17px] font-semibold tracking-tight text-ui-text">{focusedTodos.length ? "나머지 할 일" : "오늘 할 일"}</h3>
-              {activeTodos.length > 1 ? <span className="today-task-count">{activeTodos.length}개 남음</span> : null}
+              {remainingTodos.length > 0 ? <span className="today-task-count">{remainingTodos.length}개 남음</span> : null}
             </div>
             {hasTodayTodos ? (
               <div className="today-category-nav border-b border-ui-divider bg-ui-canvas py-1">
@@ -506,9 +509,9 @@ export function TodayPage({
         <TodayPlanningRail {...rail} />
         {planningOpen ? (
           <>
-          <button className="today-planning-backdrop" type="button" aria-label="계획 패널 바깥 영역 닫기"
+          <button className="today-planning-backdrop" type="button" tabIndex={-1} aria-label="계획 패널 바깥 영역 닫기"
             onClick={() => setPlanningOpen(false)} />
-          <aside id="today-plan-panel" className="today-planning-panel" aria-label="오늘 계획하기">
+          <aside ref={planningPanel} tabIndex={-1} id="today-plan-panel" className="today-planning-panel" aria-label="오늘 계획하기">
             <div className="today-planning-panel__header">
               <div className="flex items-center justify-between gap-3">
                 <h2>오늘 계획하기</h2>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   closestCenter,
   DndContext,
@@ -50,6 +50,7 @@ type GroupedTodoListProps = {
   onReorderCategories?: (ids: string[]) => void | Promise<void>;
   emptyTitle: string;
   emptyDescription?: string;
+  emptyAction?: ReactNode;
   showDate?: boolean;
   defaultDate?: string;
   includeEmptyCategories?: boolean;
@@ -165,6 +166,7 @@ export function GroupedTodoList({
   onReorderCategories,
   emptyTitle,
   emptyDescription,
+  emptyAction,
   showDate = true,
   defaultDate,
   includeEmptyCategories = false,
@@ -263,7 +265,7 @@ export function GroupedTodoList({
       <div className="space-y-3">
         {showCategoryCreator && onAddCategory ? <button type="button" className="btn-secondary" onClick={() => { setCategoryError(""); setCreatingCategory(true); }}><FolderPlus size={16} />카테고리 추가</button> : null}
         {categoryError ? <p className="text-sm text-danger">{categoryError}</p> : null}
-        <EmptyState title={emptyTitle} description={emptyDescription} />
+        <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />
         {creatingCategory ? <Modal title="새 카테고리 추가" description="Todo를 묶을 카테고리 이름, 색상, 아이콘을 설정합니다." onClose={() => setCreatingCategory(false)}>{categoryError ? <p className="mb-3 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">{categoryError}</p> : null}<CategoryForm onSubmit={createCategory} onCancel={() => setCreatingCategory(false)} submitLabel="카테고리 추가" /></Modal> : null}
       </div>
     );
@@ -306,7 +308,7 @@ export function GroupedTodoList({
               return <div key={groupId} className={layout === "board" && (selectionMode || !collapsedGroups[groupId]) ? "col-span-full" : "min-w-0"}>{renderGroup(group)}</div>;
             })}
           </div>
-        ) : <EmptyState title={emptyTitle} description={emptyDescription} />}
+        ) : <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />}
       </div>
 
       {creatingCategory ? <Modal title="새 카테고리 추가" description="Todo를 묶을 카테고리 이름, 색상, 아이콘을 설정합니다." onClose={() => setCreatingCategory(false)}>{categoryError ? <p className="mb-3 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">{categoryError}</p> : null}<CategoryForm onSubmit={createCategory} onCancel={() => setCreatingCategory(false)} submitLabel="카테고리 추가" /></Modal> : null}

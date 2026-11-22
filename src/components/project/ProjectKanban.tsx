@@ -375,6 +375,7 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
     if (ids.length > 1) void onReorderTodos(ids);
   };
   const activeDragTodo = activeDragId ? indexed.todoById.get(activeDragId) : undefined;
+  const boardViewport = useRef<HTMLDivElement>(null);
 
   return (
     <section className="space-y-3">
@@ -401,8 +402,16 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
       {showAdd && !project.archived ? <TodoForm compact autoFocus submitLabel="추가" defaultProjectId={project.id}
         categories={categories} projects={projects} onAdd={onAddTodo} /> : null}
 
+      <div className="flex flex-wrap gap-1.5 xl:hidden" role="group" aria-label="칸반 상태 열 이동">
+        {workflowColumns.map(({ status, label }) => (
+          <button key={status} type="button" className="btn-secondary min-h-9 px-2 text-xs" onClick={() => {
+            boardViewport.current?.querySelector(`[data-status="${status}"]`)
+              ?.scrollIntoView({ block: "nearest", inline: "start" });
+          }}>{label}</button>
+        ))}
+      </div>
       <DndContext sensors={sensors} collisionDetection={columnCollision} onDragStart={onDragStart} onDragCancel={onDragCancel} onDragEnd={handleDragEnd}>
-        <div className="project-v4-board-viewport">
+        <div ref={boardViewport} className="project-v4-board-viewport">
           <div data-done-collapsed={collapsedDoneColumns[project.id] ?? true} data-density={compact ? "compact" : "comfortable"} className="project-v4-board grid grid-cols-4 gap-3">
             {workflowColumns.map((column) => {
               const items = visibleByStatus.get(column.status) ?? [];

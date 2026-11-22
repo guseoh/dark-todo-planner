@@ -1,0 +1,17 @@
+[package]
+name = "dark-todo-planner-desktop"
+version = "0.2.0"
+description = "Windows desktop app for Dark Todo Planner"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+serde_json = "1"
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-dialog = "2"
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-single-instance = "2"
+tauri-plugin-updater = "2.14"

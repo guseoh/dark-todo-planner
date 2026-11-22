@@ -313,7 +313,12 @@ try {
   await page.getByRole("heading", { name: "전체 Todo", exact: true }).waitFor();
   assert.equal(new URL(page.url()).hash, "#/all", "Old Inbox bookmarks must redirect to All Todo.");
   const unplannedButton = page.getByRole("button", { name: /미계획 \d+개 보기/ });
+  await page.getByRole("button", { name: "선택 작업", exact: true }).click();
+  await page.getByRole("button", { name: /현재 결과 \d+개 선택/ }).click();
   await unplannedButton.click();
+  await page.getByText("0개 선택됨", { exact: true }).waitFor();
+  assert.equal(await page.getByRole("button", { name: "선택 0개 삭제", exact: true }).isDisabled(), true);
+  await page.getByRole("button", { name: "선택 종료", exact: true }).click();
   const legacyRow = page.locator(".todo-row").filter({ has: page.getByRole("heading", { name: legacyTitle, exact: true }) });
   await legacyRow.waitFor();
   await legacyRow.getByText("미계획", { exact: true }).waitFor();

@@ -151,7 +151,7 @@ export function WeeklyView({
           </div>
         </div>
 
-        <div className="calendar-v4-week-scroll"><div className="weekly-days-grid calendar-v4-week-days grid min-w-[560px] grid-cols-7 gap-1">
+        <div className="calendar-v4-week-scroll"><div className="weekly-days-grid calendar-v4-week-days grid min-w-[350px] grid-cols-7 gap-1 md:min-w-[560px]">
           {daySummaries.map(({ date, day, index, active, completed }) => {
             const selected = date === selectedDate;
             const isToday = date === today;
@@ -159,19 +159,26 @@ export function WeeklyView({
               <button
                 key={date}
                 type="button"
-                className={`weekly-day calendar-v4-week-day min-w-0 border border-ui-divider px-2.5 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus ${
+                className={`weekly-day calendar-v4-week-day min-w-0 border border-ui-divider px-1.5 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus md:px-2.5 ${
                   selected
                     ? "bg-ui-selected text-ui-text"
                     : "bg-transparent hover:bg-ui-hover"
                 }`}
                 onClick={() => setSelectedDate(date)}
                 aria-pressed={selected}
+                aria-label={`${formatKoreanDate(day, "M월 d일 EEEE")}${isToday ? " 오늘" : ""} 미완료 ${active} 완료 ${completed}`}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className={`text-xs font-bold ${selected ? "text-ink-100" : dayLabelTone(index)}`}>{formatKoreanDate(day, "E요일")}</span>
-                  {isToday ? <span className="border-b border-ui-focus text-[10px] font-medium text-ui-secondary">오늘</span> : null}
+                <div className="flex items-center justify-between gap-1 md:gap-2">
+                  <span className={`text-xs font-bold ${selected ? "text-ink-100" : dayLabelTone(index)}`}>
+                    <span className="md:hidden">{formatKoreanDate(day, "E")}</span>
+                    <span className="hidden md:inline">{formatKoreanDate(day, "E요일")}</span>
+                  </span>
+                  {isToday ? <span className="shrink-0 border-b border-ui-focus text-[10px] font-medium text-ui-secondary">오늘</span> : null}
                 </div>
-                <p className="mt-0.5 text-[11px] text-ink-500">{formatKoreanDate(day, "M월 d일")}</p>
+                <p className="mt-0.5 whitespace-nowrap text-[11px] text-ink-500">
+                  <span className="md:hidden">{formatKoreanDate(day, "M/d")}</span>
+                  <span className="hidden md:inline">{formatKoreanDate(day, "M월 d일")}</span>
+                </p>
                 <div className="mt-2 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px]">
                   <span className={active ? "font-bold text-amber-100" : "text-ink-600"}>미완료 {active}</span>
                   <span className="text-ink-500">완료 {completed}</span>
