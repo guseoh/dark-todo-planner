@@ -14,7 +14,7 @@ type ScratchpadResponse = {
 };
 
 type SaveState = "loading" | "saved" | "dirty" | "saving" | "error";
-type ScratchpadMenu = "file" | "edit" | "format" | "view";
+type ScratchpadMenu = "file" | "edit" | "view";
 
 const AUTOSAVE_DELAY_MS = 700;
 const MIN_ZOOM = 80;
@@ -379,7 +379,7 @@ export function ScratchpadPage() {
 
   const menuButtonClass = "rounded px-2 py-1 text-xs font-medium text-ink-300 hover:bg-ink-800 hover:text-ink-100";
   const menuItemClass = "w-full rounded px-3 py-2 text-left text-xs text-ink-200 hover:bg-ink-800";
-  const toolButtonClass = "ui-button ui-button--ghost ui-button--sm min-h-9 shrink-0 px-2 text-xs";
+  const toolButtonClass = "scratchpad-format-button ui-button ui-button--ghost ui-button--sm min-h-9 shrink-0 px-2 text-xs";
   const toggleMenu = (menu: ScratchpadMenu) => setOpenMenu((current) => current === menu ? null : menu);
   const closeMenuAndRun = (action: () => void) => {
     setOpenMenu(null);
@@ -388,9 +388,12 @@ export function ScratchpadPage() {
   };
 
   return (
-    <section aria-label="낙서장" className="scratchpad-workspace mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-[920px] flex-col overflow-hidden bg-ui-canvas">
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-ui-divider bg-transparent px-3 py-3">
-        <div className="flex items-center gap-2"><h1 className="text-lg font-semibold text-ui-text">낙서장</h1></div>
+    <section aria-label="낙서장" className="scratchpad-workspace mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-[1040px] flex-col overflow-hidden bg-ui-canvas">
+      <div className="scratchpad-heading flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-ui-divider bg-transparent px-3 py-3">
+        <div className="space-y-1">
+          <h1 className="text-lg font-semibold text-ui-text">낙서장</h1>
+          <p className="text-xs text-ui-muted">작성하는 즉시 서식이 적용되며 Markdown으로 저장됩니다.</p>
+        </div>
       </div>
       <div className="scratchpad-command-strip"><div className="scratchpad-command-strip__menus">
         <div ref={menuBarRef} className="flex items-center gap-0.5">
@@ -419,22 +422,6 @@ export function ScratchpadPage() {
             ) : null}
           </div>
           <div className="relative">
-            <button type="button" className={menuButtonClass} aria-haspopup="menu" disabled={sourcePreview} aria-expanded={openMenu === "format"} onClick={() => toggleMenu("format")}>서식</button>
-            {openMenu === "format" ? (
-              <div role="menu" className="absolute left-0 top-full z-40 mt-1 w-48 rounded-md border border-ink-700 bg-ink-900 p-1 shadow-xl">
-                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => prefixSelectedLines("# "))}>제목 H1</button>
-                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => prefixSelectedLines("- "))}>글머리 목록</button>
-                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => prefixSelectedLines("1. "))}>번호 목록</button>
-                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => prefixSelectedLines("- [ ] "))}>체크리스트</button>
-                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => prefixSelectedLines("> "))}>인용</button>
-                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => replaceSelection("**", "**"))}>굵게</button>
-                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => replaceSelection("_", "_"))}>기울임</button>
-                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => replaceSelection("~~", "~~"))}>취소선</button>
-                <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => replaceSelection("[", "](https://)", "링크"))}>링크</button>
-              </div>
-            ) : null}
-          </div>
-          <div className="relative">
             <button type="button" className={menuButtonClass} aria-haspopup="menu" aria-expanded={openMenu === "view"} onClick={() => toggleMenu("view")}>보기</button>
             {openMenu === "view" ? (
               <div role="menu" className="absolute left-0 top-full z-40 mt-1 w-44 rounded-md border border-ink-700 bg-ink-900 p-1 shadow-xl">
@@ -449,7 +436,7 @@ export function ScratchpadPage() {
         <div className="flex items-center gap-2 px-2 text-[11px] text-ink-500">
           <button type="button" className={menuButtonClass} disabled={sourceMode && requiresRawScratchpadEditing(content)} onClick={() => { setSourcePreview(false); setSourceMode((v) => !v); }} aria-pressed={sourceMode}>{sourceMode ? "시각 편집" : "Markdown 원본"}</button>
           {sourceMode ? (
-            <Button variant={sourcePreview ? "info" : "secondary"} size="sm"
+            <Button variant="secondary" size="sm"
               onClick={() => setSourcePreview((open) => !open)} aria-pressed={sourcePreview}
               aria-label={sourcePreview ? "Markdown 원본 편집" : "Markdown 서식 미리보기"}>
               {sourcePreview ? "원본 편집" : "서식 미리보기"}
@@ -460,7 +447,8 @@ export function ScratchpadPage() {
       </div>
 
       {!sourcePreview ? <div className="scratchpad-toolbar flex shrink-0 items-center gap-1 overflow-x-auto border-b border-ui-divider bg-transparent px-2 py-1.5">
-        <button type="button" className={toolButtonClass} title="제목 H1" onClick={() => prefixSelectedLines("# ")}>H1</button>
+        <button type="button" className={toolButtonClass} title="제목 H1" aria-label="제목 H1" onClick={() => prefixSelectedLines("# ")}>H1</button>
+        <button type="button" className={toolButtonClass} title="제목 H2" aria-label="제목 H2" onClick={() => prefixSelectedLines("## ")}>H2</button>
         <button type="button" className={toolButtonClass} title="글머리 목록" onClick={() => prefixSelectedLines("- ")}>• 목록</button>
         <button type="button" className={toolButtonClass} title="번호 목록" onClick={() => prefixSelectedLines("1. ")}>1. 목록</button>
         <button type="button" className={toolButtonClass} title="체크리스트" onClick={() => prefixSelectedLines("- [ ] ")}>☑ 체크</button>
@@ -523,7 +511,7 @@ export function ScratchpadPage() {
         wrap={wrap ? "soft" : "off"}
         disabled={Boolean(recoveryDraft) || saveState === "loading" || (!loadedRef.current && saveState === "error")}
         className="min-h-0 flex-1 resize-none border-0 bg-ui-canvas px-4 py-5 font-mono leading-7 text-ui-text sm:px-8 outline-none selection:bg-accent-500/35 disabled:opacity-60"
-        style={{ fontSize: `${Math.round(15 * zoom / 100)}px`, whiteSpace: wrap ? "pre-wrap" : "pre" }}
+        style={{ fontSize: `${Math.round(16 * zoom / 100)}px`, whiteSpace: wrap ? "pre-wrap" : "pre" }}
         placeholder="아무 내용이나 바로 작성하세요. 내용은 자동으로 저장됩니다."
         aria-label="낙서장 편집기"
       /> : <RichScratchpadEditor ref={richEditorRef} markdown={content} onChange={applyContent} readOnly={Boolean(recoveryDraft) || saveState === "loading" || (!loadedRef.current && saveState === "error")} zoom={zoom} wrap={wrap} onShortcut={handleEditorKeyDown} /> }

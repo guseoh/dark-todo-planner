@@ -5,6 +5,8 @@ import { PageHeader } from "../components/common/PageHeader";
 import { Modal } from "../components/common/Modal";
 import { Button } from "../components/ui/Button";
 import { MarkdownEditor } from "../components/editor/MarkdownEditor";
+import { RichMarkdownEditor, type RichMarkdownHandle } from "../components/editor/RichMarkdownEditor";
+import { requiresRawScratchpadEditing } from "../lib/scratchpadEditorSafety";
 import { MarkdownPreview } from "../components/editor/MarkdownPreview";
 import { formatKoreanDate, todayKey } from "../lib/date";
 import type { Memo, MemoInput, MemoLinksInput } from "../types/memo";
@@ -88,7 +90,12 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
   const [draftError, setDraftError] = useState("");
   const draftVersionRef = useRef(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [previewMode, setPreviewMode] = useState(false);
+  const richEditorRef = useRef<RichMarkdownHandle | null>(null);
+  const [sourceMode, setSourceMode] = useState(
+    () => requiresRawScratchpadEditing(initialDraft?.content ?? initial?.content ?? ""),
+  );
+  const requiresSource = requiresRawScratchpadEditing(content);
+  const showSource = sourceMode || requiresSource;
   const submittingRef = useRef(false);
   const normalizedLinkQuery = linkQuery.trim().toLocaleLowerCase("ko-KR");
   const visibleTodos = todos.filter((todo) => !todo.archived && (!normalizedLinkQuery || todo.title.toLocaleLowerCase("ko-KR").includes(normalizedLinkQuery)));
@@ -191,20 +198,42 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
         <label className="flex min-h-9 items-center gap-2 px-2 text-xs font-semibold text-ink-300"><input type="checkbox" checked={pinned} onChange={(event) => setPinned(event.target.checked)} className="h-4 w-4 accent-accent-500" />고정</label>
       </div>
 
-      <section aria-label="메모 내용" className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold text-ink-400">내용 · Markdown</span>
-          <div className="page-tabs" role="group" aria-label="메모 내용 보기">
-            <button type="button" className="page-tab min-h-8" aria-pressed={!previewMode} onClick={() => setPreviewMode(false)}>편집</button>
-            <button type="button" className="page-tab min-h-8" aria-pressed={previewMode} onClick={() => setPreviewMode(true)}>미리보기</button>
-          </div>
+      <section aria-label="메모 내용" className="memo-edit-section space-y-2">
+        <div className="memo-rich-toolbar">
+          <span className="memo-rich-toolbar__label">내용</span>
+          {!showSource ? (
+            <div role="group" aria-label="메모 서식" className="memo-rich-toolbar__actions">
+              {([
+                { action: "h1", text: "H1", title: "제목" },
+                { action: "bullet", text: "• 목록", title: "글머리 목록" },
+                { action: "task", text: "☑", title: "체크리스트" },
+                { action: "quote", text: "❝", title: "인용" },
+                { action: "bold", text: "B", title: "굵게" },
+                { action: "italic", text: "I", title: "기울임" },
+                { action: "code", text: "</>", title: "인라인 코드" },
+                { action: "link", text: "링크", title: "링크 삽입" },
+              ] as const).map(({ action, text, title }) => (
+                <button key={action} type="button" title={title} aria-label={title}
+                  className="memo-rich-toolbar__action" onClick={() => richEditorRef.current?.action(action)}>
+                  {text}
+                </button>
+              ))}
+            </div>
+          ) : <span className="memo-rich-toolbar__mode">Markdown 원본 편집</span>}
+          <button type="button" className="memo-rich-toolbar__source" aria-pressed={showSource}
+            disabled={requiresSource} title={requiresSource ? "원본 보존이 필요한 문서는 시각 편집으로 전환할 수 없습니다." : "Markdown 원본 편집 전환"}
+            onClick={() => setSourceMode((value) => !value)}>
+            {showSource ? "시각 편집" : "원본"}
+          </button>
         </div>
-        {previewMode ? (
-          <div className={`overflow-y-auto border-t border-ui-divider bg-transparent p-4 ${large ? "min-h-[300px] max-h-[55vh]" : "min-h-36"}`}>
-            {content.trim() ? <MarkdownPreview value={content} /> : <p className="text-sm text-ink-500">미리 볼 내용이 없습니다.</p>}
-          </div>
+        {requiresSource ? (
+          <p className="memo-rich-compat" role="note">표·HTML·수식 등의 원본 보존을 위해 Markdown으로 편집합니다.</p>
+        ) : null}
+        {showSource ? (
+          <MarkdownEditor value={content} onChange={setContent} placeholder="- 떠오른 생각을 적어두세요"
+            textareaClassName={large ? "min-h-[300px] max-h-[55vh]" : "min-h-36"} />
         ) : (
-          <MarkdownEditor value={content} onChange={setContent} placeholder="- 떠오른 생각을 적어두세요" textareaClassName={large ? "min-h-[300px] max-h-[55vh]" : "min-h-36"} />
+          <RichMarkdownEditor ref={richEditorRef} variant="memo" markdown={content} onChange={setContent} />
         )}
       </section>
 
@@ -253,6 +282,16 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
     </form>
   );
 }
+
+/** Scan-friendly excerpt; the full original Markdown is available in the reading pane. */
+const memoExcerpt = (markdown: string) => markdown
+  .replace(/```[\s\S]*?```/g, " [코드 블록] ")
+  .replace(/!\[[^\]]*\]\([^)]+\)/g, "[이미지]")
+  .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+  .replace(/(?:^|\n)\s*(?:#{1,6}\s+|[-*+]\s+(?:\[[ xX]\]\s+)?|\d+\.\s+|>\s+)/g, " ")
+  .replace(/[`*_~]/g, "")
+  .replace(/\s+/g, " ")
+  .trim();
 
 function MemoCard({ memo, selected, onSelect, onDelete, onTogglePin, onEdit, onCreateTodo, onCreateChecklistTodos }: {
   memo: Memo;
@@ -321,7 +360,7 @@ function MemoCard({ memo, selected, onSelect, onDelete, onTogglePin, onEdit, onC
           if (event.target instanceof Element && event.target.closest("a")) return;
           onSelect(memo);
         }} title="메모 열기">
-          <MarkdownPreview className="memo-note__excerpt text-[13px] leading-[1.65] text-ui-secondary" value={memo.content} />
+          <p className="memo-note__excerpt text-[13px] leading-[1.65] text-ui-secondary">{memoExcerpt(memo.content)}</p>
         </div>
         {memo.todoIds.length || memo.projectIds.length ? (
           <div className="memo-note__links">
