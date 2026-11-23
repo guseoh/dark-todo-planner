@@ -1,3 +1,4 @@
+import { appFetch } from "./appFetch";
 import { todayKey } from "../date";
 import { markStartup } from "../perf";
 import { indexedDbSnapshotStore, type SnapshotStore } from "./snapshot";
@@ -52,7 +53,7 @@ export function onRevalidated(listener: () => void): () => void {
 /** Resolves true when a usable snapshot was loaded, so the app can draw before the session check returns. */
 export const snapshotAvailable = () => snapshotReady;
 
-export function startBootstrap(fetcher: typeof fetch = fetch, date = todayKey(), snapshotStore: SnapshotStore = indexedDbSnapshotStore): Promise<void> {
+export function startBootstrap(fetcher: typeof fetch = appFetch, date = todayKey(), snapshotStore: SnapshotStore = indexedDbSnapshotStore): Promise<void> {
   const mine = ++generation;
   store = snapshotStore;
   primed.clear();
@@ -147,7 +148,7 @@ export async function takePrimed<T>(path: string): Promise<T | undefined> {
 let refreshTimer: ReturnType<typeof setTimeout> | undefined;
 let lastRefreshAt = 0;
 
-async function refreshSnapshot(fetcher: typeof fetch = fetch) {
+async function refreshSnapshot(fetcher: typeof fetch = appFetch) {
   lastRefreshAt = Date.now();
   const date = todayKey();
   try {

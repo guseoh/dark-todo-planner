@@ -1,0 +1,68 @@
+name: Tern Windows release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'src-tauri/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'tailwind.config.ts'
+      - 'postcss.config.js'
+      - 'scripts/prepare-desktop-release.mjs'
+      - '.github/workflows/tern-windows-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tern-windows-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build, sign and publish Windows Tern
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: 'src-tauri -> target'
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Prepare version and existing updater public key
+        env:
+          TERN_VERSION: 0.3.${{ github.run_number }}
+          TERN_UPDATER_PUBLIC_KEY: ${{ secrets.TERN_UPDATER_PUBLIC_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: node scripts/prepare-desktop-release.mjs
+      - name: Generate Windows icons from tracked source image
+        run: npx --yes @tauri-apps/cli@2 icon -o src-tauri/icons public/pwa-icon-512.png
+      - name: Build and publish signed Windows installer and latest.json
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: tern-v__VERSION__
+          releaseName: 'Tern __VERSION__'
+          releaseBody: 'Windows 11 x64 Tern 앱입니다. main 변경에서 생성된 서명된 설치 파일과 자동 업데이트용 latest.json을 포함합니다. 데이터는 기존 Cloudflare D1에 보관됩니다.'
+          releaseDraft: false
+          prerelease: false
+          uploadUpdaterJson: true
+          updaterJsonPreferNsis: true
+          args: '--bundles nsis'

@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Windows Tern main window: core APIs only. HTTP is mediated by a fixed-origin native command.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

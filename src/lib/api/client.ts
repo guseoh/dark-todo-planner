@@ -1,3 +1,4 @@
+import { appFetch } from "./appFetch";
 import { noteMutation, takePrimed } from "./bootstrap";
 
 export class ApiError extends Error {
@@ -16,7 +17,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     const primed = await takePrimed<T>(path);
     if (primed !== undefined) return primed;
   }
-  const response = await fetch(resolveApiPath(path), { ...options, credentials: "include", headers: { ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }), ...options.headers } });
+  const response = await appFetch(resolveApiPath(path), { ...options, credentials: "include", headers: { ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }), ...options.headers } });
   const text = await response.text(); const data = text ? JSON.parse(text) : {};
   if (!response.ok) {
     if (response.status === 401 && path !== "/api/auth/session" && path !== "/api/auth/login") window.dispatchEvent(new Event("auth:unauthorized"));
