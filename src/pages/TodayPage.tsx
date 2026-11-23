@@ -142,6 +142,8 @@ export function TodayPage({
   const [focusSaving, setFocusSaving] = useState(false);
   const focusWrite = useRef(false);
   const [movingOverdue, setMovingOverdue] = useState(false);
+  const [overdueMoveError, setOverdueMoveError] = useState("");
+  const [overdueMoveNotice, setOverdueMoveNotice] = useState("");
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [planningTodoId, setPlanningTodoId] = useState<string | null>(null);
   const [planningError, setPlanningError] = useState("");
@@ -160,7 +162,7 @@ export function TodayPage({
   const focusedTodos = useMemo(() => focusIds.map((id) => todayTodos.find((todo) => todo.id === id)).filter((todo): todo is Todo => Boolean(todo && !todo.completed && !todo.archived)), [focusIds, todayTodos]);
   const focusSet = useMemo(() => new Set(focusedTodos.map((todo) => todo.id)), [focusedTodos]);
   const oldestOverdueDate = overdueTodos[0]?.date;
-  const hasPlanningContent = candidateTodos.length > 0 || overdueTodos.length > 0 || stats.weekTotal > 0;
+  const hasPlanningContent = candidateTodos.length > 0 || overdueTodos.length > 0;
   const sortedCategories = useMemo(
     () => [...categories].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, "ko")),
     [categories],
@@ -256,9 +258,19 @@ export function TodayPage({
   };
 
   const moveOverdue = async (date: string) => {
+    if (movingOverdue) return;
     setMovingOverdue(true);
+    setOverdueMoveError("");
+    setOverdueMoveNotice("");
     try {
-      await onMoveOverdue(date);
+      const succeeded = await onMoveOverdue(date);
+      if (!succeeded) {
+        setOverdueMoveError("지난 일정을 이동하지 못했습니다. 작업 상태를 확인한 후 다시 시도해 주세요.");
+      } else {
+        setOverdueMoveNotice("지난 일정 이동 요청을 처리했습니다. 목록을 확인해 주세요.");
+      }
+    } catch {
+      setOverdueMoveError("지난 일정 이동에 실패했습니다. 연결을 확인한 후 다시 시도해 주세요.");
     } finally {
       setMovingOverdue(false);
     }
@@ -344,9 +356,9 @@ export function TodayPage({
               title="명시적으로 선택한 일정만 내일이나 언젠가로 이동합니다">
               <MoonStar size={15} aria-hidden="true" />오늘 정리
             </Button>
-          ) : stats.todayCompleted > 0 && onOpenDayClose ? (
+          ) : onOpenDayClose ? (
             <Button variant="secondary" size="sm" className="today-header__action" onClick={onOpenDayClose}
-              title="오늘 한 일을 돌아보고 한 줄 회고를 남깁니다">
+              title="완료한 작업이 없는 날에도 하루 회고를 남길 수 있습니다">
               <MoonStar size={15} aria-hidden="true" />하루 회고
             </Button>
           ) : null}
@@ -355,6 +367,8 @@ export function TodayPage({
 
       <div className={`today-workspace ${planningOpen ? "today-workspace--planning" : "today-workspace--single"}`}>
         <main className="today-workspace__main min-w-0 space-y-3">
+          {overdueMoveError ? <p role="alert" className="today-operation-feedback text-danger">{overdueMoveError}</p> : null}
+          {overdueMoveNotice ? <p role="status" className="today-operation-feedback text-ui-secondary">{overdueMoveNotice}</p> : null}
           {overdueTodos.length > 0 ? (
             <div className="today-overdue-banner" role="status">
               <span>
