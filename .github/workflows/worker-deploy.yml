@@ -7,7 +7,6 @@ on:
       - 'worker/**'
       - 'migrations/**'
       - 'wrangler.jsonc'
-      - '.github/workflows/worker-deploy.yml'
   workflow_dispatch:
 
 permissions:
