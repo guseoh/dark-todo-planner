@@ -1578,7 +1578,7 @@ try {
   assert.ok(savedReflection, "The one-line reflection is stored.");
 
   // Regression: a failed reflection GET must never turn a previously saved note into an editable blank.
-  const reflectionReadPattern = /\\/api\\/reflections\\?/;
+  const reflectionReadPattern = /\/api\/reflections\?/;
   await page.route(reflectionReadPattern, async (route) => {
     await route.fulfill({ status: 503, contentType: "application/json", body: '{"error":"simulated-read-failure"}' });
   });
