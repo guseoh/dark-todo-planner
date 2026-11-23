@@ -31,7 +31,7 @@ jobs:
         run: npm ci
 
       - name: Validate Tern release preparation without real signing keys
-        run: node --test scripts/prepare-desktop-release.test.mjs
+        run: node --test scripts/prepare-desktop-release.check.mjs
 
       - name: Typecheck
         run: npm run typecheck
