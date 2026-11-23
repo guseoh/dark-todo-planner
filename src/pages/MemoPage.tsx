@@ -535,7 +535,7 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
               <Pencil size={22} aria-hidden="true" />
               <h2>메모를 선택하거나 새로 작성하세요.</h2>
               <p>선택한 메모를 이 자리에서 바로 편집할 수 있습니다.</p>
-              <Button variant="secondary" onClick={() => setCreating(true)}><Plus size={15} />새 메모</Button>
+              <p>상단의 새 메모 버튼으로 시작할 수 있습니다.</p>
             </div>
           )}
         </aside>
