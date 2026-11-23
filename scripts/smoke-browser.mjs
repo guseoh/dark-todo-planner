@@ -141,6 +141,10 @@ try {
   assert.equal(await page.getByRole("button", { name: "개발 활동", exact: true }).count(), 0,
     "The development-activity tab is retired; GitHub grass lives on Today.");
   await page.getByRole("button", { name: "오늘", exact: true }).click();
+  await page.getByRole("group", { name: "오늘 계획 요약" }).waitFor();
+  assert.equal(await page.locator(".today-header__action").count(), 1,
+    "Daily reflection must remain available even when no Todo is scheduled.");
+  await page.locator(".today-rail-extras__toggle").click();
   const grassCard = page.getByRole("region", { name: "GitHub 잔디", exact: true });
   await grassCard.waitFor();
   await grassCard.getByRole("button", { name: "GitHub 잔디 다시 불러오기" }).click();
@@ -178,6 +182,9 @@ try {
   assert.ok(overdueFixture.every((item) => item.status >= 200 && item.status < 300),
     "Local D1 overdue fixtures should be created: " + JSON.stringify(overdueFixture));
   await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "작업 선택·검토", exact: true }).waitFor();
+  assert.equal(await page.locator(".today-overdue-banner__bulk-actions:visible").count(), 0,
+    "Bulk rescheduling should be secondary to explicit per-task review.");
   await page.getByRole("button", { name: "오늘 계획하기", exact: true }).click();
   await page.getByRole("button", { name: "지난 작업 검토", exact: true }).click();
   const overdueDialog = page.getByRole("dialog", { name: "지난 일정 정리" });
