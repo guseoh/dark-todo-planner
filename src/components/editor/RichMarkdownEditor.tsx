@@ -18,6 +18,15 @@ export type RichMarkdownHandle = {
   replaceAll: (query: string, value: string) => number;
 };
 
+// Keep immutable Tiptap extension configurations stable across editor instances.
+// Rebuilding these on every memo selection adds avoidable work to the main thread.
+const markdownExtensions = [
+  StarterKit.configure({ link: { openOnClick: false, autolink: false } }),
+  TaskList,
+  TaskItem.configure({ nested: true }),
+  Markdown,
+];
+
 type Match = { from: number; to: number };
 const locate = (editor: Editor, query: string): Match[] => {
   if (!query) return [];
@@ -48,12 +57,7 @@ export const RichMarkdownEditor = forwardRef<RichMarkdownHandle, {
   const lastEmittedRef = useRef<string | null>(null);
   onChangeRef.current = onChange;
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({ link: { openOnClick: false, autolink: false } }),
-      TaskList,
-      TaskItem.configure({ nested: true }),
-      Markdown,
-    ],
+    extensions: markdownExtensions,
     content: markdown,
     contentType: "markdown",
     editable: !readOnly,
