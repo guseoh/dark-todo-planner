@@ -101,10 +101,35 @@ pub fn run() {
         .expect("failed to construct native API client");
 
     tauri::Builder::default()
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let _ = window.hide();
+            }
+        })
         .manage(ApiClient { client })
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![desktop_api_request, desktop_update])
         .setup(|app| {
+            use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
+            let quick_add = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyK);
+            app.handle().plugin(
+                tauri_plugin_global_shortcut::Builder::new()
+                    .with_handler(move |app, shortcut, event| {
+                        if shortcut == &quick_add && event.state() == ShortcutState::Pressed {
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                                let _ = window.emit("tern-open-quick-add", ());
+                            }
+                        }
+                    })
+                    .build(),
+            )?;
+            // A conflicting OS/app shortcut must not prevent Tern from starting.
+            if let Err(error) = app.global_shortcut().register(quick_add) {
+                eprintln!("Tern quick-add shortcut is unavailable: {error}");
+            }
             let open = MenuItem::with_id(app, "open", "Tern 열기", true, None::<&str>)?;
             let check = MenuItem::with_id(app, "check", "업데이트 확인", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "종료", true, None::<&str>)?;
