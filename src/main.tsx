@@ -16,6 +16,7 @@ void startBootstrap();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <AuthGate>{(logout) => <><App onLogout={logout} /><OfflineSyncIndicator /><DesktopAutoUpdate /></>}</AuthGate>
+    <AuthGate>{(logout) => <><App onLogout={logout} /><OfflineSyncIndicator /></>}</AuthGate>
+    <DesktopAutoUpdate />
   </React.StrictMode>,
 );
