@@ -1,3 +1,5 @@
+import { isTauri } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { addDays } from "date-fns";
 import { Undo2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -35,6 +37,22 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
   const [calendarDate, setCalendarDate] = useState(() => calendarDateFromHash(window.location.hash));
   const [allProjectId, setAllProjectId] = useState(() => new URLSearchParams(window.location.hash.split("?")[1]).get("project") || "");
   const [showQuickAdd, setShowQuickAdd] = useState(false);
+  useEffect(() => {
+    if (!isTauri()) return;
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    void listen("tern-open-quick-add", () => {
+      setShowCommandPalette(false);
+      setShowQuickAdd(true);
+    }).then((stop) => {
+      if (disposed) stop();
+      else unlisten = stop;
+    });
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [searchTodoId, setSearchTodoId] = useState<string | null>(null);
   const [searchMemoId, setSearchMemoId] = useState<string | null>(null);
