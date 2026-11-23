@@ -1262,7 +1262,7 @@ try {
   await page.keyboard.press("Control+End");
   await page.keyboard.press("Enter");
   await page.keyboard.insertText(richHeading);
-  await page.getByRole("button", { name: "H1", exact: true }).click();
+  await page.getByRole("button", { name: "제목 H1", exact: true }).click();
   await scratchEditor.locator("h1").filter({ hasText: richHeading }).waitFor();
   await page.waitForFunction(async (title) => {
     const response = await fetch("/api/scratchpad", { credentials: "same-origin" });
@@ -1286,7 +1286,7 @@ try {
   const formatted = `검증 제목\n검증 목록\n\n${advancedMarkdown}`;
   await rawEditor.fill(formatted);
   await rawEditor.evaluate((el) => { el.focus(); el.setSelectionRange(0, 0); });
-  await scratch.getByRole("button", { name: "H1", exact: true }).click();
+  await scratch.getByRole("button", { name: "제목 H1", exact: true }).click();
   assert.ok((await rawEditor.inputValue()).startsWith("# 검증 제목"), "Heading action must edit raw Markdown.");
   // Wait for the previous formatting command's requestAnimationFrame selection restore.
   await page.waitForTimeout(100);
