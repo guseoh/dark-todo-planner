@@ -1,6 +1,7 @@
 import { differenceInCalendarDays } from "date-fns";
-import { useEffect, useState, type ComponentProps } from "react";
+import { useEffect, useMemo, useState, type ComponentProps } from "react";
 import { api, jsonBody } from "../../lib/api/client";
+import { ChevronDown } from "lucide-react";
 import { getWeekDays, getWeekRange, parseDateKey, toDateKey, todayKey, weekdayLabels } from "../../lib/date";
 import type { Todo } from "../../types/todo";
 import { GithubGrassCard } from "../activity/GithubGrassCard";
@@ -26,23 +27,17 @@ export function TodayPlanningRail({ todos, goals, dueSoonDays, onAddGoal, onUpda
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [running, setRunning] = useState("");
   const [error, setError] = useState("");
-  // The rail is only displayed from 1280px; skip its network work below that.
-  const [wide, setWide] = useState(() => window.matchMedia("(min-width: 1280px)").matches);
+  const [extrasOpen, setExtrasOpen] = useState(false);
 
   useEffect(() => {
-    const media = window.matchMedia("(min-width: 1280px)");
+    if (!extrasOpen) return;
     let live = true;
-    const load = () => {
-      setWide(media.matches);
-      if (!media.matches) return;
-      void api<{ routines: Routine[] }>("/api/routines")
-        .then((result) => { if (live) setRoutines(result.routines); })
-        .catch(() => { if (live) setError("루틴 목록을 불러오지 못했습니다."); });
-    };
-    load();
-    media.addEventListener("change", load);
-    return () => { live = false; media.removeEventListener("change", load); };
-  }, []);
+    setError("");
+    void api<{ routines: Routine[] }>("/api/routines")
+      .then((result) => { if (live) setRoutines(result.routines); })
+      .catch(() => { if (live) setError("루틴 목록을 불러오지 못했습니다."); });
+    return () => { live = false; };
+  }, [extrasOpen]);
 
   const runRoutine = async (routine: Routine) => {
     if (running || routine.lastRunDate === today) return;
@@ -59,10 +54,20 @@ export function TodayPlanningRail({ todos, goals, dueSoonDays, onAddGoal, onUpda
     }
   };
 
-  const dueSoon = todos.filter((todo) => !todo.completed && !todo.archived && todo.dueDate)
+  const deadlines = useMemo(() => todos
+    .filter((todo) => !todo.completed && !todo.archived && todo.dueDate)
     .map((todo) => ({ todo, days: differenceInCalendarDays(parseDateKey(todo.dueDate!), parseDateKey(today)) }))
-    .filter(({ days }) => days >= 0 && days <= dueSoonDays)
-    .sort((a, b) => a.days - b.days);
+    .sort((a, b) => a.days - b.days), [todos, today]);
+  const missedDeadlines = deadlines.filter(({ days }) => days < 0);
+  const dueSoon = deadlines.filter(({ days }) => days >= 0 && days <= dueSoonDays);
+  const weekCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const todo of todos) {
+      if (todo.completed || todo.archived || todo.planningState !== "SCHEDULED") continue;
+      counts.set(todo.date, (counts.get(todo.date) ?? 0) + 1);
+    }
+    return counts;
+  }, [todos]);
 
   return (
     <aside className="today-desktop-rail" aria-label="오늘 계획">
@@ -71,7 +76,7 @@ export function TodayPlanningRail({ todos, goals, dueSoonDays, onAddGoal, onUpda
         <div className="grid grid-cols-7 gap-0.5 text-center text-xs">
           {getWeekDays(parseDateKey(today)).map((day, index) => {
             const date = toDateKey(day);
-            const count = todos.filter((todo) => todo.date === date && !todo.completed && !todo.archived).length;
+            const count = weekCounts.get(date) ?? 0;
             return (
               <a key={date} href={`#/calendar/week?date=${date}`}
                 className={`rounded-md py-1 ${date === today ? "today-week-current" : index === 5 ? "text-accent-300" : index === 6 ? "text-danger" : ""}`}
@@ -89,17 +94,37 @@ export function TodayPlanningRail({ todos, goals, dueSoonDays, onAddGoal, onUpda
         goals={goals.filter((goal) => goal.type === "WEEKLY" && (!goal.weekStartDate || goal.weekStartDate <= end) && (!goal.weekEndDate || goal.weekEndDate >= start))}
         placeholder="주간 목표 추가" emptyTitle="이번 주 목표가 아직 없습니다." layout="stacked" onAdd={onAddGoal}
         onUpdate={onUpdateGoal} onToggle={onToggleGoal} onDelete={onDeleteGoal} />
+      {missedDeadlines.length ? (
+        <section aria-label="마감일이 지난 작업" className="today-rail-deadline-warning">
+          <h2>지난 마감 <span className="text-danger">{missedDeadlines.length}개</span></h2>
+          <ul className="space-y-1">
+            {missedDeadlines.slice(0, 4).map(({ todo, days }) => (
+              <li key={todo.id} className="flex gap-2 text-xs">
+                <span className="min-w-0 flex-1 truncate" title={todo.title}>{todo.title}</span>
+                <span className="shrink-0 text-danger">{Math.abs(days)}일 지남</span>
+              </li>
+            ))}
+          </ul>
+          {missedDeadlines.length > 4 ? <a href="#/all" className="text-xs text-ui-secondary underline">전체 작업에서 더 보기</a> : null}
+        </section>
+      ) : null}
       {dueSoon.length ? (
         <section aria-label="곧 마감">
           <h2>곧 마감</h2>
           <ul className="space-y-1">
-            {dueSoon.map(({ todo, days }) => <li key={todo.id} className="flex gap-2 text-xs">
+            {dueSoon.slice(0, 4).map(({ todo, days }) => <li key={todo.id} className="flex gap-2 text-xs">
               <span className="min-w-0 flex-1 truncate" title={todo.title}>{todo.title}</span>
               <span className={days <= 1 ? "text-warning" : "text-ui-muted"}>{days === 0 ? "D-Day" : `D-${days}`}</span>
             </li>)}
           </ul>
         </section>
       ) : null}
+      <details className="today-rail-extras" open={extrasOpen} onToggle={(event) => setExtrasOpen(event.currentTarget.open)}>
+        <summary className="today-rail-extras__toggle">
+          <span>루틴 · GitHub 활동</span>
+          <ChevronDown size={15} aria-hidden="true" />
+        </summary>
+        {extrasOpen ? <div className="today-rail-extras__content">
       <section aria-label="루틴 묶음">
         <h2>루틴 묶음</h2>
         <ul className="space-y-1">
@@ -116,7 +141,9 @@ export function TodayPlanningRail({ todos, goals, dueSoonDays, onAddGoal, onUpda
         ) : null}
         {error ? <p role="alert" className="text-xs text-danger">{error}</p> : null}
       </section>
-      {wide ? <GithubGrassCard /> : null}
+      <GithubGrassCard />
+        </div> : null}
+      </details>
     </aside>
   );
 }
