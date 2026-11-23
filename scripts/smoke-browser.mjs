@@ -1087,23 +1087,24 @@ try {
   await resourceDialog.waitFor();
   await resourceDialog.getByRole("button", { name: "자료 링크 닫기" }).click();
 
-  // Memo: browser drafts, Markdown preview, linked Todo metadata, and partial
-  // server-save failure must not create duplicate records.
+  // Memo: Tiptap live formatting, browser drafts, linked Todo metadata, and
+  // partial server-save failure must not create duplicate records.
   await page.evaluate(() => { window.location.hash = "#/memo"; });
   await page.getByRole("heading", { name: "메모", exact: true }).waitFor();
   await page.getByRole("button", { name: "새 메모", exact: true }).click();
   const memoDialog = page.getByRole("dialog", { name: "새 메모" });
   const memoTitle = `Writer E2E ${randomUUID().slice(0, 8)}`;
   await memoDialog.getByPlaceholder("메모 제목").fill(memoTitle);
-  await memoDialog.getByPlaceholder("- 떠오른 생각을 적어두세요").fill("# 작성 내용\n- [ ] 검증하기");
-  await memoDialog.getByRole("button", { name: "미리보기" }).click();
-  await memoDialog.getByText("작성 내용", { exact: true }).waitFor();
-  await memoDialog.getByRole("button", { name: "편집" }).click();
+  const memoRich = memoDialog.getByRole("textbox", { name: "메모 시각 편집기" });
+  await memoRich.fill("작성 내용");
+  await memoDialog.getByRole("button", { name: "제목", exact: true }).click();
+  await memoRich.getByRole("heading", { name: "작성 내용", exact: true }).waitFor();
   await sleep(550);
   await memoDialog.getByRole("button", { name: "새 메모 닫기" }).click();
   await page.getByRole("button", { name: "새 메모", exact: true }).click();
   const resumedMemo = page.getByRole("dialog", { name: "새 메모" });
   assert.equal(await resumedMemo.getByPlaceholder("메모 제목").inputValue(), memoTitle, "Memo draft must restore after closing the editor.");
+  await resumedMemo.getByRole("textbox", { name: "메모 시각 편집기" }).getByRole("heading", { name: "작성 내용", exact: true }).waitFor();
   await resumedMemo.locator("details").filter({ hasText: "연결 · Todo" }).locator("summary").click();
   await resumedMemo.getByPlaceholder("연결할 Todo 또는 프로젝트 검색").fill(edited);
   await resumedMemo.getByText(edited, { exact: true }).first().click();
@@ -1129,6 +1130,7 @@ try {
   });
   assert.equal(savedMemos.filter((item) => item.title === memoTitle).length, 1, "Failed memo link save must not duplicate the memo.");
   assert.equal(savedMemos.find((item) => item.title === memoTitle)?.color, "#3b82f6", "Chosen memo color must persist.");
+  assert.match(savedMemos.find((item) => item.title === memoTitle)?.content || "", /^# 작성 내용/, "Live heading must persist as Markdown.");
   const memoCard = page.locator(".memo-note").filter({ has: page.getByRole("heading", { name: memoTitle, exact: true }) });
   await memoCard.waitFor();
   const noteAccent = await memoCard.evaluate((node) => ({
