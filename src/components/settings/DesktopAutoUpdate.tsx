@@ -29,13 +29,16 @@ export function DesktopAutoUpdate() {
   useEffect(() => {
     if (!isTauri()) return;
     void check();
+    // An app can remain in the Windows tray for days. Discover new Releases
+    // without requiring the user to restart Tern or open Settings.
+    const interval = window.setInterval(() => void check(), 60 * 60 * 1000);
     let active = true;
     let stop: (() => void) | undefined;
     void listen("tern-check-update", () => void check()).then((unlisten) => {
       if (active) stop = unlisten;
       else unlisten();
     });
-    return () => { active = false; stop?.(); };
+    return () => { active = false; window.clearInterval(interval); stop?.(); };
   }, [check]);
 
   const install = async () => {

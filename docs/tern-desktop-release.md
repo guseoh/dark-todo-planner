@@ -19,7 +19,7 @@
 3. public/pwa-icon-512.png에서 Windows icon을 재현하여 NSIS 설치 파일을 만듭니다.
 4. Tauri가 비공개 서명 키를 사용해 updater 서명을 생성합니다.
 5. tauri-action이 GitHub Release와 최신 버전 manifest latest.json을 게시합니다.
-6. Tern은 실행 시 새 버전을 자동 조회하고 사용자가 설치를 승인하면 서명을 검사하고 설치합니다. 작성 중인 내용이 갑자기 사라지지 않도록 무인 자동 설치하지 않습니다.
+6. Tern은 실행 시와 이후 1시간 간격으로 새 버전을 자동 조회하고 사용자가 설치를 승인하면 서명을 검사하고 설치·재시작합니다. 작성 중인 내용이 갑자기 사라지지 않도록 무인 자동 설치하지 않습니다.
 
 필요한 GitHub Actions Repository Secrets:
 - TAURI_SIGNING_PRIVATE_KEY: **기존 Tern v0.2.0에 사용한** Tauri updater 개인키 내용

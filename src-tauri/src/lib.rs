@@ -88,6 +88,8 @@ async fn desktop_update(
         // The Windows updater verifies the signature and exits this process to
         // hand control to the signed NSIS installer.
         update.download_and_install(|_, _| {}, || {}).await.map_err(|error| error.to_string())?;
+        // Tauri recommends restarting the app after the signed update installs.
+        app.restart();
     }
     Ok(UpdateState { installed_version, available_version })
 }
