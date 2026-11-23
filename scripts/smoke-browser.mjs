@@ -1092,7 +1092,8 @@ try {
   await page.evaluate(() => { window.location.hash = "#/memo"; });
   await page.getByRole("heading", { name: "메모", exact: true }).waitFor();
   await page.getByRole("button", { name: "새 메모", exact: true }).click();
-  const memoDialog = page.getByRole("dialog", { name: "새 메모" });
+  const memoDialog = page.getByRole("complementary", { name: "메모 편집기" });
+  await memoDialog.waitFor();
   const memoTitle = `Writer E2E ${randomUUID().slice(0, 8)}`;
   await memoDialog.getByPlaceholder("메모 제목").fill(memoTitle);
   const memoRich = memoDialog.getByRole("textbox", { name: "메모 시각 편집기" });
@@ -1100,9 +1101,9 @@ try {
   await memoDialog.getByRole("button", { name: "제목", exact: true }).click();
   await memoRich.getByRole("heading", { name: "작성 내용", exact: true }).waitFor();
   await sleep(550);
-  await memoDialog.getByRole("button", { name: "새 메모 닫기" }).click();
+  await memoDialog.getByRole("button", { name: "취소", exact: true }).click();
   await page.getByRole("button", { name: "새 메모", exact: true }).click();
-  const resumedMemo = page.getByRole("dialog", { name: "새 메모" });
+  const resumedMemo = page.getByRole("complementary", { name: "메모 편집기" });
   assert.equal(await resumedMemo.getByPlaceholder("메모 제목").inputValue(), memoTitle, "Memo draft must restore after closing the editor.");
   await resumedMemo.getByRole("textbox", { name: "메모 시각 편집기" }).getByRole("heading", { name: "작성 내용", exact: true }).waitFor();
   await resumedMemo.locator("details").filter({ hasText: "연결 · Todo" }).locator("summary").click();
@@ -1122,7 +1123,7 @@ try {
   await resumedMemo.getByRole("button", { name: "파랑", exact: true }).click();
   assert.equal(await resumedMemo.getByRole("button", { name: "파랑", exact: true }).getAttribute("aria-pressed"), "true");
   await resumedMemo.getByRole("button", { name: "메모 저장", exact: true }).click();
-  await resumedMemo.waitFor({ state: "hidden" });
+  await page.getByRole("complementary", { name: "메모 편집기" }).getByRole("textbox", { name: "메모 시각 편집기" }).waitFor();
   await page.unroute("**/api/memos/*/links");
   const savedMemos = await page.evaluate(async () => {
     const response = await fetch("/api/memos?limit=100", { credentials: "same-origin" });
@@ -1143,10 +1144,10 @@ try {
   }));
   assert.equal(noteAccent.accent, "#3b82f6", "Memo accent must keep the stored color.");
   assert.equal(noteAccent.stripe, "rgb(59, 130, 246)", "Accent color should be a narrow stripe, not a filled card.");
-  assert.equal(noteAccent.background, "rgba(0, 0, 0, 0)", "Idle editorial memo panel must stay transparent.");
+  assert.notEqual(noteAccent.background, "rgba(0, 0, 0, 0)", "Selected memo should have a subtle accent-tinted surface.");
   assert.equal(noteAccent.topBorder, "1px");
   assert.equal(noteAccent.bottomBorder, "1px");
-  assert.equal(noteAccent.radius, "0px", "Editorial notes should have square corners.");
+  assert.equal(noteAccent.radius, "3px", "Compact memo navigation uses a restrained radius.");
   // Four former action icons should be consolidated in an accessible disclosure.
   const memoActions = memoCard.locator(".memo-actions");
   assert.equal(await memoActions.evaluate((element) => element.open), false);
@@ -1159,26 +1160,23 @@ try {
   assert.equal(await memoActions.evaluate((element) => element.open), false, "Escape must close the action disclosure.");
   await memoActions.locator("summary").click();
   await memoActions.getByRole("button", { name: "수정", exact: true }).click();
-  const memoEditDialog = page.getByRole("dialog", { name: "메모 수정" });
-  await memoEditDialog.waitFor();
-  await memoEditDialog.getByRole("button", { name: "메모 수정 닫기" }).click();
+  const memoPane = page.getByRole("complementary", { name: "메모 편집기" });
+  await memoPane.waitFor();
+  assert.equal(await memoPane.getByPlaceholder("메모 제목").inputValue(), memoTitle,
+    "The selected memo must open for editing in the same workspace, without a modal.");
+  assert.equal(await memoPane.evaluate((node) => node.style.getPropertyValue("--memo-accent")), "#3b82f6",
+    "The document pane should inherit the saved memo color.");
+  await memoPane.getByRole("textbox", { name: "메모 시각 편집기" }).getByRole("heading", { name: "작성 내용", exact: true }).waitFor();
   await page.setViewportSize({ width: 1440, height: 900 });
   await memoCard.getByRole("button", { name: `${memoTitle} 열기` }).click();
-  const memoReadPane = page.getByRole("complementary", { name: "메모 문서" });
-  await memoReadPane.getByRole("heading", { name: memoTitle, exact: true }).waitFor();
-  await memoReadPane.getByText("작성 내용", { exact: true }).waitFor();
-  await memoReadPane.getByRole("button", { name: "수정", exact: true }).click();
-  const readerEditDialog = page.getByRole("dialog", { name: "메모 수정" });
-  await readerEditDialog.waitFor();
-  await readerEditDialog.getByRole("button", { name: "메모 수정 닫기" }).click();
-  await memoReadPane.getByRole("button", { name: "메모 문서 닫기" }).click();
-  await memoReadPane.waitFor({ state: "detached" });
+  assert.equal(await memoPane.getByPlaceholder("메모 제목").inputValue(), memoTitle);
   const memoLayout = await page.evaluate(() => ({
-    cols: getComputedStyle(document.querySelector(".memo-note-grid")).gridTemplateColumns.split(" ").length,
+    cols: getComputedStyle(document.querySelector(".memo-workspace--editor")).gridTemplateColumns.split(" ").length,
+    listCols: getComputedStyle(document.querySelector(".memo-note-grid")).gridTemplateColumns.split(" ").length,
     width: document.querySelector(".memo-collections").getBoundingClientRect().width,
   }));
-  assert.ok(memoLayout.width >= 1050 && memoLayout.cols === 2,
-    `Desktop memos need a balanced 2-column reading layout: ${JSON.stringify(memoLayout)}`);
+  assert.ok(memoLayout.width >= 280 && memoLayout.width <= 390 && memoLayout.cols === 2 && memoLayout.listCols === 1,
+    `Desktop memos should use one compact list alongside an inline document editor: ${JSON.stringify(memoLayout)}`);
   const newMemoButton = page.getByRole("button", { name: "새 메모", exact: true });
   const memoCreateAppearance = await newMemoButton.evaluate((button) => ({
     radius: getComputedStyle(button).borderTopLeftRadius,
