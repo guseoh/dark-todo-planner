@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "npm run build && wrangler dev --local",
+    "dev:desktop-ui": "vite --host 127.0.0.1 --port 5173",
+    "build:desktop-ui": "tsc -b && vite build --base=./",
     "build": "tsc -b && vite build && wrangler deploy --dry-run --env=\"\" --outdir .wrangler/build",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
