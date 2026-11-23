@@ -3160,3 +3160,18 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
 }
 .memo-page .memo-advanced-preview pre { max-width: 100%; overflow-x: auto; }
 .memo-page .memo-advanced-preview table { display: block; max-width: 100%; overflow-x: auto; }
+
+
+/* Memo navigation: keep the selected row responsive while Tiptap parses a new note. */
+.memo-page .memo-document-loading {
+  display: flex;
+  align-items: flex-start;
+  flex: 1 1 auto;
+  min-height: 210px;
+  padding: 1.4rem .25rem;
+  color: var(--ui-text-secondary);
+  font-size: .8rem;
+}
+.memo-page .memo-document-pane[aria-busy="true"] {
+  cursor: progress;
+}
