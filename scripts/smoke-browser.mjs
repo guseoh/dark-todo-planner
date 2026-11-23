@@ -1577,6 +1577,25 @@ try {
   const savedReflection = reflectionRows.find((row) => row.content === `Reflection ${flowTag}`);
   assert.ok(savedReflection, "The one-line reflection is stored.");
 
+  // Regression: a failed reflection GET must never turn a previously saved note into an editable blank.
+  const reflectionReadPattern = /\\/api\\/reflections\\?/;
+  await page.route(reflectionReadPattern, async (route) => {
+    await route.fulfill({ status: 503, contentType: "application/json", body: '{"error":"simulated-read-failure"}' });
+  });
+  await page.getByRole("button", { name: /오늘 정리/ }).click();
+  const safeRecapDialog = page.getByRole("dialog", { name: "오늘 정리" });
+  await safeRecapDialog.getByText("기존 회고를 불러오지 못했습니다.", { exact: false }).waitFor();
+  const safeReflectionInput = safeRecapDialog.getByLabel(/오늘의 한 줄 회고/);
+  assert.equal(await safeReflectionInput.isDisabled(), true, "Failed read must lock the reflection editor.");
+  await page.unroute(reflectionReadPattern);
+  await safeRecapDialog.getByRole("button", { name: "다시 조회" }).click();
+  await page.waitForFunction(() => {
+    const field = document.querySelector('[role="dialog"] textarea');
+    return field && !field.disabled;
+  });
+  assert.equal(await safeReflectionInput.inputValue(), `Reflection ${flowTag}`, "Retry must restore the previous server reflection.");
+  await safeRecapDialog.getByRole("button", { name: "취소" }).click();
+
   // 전체 Todo bulk selection: a whole group can be selected, or excluded again, with one click.
   await page.evaluate(() => { window.location.hash = "#/all"; });
   await page.getByRole("heading", { name: "전체 Todo", exact: true }).waitFor();
