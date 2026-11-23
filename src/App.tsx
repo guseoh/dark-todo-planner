@@ -37,6 +37,8 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
   const [calendarDate, setCalendarDate] = useState(() => calendarDateFromHash(window.location.hash));
   const [allProjectId, setAllProjectId] = useState(() => new URLSearchParams(window.location.hash.split("?")[1]).get("project") || "");
   const [showQuickAdd, setShowQuickAdd] = useState(false);
+
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
   useEffect(() => {
     if (!isTauri()) return;
     let disposed = false;
@@ -53,7 +55,6 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
       unlisten?.();
     };
   }, []);
-  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [searchTodoId, setSearchTodoId] = useState<string | null>(null);
   const [searchMemoId, setSearchMemoId] = useState<string | null>(null);
   const [searchProjectId, setSearchProjectId] = useState<string | null>(null);
