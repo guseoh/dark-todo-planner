@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { FormEvent, memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Ellipsis, FolderKanban, Link2, ListPlus, Pencil, Pin, PinOff, Plus, Save, Search, Trash2, X } from "lucide-react";
 import { EmptyState } from "../components/common/EmptyState";
 import { PageHeader } from "../components/common/PageHeader";
@@ -72,14 +72,20 @@ type MemoFormProps = {
   onCancel?: () => void;
   large?: boolean;
   inline?: boolean;
+  onColorPreview?: (memoId: string, color: string) => void;
   draftKey: string;
 };
 
-function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedMemo, todos, projects, onCancel, onSaved, large = false, inline = false, draftKey }: MemoFormProps) {
+function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedMemo, todos, projects, onCancel, onSaved, large = false, inline = false, onColorPreview, draftKey }: MemoFormProps) {
   const initialDraft = useMemo(() => readDraft(draftKey, initial), [draftKey, initial]);
   const [title, setTitle] = useState(initialDraft?.title ?? initial?.title ?? "");
   const [content, setContent] = useState(initialDraft?.content ?? initial?.content ?? "");
   const [color, setColor] = useState(resolveMemoColor(initialDraft?.color ?? initial?.color));
+  // Keep the document header and list color in sync with the unsaved form color.
+  // Persistence still requires the existing explicit Save action.
+  useEffect(() => {
+    onColorPreview?.(initial?.id ?? "new", color);
+  }, [initial?.id, color, onColorPreview]);
   const [pinned, setPinned] = useState(initialDraft?.pinned ?? initial?.pinned ?? false);
   const [todoIds, setTodoIds] = useState<string[]>(initialDraft?.todoIds ?? initial?.todoIds ?? []);
   const [projectIds, setProjectIds] = useState<string[]>(initialDraft?.projectIds ?? initial?.projectIds ?? []);
@@ -326,9 +332,10 @@ const memoExcerpt = (markdown: string) => markdown
   .replace(/\s+/g, " ")
   .trim();
 
-function MemoCard({ memo, selected, onSelect, onDelete, onTogglePin, onEdit, onCreateTodo, onCreateChecklistTodos }: {
+const MemoCard = memo(function MemoCard({ memo, selected, colorPreview, onSelect, onDelete, onTogglePin, onEdit, onCreateTodo, onCreateChecklistTodos }: {
   memo: Memo;
   selected: boolean;
+  colorPreview?: string;
   onSelect: (memo: Memo) => void;
   onDelete: (id: string) => unknown | Promise<unknown>;
   onTogglePin: (id: string) => unknown | Promise<unknown>;
@@ -345,7 +352,7 @@ function MemoCard({ memo, selected, onSelect, onDelete, onTogglePin, onEdit, onC
     if (window.confirm("메모를 삭제할까요? 삭제 후 6초 동안 실행 취소할 수 있습니다.")) void onDelete(memo.id);
   };
   return (
-    <article className="memo-note group min-w-0" data-selected={selected ? "true" : "false"} style={memoAccentStyle(memo.color)}>
+    <article className="memo-note group min-w-0" data-selected={selected ? "true" : "false"} style={memoAccentStyle(colorPreview ?? memo.color)}>
       <div className="memo-note__body">
         <div className="memo-note__top">
           <button type="button" className="memo-note__title-button" onClick={() => onSelect(memo)}
@@ -409,7 +416,7 @@ function MemoCard({ memo, selected, onSelect, onDelete, onTogglePin, onEdit, onC
       </div>
     </article>
   );
-}
+});
 
 export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTargetOpened, onAdd, onUpdate, onUpdateLinks, onDelete, onTogglePin, onAddTodo }: {
   memos: Memo[];
@@ -426,6 +433,11 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
 }) {
   const [creating, setCreating] = useState(false);
   const [previewMemoId, setPreviewMemoId] = useState<string | null>(null);
+  const [colorPreviews, setColorPreviews] = useState<Record<string, string>>({});
+  const handleColorPreview = useCallback((id: string, nextColor: string) => {
+    setColorPreviews((current) => current[id] === nextColor
+      ? current : { ...current, [id]: nextColor });
+  }, []);
   const [searchQuery, setSearchQuery] = useState("");
   const [memoView, setMemoView] = useState<"all" | "pinned" | "linked">("all");
   useEffect(() => {
@@ -440,6 +452,14 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
   const [conversionMessage, setConversionMessage] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const showSaved = (memo: Memo) => {
+    // The server response now owns the saved color. Do not retain an older draft override.
+    setColorPreviews((current) => {
+      if (!("new" in current) && !(memo.id in current)) return current;
+      const next = { ...current };
+      delete next.new;
+      delete next[memo.id];
+      return next;
+    });
     setPreviewMemoId(memo.id);
     setCreating(false);
     setSaveMessage("메모를 서버에 저장했습니다.");
@@ -447,22 +467,26 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase("ko-KR");
   const todosById = useMemo(() => new Map(todos.map((todo) => [todo.id, todo.title])), [todos]);
   const projectsById = useMemo(() => new Map(projects.map((project) => [project.id, project.name])), [projects]);
-  const filteredMemos = memos.filter((memo) => {
+  const filteredMemos = useMemo(() => memos.filter((memo) => {
     if (memoView === "pinned" && !memo.pinned) return false;
     if (memoView === "linked" && !memo.todoIds.length && !memo.projectIds.length) return false;
     if (!normalizedQuery) return true;
     const linkedNames = [...memo.todoIds.map((id) => todosById.get(id) || ""), ...memo.projectIds.map((id) => projectsById.get(id) || "")];
     return [memo.title || "", memo.content, ...linkedNames].join("\n").toLocaleLowerCase("ko-KR").includes(normalizedQuery);
-  });
+  }), [memos, memoView, normalizedQuery, todosById, projectsById]);
   const pinnedMemos = filteredMemos.filter((memo) => memo.pinned);
   const normalMemos = filteredMemos.filter((memo) => !memo.pinned);
   // Always show one document beside the list, even before the first selection.
   // Search and filters determine the fallback document; an explicit selection wins.
   const selectedMemo = filteredMemos.find((memo) => memo.id === previewMemoId) ?? filteredMemos[0] ?? null;
-  const selectMemo = (memo: Memo) => {
+  // Let the selected row update immediately. Reconstructing a Tiptap document
+  // may be expensive for long Markdown; defer that work without editing a stale note.
+  const deferredMemo = useDeferredValue(selectedMemo);
+  const switchingMemo = !creating && selectedMemo?.id !== deferredMemo?.id;
+  const selectMemo = useCallback((memo: Memo) => {
     setCreating(false);
     setPreviewMemoId(memo.id);
-  };
+  }, []);
 
   useEffect(() => {
     if (!conversionMessage) return undefined;
@@ -470,14 +494,14 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
     return () => window.clearTimeout(timer);
   }, [conversionMessage]);
 
-  const createTodoFromMemo = async (memo: Memo) => {
+  const createTodoFromMemo = useCallback(async (memo: Memo) => {
     const title = memoDisplayTitle(memo);
     const todo = await onAddTodo({ title, memo: memo.content, date: todayKey() });
     if (todo) await onUpdateLinks(memo.id, { todoIds: Array.from(new Set([...memo.todoIds, todo.id])), projectIds: memo.projectIds });
     setConversionMessage(todo ? `“${title}” Todo를 만들고 메모와 연결했습니다.` : "Todo를 만들지 못했습니다.");
-  };
+  }, [onAddTodo, onUpdateLinks]);
 
-  const createChecklistTodos = async (memo: Memo, titles: string[]) => {
+  const createChecklistTodos = useCallback(async (memo: Memo, titles: string[]) => {
     if (!titles.length || !window.confirm(`미완료 체크리스트 ${titles.length}개를 오늘 Todo로 만들까요?`)) return;
     const createdIds: string[] = [];
     for (const title of titles) {
@@ -486,9 +510,12 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
     }
     if (createdIds.length) await onUpdateLinks(memo.id, { todoIds: Array.from(new Set([...memo.todoIds, ...createdIds])), projectIds: memo.projectIds });
     setConversionMessage(`${createdIds.length}/${titles.length}개 Todo를 만들고 메모와 연결했습니다.`);
-  };
+  }, [onAddTodo, onUpdateLinks]);
 
-  const renderCard = (memo: Memo) => <MemoCard key={memo.id} memo={memo} selected={!creating && selectedMemo?.id === memo.id} onSelect={selectMemo} onDelete={onDelete} onTogglePin={onTogglePin} onEdit={selectMemo} onCreateTodo={createTodoFromMemo} onCreateChecklistTodos={createChecklistTodos} />;
+  const renderCard = (note: Memo) => <MemoCard key={note.id} memo={note}
+    selected={!creating && selectedMemo?.id === note.id} colorPreview={colorPreviews[note.id]}
+    onSelect={selectMemo} onDelete={onDelete} onTogglePin={onTogglePin} onEdit={selectMemo}
+    onCreateTodo={createTodoFromMemo} onCreateChecklistTodos={createChecklistTodos} />;
 
   return (
     <div className="page-shell memo-page memo-page--workspace">
@@ -529,19 +556,23 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
             <div className="memo-list-empty"><EmptyState title={memos.length ? "검색 결과가 없습니다." : "아직 메모가 없습니다."} description={memos.length ? "검색어나 필터를 변경해 보세요." : "오른쪽에서 새 메모를 작성할 수 있습니다."} /></div>
           )}
         </section>
-        <aside className="memo-document-pane" style={creating ? undefined : memoAccentStyle(selectedMemo?.color)} aria-label="메모 편집기">
+        <aside className="memo-document-pane"
+          style={creating ? memoAccentStyle(colorPreviews.new) : memoAccentStyle(selectedMemo ? (colorPreviews[selectedMemo.id] ?? selectedMemo.color) : undefined)}
+          aria-label="메모 편집기" aria-busy={switchingMemo}>
           {creating ? (
             <>
               <div className="memo-document-heading"><span className="memo-document-heading__eyebrow">새 문서</span><span className="memo-document-heading__hint">Markdown · Tiptap</span></div>
-              <MemoForm key="new" inline draftKey={`${DRAFT_PREFIX}new`} submitLabel="메모 저장" todos={todos} projects={projects} onSaveLinks={onUpdateLinks} onRetryCreatedMemo={onUpdate} onSubmit={onAdd} onSaved={showSaved} onCancel={() => setCreating(false)} />
+              <MemoForm key="new" inline onColorPreview={handleColorPreview} draftKey={`${DRAFT_PREFIX}new`} submitLabel="메모 저장" todos={todos} projects={projects} onSaveLinks={onUpdateLinks} onRetryCreatedMemo={onUpdate} onSubmit={onAdd} onSaved={showSaved} onCancel={() => setCreating(false)} />
             </>
+          ) : switchingMemo ? (
+            <div className="memo-document-loading" role="status" aria-live="polite">메모를 여는 중…</div>
           ) : selectedMemo ? (
             <>
               <div className="memo-document-heading">
                 <span className="memo-document-heading__eyebrow"><span className="memo-document-heading__color" aria-hidden="true" />문서 편집</span>
                 <span className="memo-document-heading__hint">{formatKoreanDate(selectedMemo.updatedAt, "yyyy.MM.dd 수정")}</span>
               </div>
-              <MemoForm key={selectedMemo.id} inline initial={selectedMemo} draftKey={`${DRAFT_PREFIX}${selectedMemo.id}`} submitLabel="저장" large todos={todos} projects={projects} onSaveLinks={onUpdateLinks} onRetryCreatedMemo={onUpdate} onSubmit={(input) => onUpdate(selectedMemo.id, input)} onSaved={showSaved} />
+              <MemoForm key={selectedMemo.id} inline initial={selectedMemo} onColorPreview={handleColorPreview} draftKey={`${DRAFT_PREFIX}${selectedMemo.id}`} submitLabel="저장" large todos={todos} projects={projects} onSaveLinks={onUpdateLinks} onRetryCreatedMemo={onUpdate} onSubmit={(input) => onUpdate(selectedMemo.id, input)} onSaved={showSaved} />
             </>
           ) : (
             <div className="memo-document-empty">
