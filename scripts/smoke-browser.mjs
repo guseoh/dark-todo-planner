@@ -415,7 +415,9 @@ try {
 
   // Empty Today keeps its summary and add form, with one actionable empty-list message.
   await page.getByRole("group", { name: "오늘 작업 현황", exact: true }).waitFor();
-  await page.getByText(/오늘 예정된 일이 없습니다/).waitFor();
+  await page.getByRole("heading", { name: "오늘의 계획을 시작하세요", exact: true }).waitFor();
+  await page.getByText(/할 일이 아직 없습니다/).waitFor();
+  await page.getByRole("button", { name: "하루 회고", exact: true }).waitFor();
   assert.equal(await page.getByText("첫 작업", { exact: true }).count(), 0, "Empty state should be a single calm line.");
   assert.equal(await page.getByRole("heading", { name: "지금 집중" }).count(), 0, "Do not render empty focus card.");
   assert.equal(await page.getByText("미완료 Todo가 없습니다.", { exact: true }).count(), 0, "Do not repeat zero-state placeholders.");
