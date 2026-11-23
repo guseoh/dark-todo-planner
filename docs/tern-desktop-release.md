@@ -24,7 +24,7 @@
 필요한 GitHub Actions Repository Secrets:
 - TAURI_SIGNING_PRIVATE_KEY: **기존 Tern v0.2.0에 사용한** Tauri updater 개인키 내용
 - TAURI_SIGNING_PRIVATE_KEY_PASSWORD: 개인키 암호(설정한 경우)
-- TERN_UPDATER_PUBLIC_KEY: 해당 개인키와 정확히 짝인 Tauri updater 공개키 (.pub 파일의 공개키 텍스트)
+- TERN_UPDATER_PUBLIC_KEY: 해당 개인키와 정확히 짝인 Tauri CLI가 출력한 **base64 인코딩된 minisign 공개키 문서** 값(일반적으로 `dW50cn...`로 시작). `.pub`의 내부 `RW...` 한 줄만 넣지 않습니다.
 
 **개인키를 Git 또는 공개 문서에 업로드하지 마세요.** GitHub Settings → Secrets and variables → Actions → Repository secrets에서 추가합니다. 기존 개인키가 없으면 공개키만으로 새 업데이트를 만들 수 없습니다. 키가 유실됐다면 새 서명 키를 만든 후 기존 설치자에게 **신규 설치 파일을 직접 실행하는 1회 전환**이 필요합니다. v0.2.0 인플레이스 자동 업데이트를 보장할 수 없습니다.
 
