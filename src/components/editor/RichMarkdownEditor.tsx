@@ -147,7 +147,7 @@ export const RichMarkdownEditor = forwardRef<RichMarkdownHandle, {
 
   return (
     <div className={`scratchpad-rich rich-markdown-editor rich-markdown-editor--${variant} min-h-0 overflow-auto bg-ui-canvas text-ui-text ${variant === "memo" ? "px-3 py-3" : "flex-1 px-4 py-5 sm:px-8"}`}
-      onKeyDown={onShortcut} style={{ fontSize: String(15 * zoom / 100) + "px", overflowWrap: wrap ? "anywhere" : "normal" }}>
+      onKeyDown={onShortcut} style={{ fontSize: String(16 * zoom / 100) + "px", overflowWrap: wrap ? "anywhere" : "normal" }}>
       <EditorContent editor={editor} />
     </div>
   );
