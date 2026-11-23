@@ -1449,17 +1449,34 @@ try {
   await page.getByText(trashSearchFixtureTitle, { exact: true }).waitFor();
   // Dense Today with 20 additional local-only tasks remains readable on narrow and wide displays.
   const denseLabel = "Dense today " + randomUUID().slice(0, 6);
-  const denseResults = await page.evaluate(async ({ date, prefix }) => {
-    const errors = [];
-    for (let index = 0; index < 20; index += 1) {
-      const response = await fetch("/api/todos", {
-        method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin",
-        body: JSON.stringify({ title: prefix + " " + index, date, planningState: "SCHEDULED", priority: "MEDIUM" }),
-      });
-      if (!response.ok) errors.push(response.status);
+  // The test intentionally issues many mutations. Local D1 enforces the same
+  // 120/minute user limit as production; never treat HTTP 429 as fixture loss.
+  // Back off once and retry the *same* index, avoiding duplicate fixture rows.
+  const denseResults = [];
+  let denseNextIndex = 0;
+  let denseRateLimitRetries = 0;
+  while (denseNextIndex < 20) {
+    const batch = await page.evaluate(async ({ date, prefix, startIndex }) => {
+      const errors = [];
+      for (let index = startIndex; index < 20; index += 1) {
+        const response = await fetch("/api/todos", {
+          method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin",
+          body: JSON.stringify({ title: prefix + " " + index, date, planningState: "SCHEDULED", priority: "MEDIUM" }),
+        });
+        if (response.status === 429) return { nextIndex: index, rateLimited: true, errors };
+        if (!response.ok) errors.push({ index, status: response.status });
+      }
+      return { nextIndex: 20, rateLimited: false, errors };
+    }, { date: savedInlineTodo.date, prefix: denseLabel, startIndex: denseNextIndex });
+    denseResults.push(...batch.errors);
+    denseNextIndex = batch.nextIndex;
+    if (batch.rateLimited) {
+      denseRateLimitRetries += 1;
+      assert.ok(denseRateLimitRetries <= 1, "Dense fixtures must not repeatedly hit HTTP 429");
+      console.log("DENSE_FIXTURE_RATE_LIMIT_BACKOFF=61s");
+      await sleep(61_000);
     }
-    return errors;
-  }, { date: savedInlineTodo.date, prefix: denseLabel });
+  }
   assert.deepEqual(denseResults, [], "All dense-layout fixtures should persist to local D1");
   await page.evaluate(() => { window.location.hash = "#/today"; });
   await page.reload({ waitUntil: "domcontentloaded" });
