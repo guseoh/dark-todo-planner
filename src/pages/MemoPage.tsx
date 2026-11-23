@@ -429,6 +429,7 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
   const [saveMessage, setSaveMessage] = useState("");
   const showSaved = (memo: Memo) => {
     setPreviewMemoId(memo.id);
+    setCreating(false);
     setSaveMessage("메모를 서버에 저장했습니다.");
   };
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase("ko-KR");
