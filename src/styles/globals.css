@@ -2993,3 +2993,159 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
   .memo-rich-toolbar__actions { flex-basis: 100%; order: 3; }
   .scratchpad-workspace .scratchpad-toolbar { flex-basis: 100%; }
 }
+
+
+/* Tern memo workspace — compact navigation and one persistent writing surface.
+   Existing per-note colors are used as accents, never a solid card background. */
+.page-shell.memo-page.memo-page--workspace { max-width: 1500px; }
+.memo-page .memo-workspace--editor {
+  display: grid;
+  grid-template-columns: minmax(300px, 340px) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0;
+  min-height: min(650px, calc(100vh - 14rem));
+  border-top: 1px solid var(--ui-divider);
+}
+.memo-page .memo-workspace--editor .memo-collections {
+  display: block;
+  min-width: 0;
+  max-height: calc(100vh - 12.5rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  border-right: 1px solid var(--ui-divider);
+  padding: .65rem .85rem 1.2rem 0;
+}
+.memo-page .memo-list-heading {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .1rem .45rem .6rem;
+  color: var(--text-secondary); font-size: .76rem; font-weight: 600;
+}
+.memo-page .memo-list-heading > :last-child { color: var(--text-muted); font-weight: 400; }
+.memo-page .memo-workspace--editor .memo-toolbar {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: .45rem;
+  padding: 0 .15rem .75rem;
+  border-bottom: 1px solid var(--ui-divider);
+}
+.memo-page .memo-workspace--editor .memo-search { flex: 1 1 100%; max-width: none; }
+.memo-page .memo-workspace--editor .memo-search__input {
+  min-height: 36px;
+  padding-block: .4rem;
+  background: var(--ui-inset);
+}
+.memo-page .memo-workspace--editor .memo-tabs {
+  display: flex; flex-wrap: nowrap; gap: .15rem;
+}
+.memo-page .memo-workspace--editor .memo-tabs .page-tab { min-height: 32px; padding: .25rem .65rem; font-size: .76rem; }
+.memo-page .memo-workspace--editor .memo-section { padding-top: 1rem; }
+.memo-page .memo-workspace--editor .memo-section__heading {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .2rem .45rem .5rem; color: var(--text-muted); font-size: .7rem;
+}
+.memo-page .memo-workspace--editor .memo-section__heading h3 { font-size: .72rem; font-weight: 600; }
+.memo-page .memo-workspace--editor .memo-section__heading span { font-size: .68rem; }
+.memo-page .memo-workspace--editor .memo-note-grid {
+  grid-template-columns: minmax(0, 1fr);
+  display: grid; gap: .2rem;
+}
+.memo-page .memo-workspace--editor .memo-note {
+  padding: .75rem .85rem .75rem 1.15rem;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  transition: background-color .12s ease;
+}
+.memo-page .memo-workspace--editor .memo-note::before {
+  top: 13px; bottom: 13px; height: auto; left: 5px; width: 3px;
+  background: var(--memo-accent, var(--ui-text-muted));
+  opacity: .83;
+}
+.memo-page .memo-workspace--editor .memo-note:hover,
+.memo-page .memo-workspace--editor .memo-note:focus-within {
+  background: var(--ui-hover);
+  border-color: transparent;
+}
+.memo-page .memo-workspace--editor .memo-note[data-selected="true"] {
+  background: color-mix(in srgb, var(--memo-accent) 7%, var(--ui-surface));
+  border-color: color-mix(in srgb, var(--memo-accent) 16%, var(--ui-divider));
+}
+.memo-page .memo-workspace--editor .memo-note__body { gap: .35rem; }
+.memo-page .memo-workspace--editor .memo-note__title { font-size: .86rem; line-height: 1.45; }
+.memo-page .memo-workspace--editor .memo-note__date { font-size: .7rem; }
+.memo-page .memo-workspace--editor .memo-note__excerpt {
+  -webkit-line-clamp: 2;
+  font-size: .76rem; line-height: 1.5;
+}
+.memo-page .memo-workspace--editor .memo-actions__trigger { width: 28px; height: 28px; }
+.memo-page .memo-workspace--editor .memo-note__links { font-size: .7rem; }
+.memo-page .memo-workspace--editor .memo-list-empty { padding: .8rem .3rem; }
+.memo-page .memo-document-pane {
+  display: flex; flex-direction: column;
+  min-width: 0; min-height: 0;
+  padding: 1.05rem clamp(1rem, 2.1vw, 2rem) 1.8rem;
+  background: var(--ui-canvas);
+}
+.memo-page .memo-document-heading {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: .8rem; padding-bottom: .75rem;
+  border-bottom: 1px solid var(--ui-divider);
+}
+.memo-page .memo-document-heading__eyebrow {
+  display: inline-flex; gap: .55rem; align-items: center;
+  color: var(--ui-text-secondary); font-size: .75rem; font-weight: 600;
+}
+.memo-page .memo-document-heading__color {
+  width: 8px; height: 8px; border-radius: 2px; background: var(--memo-accent, var(--ui-text-muted));
+}
+.memo-page .memo-document-heading__hint { color: var(--text-muted); font-size: .72rem; }
+.memo-page .memo-document-form {
+  display: flex; flex-direction: column; flex: 1 1 auto;
+  min-width: 0; gap: .8rem; padding-top: 1rem;
+}
+.memo-page .memo-document-title-label { display: block; min-width: 0; }
+.memo-page .memo-document-title-input {
+  display: block; width: 100%; min-height: 42px;
+  border: 1px solid transparent; border-bottom-color: var(--ui-divider);
+  outline: none; background: transparent; padding: .35rem .15rem .65rem;
+  color: var(--ui-text-primary); font-size: clamp(1.2rem, 1.7vw, 1.55rem);
+  line-height: 1.35; font-weight: 650; letter-spacing: -.025em;
+}
+.memo-page .memo-document-title-input:focus-visible { border-bottom-color: var(--memo-accent, var(--ui-focus)); }
+.memo-page .memo-document-title-input::placeholder { color: var(--text-muted); opacity: .9; }
+.memo-page .memo-document-metadata {
+  display: flex; flex-wrap: wrap; align-items: flex-end;
+  justify-content: space-between; gap: .5rem 1rem;
+}
+.memo-page .memo-document-metadata fieldset legend { font-size: .68rem; color: var(--text-muted); font-weight: 500; }
+.memo-page .memo-document-metadata .memo-color-picker { min-height: 30px; gap: .35rem; }
+.memo-page .memo-document-metadata .memo-color-swatch { width: 22px; height: 22px; }
+.memo-page .memo-document-metadata label { min-height: 30px; }
+.memo-page .memo-edit-section--inline { flex: 1 1 auto; min-height: 280px; }
+.memo-page .memo-edit-section--inline .memo-rich-toolbar { padding-block: .35rem; }
+.memo-page .memo-edit-section--inline .rich-markdown-editor--memo {
+  border: none; background: transparent;
+  max-height: none; min-height: 280px;
+  padding: .95rem .2rem;
+}
+.memo-page .memo-edit-section--inline .rich-markdown-editor--memo .ProseMirror {
+  min-height: 260px; line-height: 1.78;
+}
+.memo-page .memo-edit-section--inline .memo-rich-toolbar__source { font-size: .73rem; }
+.memo-page .memo-document-empty {
+  display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+  flex: 1 1 auto; gap: .75rem;
+  padding: 2rem 1rem; color: var(--text-muted);
+}
+.memo-page .memo-document-empty h2 { font-size: .95rem; color: var(--ui-text-primary); font-weight: 600; }
+.memo-page .memo-document-empty p { font-size: .78rem; }
+.memo-page .memo-document-empty button { margin-top: .45rem; }
+@media (max-width: 1040px) {
+  .memo-page .memo-workspace--editor { grid-template-columns: minmax(0,1fr); }
+  .memo-page .memo-workspace--editor .memo-collections {
+    border-right: 0; border-bottom: 1px solid var(--ui-divider);
+    max-height: 250px; padding-right: 0;
+  }
+  .memo-page .memo-document-pane { padding: 1.1rem .5rem 1.4rem; }
+  .memo-page .memo-workspace--editor .memo-note__excerpt { -webkit-line-clamp: 1; }
+}
