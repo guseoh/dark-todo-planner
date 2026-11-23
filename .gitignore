@@ -12,3 +12,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# Tauri local build outputs; keep native source and config tracked.
+src-tauri/target/
+src-tauri/gen/
+src-tauri/icons/
