@@ -584,7 +584,7 @@ try {
   const edited = title + " edited";
   const quickInput = page.locator('input[data-quick-todo-input="true"]');
   await quickInput.fill(title);
-  await page.getByRole("button", { name: "추가", exact: true }).click();
+  await composer.getByRole("button", { name: "추가", exact: true }).click();
   await page.getByText(title, { exact: true }).first().waitFor();
   await page.waitForFunction(() => {
     const input = document.querySelector('.today-composer input[data-quick-todo-input="true"]');
@@ -817,7 +817,7 @@ try {
   await context.setOffline(true);
   await composer.waitFor();
   await quickInput.fill(offlineTitle);
-  await page.getByRole("button", { name: "추가", exact: true }).click();
+  await composer.getByRole("button", { name: "추가", exact: true }).click();
   await page.getByText(offlineTitle, { exact: true }).first().waitFor();
   await context.setOffline(false);
   await waitForServerTodo(offlineTitle);
