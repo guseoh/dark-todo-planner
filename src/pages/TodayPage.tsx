@@ -367,6 +367,12 @@ export function TodayPage({
 
       <div className={`today-workspace ${planningOpen ? "today-workspace--planning" : "today-workspace--single"}`}>
         <main className="today-workspace__main min-w-0 space-y-3">
+          <div className="today-daily-summary" role="group" aria-label="오늘 계획 요약">
+            <span>계획 <strong>{stats.todayTotal}</strong></span>
+            <span>남은 일 <strong>{stats.todayActive}</strong></span>
+            <span>완료 <strong>{stats.todayCompleted}</strong></span>
+            {overdueTodos.length > 0 ? <span className="today-daily-summary__overdue">지난 일정 <strong>{overdueTodos.length}</strong></span> : null}
+          </div>
           {overdueMoveError ? <p role="alert" className="today-operation-feedback text-danger">{overdueMoveError}</p> : null}
           {overdueMoveNotice ? <p role="status" className="today-operation-feedback text-ui-secondary">{overdueMoveNotice}</p> : null}
           {overdueTodos.length > 0 ? (
@@ -375,14 +381,19 @@ export function TodayPage({
                 지난 일정 <strong>{overdueTodos.length}개</strong>
                 {oldestOverdueDate ? ` · ${formatKoreanDate(oldestOverdueDate, "M월 d일")}부터` : ""}
               </span>
-              <div className="flex flex-wrap gap-1">
-                <button type="button" className="today-overdue-banner__action" disabled={movingOverdue}
-                  title={`지난 일정 ${overdueTodos.length}개를 모두 내일(${formatKoreanDate(toDateKey(addDays(parseDateKey(today), 1)), "M월 d일")})로 옮깁니다`}
-                  onClick={() => void moveOverdue(toDateKey(addDays(parseDateKey(today), 1)))}>전부 내일로 · {overdueTodos.length}개</button>
-                <button type="button" className="today-overdue-banner__action" disabled={movingOverdue}
-                  title={`지난 일정 ${overdueTodos.length}개를 모두 오늘(${formatKoreanDate(today, "M월 d일")})로 옮깁니다`}
-                  onClick={() => void moveOverdue(today)}>전부 오늘로 · {overdueTodos.length}개</button>
-                <button type="button" className="today-overdue-banner__action" onClick={() => setShowOverdueImport(true)}>지난 일정 검토</button>
+              <div className="today-overdue-banner__controls">
+                <button type="button" className="today-overdue-banner__action today-overdue-banner__review"
+                  onClick={() => setShowOverdueImport(true)}>작업 선택·검토</button>
+                <details className="today-overdue-banner__details">
+                  <summary className="today-overdue-banner__action">일괄 이동 <ChevronDown size={13} aria-hidden="true" /></summary>
+                  <div className="today-overdue-banner__bulk-actions">
+                    <p>선택 없이 전체 일정 날짜를 변경합니다. 기존 마감일은 유지됩니다.</p>
+                    <button type="button" className="today-overdue-banner__action" disabled={movingOverdue}
+                      onClick={() => void moveOverdue(today)}>전부 오늘로 · {overdueTodos.length}개</button>
+                    <button type="button" className="today-overdue-banner__action" disabled={movingOverdue}
+                      onClick={() => void moveOverdue(toDateKey(addDays(parseDateKey(today), 1)))}>전부 내일로 · {overdueTodos.length}개</button>
+                  </div>
+                </details>
               </div>
             </div>
           ) : null}
@@ -416,6 +427,11 @@ export function TodayPage({
                 </SortableContext>
               </DndContext>
             </section>
+          ) : stats.todayActive > 0 ? (
+            <div className="today-focus-prompt" role="note">
+              <Star size={14} aria-hidden="true" />
+              <span>오늘의 핵심 작업은 최대 3개입니다. 할 일 오른쪽 별표를 눌러 선택하세요.</span>
+            </div>
           ) : null}
 
           <section className="today-task-section space-y-2" aria-label="오늘 Todo" data-density={compactRows ? "compact" : "comfortable"}>
@@ -498,10 +514,30 @@ export function TodayPage({
                 )}
               </>
             ) : <div className="today-empty-state" role="status">
-              <p>오늘 예정된 일이 없습니다. 위에서 새로 입력하거나, 기존 작업을 오늘로 가져올 수 있습니다.</p>
-              {hasPlanningContent ? (
-                <button type="button" className="today-overdue-banner__action mt-2" onClick={() => setPlanningOpen(true)}>기존 작업에서 고르기</button>
-              ) : <a className="today-planning-panel__all-link block" href="#/all">전체 Todo에서 찾기</a>}
+              <h3>오늘의 계획을 시작하세요</h3>
+              <p>할 일이 아직 없습니다. 위에서 새 작업을 입력하거나 이미 등록한 작업 중 오늘 실행할 일을 고를 수 있습니다.</p>
+              {candidateTodos.length > 0 ? (
+                <div className="today-empty-candidates" aria-label="오늘 계획 추천 작업">
+                  <p className="today-empty-candidates__label">다음 작업에서 고르기</p>
+                  {candidateTodos.slice(0, 3).map((todo) => (
+                    <div className="today-empty-candidate" key={todo.id}>
+                      <span title={todo.title}>{todo.title}</span>
+                      <button type="button" onClick={() => void planToday(todo)} disabled={planningTodoId !== null}
+                        aria-label={`"${todo.title}" 오늘 계획에 추가`}>
+                        {planningTodoId === todo.id ? "추가 중" : "오늘로"}
+                      </button>
+                    </div>
+                  ))}
+                  <button type="button" className="today-empty-candidates__more"
+                    onClick={() => setPlanningOpen(true)}>후보 전체 보기</button>
+                </div>
+              ) : null}
+              {overdueTodos.length > 0 ? (
+                <button type="button" className="today-empty-state__action" onClick={() => setShowOverdueImport(true)}>
+                  지난 일정 {overdueTodos.length}개 중에서 선택하기
+                </button>
+              ) : !hasPlanningContent ? <a className="today-planning-panel__all-link block" href="#/all">전체 Todo에서 찾기</a> : null}
+              {planningError ? <p role="alert" className="today-planning-panel__error">{planningError}</p> : null}
             </div>}
 
 
