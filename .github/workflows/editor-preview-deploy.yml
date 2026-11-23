@@ -71,7 +71,7 @@ jobs:
 
       - name: Verify published Preview health endpoint
         run: |
-          DEPLOY_URL="$(grep -Eo 'https://[A-Za-z0-9.-]+\\.workers\\.dev' preview-deploy.log | tail -1 || true)"
+          DEPLOY_URL="$(grep -Eo 'https://[A-Za-z0-9.-]+\.workers\.dev' preview-deploy.log | tail -1 || true)"
           if [ -z "$DEPLOY_URL" ]; then
             echo "::error::Unable to extract the Preview Worker URL from Wrangler output."
             exit 1
