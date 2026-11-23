@@ -2,12 +2,10 @@ import { FormEvent, useEffect, useMemo, useRef, useState, type CSSProperties } f
 import { Ellipsis, FolderKanban, Link2, ListPlus, Pencil, Pin, PinOff, Plus, Save, Search, Trash2, X } from "lucide-react";
 import { EmptyState } from "../components/common/EmptyState";
 import { PageHeader } from "../components/common/PageHeader";
-import { Modal } from "../components/common/Modal";
 import { Button } from "../components/ui/Button";
 import { MarkdownEditor } from "../components/editor/MarkdownEditor";
 import { RichMarkdownEditor, type RichMarkdownHandle } from "../components/editor/RichMarkdownEditor";
 import { requiresRawScratchpadEditing } from "../lib/scratchpadEditorSafety";
-import { MarkdownPreview } from "../components/editor/MarkdownPreview";
 import { formatKoreanDate, todayKey } from "../lib/date";
 import type { Memo, MemoInput, MemoLinksInput } from "../types/memo";
 import type { Project } from "../types/project";
@@ -72,10 +70,11 @@ type MemoFormProps = {
   projects: Project[];
   onCancel?: () => void;
   large?: boolean;
+  inline?: boolean;
   draftKey: string;
 };
 
-function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedMemo, todos, projects, onCancel, onSaved, large = false, draftKey }: MemoFormProps) {
+function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedMemo, todos, projects, onCancel, onSaved, large = false, inline = false, draftKey }: MemoFormProps) {
   const initialDraft = useMemo(() => readDraft(draftKey, initial), [draftKey, initial]);
   const [title, setTitle] = useState(initialDraft?.title ?? initial?.title ?? "");
   const [content, setContent] = useState(initialDraft?.content ?? initial?.content ?? "");
@@ -89,6 +88,8 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
   const [draftSavedAt, setDraftSavedAt] = useState(initialDraft?.savedAt || 0);
   const [draftError, setDraftError] = useState("");
   const draftVersionRef = useRef(0);
+  const lastDraftRef = useRef<MemoDraft | null>(null);
+  const savedToServerRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const richEditorRef = useRef<RichMarkdownHandle | null>(null);
   const [sourceMode, setSourceMode] = useState(
@@ -100,6 +101,20 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
   const normalizedLinkQuery = linkQuery.trim().toLocaleLowerCase("ko-KR");
   const visibleTodos = todos.filter((todo) => !todo.archived && (!normalizedLinkQuery || todo.title.toLocaleLowerCase("ko-KR").includes(normalizedLinkQuery)));
   const visibleProjects = projects.filter((project) => !normalizedLinkQuery || project.name.toLocaleLowerCase("ko-KR").includes(normalizedLinkQuery));
+
+  // Preserve rapid edits when the user switches notes before the 350ms draft timer.
+  // A completed server save suppresses the final local snapshot.
+  lastDraftRef.current = { title, content, color, pinned, todoIds, projectIds,
+    createdMemoId: createdMemoIdRef.current || undefined, savedAt: Date.now() };
+  useEffect(() => {
+    return () => {
+      if (savedToServerRef.current || !lastDraftRef.current) return;
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({ ...lastDraftRef.current, savedAt: Date.now() }));
+      } catch { /* Existing in-memory content is left untouched. */ }
+    };
+  }, [draftKey]);
+  useEffect(() => { savedToServerRef.current = false; }, [title, content, color, pinned, todoIds, projectIds]);
 
   useEffect(() => {
     const version = ++draftVersionRef.current;
@@ -155,6 +170,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
         } catch { /* Existing in-memory memo ID still protects this session. */ }
       }
       await onSaveLinks(saved.id, { todoIds, projectIds });
+      savedToServerRef.current = true;
       draftVersionRef.current += 1;
       try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
       setError("");
@@ -177,9 +193,9 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
   };
 
   return (
-    <form onSubmit={submit} className="space-y-3">
-      <label className="block space-y-1 text-xs font-semibold text-ink-400">제목<input className="field text-sm font-semibold" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="메모 제목" autoFocus /></label>
-      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+    <form onSubmit={submit} className={inline ? "memo-document-form" : "space-y-3"}>
+      <label className={inline ? "memo-document-title-label" : "block space-y-1 text-xs font-semibold text-ink-400"}><span className={inline ? "sr-only" : ""}>제목</span><input className={inline ? "memo-document-title-input" : "field text-sm font-semibold"} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="메모 제목" autoFocus={!initial} /></label>
+      <div className={inline ? "memo-document-metadata" : "grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"}>
         <fieldset className="min-w-0 space-y-1.5">
           <legend className="text-xs font-semibold text-ink-400">메모 색상</legend>
           <div role="group" aria-label="메모 색상 선택" className="memo-color-picker flex min-h-10 flex-wrap items-center gap-2">
@@ -198,7 +214,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
         <label className="flex min-h-9 items-center gap-2 px-2 text-xs font-semibold text-ink-300"><input type="checkbox" checked={pinned} onChange={(event) => setPinned(event.target.checked)} className="h-4 w-4 accent-accent-500" />고정</label>
       </div>
 
-      <section aria-label="메모 내용" className="memo-edit-section space-y-2">
+      <section aria-label="메모 내용" className={inline ? "memo-edit-section memo-edit-section--inline space-y-2" : "memo-edit-section space-y-2"}>
         <div className="memo-rich-toolbar">
           <span className="memo-rich-toolbar__label">내용</span>
           {!showSource ? (
@@ -392,7 +408,6 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
   onAddTodo: (input: TodoInput) => Promise<Todo | undefined> | Todo | undefined;
 }) {
   const [creating, setCreating] = useState(false);
-  const [editingMemo, setEditingMemo] = useState<Memo | null>(null);
   const [previewMemoId, setPreviewMemoId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [memoView, setMemoView] = useState<"all" | "pinned" | "linked">("all");
@@ -400,7 +415,8 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
     if (!focusedMemoId) return;
     const memo = memos.find((item) => item.id === focusedMemoId);
     if (memo) {
-      setEditingMemo(memo);
+      setPreviewMemoId(memo.id);
+      setCreating(false);
       onSearchTargetOpened?.();
     }
   }, [focusedMemoId, memos, onSearchTargetOpened]);
@@ -422,11 +438,12 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
   });
   const pinnedMemos = filteredMemos.filter((memo) => memo.pinned);
   const normalMemos = filteredMemos.filter((memo) => !memo.pinned);
-  const previewMemo = filteredMemos.find((memo) => memo.id === previewMemoId) || null;
+  // Always show one document beside the list, even before the first selection.
+  // Search and filters determine the fallback document; an explicit selection wins.
+  const selectedMemo = filteredMemos.find((memo) => memo.id === previewMemoId) ?? filteredMemos[0] ?? null;
   const selectMemo = (memo: Memo) => {
-    // Compact utility windows retain the safe, established editor dialog.
-    if (window.matchMedia("(max-width: 1359px)").matches) setEditingMemo(memo);
-    else setPreviewMemoId(memo.id);
+    setCreating(false);
+    setPreviewMemoId(memo.id);
   };
 
   useEffect(() => {
@@ -453,78 +470,71 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
     setConversionMessage(`${createdIds.length}/${titles.length}개 Todo를 만들고 메모와 연결했습니다.`);
   };
 
-  const renderCard = (memo: Memo) => <MemoCard key={memo.id} memo={memo} selected={previewMemoId === memo.id} onSelect={selectMemo} onDelete={onDelete} onTogglePin={onTogglePin} onEdit={setEditingMemo} onCreateTodo={createTodoFromMemo} onCreateChecklistTodos={createChecklistTodos} />;
+  const renderCard = (memo: Memo) => <MemoCard key={memo.id} memo={memo} selected={!creating && selectedMemo?.id === memo.id} onSelect={selectMemo} onDelete={onDelete} onTogglePin={onTogglePin} onEdit={selectMemo} onCreateTodo={createTodoFromMemo} onCreateChecklistTodos={createChecklistTodos} />;
 
   return (
-    <div className={`page-shell memo-page ${previewMemo ? "memo-page--reading" : ""}`}>
+    <div className="page-shell memo-page memo-page--workspace">
       <PageHeader title="메모"
         meta={`전체 ${memos.length}개`}
         actions={<Button variant="secondary" className="memo-action-button" onClick={() => setCreating(true)}><Plus size={16} aria-hidden="true" />새 메모</Button>}
       />
-      <div className="page-toolbar memo-toolbar">
-        <label className="memo-search relative min-w-0 flex-1">
-          <span className="sr-only">메모 검색</span>
-          <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
-          <input type="search" className="field memo-search__input pl-9 pr-10" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="제목 · 본문 · 연결된 작업 검색" aria-label="메모 검색" />
-          {searchQuery ? (
-            <button type="button" className="memo-search__clear" onClick={() => setSearchQuery("")}
-              title="검색어 지우기" aria-label="메모 검색어 지우기"><X size={15} aria-hidden="true" /></button>
-          ) : null}
-        </label>
-        <div className="page-tabs memo-tabs" role="group" aria-label="메모 보기 필터">
-          {([
-            { id: "all", label: "전체" },
-            { id: "pinned", label: "고정" },
-            { id: "linked", label: "연결됨" },
-          ] as const).map((tab) => (
-            <button type="button" key={tab.id} className="page-tab memo-filter-tab" aria-pressed={memoView === tab.id} onClick={() => setMemoView(tab.id)}>{tab.label}</button>
-          ))}
-        </div>
-        <span className="memo-toolbar__count ml-auto text-xs text-ink-400" role="status">표시 {filteredMemos.length}개</span>
-      </div>
-
       {conversionMessage ? <div className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-xs font-semibold text-success" role="status">{conversionMessage}</div> : null}
-
-      {filteredMemos.length ? (
-        <div className={`memo-workspace ${previewMemo ? "memo-workspace--split" : ""}`}>
-          <div className="memo-collections space-y-8">
-            {pinnedMemos.length ? <section className="memo-section space-y-2"><div className="memo-section__heading flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">고정 메모</h3><span className="text-[10px] text-ink-600">{pinnedMemos.length}개</span></div><div className="memo-note-grid">{pinnedMemos.map(renderCard)}</div></section> : null}
-            {normalMemos.length ? <section className="memo-section space-y-2"><div className="memo-section__heading flex items-center justify-between"><h3 className="text-xs font-bold text-ink-400">일반 메모</h3><span className="text-[10px] text-ink-600">{normalMemos.length}개</span></div><div className="memo-note-grid">{normalMemos.map(renderCard)}</div></section> : null}
+      <div className="memo-workspace memo-workspace--editor">
+        <section className="memo-collections" aria-label="메모 목록">
+          <div className="memo-list-heading">
+            <span>내 메모</span>
+            <span>{filteredMemos.length}개</span>
           </div>
-          {previewMemo ? (
-            <aside className="memo-read-pane" aria-label="메모 문서">
-              <div className="memo-read-pane__header">
-                <div className="min-w-0">
-                  <h2>{memoDisplayTitle(previewMemo)}</h2>
-                  <span>{formatKoreanDate(previewMemo.updatedAt, "yyyy.MM.dd 수정")}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <button type="button" className="btn-secondary" onClick={() => setEditingMemo(previewMemo)}>
-                    <Pencil size={14} aria-hidden="true" />수정
-                  </button>
-                  <button type="button" className="ui-icon-button" aria-label="메모 문서 닫기"
-                    onClick={() => setPreviewMemoId(null)}><X size={16} aria-hidden="true" /></button>
-                </div>
+          <div className="page-toolbar memo-toolbar">
+            <label className="memo-search relative min-w-0 flex-1">
+              <span className="sr-only">메모 검색</span>
+              <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
+              <input type="search" className="field memo-search__input pl-9 pr-10" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="메모 검색" aria-label="메모 검색" />
+              {searchQuery ? <button type="button" className="memo-search__clear" onClick={() => setSearchQuery("")} title="검색어 지우기" aria-label="메모 검색어 지우기"><X size={15} /></button> : null}
+            </label>
+            <div className="page-tabs memo-tabs" role="group" aria-label="메모 보기 필터">
+              {([
+                { id: "all", label: "전체" },
+                { id: "pinned", label: "고정" },
+                { id: "linked", label: "연결됨" },
+              ] as const).map((tab) => (
+                <button type="button" key={tab.id} className="page-tab memo-filter-tab" aria-pressed={memoView === tab.id} onClick={() => setMemoView(tab.id)}>{tab.label}</button>
+              ))}
+            </div>
+          </div>
+          {filteredMemos.length ? (
+            <>
+              {pinnedMemos.length ? <section className="memo-section"><div className="memo-section__heading"><h3>고정 메모</h3><span>{pinnedMemos.length}개</span></div><div className="memo-note-grid">{pinnedMemos.map(renderCard)}</div></section> : null}
+              {normalMemos.length ? <section className="memo-section"><div className="memo-section__heading"><h3>일반 메모</h3><span>{normalMemos.length}개</span></div><div className="memo-note-grid">{normalMemos.map(renderCard)}</div></section> : null}
+            </>
+          ) : (
+            <div className="memo-list-empty"><EmptyState title={memos.length ? "검색 결과가 없습니다." : "아직 메모가 없습니다."} description={memos.length ? "검색어나 필터를 변경해 보세요." : "오른쪽에서 새 메모를 작성할 수 있습니다."} /></div>
+          )}
+        </section>
+        <aside className="memo-document-pane" style={creating ? undefined : memoAccentStyle(selectedMemo?.color)} aria-label="메모 편집기">
+          {creating ? (
+            <>
+              <div className="memo-document-heading"><span className="memo-document-heading__eyebrow">새 문서</span><span className="memo-document-heading__hint">Markdown · Tiptap</span></div>
+              <MemoForm key="new" inline draftKey={`${DRAFT_PREFIX}new`} submitLabel="메모 저장" todos={todos} projects={projects} onSaveLinks={onUpdateLinks} onRetryCreatedMemo={onUpdate} onSubmit={onAdd} onSaved={showSaved} onCancel={() => setCreating(false)} />
+            </>
+          ) : selectedMemo ? (
+            <>
+              <div className="memo-document-heading">
+                <span className="memo-document-heading__eyebrow"><span className="memo-document-heading__color" aria-hidden="true" />문서 편집</span>
+                <span className="memo-document-heading__hint">{formatKoreanDate(selectedMemo.updatedAt, "yyyy.MM.dd 수정")}</span>
               </div>
-              <div className="memo-read-pane__content">
-                <MarkdownPreview value={previewMemo.content} />
-              </div>
-            </aside>
-          ) : null}
-        </div>
-      ) : memos.length ? <EmptyState title="검색 결과가 없습니다." description="검색어를 변경하거나 전체 필터를 선택해보세요." /> : <EmptyState title="아직 작성한 메모가 없습니다." description="새 메모에서 작업 중 떠오른 생각을 가볍게 남겨보세요." />}
-
-      {creating ? (
-        <Modal title="새 메모" description="생각을 기록하고 필요할 때 Todo·프로젝트와 연결합니다." onClose={() => setCreating(false)}>
-          <MemoForm draftKey={`${DRAFT_PREFIX}new`} submitLabel="메모 저장" todos={todos} projects={projects} onSaveLinks={onUpdateLinks} onRetryCreatedMemo={onUpdate} onSubmit={onAdd} onSaved={showSaved} onCancel={() => setCreating(false)} />
-        </Modal>
-      ) : null}
-
-      {editingMemo ? (
-        <Modal title="메모 수정" description="내용과 연결된 Todo·프로젝트를 함께 관리합니다. 입력 내용은 브라우저 초안으로 자동 저장됩니다." onClose={() => setEditingMemo(null)} size="lg">
-          <MemoForm initial={editingMemo} draftKey={`${DRAFT_PREFIX}${editingMemo.id}`} submitLabel="저장" large todos={todos} projects={projects} onSaveLinks={onUpdateLinks} onRetryCreatedMemo={onUpdate} onSubmit={(input) => onUpdate(editingMemo.id, input)} onSaved={showSaved} onCancel={() => setEditingMemo(null)} />
-        </Modal>
-      ) : null}
+              <MemoForm key={selectedMemo.id} inline initial={selectedMemo} draftKey={`${DRAFT_PREFIX}${selectedMemo.id}`} submitLabel="저장" large todos={todos} projects={projects} onSaveLinks={onUpdateLinks} onRetryCreatedMemo={onUpdate} onSubmit={(input) => onUpdate(selectedMemo.id, input)} onSaved={showSaved} />
+            </>
+          ) : (
+            <div className="memo-document-empty">
+              <Pencil size={22} aria-hidden="true" />
+              <h2>메모를 선택하거나 새로 작성하세요.</h2>
+              <p>선택한 메모를 이 자리에서 바로 편집할 수 있습니다.</p>
+              <Button variant="secondary" onClick={() => setCreating(true)}><Plus size={15} />새 메모</Button>
+            </div>
+          )}
+        </aside>
+      </div>
       <p role="status" className="sr-only">{saveMessage}</p>
     </div>
   );
