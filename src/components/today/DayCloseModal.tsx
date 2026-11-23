@@ -25,7 +25,7 @@ export function DayCloseModal({ todos, completedCount, onClose, onApply }: DayCl
   const [note, setNote] = useState("");
   const [noteTouched, setNoteTouched] = useState(false);
   useEffect(() => { if (reflection.loaded && !noteTouched) setNote(reflection.content); }, [reflection.content, reflection.loaded, noteTouched]);
-  const noteDirty = noteTouched && note.trim() !== reflection.content;
+  const noteDirty = reflection.loaded && !reflection.error && noteTouched && note.trim() !== reflection.content;
   const [decisions, setDecisions] = useState<Record<string, DayCloseDecision>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -97,10 +97,19 @@ export function DayCloseModal({ todos, completedCount, onClose, onApply }: DayCl
             {" · "}남은 할 일 <strong className="text-ui-text">{todos.length}개</strong>
           </p>
           <label className="mt-2 grid gap-1 text-xs font-semibold text-ui-secondary">오늘의 한 줄 회고 (선택)
-            <textarea className="field min-h-16 resize-y text-sm font-normal" value={note} maxLength={1000} disabled={saving}
+            <textarea className="field min-h-16 resize-y text-sm font-normal" value={note} maxLength={1000} disabled={saving || !reflection.loaded || Boolean(reflection.error)}
               onChange={(event) => { setNote(event.target.value); setNoteTouched(true); }}
               placeholder="무엇을 했고, 내일 이어갈 것은 무엇인가요?" />
           </label>
+          {!reflection.loaded && !reflection.error ? (
+            <p role="status" className="mt-1 text-xs text-ui-muted">기존 회고를 불러오는 중…</p>
+          ) : null}
+          {reflection.error ? (
+            <div role="alert" className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-danger">
+              <span>{reflection.error} 저장된 내용을 확인하기 전에는 회고를 수정할 수 없습니다.</span>
+              <button type="button" className="btn-secondary px-2.5 text-xs" disabled={saving} onClick={reflection.retry}>다시 조회</button>
+            </div>
+          ) : null}
         </div>
 
         {todos.length ? null : <p className="text-xs text-ui-muted">남은 할 일이 없습니다. 회고만 저장할 수 있습니다.</p>}
