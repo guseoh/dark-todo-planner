@@ -3149,3 +3149,14 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
   .memo-page .memo-document-pane { padding: 1.1rem .5rem 1.4rem; }
   .memo-page .memo-workspace--editor .memo-note__excerpt { -webkit-line-clamp: 1; }
 }
+
+
+.memo-page .memo-advanced-preview {
+  min-height: 280px;
+  padding: 1.1rem .3rem;
+  color: var(--ui-text-primary);
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.memo-page .memo-advanced-preview pre { max-width: 100%; overflow-x: auto; }
+.memo-page .memo-advanced-preview table { display: block; max-width: 100%; overflow-x: auto; }
