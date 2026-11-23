@@ -14,7 +14,7 @@ export function TodayTimeCard() {
   const timer = useTimeTracking();
   const categories = useTodoQuickActions()?.categories ?? [];
   const today = todayKey();
-  const { entries } = useTimeEntries(today, today);
+  const { entries, loaded, error } = useTimeEntries(today, today);
   const active = timer?.active ?? null;
   const now = useNowMs(Boolean(active));
   const [open, setOpen] = useState(false);
@@ -41,7 +41,11 @@ export function TodayTimeCard() {
         <h2 className="!mb-0">오늘 측정 시간</h2>
         <button type="button" className="icon-btn h-7 w-7" onClick={() => setOpen(true)} title="하루 타임라인 보기" aria-label="하루 타임라인 보기"><Clock size={13} /></button>
       </div>
-      <p className="text-2xl font-semibold tabular-nums text-ui-text">{total ? formatDuration(total) : "0분"}</p>
+      <p className="text-2xl font-semibold tabular-nums text-ui-text">
+        {error && !entries.length && !active ? "—" : !loaded && !active ? "…" : total ? formatDuration(total) : "0분"}
+      </p>
+      {!loaded && !error ? <p role="status" className="mt-1 text-xs text-ui-muted">측정 기록을 불러오는 중…</p> : null}
+      {error ? <p role="alert" className="mt-1 text-xs text-danger">{error} 표시된 시간이 최신 기록이 아닐 수 있습니다.</p> : null}
       {goalMinutes > 0 && !editingGoal ? (
         <div className="mt-1.5">
           <div className="flex items-center justify-between gap-2 text-xs">
@@ -81,7 +85,7 @@ export function TodayTimeCard() {
             </li>
           ))}
         </ul>
-      ) : <p className="mt-1 text-xs text-ui-muted">할 일의 ▶ 버튼을 눌러 측정을 시작하세요.</p>}
+      ) : !error && loaded ? <p className="mt-1 text-xs text-ui-muted">할 일의 ▶ 버튼을 눌러 측정을 시작하세요.</p> : null}
       {open ? (
         <Modal title="하루 타임라인" description="새벽 3시부터 다음 날 새벽 3시까지입니다." size="lg" onClose={() => setOpen(false)}>
           <DayTimeline date={today} categories={categories} />

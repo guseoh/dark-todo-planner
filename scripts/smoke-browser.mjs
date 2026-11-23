@@ -141,6 +141,10 @@ try {
   assert.equal(await page.getByRole("button", { name: "개발 활동", exact: true }).count(), 0,
     "The development-activity tab is retired; GitHub grass lives on Today.");
   await page.getByRole("button", { name: "오늘", exact: true }).click();
+  await page.getByRole("group", { name: "오늘 계획 요약" }).waitFor();
+  assert.equal(await page.locator(".today-header__action").count(), 1,
+    "Daily reflection must remain available even when no Todo is scheduled.");
+  await page.locator(".today-rail-extras__toggle").click();
   const grassCard = page.getByRole("region", { name: "GitHub 잔디", exact: true });
   await grassCard.waitFor();
   await grassCard.getByRole("button", { name: "GitHub 잔디 다시 불러오기" }).click();
@@ -178,6 +182,9 @@ try {
   assert.ok(overdueFixture.every((item) => item.status >= 200 && item.status < 300),
     "Local D1 overdue fixtures should be created: " + JSON.stringify(overdueFixture));
   await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "작업 선택·검토", exact: true }).waitFor();
+  assert.equal(await page.locator(".today-overdue-banner__bulk-actions:visible").count(), 0,
+    "Bulk rescheduling should be secondary to explicit per-task review.");
   await page.getByRole("button", { name: "오늘 계획하기", exact: true }).click();
   await page.getByRole("button", { name: "지난 작업 검토", exact: true }).click();
   const overdueDialog = page.getByRole("dialog", { name: "지난 일정 정리" });
@@ -408,7 +415,9 @@ try {
 
   // Empty Today keeps its summary and add form, with one actionable empty-list message.
   await page.getByRole("group", { name: "오늘 작업 현황", exact: true }).waitFor();
-  await page.getByText(/오늘 예정된 일이 없습니다/).waitFor();
+  await page.getByRole("heading", { name: "오늘의 계획을 시작하세요", exact: true }).waitFor();
+  await page.getByText(/할 일이 아직 없습니다/).waitFor();
+  await page.getByRole("button", { name: "하루 회고", exact: true }).waitFor();
   assert.equal(await page.getByText("첫 작업", { exact: true }).count(), 0, "Empty state should be a single calm line.");
   assert.equal(await page.getByRole("heading", { name: "지금 집중" }).count(), 0, "Do not render empty focus card.");
   assert.equal(await page.getByText("미완료 Todo가 없습니다.", { exact: true }).count(), 0, "Do not repeat zero-state placeholders.");
@@ -575,7 +584,7 @@ try {
   const edited = title + " edited";
   const quickInput = page.locator('input[data-quick-todo-input="true"]');
   await quickInput.fill(title);
-  await page.getByRole("button", { name: "추가", exact: true }).click();
+  await composer.getByRole("button", { name: "추가", exact: true }).click();
   await page.getByText(title, { exact: true }).first().waitFor();
   await page.waitForFunction(() => {
     const input = document.querySelector('.today-composer input[data-quick-todo-input="true"]');
@@ -808,7 +817,7 @@ try {
   await context.setOffline(true);
   await composer.waitFor();
   await quickInput.fill(offlineTitle);
-  await page.getByRole("button", { name: "추가", exact: true }).click();
+  await composer.getByRole("button", { name: "추가", exact: true }).click();
   await page.getByText(offlineTitle, { exact: true }).first().waitFor();
   await context.setOffline(false);
   await waitForServerTodo(offlineTitle);

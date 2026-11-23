@@ -3175,3 +3175,173 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
 .memo-page .memo-document-pane[aria-busy="true"] {
   cursor: progress;
 }
+
+
+/* Today workspace: execution-first hierarchy, restrained accents, and access to
+   supporting widgets when the desktop window is narrower than 1280px. */
+.today-page .today-daily-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .6rem 1.3rem;
+  padding: .3rem 0 .55rem;
+  font-size: .75rem;
+  color: var(--ui-text-secondary);
+}
+.today-page .today-daily-summary strong {
+  color: var(--ui-text-primary);
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  margin-left: .25rem;
+}
+.today-page .today-daily-summary__overdue strong { color: var(--warning); }
+.today-page .today-operation-feedback { margin: .25rem 0; font-size: .8rem; line-height: 1.5; }
+.today-page .today-overdue-banner { gap: 1rem; align-items: center; }
+.today-page .today-overdue-banner__controls {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+.today-page .today-overdue-banner__review {
+  color: var(--ui-text-primary);
+  border-color: var(--ui-border);
+  font-weight: 650;
+}
+.today-page .today-overdue-banner__details { position: relative; }
+.today-page .today-overdue-banner__details > summary {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  cursor: pointer;
+  list-style: none;
+}
+.today-page .today-overdue-banner__details > summary::-webkit-details-marker { display: none; }
+.today-page .today-overdue-banner__details[open] > summary svg { transform: rotate(180deg); }
+.today-page .today-overdue-banner__bulk-actions {
+  position: absolute;
+  z-index: 25;
+  top: calc(100% + 5px);
+  right: 0;
+  width: min(305px, 80vw);
+  padding: .85rem;
+  display: flex;
+  gap: .45rem;
+  flex-wrap: wrap;
+  background: var(--ui-elevated);
+  border: 1px solid var(--ui-divider);
+  box-shadow: 0 8px 20px rgb(0 0 0 / .2);
+}
+.today-page .today-overdue-banner__bulk-actions p {
+  flex: 0 0 100%;
+  color: var(--ui-text-secondary);
+  font-size: .73rem;
+  line-height: 1.55;
+}
+.today-page .today-focus-prompt {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .5rem 0;
+  color: var(--ui-text-secondary);
+  font-size: .76rem;
+}
+.today-page .today-focus-prompt svg { flex-shrink: 0; color: var(--warning); }
+.today-page .today-empty-state { padding-block: 1.1rem; }
+.today-page .today-empty-state h3 {
+  margin-bottom: .4rem;
+  color: var(--ui-text-primary);
+  font-size: 1rem;
+  font-weight: 650;
+}
+.today-page .today-empty-state > p { font-size: .83rem; line-height: 1.65; }
+.today-page .today-empty-candidates {
+  margin-top: 1.1rem;
+  border-top: 1px solid var(--ui-divider);
+  max-width: 650px;
+}
+.today-page .today-empty-candidates__label {
+  padding: .7rem 0 .2rem;
+  font-size: .75rem;
+  font-weight: 650;
+  color: var(--ui-text-secondary);
+}
+.today-page .today-empty-candidate {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: space-between;
+  min-height: 43px;
+  border-bottom: 1px solid var(--ui-divider);
+  font-size: .83rem;
+  color: var(--ui-text-primary);
+}
+.today-page .today-empty-candidate span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.today-page .today-empty-candidate button,
+.today-page .today-empty-candidates__more,
+.today-page .today-empty-state__action {
+  padding: .4rem .6rem;
+  color: var(--ui-text-secondary);
+  font-size: .76rem;
+  font-weight: 600;
+  border: 1px solid var(--ui-divider);
+  transition: background 110ms ease, color 110ms ease;
+}
+.today-page .today-empty-candidate button:hover:not(:disabled),
+.today-page .today-empty-candidates__more:hover,
+.today-page .today-empty-state__action:hover {
+  color: var(--ui-text-primary);
+  background: var(--ui-hover);
+}
+.today-page .today-empty-candidate button:disabled { opacity: .5; }
+.today-page .today-empty-candidates__more { margin-top: .65rem; }
+.today-page .today-empty-state__action { display: inline-block; margin-top: 1rem; }
+.today-page .today-rail-extras { border-top: 1px solid var(--ui-divider); padding-top: .4rem; }
+.today-page .today-rail-extras__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  min-height: 36px;
+  cursor: pointer;
+  color: var(--ui-text-secondary);
+  font-size: .79rem;
+  font-weight: 650;
+  list-style: none;
+}
+.today-page .today-rail-extras__toggle::-webkit-details-marker { display: none; }
+.today-page .today-rail-extras[open] .today-rail-extras__toggle svg { transform: rotate(180deg); }
+.today-page .today-rail-extras__content { display: grid; gap: 1.35rem; padding-top: 1rem; }
+.today-page .today-rail-deadline-warning { border-left: 2px solid var(--danger); padding-left: .6rem; }
+.today-page :is(.today-overdue-banner__details > summary, .today-empty-candidate button, .today-empty-candidates__more, .today-empty-state__action, .today-rail-extras__toggle):focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+@media (min-width: 900px) and (max-width: 1279px) {
+  .today-page .today-workspace { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .today-page .today-desktop-rail {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.35rem;
+    border-top: 1px solid var(--ui-divider);
+    padding-top: 1.25rem;
+    margin-top: 1.5rem;
+  }
+}
+@media (max-width: 899px) {
+  .today-page .today-desktop-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    border-top: 1px solid var(--ui-divider);
+    padding-top: 1.25rem;
+    margin-top: 1.5rem;
+  }
+  .today-page .today-overdue-banner__bulk-actions { right: auto; left: 0; }
+}
