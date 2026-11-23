@@ -1,0 +1,82 @@
+name: Deploy Tern editor preview
+
+on:
+  push:
+    branches:
+      - feat/tiptap-unified-memo-scratchpad-ui
+    paths:
+      - .github/workflows/editor-preview-deploy.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dark-todo-planner-preview-editor
+  cancel-in-progress: false
+
+jobs:
+  deploy-preview:
+    name: Build and deploy Cloudflare Preview only
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify preview and production use different D1 databases
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const config = JSON.parse(readFileSync("wrangler.jsonc", "utf8"));
+          const preview = config.env.preview;
+          const production = config.env.production;
+          if (preview.name !== "dark-todo-planner-preview" ||
+              production.name !== "dark-todo-planner" ||
+              !preview.d1_databases?.[0]?.database_id ||
+              preview.d1_databases[0].database_id === production.d1_databases?.[0]?.database_id) {
+            throw new Error("Unsafe preview configuration: production or D1 isolation check failed.");
+          }
+          console.log("Preview Worker and D1 isolation verified.");
+          NODE
+
+      - name: Verify Cloudflare deployment credentials are configured
+        run: |
+          test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo "::error::CLOUDFLARE_API_TOKEN missing"; exit 1; }
+          test -n "${CLOUDFLARE_ACCOUNT_ID:-}" || { echo "::error::CLOUDFLARE_ACCOUNT_ID missing"; exit 1; }
+
+      - name: Typecheck and unit tests
+        run: |
+          npm run typecheck
+          npm test
+
+      - name: Build assets (no database migrations)
+        run: npm run build
+
+      - name: Deploy Preview Worker (never production)
+        run: |
+          set -o pipefail
+          npm run deploy:preview 2>&1 | tee preview-deploy.log
+
+      - name: Verify published Preview health endpoint
+        run: |
+          DEPLOY_URL="$(grep -Eo 'https://[A-Za-z0-9.-]+\\.workers\\.dev' preview-deploy.log | tail -1 || true)"
+          if [ -z "$DEPLOY_URL" ]; then
+            echo "::error::Unable to extract the Preview Worker URL from Wrangler output."
+            exit 1
+          fi
+          echo "::notice::Preview URL: $DEPLOY_URL"
+          curl --fail --silent --show-error --retry 5 --retry-delay 3 --retry-all-errors \
+            --max-time 20 "$DEPLOY_URL/api/health"
+          echo
