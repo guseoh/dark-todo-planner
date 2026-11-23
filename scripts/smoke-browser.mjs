@@ -1217,6 +1217,41 @@ try {
   await page.getByRole("button", { name: "연결됨", exact: true }).click();
   await page.getByRole("heading", { name: memoTitle, exact: true }).waitFor();
 
+  // Switching between documents must not leave the previous editor interactive,
+  // and changing a draft before the 350ms debounce must survive a quick switch.
+  await page.getByRole("button", { name: "전체", exact: true }).click();
+  await page.getByRole("button", { name: "메모 검색어 지우기" }).click();
+  await newMemoButton.click();
+  const alternateTitle = `Memo switching ${randomUUID().slice(0, 8)}`;
+  await memoPane.getByPlaceholder("메모 제목").fill(alternateTitle);
+  await memoPane.getByRole("textbox", { name: "메모 시각 편집기" }).fill("두 번째 메모입니다.");
+  await memoPane.getByRole("button", { name: "메모 저장", exact: true }).click();
+  const alternateCard = page.locator(".memo-note").filter({ has: page.getByRole("heading", { name: alternateTitle, exact: true }) });
+  await alternateCard.waitFor();
+  const firstSwitchStart = Date.now();
+  await memoCard.getByRole("button", { name: `${memoTitle} 열기` }).click();
+  await page.waitForFunction((title) => {
+    const pane = document.querySelector('[aria-label="메모 편집기"]');
+    const input = pane?.querySelector('input[placeholder="메모 제목"]');
+    return input instanceof HTMLInputElement && input.value === title;
+  }, memoTitle);
+  const firstSwitchMs = Date.now() - firstSwitchStart;
+  console.log(`MEMO_SWITCH_BROWSER_FIRST_MS=${firstSwitchMs}`);
+  const modifiedTitle = `${memoTitle} 미저장 초안`;
+  await memoPane.getByPlaceholder("메모 제목").fill(modifiedTitle);
+  await alternateCard.getByRole("button", { name: `${alternateTitle} 열기` }).click();
+  await page.waitForFunction((title) => {
+    const input = document.querySelector('[aria-label="메모 편집기"] input[placeholder="메모 제목"]');
+    return input instanceof HTMLInputElement && input.value === title;
+  }, alternateTitle);
+  await memoCard.getByRole("button", { name: `${memoTitle} 열기` }).click();
+  await page.waitForFunction((title) => {
+    const input = document.querySelector('[aria-label="메모 편집기"] input[placeholder="메모 제목"]');
+    return input instanceof HTMLInputElement && input.value === title;
+  }, modifiedTitle);
+  assert.equal(await memoPane.getByPlaceholder("메모 제목").inputValue(), modifiedTitle,
+    "Fast memo switches must restore the unsaved local title draft.");
+
   // Scratchpad: failed autosave retains a local copy; restoring it must
   // persist the exact content once the server is reachable.
   await page.evaluate(() => { window.location.hash = "#/scratchpad"; });
