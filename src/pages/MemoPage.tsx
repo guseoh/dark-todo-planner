@@ -4,6 +4,7 @@ import { EmptyState } from "../components/common/EmptyState";
 import { PageHeader } from "../components/common/PageHeader";
 import { Button } from "../components/ui/Button";
 import { MarkdownEditor } from "../components/editor/MarkdownEditor";
+import { MarkdownPreview } from "../components/editor/MarkdownPreview";
 import { RichMarkdownEditor, type RichMarkdownHandle } from "../components/editor/RichMarkdownEditor";
 import { requiresRawScratchpadEditing } from "../lib/scratchpadEditorSafety";
 import { formatKoreanDate, todayKey } from "../lib/date";
@@ -94,6 +95,11 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
   const [isSubmitting, setIsSubmitting] = useState(false);
   const richEditorRef = useRef<RichMarkdownHandle | null>(null);
   const [sourceMode, setSourceMode] = useState(
+    () => requiresRawScratchpadEditing(initialDraft?.content ?? initial?.content ?? ""),
+  );
+  // Render advanced Markdown as read-only on open; switch to raw source to edit.
+  // Never attempt a lossy round-trip of tables, HTML, or math through Tiptap.
+  const [sourcePreview, setSourcePreview] = useState(
     () => requiresRawScratchpadEditing(initialDraft?.content ?? initial?.content ?? ""),
   );
   const requiresSource = requiresRawScratchpadEditing(content);
@@ -240,7 +246,9 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
                 </button>
               ))}
             </div>
-          ) : <span className="memo-rich-toolbar__mode">Markdown 원본 편집</span>}
+          ) : <span className="memo-rich-toolbar__mode">{sourcePreview ? "Markdown 서식 미리보기" : "Markdown 원본 편집"}</span>}
+          {showSource ? <button type="button" className="memo-rich-toolbar__source" onClick={() => setSourcePreview((value) => !value)}
+            aria-label={sourcePreview ? "Markdown 원본 편집" : "Markdown 서식 미리보기"}>{sourcePreview ? "원본 편집" : "서식 미리보기"}</button> : null}
           <button type="button" className="memo-rich-toolbar__source" aria-pressed={showSource}
             disabled={requiresSource} title={requiresSource ? "원본 보존이 필요한 문서는 시각 편집으로 전환할 수 없습니다." : "Markdown 원본 편집 전환"}
             onClick={() => setSourceMode((value) => !value)}>
@@ -250,7 +258,11 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
         {requiresSource ? (
           <p className="memo-rich-compat" role="note">표·HTML·수식 등의 원본 보존을 위해 Markdown으로 편집합니다.</p>
         ) : null}
-        {showSource ? (
+        {showSource && sourcePreview ? (
+          <div className="memo-advanced-preview" aria-label="메모 Markdown 서식 미리보기">
+            <MarkdownPreview value={content} />
+          </div>
+        ) : showSource ? (
           <MarkdownEditor value={content} onChange={setContent} placeholder="- 떠오른 생각을 적어두세요"
             textareaClassName={large ? "min-h-[300px] max-h-[55vh]" : "min-h-36"} />
         ) : (
