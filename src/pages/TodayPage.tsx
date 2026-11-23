@@ -367,12 +367,6 @@ export function TodayPage({
 
       <div className={`today-workspace ${planningOpen ? "today-workspace--planning" : "today-workspace--single"}`}>
         <main className="today-workspace__main min-w-0 space-y-3">
-          <div className="today-daily-summary" role="group" aria-label="오늘 계획 요약">
-            <span>계획 <strong>{stats.todayTotal}</strong></span>
-            <span>남은 일 <strong>{stats.todayActive}</strong></span>
-            <span>완료 <strong>{stats.todayCompleted}</strong></span>
-            {overdueTodos.length > 0 ? <span className="today-daily-summary__overdue">지난 일정 <strong>{overdueTodos.length}</strong></span> : null}
-          </div>
           {overdueMoveError ? <p role="alert" className="today-operation-feedback text-danger">{overdueMoveError}</p> : null}
           {overdueMoveNotice ? <p role="status" className="today-operation-feedback text-ui-secondary">{overdueMoveNotice}</p> : null}
           {overdueTodos.length > 0 ? (
@@ -404,6 +398,12 @@ export function TodayPage({
                 categories={categories} projects={activeProjects} />
             </div>
           </section>
+          <div className="today-daily-summary" role="group" aria-label="오늘 계획 요약">
+            <span>계획 <strong>{stats.todayTotal}</strong></span>
+            <span>남은 일 <strong>{stats.todayActive}</strong></span>
+            <span>완료 <strong>{stats.todayCompleted}</strong></span>
+            {overdueTodos.length > 0 ? <span className="today-daily-summary__overdue">지난 일정 <strong>{overdueTodos.length}</strong></span> : null}
+          </div>
           {focusError ? <p role="alert" className="text-xs text-danger">{focusError}</p> : null}
           {focusedTodos.length ? (
             <section className="today-focus-section" aria-labelledby="today-focus-title">
