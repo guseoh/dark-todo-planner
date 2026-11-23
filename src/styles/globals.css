@@ -2863,3 +2863,133 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
 .quick-timer__menu button { padding: .4rem .6rem; border-radius: 5px; color: var(--ui-text-primary); font-size: .8rem; text-align: left; }
 .quick-timer__menu button:hover:not(:disabled) { background: var(--ui-hover); }
 .quick-timer__heading { padding: .35rem .6rem .15rem; color: var(--text-muted); font-size: .68rem; font-weight: 600; }
+
+
+/* Memo and scratchpad: shared live-Markdown editing without added visual chrome. */
+.memo-rich-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .45rem .65rem;
+  border-bottom: 1px solid var(--ui-divider);
+  padding: .3rem .1rem .55rem;
+}
+.memo-rich-toolbar__label {
+  color: var(--ui-text-secondary);
+  font-size: .76rem;
+  font-weight: 600;
+}
+.memo-rich-toolbar__actions {
+  display: flex;
+  flex: 1 1 240px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .1rem;
+  min-width: 0;
+}
+.memo-rich-toolbar__action,
+.memo-rich-toolbar__source {
+  min-height: 32px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  padding: .25rem .55rem;
+  color: var(--ui-text-secondary);
+  font-size: .78rem;
+}
+.memo-rich-toolbar__action:hover,
+.memo-rich-toolbar__source:hover:not(:disabled) {
+  background: var(--ui-hover);
+  color: var(--ui-text-primary);
+}
+.memo-rich-toolbar__action:focus-visible,
+.memo-rich-toolbar__source:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 1px;
+}
+.memo-rich-toolbar__source {
+  margin-left: auto;
+  border-color: var(--ui-divider);
+  white-space: nowrap;
+}
+.memo-rich-toolbar__source:disabled { opacity: .6; cursor: not-allowed; }
+.memo-rich-toolbar__mode { color: var(--ui-text-muted); font-size: .75rem; }
+.memo-rich-compat {
+  padding: .45rem .6rem;
+  background: var(--ui-surface);
+  color: var(--ui-text-secondary);
+  font-size: .76rem;
+}
+.rich-markdown-editor--memo {
+  border: 1px solid var(--ui-divider);
+  border-radius: 2px;
+  max-height: 55vh;
+  min-height: 180px;
+  background: var(--ui-canvas);
+}
+.rich-markdown-editor--memo .ProseMirror {
+  max-width: none;
+  min-height: 165px;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.rich-markdown-editor--scratchpad .ProseMirror {
+  max-width: 78ch;
+  min-height: 45vh;
+}
+/* Tiptap uses an empty paragraph with a trailing break before the first keystroke. */
+.rich-markdown-editor .ProseMirror > p:only-child:has(> br.ProseMirror-trailingBreak)::before {
+  float: left;
+  color: var(--ui-text-muted);
+  pointer-events: none;
+}
+.rich-markdown-editor--memo .ProseMirror > p:only-child:has(> br.ProseMirror-trailingBreak)::before {
+  content: "떠오른 생각을 입력하세요.";
+}
+.rich-markdown-editor--scratchpad .ProseMirror > p:only-child:has(> br.ProseMirror-trailingBreak)::before {
+  content: "여기에 바로 작성하세요. 자동으로 저장됩니다.";
+}
+.memo-page .memo-note__excerpt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  max-height: none;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+.memo-page .memo-read-pane__content pre { max-width: 100%; overflow-x: auto; }
+.memo-page .memo-read-pane__content :not(pre) > code { overflow-wrap: anywhere; }
+.scratchpad-workspace .scratchpad-heading { padding-block: 1rem; }
+.scratchpad-workspace .scratchpad-command-strip {
+  align-items: center;
+  justify-content: space-between;
+  gap: .2rem .65rem;
+  padding: .3rem .4rem;
+}
+.scratchpad-workspace .scratchpad-command-strip__menus {
+  gap: .45rem;
+  padding: .12rem .25rem;
+}
+.scratchpad-workspace .scratchpad-toolbar {
+  flex: 1 1 400px;
+  gap: .1rem;
+  padding-block: .2rem;
+}
+.scratchpad-workspace .scratchpad-format-button {
+  min-height: 34px;
+  border-radius: 2px;
+  color: var(--ui-text-secondary);
+  font-size: .79rem;
+}
+.scratchpad-workspace .scratchpad-format-button:hover {
+  background: var(--ui-hover);
+  color: var(--ui-text-primary);
+}
+.scratchpad-workspace .scratchpad-format-button:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: -2px;
+}
+@media (max-width: 720px) {
+  .memo-rich-toolbar__actions { flex-basis: 100%; order: 3; }
+  .scratchpad-workspace .scratchpad-toolbar { flex-basis: 100%; }
+}
