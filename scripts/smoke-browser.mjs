@@ -1134,6 +1134,7 @@ try {
   assert.match(savedMemos.find((item) => item.title === memoTitle)?.content || "", /^# 작성 내용/, "Live heading must persist as Markdown.");
   const memoCard = page.locator(".memo-note").filter({ has: page.getByRole("heading", { name: memoTitle, exact: true }) });
   await memoCard.waitFor();
+  await page.locator('.memo-note[data-selected="true"]').filter({ has: page.getByRole("heading", { name: memoTitle, exact: true }) }).waitFor();
   const noteAccent = await memoCard.evaluate((node) => ({
     accent: node.style.getPropertyValue("--memo-accent"),
     stripe: getComputedStyle(node, "::before").backgroundColor,
