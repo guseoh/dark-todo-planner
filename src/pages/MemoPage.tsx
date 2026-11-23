@@ -249,11 +249,11 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
           ) : <span className="memo-rich-toolbar__mode">{sourcePreview ? "Markdown 서식 미리보기" : "Markdown 원본 편집"}</span>}
           {showSource ? <button type="button" className="memo-rich-toolbar__source" onClick={() => setSourcePreview((value) => !value)}
             aria-label={sourcePreview ? "Markdown 원본 편집" : "Markdown 서식 미리보기"}>{sourcePreview ? "원본 편집" : "서식 미리보기"}</button> : null}
-          <button type="button" className="memo-rich-toolbar__source" aria-pressed={showSource}
-            disabled={requiresSource} title={requiresSource ? "원본 보존이 필요한 문서는 시각 편집으로 전환할 수 없습니다." : "Markdown 원본 편집 전환"}
-            onClick={() => setSourceMode((value) => !value)}>
+          {!requiresSource ? <button type="button" className="memo-rich-toolbar__source" aria-pressed={showSource}
+            title="Markdown 원본과 Tiptap 편집 전환"
+            onClick={() => { setSourcePreview(false); setSourceMode((value) => !value); }}>
             {showSource ? "시각 편집" : "원본"}
-          </button>
+          </button> : null}
         </div>
         {requiresSource ? (
           <p className="memo-rich-compat" role="note">표·HTML·수식 등의 원본 보존을 위해 Markdown으로 편집합니다.</p>
