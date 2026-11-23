@@ -89,7 +89,8 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
   const [draftError, setDraftError] = useState("");
   const draftVersionRef = useRef(0);
   const lastDraftRef = useRef<MemoDraft | null>(null);
-  const savedToServerRef = useRef(false);
+  const baselineSignatureRef = useRef(JSON.stringify({ title, content, color, pinned, todoIds, projectIds }));
+  const changedSinceSaveRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const richEditorRef = useRef<RichMarkdownHandle | null>(null);
   const [sourceMode, setSourceMode] = useState(
@@ -102,22 +103,24 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
   const visibleTodos = todos.filter((todo) => !todo.archived && (!normalizedLinkQuery || todo.title.toLocaleLowerCase("ko-KR").includes(normalizedLinkQuery)));
   const visibleProjects = projects.filter((project) => !normalizedLinkQuery || project.name.toLocaleLowerCase("ko-KR").includes(normalizedLinkQuery));
 
-  // Preserve rapid edits when the user switches notes before the 350ms draft timer.
-  // A completed server save suppresses the final local snapshot.
+  // An untouched document is not a pending draft. Save rapid unsaved changes
+  // synchronously on note switch, even before the debounce interval expires.
+  const currentSignature = JSON.stringify({ title, content, color, pinned, todoIds, projectIds });
+  changedSinceSaveRef.current = currentSignature !== baselineSignatureRef.current;
   lastDraftRef.current = { title, content, color, pinned, todoIds, projectIds,
     createdMemoId: createdMemoIdRef.current || undefined, savedAt: Date.now() };
   useEffect(() => {
     return () => {
-      if (savedToServerRef.current || !lastDraftRef.current) return;
+      if (!changedSinceSaveRef.current || !lastDraftRef.current) return;
       try {
         localStorage.setItem(draftKey, JSON.stringify({ ...lastDraftRef.current, savedAt: Date.now() }));
       } catch { /* Existing in-memory content is left untouched. */ }
     };
   }, [draftKey]);
-  useEffect(() => { savedToServerRef.current = false; }, [title, content, color, pinned, todoIds, projectIds]);
 
   useEffect(() => {
     const version = ++draftVersionRef.current;
+    if (!changedSinceSaveRef.current) return undefined;
     const timer = window.setTimeout(() => {
       if (version !== draftVersionRef.current) return;
       const draft: MemoDraft = {
@@ -170,9 +173,11 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
         } catch { /* Existing in-memory memo ID still protects this session. */ }
       }
       await onSaveLinks(saved.id, { todoIds, projectIds });
-      savedToServerRef.current = true;
+      baselineSignatureRef.current = JSON.stringify({ title, content, color, pinned, todoIds, projectIds });
+      changedSinceSaveRef.current = false;
       draftVersionRef.current += 1;
       try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
+      setDraftSavedAt(0);
       setError("");
       onSaved?.(saved);
       onCancel?.();
@@ -194,7 +199,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
 
   return (
     <form onSubmit={submit} className={inline ? "memo-document-form" : "space-y-3"}>
-      <label className={inline ? "memo-document-title-label" : "block space-y-1 text-xs font-semibold text-ink-400"}><span className={inline ? "sr-only" : ""}>제목</span><input className={inline ? "memo-document-title-input" : "field text-sm font-semibold"} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="메모 제목" autoFocus={!initial} /></label>
+      <label className={inline ? "memo-document-title-label" : "block space-y-1 text-xs font-semibold text-ink-400"}><span className={inline ? "sr-only" : ""}>제목</span><input className={inline ? "memo-document-title-input" : "field text-sm font-semibold"} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="메모 제목" autoFocus={!initial} disabled={isSubmitting} /></label>
       <div className={inline ? "memo-document-metadata" : "grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"}>
         <fieldset className="min-w-0 space-y-1.5">
           <legend className="text-xs font-semibold text-ink-400">메모 색상</legend>
@@ -249,7 +254,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
           <MarkdownEditor value={content} onChange={setContent} placeholder="- 떠오른 생각을 적어두세요"
             textareaClassName={large ? "min-h-[300px] max-h-[55vh]" : "min-h-36"} />
         ) : (
-          <RichMarkdownEditor ref={richEditorRef} variant="memo" markdown={content} onChange={setContent} />
+          <RichMarkdownEditor ref={richEditorRef} variant="memo" markdown={content} onChange={setContent} readOnly={isSubmitting} />
         )}
       </section>
 
