@@ -96,6 +96,7 @@ async fn desktop_api_request(
     method: String,
     body: Option<String>,
 ) -> Result<ApiResponse, String> {
+    if cfg!(feature = "qa") { return Err("QA 빌드에서는 운영 API에 접근할 수 없습니다.".into()); }
     let url = trusted_api_url(&path)?;
     let method = Method::from_bytes(method.as_bytes()).map_err(|_| "잘못된 HTTP 메서드입니다.")?;
     if !matches!(method, Method::GET | Method::POST | Method::PUT | Method::PATCH | Method::DELETE) {
@@ -144,6 +145,10 @@ async fn desktop_update(
     expected_version: Option<String>,
 ) -> Result<UpdateState, String> {
     let installed_version = app.package_info().version.to_string();
+    if cfg!(feature = "qa") {
+        if install { return Err("QA 빌드는 업데이트를 설치할 수 없습니다.".into()); }
+        return Ok(UpdateState { installed_version, available_version: None });
+    }
     if !check_now && !install {
         return Ok(UpdateState { installed_version, available_version: None });
     }
@@ -196,7 +201,7 @@ pub fn run() {
     let _instance = {
         let directory = std::env::var_os("LOCALAPPDATA").map(std::path::PathBuf::from)
             .expect("Windows local application data directory unavailable")
-            .join("io.github.guseoh.dark-todo-planner");
+            .join(if cfg!(feature = "qa") { "io.github.guseoh.dark-todo-planner.qa" } else { "io.github.guseoh.dark-todo-planner" });
         match acquire_instance(&directory) {
             Ok(Some(lock)) => lock,
             Ok(None) => return,
@@ -204,7 +209,7 @@ pub fn run() {
         }
     };
     let jar = Arc::new(Jar::default());
-    restore_session(&jar);
+    if !cfg!(feature = "qa") { restore_session(&jar); }
     let client = Client::builder()
         .cookie_provider(jar.clone())
         .timeout(Duration::from_secs(35))
@@ -214,6 +219,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .on_window_event(|window, event| {
+            if cfg!(feature = "qa") { return; }
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 let _ = window.hide();
@@ -224,6 +230,8 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![desktop_api_request, desktop_update, desktop_quit])
         .setup(|app| {
+            // No global shortcuts or shared system tray actions in QA.
+            if cfg!(feature = "qa") { return Ok(()); }
             use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
             let quick_add = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyK);
             app.handle().plugin(

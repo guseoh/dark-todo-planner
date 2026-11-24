@@ -28,7 +28,7 @@ export function DesktopAutoUpdate() {
   }, []);
 
   useEffect(() => {
-    if (!isTauri()) return;
+    if (import.meta.env.VITE_TERN_QA === "1" || !isTauri()) return;
     void check();
     // An app can remain in the Windows tray for days. Discover new Releases
     // without requiring the user to restart Tern or open Settings.

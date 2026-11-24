@@ -22,6 +22,10 @@ export function waitForNativeRead<T>(request: Promise<T>, signal?: AbortSignal |
  * and prevents the embedded WebView from making cross-origin credential requests.
  */
 export const appFetch: typeof fetch = async (input, init) => {
+  if (import.meta.env.VITE_TERN_QA === "1") {
+    const { qaFetch } = await import("./qaFixture");
+    return qaFetch(input, init);
+  }
   if (!isTauri() || typeof input !== "string" || !input.startsWith("/api/")) {
     return fetch(input, init);
   }
