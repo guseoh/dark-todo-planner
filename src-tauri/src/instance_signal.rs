@@ -8,7 +8,7 @@ use windows_sys::Win32::{
 };
 
 fn event_name(qa: bool) -> Vec<u16> {
-    let name = if qa { "Local\io.github.guseoh.dark-todo-planner.qa.show" } else { "Local\io.github.guseoh.dark-todo-planner.show" };
+    let name = if qa { r"Local\io.github.guseoh.dark-todo-planner.qa.show" } else { r"Local\io.github.guseoh.dark-todo-planner.show" };
     name.encode_utf16().chain(Some(0)).collect()
 }
 
