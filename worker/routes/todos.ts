@@ -59,6 +59,19 @@ const bulkUpdateTodos = async (
   if (statements.length) await db.batch(statements);
 };
 
+export async function hasTodoHierarchy(db: D1Database, userId: string, ids: string[]): Promise<boolean> {
+  for (let index = 0; index < ids.length; index += BULK_DELETE_CHUNK_SIZE) {
+    const chunk = ids.slice(index, index + BULK_DELETE_CHUNK_SIZE);
+    const placeholders = chunk.map(() => "?").join(",");
+    // Query each direction separately to remain within D1's bound-parameter limit.
+    const parent = await db.prepare(`SELECT id FROM todos WHERE user_id = ? AND id IN (${placeholders}) AND parent_todo_id IS NOT NULL LIMIT 1`).bind(userId, ...chunk).first();
+    if (parent) return true;
+    const child = await db.prepare(`SELECT id FROM todos WHERE user_id = ? AND parent_todo_id IN (${placeholders}) LIMIT 1`).bind(userId, ...chunk).first();
+    if (child) return true;
+  }
+  return false;
+}
+
 const validatePlanningLinks = async (
   db: ReturnType<typeof drizzle>,
   userId: string,
@@ -178,6 +191,7 @@ todoRoutes.post("/todos/bulk-update", async (c) => {
     const db = drizzle(c.env.DB); const [project] = await db.select({ id: projects.id }).from(projects).where(and(eq(projects.id, input.action.value), eq(projects.userId, userId))).limit(1);
     if (!project) return c.json({ message: "프로젝트를 찾을 수 없습니다." }, 400);
   }
+  if (input.action.type === "PROJECT" && await hasTodoHierarchy(c.env.DB, userId, ids)) return c.json({ message: "상·하위 작업이 연결된 Todo는 일괄 프로젝트 이동할 수 없습니다. 먼저 프로젝트 연결을 정리하세요." }, 409);
   await bulkUpdateTodos(c.env.DB, userId, ids, input.action); return c.json({ ok: true, updated: ids.length });
 });
 
@@ -213,6 +227,7 @@ todoRoutes.put("/todos/:id", async (c) => {
   const input = todoInputSchema.parse(await c.req.json()); const db = drizzle(c.env.DB); const id = c.req.param("id"), userId = c.get("userId");
   const [existing] = await db.select().from(todos).where(and(eq(todos.id, id), eq(todos.userId, userId))).limit(1); if (!existing) return c.json({ message: "Todo를 찾을 수 없습니다." }, 404);
   if (input.categoryId) { const [category] = await db.select({ id: categories.id }).from(categories).where(and(eq(categories.id, input.categoryId), eq(categories.userId, userId))); if (!category) return c.json({ message: "카테고리를 찾을 수 없습니다." }, 400); }
+  if ((input.projectId || null) !== existing.projectId && await hasTodoHierarchy(c.env.DB, userId, [id])) return c.json({ message: "상·하위 작업이 연결된 Todo는 개별 프로젝트 이동할 수 없습니다. 먼저 프로젝트 연결을 정리하세요." }, 409);
   const linkError = await validatePlanningLinks(db, userId, input, id); if (linkError) return c.json({ message: linkError }, 400);
   const completed = input.completed ?? (input.workflowStatus === "DONE");
   const workflowStatus = completed ? "DONE" as const : input.workflowStatus === "DONE" ? "TODO" as const : input.workflowStatus;

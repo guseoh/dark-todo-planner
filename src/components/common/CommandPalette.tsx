@@ -11,6 +11,9 @@ type CommandPaletteProps = {
   onNavigate: (view: AppView) => void;
   onQuickAdd: () => void;
   onDayClose: () => void;
+  onNewMemo?: () => void;
+  onWeek?: () => void;
+  onStartTodo?: (id: string) => void;
   onStopTimer?: () => void;
   onOpenItem: (kind: "Todo" | "메모" | "프로젝트", id: string) => void;
   todos: Todo[];
@@ -24,7 +27,7 @@ type Result = {
   detail: string;
   view?: AppView;
   targetId?: string;
-  action?: "quick-add" | "day-close" | "stop-timer";
+  action?: "quick-add" | "day-close" | "stop-timer" | "new-memo" | "week" | "start-todo";
   kind: "이동" | "Todo" | "메모" | "프로젝트" | "명령";
 };
 
@@ -56,13 +59,15 @@ const resultIcon = (result: Result) => {
   return CalendarCheck;
 };
 
-export function CommandPalette({ onClose, onNavigate, onQuickAdd, onDayClose, onStopTimer, onOpenItem, todos, memos, projects }: CommandPaletteProps) {
+export function CommandPalette({ onClose, onNavigate, onQuickAdd, onDayClose, onNewMemo, onWeek, onStartTodo, onStopTimer, onOpenItem, todos, memos, projects }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const resultsRef = useRef<HTMLDivElement>(null);
   const results = useMemo(() => {
     const commands: Result[] = [...navigation, { id: "day-close", label: "오늘 정리", detail: "측정 기록 및 하루 회고", action: "day-close", kind: "명령" }];
     if (onStopTimer) commands.unshift({ id: "stop-timer", label: "시간 측정 종료", detail: "현재 측정 중인 작업 저장", action: "stop-timer", kind: "명령" });
+    if (onNewMemo) commands.unshift({ id: "new-memo", label: "새 메모 작성", detail: "빈 메모 탭 열기", action: "new-memo", kind: "명령" });
+    if (onWeek) commands.push({ id: "week", label: "주간 캘린더", detail: "계획 및 실측 시간", action: "week", kind: "명령" });
     const keyword = query.trim().toLocaleLowerCase("ko");
     if (!keyword) return commands;
 
@@ -71,8 +76,9 @@ export function CommandPalette({ onClose, onNavigate, onQuickAdd, onDayClose, on
       if (`${item.label} ${item.detail}`.toLocaleLowerCase("ko").includes(keyword)) matches.push(item);
     }
     for (const todo of todos) {
+      if (onStartTodo && !todo.archived && !todo.completed && `측정 시작 ${todo.title}`.toLocaleLowerCase("ko").includes(keyword)) matches.push({ id: `start-${todo.id}`, label: `측정 시작: ${todo.title}`, detail: "Todo 시간 측정", action: "start-todo", targetId: todo.id, kind: "명령" });
       const haystack = `${todo.title} ${todo.memo || ""} ${todo.category?.name || ""}`.toLocaleLowerCase("ko");
-      if (haystack.includes(keyword)) matches.push({ id: `todo-${todo.id}`, label: todo.title, detail: todo.dueDate ? `마감 ${todo.dueDate}` : todo.date, view: "all", targetId: todo.id, kind: "Todo" });
+      if (haystack.includes(keyword)) matches.push({ id: `todo-${todo.id}`, label: todo.title, detail: todo.planningState === "SCHEDULED" ? todo.date : "일정 미지정", view: "all", targetId: todo.id, kind: "Todo" });
     }
     for (const memo of memos) {
       const title = memo.title?.trim() || memo.content.split("\n").find((line) => line.trim())?.trim() || "제목 없는 메모";
@@ -82,11 +88,14 @@ export function CommandPalette({ onClose, onNavigate, onQuickAdd, onDayClose, on
       if (`${project.name} ${project.description || ""}`.toLocaleLowerCase("ko").includes(keyword)) matches.push({ id: `project-${project.id}`, label: project.name, detail: project.archived ? "보관된 프로젝트" : "프로젝트에서 열기", view: "projects", targetId: project.id, kind: "프로젝트" });
     }
     return matches.slice(0, 16);
-  }, [memos, projects, query, todos, onStopTimer]);
+  }, [memos, projects, query, todos, onStopTimer, onNewMemo, onWeek, onStartTodo]);
   useEffect(() => { resultsRef.current?.querySelector<HTMLElement>(`[data-command-index="${Math.min(activeIndex, results.length - 1)}"]`)?.scrollIntoView({ block: "nearest" }); }, [activeIndex, results.length]);
 
   const run = (result: Result) => {
     onClose();
+    if (result.action === "new-memo") { onNewMemo?.(); return; }
+    if (result.action === "week") { onWeek?.(); return; }
+    if (result.action === "start-todo" && result.targetId) { onStartTodo?.(result.targetId); return; }
     if (result.action === "day-close") { onDayClose(); return; }
     if (result.action === "stop-timer") { onStopTimer?.(); return; }
     if (result.action === "quick-add") {

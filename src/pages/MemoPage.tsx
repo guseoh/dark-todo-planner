@@ -461,6 +461,7 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
   const [memoView, setMemoView] = useState<"all" | "pinned" | "linked">("all");
   useEffect(() => {
     if (!focusedMemoId) return;
+    if (focusedMemoId === NEW_MEMO) { openTab(NEW_MEMO); onSearchTargetOpened?.(); return; }
     const memo = memos.find((item) => item.id === focusedMemoId);
     if (memo) {
       openTab(memo.id);

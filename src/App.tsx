@@ -21,7 +21,7 @@ import type { Todo } from "./types/todo";
 import type { TodoProjectLinkChange } from "./types/todoProjectLinks";
 
 const TODO_UNDO_MS = 5000;
-const UNDOABLE_UPDATE_FIELDS = new Set(["date", "planningState", "priority", "workflowStatus", "completed"]);
+const UNDOABLE_UPDATE_FIELDS = new Set(["date", "planningState", "priority", "workflowStatus", "completed", "title", "categoryId", "projectId", "milestoneId"]);
 const undoToastClass = "flex items-center justify-between gap-3 rounded-lg border border-ui-divider bg-ui-elevated px-3 py-2.5 text-sm text-ui-text";
 
 type PendingTodoUndo = {
@@ -261,7 +261,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
       ? `“${before.title}”의 우선순위를 변경했습니다.`
       : changedKeys.some((key) => key === "workflowStatus" || key === "completed")
         ? `“${before.title}”의 상태를 변경했습니다.`
-        : `“${before.title}”의 일정을 변경했습니다.`;
+        : `“${before.title}”의 작업 정보를 변경했습니다.`;
     registerTodoUndo([{ id, updates: Object.fromEntries(changedKeys.map((key) => [key, beforeRecord[key]])) }], message);
     return updated;
   };
@@ -371,7 +371,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
           </main>
         </div>
 
-        {showCommandPalette ? <CommandPalette onClose={() => setShowCommandPalette(false)} onNavigate={changeView} onQuickAdd={openQuickAdd} onDayClose={() => setShowDayClose(true)} onStopTimer={timeTracking.active && !timeTracking.busy ? () => { void timeTracking.stop(); } : undefined} onOpenItem={openSearchResult} todos={planner.allTodos} memos={planner.memos} projects={planner.projects} /> : null}
+        {showCommandPalette ? <CommandPalette onClose={() => setShowCommandPalette(false)} onNavigate={changeView} onQuickAdd={openQuickAdd} onNewMemo={() => { setSearchMemoId("__new_memo__"); setSearchTodoId(null); setSearchProjectId(null); navigateToView("memo"); }} onWeek={() => navigateToView("calendar", "week")} onStartTodo={timeTracking.busy || timeTracking.active ? undefined : (id) => { void timeTracking.start(id); }} onDayClose={() => setShowDayClose(true)} onStopTimer={timeTracking.active && !timeTracking.busy ? () => { void timeTracking.stop(); } : undefined} onOpenItem={openSearchResult} todos={planner.allTodos} memos={planner.memos} projects={planner.projects} /> : null}
 
         {showQuickAdd ? (
           <Modal title="빠른 Todo 추가" description="Ctrl+Shift+K · 내일 · !high · @프로젝트 · +카테고리 · due:2026-08-20 같은 빠른 문법을 사용할 수 있습니다." onClose={() => setShowQuickAdd(false)}>

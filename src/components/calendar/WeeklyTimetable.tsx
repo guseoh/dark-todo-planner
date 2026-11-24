@@ -70,7 +70,7 @@ export function WeeklyTimetable({ dates, selectedDate, todos, projects, onSelect
   const [now, setNow] = useState(() => new Date());
   const [error, setError] = useState("");
   const [fullDay, setFullDay] = useState(() => { try { return localStorage.getItem(FULL_KEY) === "1"; } catch { return false; } });
-  const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
+  const [editingEntry, setEditingEntry] = useState<TimeEntry | "new" | null>(null);
   const writeInProgress = useRef(false);
   const gesture = useRef<{ column: string; start: number; block?: Placed } | null>(null);
   const [selection, setSelection] = useState<{ column: string; start: number; end: number } | null>(null);
@@ -201,6 +201,7 @@ export function WeeklyTimetable({ dates, selectedDate, todos, projects, onSelect
         </button>
       </div>
       <div className="mb-2 flex flex-wrap items-center gap-2">
+        <button type="button" className="btn-secondary text-xs" disabled={!loaded || Boolean(entriesError) || plannerDayStart(selectedDate).getTime() >= Date.now()} onClick={() => setEditingEntry("new")}>선택 날짜 기록 추가</button>
         <label className="text-xs text-ui-muted" htmlFor="weekly-measured-dimension">측정 시간</label>
         <select id="weekly-measured-dimension" className="field min-h-8 w-auto py-1 text-xs" value={dimension} onChange={(event) => setDimension(event.target.value as TimeDimension)}>
           <option value="category">카테고리별</option><option value="project">프로젝트별</option><option value="todo">Todo별</option>
@@ -302,8 +303,8 @@ export function WeeklyTimetable({ dates, selectedDate, todos, projects, onSelect
         </div>)}
       </div>
       {editingEntry ? (
-        <TimeEntryModal entry={editingEntry} categories={categories}
-          defaultStart={editingEntry.startedAt} defaultEnd={editingEntry.endedAt}
+        <TimeEntryModal entry={editingEntry === "new" ? undefined : editingEntry} categories={categories} todos={todos}
+          defaultStart={editingEntry === "new" ? plannerDayStart(selectedDate).toISOString() : editingEntry.startedAt} defaultEnd={editingEntry === "new" ? new Date(Math.min(Date.now(), plannerDayStart(selectedDate).getTime() + 30 * 60_000)).toISOString() : editingEntry.endedAt}
           onClose={() => setEditingEntry(null)} onCreate={create} onUpdate={update} onDelete={remove} />
       ) : null}
     </section>

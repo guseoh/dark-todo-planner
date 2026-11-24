@@ -78,6 +78,7 @@ return async (input, init) => {
     const projectId = text(body.projectId);
     if (categoryId && !categories.some(item => item.id === categoryId) || projectId && !projects.some(item => item.id === projectId)) return null;
     const parentTodoId = text(body.parentTodoId);
+    if (existing && existing.projectId !== projectId && (existing.parentTodoId || todos.some(item => item.parentTodoId === existing.id))) return null;
     if (parentTodoId && (!todos.some(item => item.id === parentTodoId && item.projectId === projectId) || parentTodoId === todoId)) return null;
     return {
       id: todoId, title: body.title.trim(), memo: text(body.memo), categoryId, projectId, parentTodoId,

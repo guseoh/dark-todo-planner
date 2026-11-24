@@ -207,6 +207,7 @@ export function useTodos() {
 
     const serial = (updateSerialRef.current.get(id) ?? 0) + 1;
     updateSerialRef.current.set(id, serial);
+    if (Object.prototype.hasOwnProperty.call(updates, "projectId") && updates.projectId !== existing.projectId && (existing.parentTodoId || allTodos.some(item => item.parentTodoId === id))) { setError("상·하위 작업 연결을 정리한 후 프로젝트를 이동하세요."); return undefined; }
     const optimistic = applyOptimisticUpdates(existing, updates);
     // Only the atomic workflow transition used by the board is safe to render
     // optimistically. Scheduling/metadata edits may change the active list
@@ -391,6 +392,7 @@ export function useTodos() {
     if (!uniqueIds.length) return true;
     const previous = allTodos;
     const targetIds = new Set(uniqueIds);
+    if (action.type === "PROJECT" && allTodos.some(todo => (targetIds.has(todo.id) && Boolean(todo.parentTodoId)) || Boolean(todo.parentTodoId && targetIds.has(todo.parentTodoId)))) { setError("상·하위 작업이 연결된 Todo는 일괄 프로젝트 이동할 수 없습니다."); return false; }
     setAllTodos((current) => current.map((todo) => {
       if (!targetIds.has(todo.id)) return todo;
       if (action.type === "PROJECT") return { ...todo, projectId: action.value || undefined, milestoneId: undefined, parentTodoId: undefined, updatedAt: new Date().toISOString() };

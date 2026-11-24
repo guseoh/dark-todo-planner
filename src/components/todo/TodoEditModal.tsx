@@ -124,7 +124,7 @@ export function TodoEditModal({ todo, categories = [], projects = [], milestones
         title: title.trim(),
         categoryId: categoryId || undefined,
         projectId: projectId || undefined,
-        ...(milestones.length ? { milestoneId: milestoneId || undefined } : {}),
+        ...(milestones.length || projectId !== (todo.projectId ?? "") ? { milestoneId: milestoneId || undefined } : {}),
         date: planningState === "SCHEDULED" ? resolveTodoScheduledDate(date, todo.date, todayKey()) : UNSCHEDULED_DATE,
         ...(!hideDueDate ? { dueDate: dueDate || undefined } : {}),
         blockReason: blockReason.trim() || undefined,
@@ -173,7 +173,7 @@ export function TodoEditModal({ todo, categories = [], projects = [], milestones
             </div>
           </div>
           <label className="space-y-1 text-sm text-ink-400">카테고리<select className="field" value={categoryId} onChange={(event) => setCategoryId(event.target.value)}><option value="">미분류</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
-          {projects.length || projectId ? <label className="space-y-1 text-sm text-ink-400">프로젝트<select className="field" value={projectId} onChange={(event) => { setProjectId(event.target.value); setMilestoneId(""); }}><option value="">프로젝트 없음</option>{projects.filter((project) => !project.archived || project.id === projectId).map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label> : null}
+          {projects.length || projectId ? <label className="space-y-1 text-sm text-ink-400">프로젝트<select className="field" value={projectId} disabled={Boolean(todo.parentTodoId || subtasks?.length)} onChange={(event) => { setProjectId(event.target.value); setMilestoneId(""); }}><option value="">프로젝트 없음</option>{projects.filter((project) => !project.archived || project.id === projectId).map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label> : null}
           {milestones.length && projectId ? <label className="space-y-1 text-sm text-ink-400">
             마일스톤
             <select className="field" value={milestoneId} onChange={(event) => setMilestoneId(event.target.value)}>
