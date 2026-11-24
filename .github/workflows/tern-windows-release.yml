@@ -50,7 +50,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: node scripts/prepare-desktop-release.mjs
       - name: Generate Windows icons from tracked source image
-        run: npx --yes @tauri-apps/cli@2 icon -o src-tauri/icons public/pwa-icon-512.png
+        run: npx --yes @tauri-apps/cli@2 icon -o src-tauri/icons src-tauri/branding/tern.png
       - name: Build and publish signed Windows installer and latest.json
         uses: tauri-apps/tauri-action@v1
         env:

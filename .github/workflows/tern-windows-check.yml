@@ -38,6 +38,6 @@ jobs:
         run: |
           node -e "const fs=require('fs');const p='src-tauri/tauri.conf.json';const c=JSON.parse(fs.readFileSync(p));c.bundle.createUpdaterArtifacts=false;fs.writeFileSync(p,JSON.stringify(c));"
       - name: Generate icons
-        run: npx --yes @tauri-apps/cli@2 icon -o src-tauri/icons public/pwa-icon-512.png
+        run: npx --yes @tauri-apps/cli@2 icon -o src-tauri/icons src-tauri/branding/tern.png
       - name: Compile native Windows installer
         run: npx --yes @tauri-apps/cli@2 build --bundles nsis
