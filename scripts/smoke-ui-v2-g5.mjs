@@ -16,7 +16,7 @@ if (!process.env.SMOKE_USERNAME || !process.env.SMOKE_PASSWORD) {
 }
 
 const screens = [
-  ["today", "오늘"], ["all", "전체 Todo"], ["calendar", "캘린더"],
+  ["today", "오늘"], ["all", "전체 할 일"], ["calendar", "캘린더"],
   ["projects", "프로젝트"], ["memo", "메모"], ["scratchpad", "낙서장"],
   ["trash", "휴지통"], ["settings", "설정"],
 ];
@@ -155,7 +155,7 @@ try {
         if (width < 640) {
           assert.equal(await mobileNav.isVisible(), true, "Phone navigation must be available at " + width);
           assert.equal(await mobileNav.getByRole("button", { name: "받은함" }).count(), 0);
-          assert.equal(await mobileNav.getByRole("button", { name: "전체 Todo" }).count(), 1);
+          assert.equal(await mobileNav.getByRole("button", { name: "전체 할 일" }).count(), 1);
         } else {
           assert.equal(await mobileNav.isVisible(), false, "Phone navigation must not overlap desktop utility content");
           const desktopSidebar = page.locator('aside[data-compact-window]');
@@ -174,7 +174,7 @@ try {
 
   // G3 legacy bookmarks remain backwards compatible.
   await page.goto(new URL("/#/inbox", base).toString(), { waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "전체 Todo", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "전체 할 일", exact: true }).waitFor();
   assert.equal(new URL(page.url()).hash, "#/all");
 
   const after = await readOnlySnapshot();

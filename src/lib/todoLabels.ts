@@ -8,9 +8,9 @@ export const planningStateLabels: Record<TodoPlanningState, string> = {
 };
 
 export const workflowStatusLabels: Record<TodoWorkflowStatus, string> = {
-  TODO: "할 일",
+  TODO: "시작 전",
   IN_PROGRESS: "진행 중",
-  BLOCKED: "차단됨",
+  BLOCKED: "보류",
   DONE: "완료",
 };
 

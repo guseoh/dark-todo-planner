@@ -1,4 +1,4 @@
-import { Archive, CalendarDays, CheckCircle2, ExternalLink, MoreHorizontal, Pencil, RotateCcw, Tag, Trash2 } from "lucide-react";
+import { Archive, CalendarDays, CheckCircle2, ExternalLink, MoreHorizontal, Pencil, RotateCcw, SquarePen, Tag, TextCursorInput, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { formatKoreanDate, getDdayLabel, getDaysPast, todayKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../../lib/todo";
@@ -52,9 +52,8 @@ export function TodoRow({
   selected = false,
   onSelect,
 }: TodoRowProps) {
-  const handleDelete = () => {
-    if (window.confirm(`"${todo.title}" Todo를 삭제할까요?`)) onDelete(todo.id);
-  };
+  // Deleting moves the item to the trash and shows an undo toast, so no blocking confirm.
+  const handleDelete = () => onDelete(todo.id);
   const menuRef = useRef<HTMLDetailsElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [inlineEdit, setInlineEdit] = useState(false);
@@ -154,7 +153,7 @@ export function TodoRow({
           </div> : null}
         </button>
 
-        {!selectionMode && !todo.archived && actions?.updateTodo ? <button type="button" className="icon-btn h-8 w-8 text-ui-muted" title="인라인 수정" aria-label={`${todo.title} 인라인 수정`} onClick={beginInline}><Pencil size={13} /></button> : null}
+        {!selectionMode && !todo.archived && actions?.updateTodo ? <button type="button" className="icon-btn h-8 w-8 text-ui-muted" title="제목·우선순위 빠른 수정" aria-label={`${todo.title} 인라인 수정`} onClick={beginInline}><TextCursorInput size={13} /></button> : null}
         {!selectionMode && variant === "today" ? (
           <>
           <TimerToggleButton todo={todo} />
@@ -164,11 +163,11 @@ export function TodoRow({
             </summary>
             <div className="todo-row__menu absolute right-0 top-full z-40 mt-1 min-w-44 rounded-md border border-ui-divider bg-ui-elevated p-1.5" role="group" aria-label={`"${todo.title}" 작업 메뉴`}>
               <div className="todo-row__menu-action"><QuickSnoozeMenu todo={todo} /><span>빠른 미루기</span></div>
-              <button type="button" className="todo-row__menu-action" onClick={() => { onEdit(todo); setMenuOpen(false); }} aria-label={`"${todo.title}" Todo 수정`}>
+              <button type="button" className="todo-row__menu-action" onClick={() => { onEdit(todo); setMenuOpen(false); }} aria-label={`"${todo.title}" 수정`}>
                 <Pencil size={14} />수정
               </button>
               {todo.referenceUrl ? <a href={todo.referenceUrl} target="_blank" rel="noreferrer" className="todo-row__menu-action" aria-label={`"${todo.title}" 관련 링크 열기`}><ExternalLink size={14} />관련 링크</a> : null}
-              <button type="button" className="todo-row__menu-action ui-menu-action--danger text-danger hover:bg-danger/10" onClick={() => { handleDelete(); setMenuOpen(false); }} aria-label={`"${todo.title}" Todo 삭제`}>
+              <button type="button" className="todo-row__menu-action ui-menu-action--danger text-danger hover:bg-danger/10" onClick={() => { handleDelete(); setMenuOpen(false); }} aria-label={`"${todo.title}" 휴지통으로 이동`} title="휴지통으로 이동">
                 <Trash2 size={14} />삭제
               </button>
             </div>
@@ -181,8 +180,8 @@ export function TodoRow({
             {todo.referenceUrl ? <a href={todo.referenceUrl} target="_blank" rel="noreferrer" className="icon-btn h-8 w-8" aria-label={`"${todo.title}" 관련 링크 열기`} title={todo.referenceLabel || "관련 링크 열기"}><ExternalLink size={13} /></a> : null}
             {todo.archived && onUnarchive ? <button type="button" className="icon-btn h-8 w-8" onClick={() => onUnarchive(todo.id)} aria-label={`"${todo.title}" 보관 해제`}><RotateCcw size={13} /></button> : null}
             {!todo.archived && todo.completed && onArchive ? <button type="button" className="icon-btn h-8 w-8" onClick={() => onArchive(todo.id)} aria-label={`"${todo.title}" Todo 보관`}><Archive size={13} /></button> : null}
-            <button type="button" className="icon-btn h-8 w-8 hover:text-ui-text" onClick={() => onEdit(todo)} aria-label={`"${todo.title}" Todo 수정`}><Pencil size={13} /></button>
-            <button type="button" className="icon-btn h-8 w-8 hover:text-danger focus-visible:text-danger" onClick={handleDelete} aria-label={`"${todo.title}" Todo 삭제`}><Trash2 size={13} /></button>
+            <button type="button" className="icon-btn h-8 w-8 hover:text-ui-text" onClick={() => onEdit(todo)} aria-label={`"${todo.title}" 수정`} title="상세 편집"><SquarePen size={13} /></button>
+            <button type="button" className="icon-btn h-8 w-8 hover:text-danger focus-visible:text-danger" onClick={handleDelete} aria-label={`"${todo.title}" 휴지통으로 이동`} title="휴지통으로 이동"><Trash2 size={13} /></button>
           </div>
         ) : null}
       </div>

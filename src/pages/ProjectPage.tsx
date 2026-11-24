@@ -19,7 +19,7 @@ import type { Todo, TodoInput } from "../types/todo";
 const projectStatusLabel: Record<ProjectStatus, string> = {
   PLANNING: "계획",
   ACTIVE: "진행 중",
-  ON_HOLD: "보류",
+  ON_HOLD: "일시 중지",
   DONE: "완료",
 };
 
@@ -311,7 +311,7 @@ export function ProjectPage({
                 <select aria-label="프로젝트 상태" className="field min-h-10 w-auto py-1.5 text-sm" value={selected.status} onChange={(event) => void onUpdateProject(selected.id, { status: event.target.value as ProjectStatus })} disabled={selected.archived || deletingProject}>
                   <option value="PLANNING">계획</option>
                   <option value="ACTIVE">진행 중</option>
-                  <option value="ON_HOLD">보류</option>
+                  <option value="ON_HOLD">일시 중지</option>
                   <option value="DONE">완료</option>
                 </select>
                 <details className="project-actions-menu">
@@ -323,7 +323,7 @@ export function ProjectPage({
                     if (menu) menu.open = false;
                   }}>
                     {!selected.archived ? <button type="button" onClick={beginProjectEdit}><Pencil size={15} />정보 및 색상 수정</button> : null}
-                    <button type="button" onClick={() => onOpenProjectTodos(selected.id)}>전체 Todo에서 보기</button>
+                    <button type="button" onClick={() => onOpenProjectTodos(selected.id)}>전체 할 일에서 보기</button>
                     <button type="button" onClick={() => setProjectDialog("resources")}>자료 링크</button>
                     <button type="button" onClick={() => setProjectDialog("milestones")}>마일스톤 관리</button>
                     <button type="button" onClick={() => setProjectDialog("memos")}>연결된 메모</button>

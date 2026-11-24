@@ -34,7 +34,7 @@ type Result = {
 export const navigation: Result[] = [
   { id: "quick-add", label: "빠른 Todo 추가", detail: "Ctrl+Shift+K", action: "quick-add", kind: "명령" },
   { id: "nav-today", label: "오늘", detail: "오늘 실행할 Todo", view: "today", kind: "이동" },
-  { id: "nav-all", label: "전체 Todo", detail: "모든 Todo 검색과 관리", view: "all", kind: "이동" },
+  { id: "nav-all", label: "전체 할 일", detail: "모든 할 일 검색과 관리", view: "all", kind: "이동" },
   { id: "nav-projects", label: "프로젝트", detail: "프로젝트와 Kanban", view: "projects", kind: "이동" },
   { id: "nav-calendar", label: "캘린더", detail: "월간·주간 일정 보기", view: "calendar", kind: "이동" },
   { id: "nav-memo", label: "메모", detail: "메모 검색과 작성", view: "memo", kind: "이동" },

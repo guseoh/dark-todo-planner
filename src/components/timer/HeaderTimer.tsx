@@ -7,7 +7,7 @@ import { useTodoQuickActions } from "../todo/TodoQuickActionsContext";
 import { ElapsedClock, useElapsedMs } from "./ElapsedClock";
 import { useTimeTracking } from "./TimeTrackingContext";
 
-const BASE_TITLE = "Todo Planner";
+const BASE_TITLE = "Tern";
 
 /** Idle state: pick a category or project to measure without opening a Todo. */
 function QuickStart() {

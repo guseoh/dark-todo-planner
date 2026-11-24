@@ -3517,3 +3517,79 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
 @media (prefers-reduced-motion:reduce) {
   .all-todos-page .todo-row,.calendar-page .calendar-day { transition:none; }
 }
+
+/* v0.4.1: kanban card titles use the whole card width. Actions float over the
+   title's top-right corner only while the card is hovered or focused, so narrow
+   columns (1160px default window, 720px minimum) no longer break titles every
+   two or three characters. Korean words wrap at spaces. */
+.project-v4-card__top { position: relative; }
+.project-v4-card__actions { display: flex; flex: none; align-items: center; gap: .1rem; }
+.project-v4-card__title { word-break: keep-all; }
+@media (hover: hover) and (pointer: fine) {
+  .project-page .project-v4-card__actions {
+    position: absolute; top: -.2rem; right: -.2rem; z-index: 1;
+    padding: .1rem .1rem .1rem .9rem; border-radius: 3px;
+    background: linear-gradient(to right, transparent, var(--ui-inset) .8rem);
+    opacity: 0; transition: opacity 120ms ease;
+  }
+  .project-page .project-kanban-column .project-kanban-card:focus-within { background: var(--ui-inset); }
+  .project-page .project-kanban-card:is(:hover, :focus-within) .project-v4-card__actions,
+  .project-page .project-v4-card__actions:has(details[open]) { opacity: 1; }
+}
+@media not all and (hover: hover) and (pointer: fine) {
+  /* Touch: no hover, so actions keep their own row and the title gets the full width. */
+  .project-page .project-v4-card__top { flex-wrap: wrap; }
+  .project-page .project-v4-card__top > .min-w-0 { order: 3; flex-basis: 100%; }
+  .project-page .project-v4-card__actions { margin-left: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .project-page .project-v4-card__actions { transition: none; } }
+
+/* v0.4.1: Today planning opens as a right drawer at every desktop width, so the
+   button always has a visible effect (it used to render below the page at 1100–1279px). */
+.page-shell.today-page.today-page--planning { max-width: 820px; }
+.today-page .today-workspace--planning { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1279px) {
+  .today-page .today-planning-backdrop {
+    display: block; position: fixed; inset: 3.5rem 0 0;
+    z-index: 30; background: rgb(0 0 0 / .46);
+  }
+  .today-page .today-planning-panel {
+    position: fixed; top: 3.5rem; bottom: 0; right: 0;
+    z-index: 31; width: min(420px, calc(100vw - 4.25rem));
+    overflow-y: auto; background: var(--ui-canvas);
+    border-left: 1px solid var(--border-default); border-top: 0;
+    box-shadow: -12px 0 30px rgb(0 0 0 / .23);
+    padding: 1.15rem 1.25rem 2rem;
+  }
+}
+@media (max-width: 639px) {
+  .today-page .today-planning-panel { width: min(420px, 100vw); bottom: 4rem; }
+}
+@media (min-width: 1280px) {
+  .page-shell.today-page.today-page--planning { max-width: 984px; }
+  .today-page .today-workspace--planning { grid-template-columns: minmax(0, 720px) 240px; }
+}
+.today-page .today-plan-toggle__badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 1.15rem; height: 1.15rem; padding: 0 .3rem; border-radius: 999px;
+  background: color-mix(in srgb, var(--warning) 22%, transparent); color: var(--warning);
+  font-size: .68rem; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.today-page .today-overdue-notice {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem;
+  padding: .5rem .75rem; border: 1px solid color-mix(in srgb, var(--warning) 35%, var(--ui-divider));
+  border-left: 3px solid var(--warning); border-radius: 3px;
+  background: color-mix(in srgb, var(--warning) 6%, transparent);
+  color: var(--text-secondary); font-size: .8rem;
+}
+.today-page .today-overdue-notice strong { color: var(--warning); font-weight: 650; }
+.today-page .today-overdue-notice button {
+  min-height: 30px; padding: .2rem .6rem; border: 1px solid var(--border-default); border-radius: 3px;
+  color: var(--text-primary); font-size: .76rem; font-weight: 600;
+}
+.today-page .today-overdue-notice button:hover { background: var(--ui-hover); }
+.today-page .today-overdue-notice button:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 2px; }
+.today-page .today-candidate__meta--overdue { color: var(--warning); }
+
+/* v0.4.1: the edit dialog keeps 저장/취소 visible while its body scrolls. */
+.todo-edit-footer { box-shadow: 0 -10px 16px -14px rgb(0 0 0 / .6); }

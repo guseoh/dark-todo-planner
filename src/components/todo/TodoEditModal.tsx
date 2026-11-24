@@ -35,7 +35,7 @@ type TodoEditModalProps = {
   onToggleSubtask?: (id: string) => void;
 };
 
-export function TodoEditModal({ todo, categories = [], projects = [], milestones = [], subtasks, onAddSubtask, onClose, onSave, presentation = "modal", hideDueDate = true, onToggleSubtask }: TodoEditModalProps) {
+export function TodoEditModal({ todo, categories = [], projects = [], milestones = [], subtasks, onAddSubtask, onClose, onSave, presentation = "modal", hideDueDate = false, onToggleSubtask }: TodoEditModalProps) {
   const actions = useTodoQuickActions();
   const [duplicating, setDuplicating] = useState(false);
   const [duplicateMessage, setDuplicateMessage] = useState("");
@@ -149,15 +149,16 @@ export function TodoEditModal({ todo, categories = [], projects = [], milestones
   };
 
   return (
-    <Modal title="Todo 수정" description="일정, 프로젝트, 상태처럼 실제로 자주 바꾸는 항목만 관리합니다." onClose={onClose} size="lg" placement={presentation === "side-panel" ? "right" : "center"}>
-      <form onSubmit={(event: FormEvent) => { event.preventDefault(); void saveTodo(); }}>
+    <Modal title="할 일 수정" description="일정, 프로젝트, 상태처럼 실제로 자주 바꾸는 항목만 관리합니다." onClose={onClose} size="lg" placement={presentation === "side-panel" ? "right" : "center"}>
+      <form onSubmit={(event: FormEvent) => { event.preventDefault(); void saveTodo(); }}
+        onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); void saveTodo(); } }}>
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="space-y-1 text-sm text-ink-400 md:col-span-2">제목<input className="field" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Todo 제목" data-modal-initial-focus /></label>
+          <label className="space-y-1 text-sm text-ink-400 md:col-span-2">제목<input className="field" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="할 일 제목" data-modal-initial-focus /></label>
           <label className="space-y-1 text-sm text-ink-400">보관 위치<select className="field" value={planningState} onChange={(event) => setPlanningState(event.target.value as TodoPlanningState)}>{planningState === "INBOX" ? <option value="INBOX" disabled>미계획 (기존 데이터)</option> : null}<option value="SCHEDULED">일정</option><option value="SOMEDAY">언젠가</option><option value="WAITING">대기</option></select></label>
-          <label className="space-y-1 text-sm text-ink-400">작업 상태<select className="field" value={workflowStatus} onChange={(event) => setWorkflowStatus(event.target.value as TodoWorkflowStatus)} aria-describedby="todo-edit-status-help"><option value="TODO">할 일</option><option value="IN_PROGRESS">진행 중</option><option value="BLOCKED">차단됨</option><option value="DONE">완료</option></select><span id="todo-edit-status-help" className="block text-xs text-ink-500">완료를 고르면 Todo가 완료 처리됩니다.</span></label>
+          <label className="space-y-1 text-sm text-ink-400">작업 상태<select className="field" value={workflowStatus} onChange={(event) => setWorkflowStatus(event.target.value as TodoWorkflowStatus)} aria-describedby="todo-edit-status-help"><option value="TODO">시작 전</option><option value="IN_PROGRESS">진행 중</option><option value="BLOCKED">보류</option><option value="DONE">완료</option></select><span id="todo-edit-status-help" className="block text-xs text-ink-500">완료를 고르면 할 일이 완료 처리됩니다.</span></label>
           {workflowStatus === "BLOCKED" || blockReason || unblockCondition ? (
             <div className="grid gap-3 rounded-lg border border-warning/25 bg-warning/[0.04] p-3 md:col-span-2 md:grid-cols-2">
-              <label className="space-y-1 text-sm text-ink-300">차단 사유<textarea className="field min-h-20 resize-y" value={blockReason} onChange={(event) => setBlockReason(event.target.value)} maxLength={1000} placeholder="무엇 때문에 이 작업을 진행할 수 없나요?" /></label>
+              <label className="space-y-1 text-sm text-ink-300">보류 사유<textarea className="field min-h-20 resize-y" value={blockReason} onChange={(event) => setBlockReason(event.target.value)} maxLength={1000} placeholder="무엇 때문에 이 작업을 진행할 수 없나요?" /></label>
               <label className="space-y-1 text-sm text-ink-300">다시 진행할 조건<textarea className="field min-h-20 resize-y" value={unblockCondition} onChange={(event) => setUnblockCondition(event.target.value)} maxLength={1000} placeholder="어떤 일이 해결되면 다시 시작할 수 있나요?" /></label>
             </div>
           ) : null}
@@ -219,7 +220,7 @@ export function TodoEditModal({ todo, categories = [], projects = [], milestones
         </div>
         <TodoWorkflowPanel todo={todo} />
         {actions?.addTodo && !todo.archived ? <div className="mt-3 flex flex-wrap items-center gap-2"><button type="button" className="btn-secondary text-xs" disabled={saving || duplicating} onClick={() => void duplicate()}>{duplicating ? "복제 중…" : "저장된 Todo 오늘로 복제"}</button><span role="status" className="text-xs text-ui-muted">{duplicateMessage}</span></div> : null}
-        <div className="mt-5 flex flex-col-reverse gap-2 border-t border-ink-700/60 pt-4 sm:flex-row sm:justify-end"><button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>취소</button><button type="submit" className="btn-primary" disabled={!title.trim() || saving}>{saving ? "저장 중..." : "저장"}</button></div>
+        <div className="todo-edit-footer sticky -bottom-4 z-10 -mx-4 mt-5 flex flex-col-reverse gap-2 border-t border-ink-700/60 bg-ink-900 px-4 pb-4 pt-3 sm:flex-row sm:items-center sm:justify-end"><span className="hidden text-xs text-ink-500 sm:mr-auto sm:inline">Ctrl+Enter로 저장</span><button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>취소</button><button type="submit" className="btn-primary" disabled={!title.trim() || saving}>{saving ? "저장 중..." : "저장"}</button></div>
       </form>
     </Modal>
   );
