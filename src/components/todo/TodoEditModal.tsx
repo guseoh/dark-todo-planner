@@ -29,9 +29,10 @@ type TodoEditModalProps = {
   onClose: () => void;
   onSave: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => unknown | Promise<unknown>;
   presentation?: "modal" | "side-panel";
+  hideDueDate?: boolean;
 };
 
-export function TodoEditModal({ todo, categories = [], projects = [], milestones = [], subtasks, onAddSubtask, onClose, onSave, presentation = "modal" }: TodoEditModalProps) {
+export function TodoEditModal({ todo, categories = [], projects = [], milestones = [], subtasks, onAddSubtask, onClose, onSave, presentation = "modal", hideDueDate = false }: TodoEditModalProps) {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -106,7 +107,7 @@ export function TodoEditModal({ todo, categories = [], projects = [], milestones
         projectId: projectId || undefined,
         ...(milestones.length ? { milestoneId: milestoneId || undefined } : {}),
         date: planningState === "SCHEDULED" ? resolveTodoScheduledDate(date, todo.date, todayKey()) : UNSCHEDULED_DATE,
-        dueDate: dueDate || undefined,
+        ...(!hideDueDate ? { dueDate: dueDate || undefined } : {}),
         blockReason: blockReason.trim() || undefined,
         unblockCondition: unblockCondition.trim() || undefined,
         priority,
@@ -142,7 +143,7 @@ export function TodoEditModal({ todo, categories = [], projects = [], milestones
             </div>
           ) : null}
           {planningState === "SCHEDULED" ? <label className="space-y-1 text-sm text-ink-400">실행일<input className="field" type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label> : <div className="rounded-lg border border-ink-700/60 bg-ink-950/35 px-3 py-2 text-sm text-ink-500">일정으로 옮길 때 실행일을 지정합니다.</div>}
-          <label className="space-y-1 text-sm text-ink-400">마감일<input className="field" type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></label>
+          {!hideDueDate ? <label className="space-y-1 text-sm text-ink-400">마감일<input className="field" type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></label> : null}
           <div className="md:col-span-2">
             <p className="mb-1.5 text-xs font-semibold text-ink-500">빠른 일정 이동</p>
             <div className="flex flex-wrap gap-2">

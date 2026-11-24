@@ -5,14 +5,13 @@ import { Archive, ArchiveRestore, CheckCircle2, CircleDot, ExternalLink, MoreHor
 import { ProjectDecisionLog } from "../components/project/ProjectDecisionLog";
 import { PageHeader } from "../components/common/PageHeader";
 import { ProjectKanban, type ProjectWipLimits } from "../components/project/ProjectKanban";
-import { ProjectSwitcher, type ProjectSwitcherItem } from "../components/project/ProjectSwitcher";
-import { useProjectTimeTotals } from "../hooks/useTimeEntries";
+import { WorkspaceTabs } from "../components/layout/WorkspaceTabs";
+import { useWorkspaceTabs } from "../hooks/useWorkspaceTabs";
 import { TargetTimerButton } from "../components/timer/TargetTimerButton";
-import { getWeekRange, parseDateKey, todayKey } from "../lib/date";
-import { formatDuration } from "../lib/timeTracking";
 import { ProjectOverviewTools } from "../components/project/ProjectOverviewTools";
 import type { ProjectDuplicateMode } from "../hooks/useProjects";
 import type { Category } from "../types/category";
+import type { Memo } from "../types/memo";
 import type { Milestone, MilestoneInput, Project, ProjectDecision, ProjectDecisionInput, ProjectInput, ProjectResource, ProjectStatus } from "../types/project";
 import type { Todo, TodoInput } from "../types/todo";
 
@@ -40,6 +39,8 @@ type ProjectPageProps = {
   focusedProjectId?: string | null;
   onSearchTargetOpened?: () => void;
   projects: Project[];
+  memos: Memo[];
+  onOpenMemo: (id: string) => void;
   milestones: Milestone[];
   decisions: ProjectDecision[];
   todos: Todo[];
@@ -70,6 +71,8 @@ export function ProjectPage({
   focusedProjectId,
   onSearchTargetOpened,
   projects,
+  memos,
+  onOpenMemo,
   milestones,
   decisions,
   todos,
@@ -99,7 +102,13 @@ export function ProjectPage({
   const archivedProjects = useMemo(() => projects.filter((project) => project.archived), [projects]);
   const [showArchived, setShowArchived] = useState(false);
   const visibleProjects = showArchived ? archivedProjects : activeProjects;
-  const [selectedId, setSelectedId] = useState("");
+  const { opened, activeId, closed, open: setSelectedId, close: closeTab, showList, reopen } = useWorkspaceTabs("project");
+  const selectedId = activeId ?? "";
+  const availableIds = projects.map((project) => project.id);
+  const openedProjects = opened.flatMap((id) => {
+    const project = projects.find((item) => item.id === id);
+    return project ? [{ id, title: project.name, color: getEntityColor(project, projects) }] : [];
+  });
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [newName, setNewName] = useState("");
   const [milestoneTitle, setMilestoneTitle] = useState("");
@@ -113,12 +122,7 @@ export function ProjectPage({
   const [resourceUrl, setResourceUrl] = useState("");
   const [resourceError, setResourceError] = useState("");
   const [deletingProject, setDeletingProject] = useState(false);
-  const [projectDialog, setProjectDialog] = useState<"milestones" | "decisions" | "resources" | null>(null);
-
-  useEffect(() => {
-    const candidates = showArchived ? archivedProjects : activeProjects;
-    if (!candidates.some((project) => project.id === selectedId)) setSelectedId(candidates[0]?.id || "");
-  }, [activeProjects, archivedProjects, selectedId, showArchived]);
+  const [projectDialog, setProjectDialog] = useState<"milestones" | "decisions" | "resources" | "memos" | null>(null);
 
   useEffect(() => {
     if (!focusedProjectId) return;
@@ -127,7 +131,7 @@ export function ProjectPage({
     setShowArchived(project.archived);
     setSelectedId(project.id);
     onSearchTargetOpened?.();
-  }, [focusedProjectId, projects, onSearchTargetOpened]);
+  }, [focusedProjectId, projects, onSearchTargetOpened, setSelectedId]);
 
   useEffect(() => {
     setProjectDialog(null);
@@ -141,22 +145,8 @@ export function ProjectPage({
   const projectTodos = useMemo(() => todos.filter((todo) => todo.projectId === selectedId && !todo.archived), [selectedId, todos]);
   const projectMilestones = useMemo(() => milestones.filter((milestone) => milestone.projectId === selectedId), [milestones, selectedId]);
   const projectDecisions = useMemo(() => decisions.filter((decision) => decision.projectId === selectedId), [decisions, selectedId]);
-  const completed = projectTodos.filter((todo) => todo.completed).length;
   const [showDuplicate, setShowDuplicate] = useState(false);
-  const progress = projectTodos.length ? Math.round((completed / projectTodos.length) * 100) : 0;
   const unassignedMilestoneTodos = projectTodos.filter((todo) => !todo.milestoneId).length;
-  const weekRange = useMemo(() => { const { start, end } = getWeekRange(parseDateKey(todayKey())); return { from: start, to: end }; }, []);
-  const timeTotals = useProjectTimeTotals();
-  const weekTotals = useProjectTimeTotals(weekRange);
-  const switcherItems = useMemo<ProjectSwitcherItem[]>(() => visibleProjects.map((project) => {
-    const tasks = todos.filter((todo) => todo.projectId === project.id && !todo.archived);
-    return {
-      id: project.id, name: project.name, statusLabel: projectStatusLabel[project.status],
-      done: tasks.filter((todo) => todo.completed).length, total: tasks.length, color: getEntityColor(project, projects),
-      trackedLabel: timeTotals.get(project.id) ? formatDuration(timeTotals.get(project.id)! * 60_000) : undefined,
-    };
-  }), [projects, timeTotals, todos, visibleProjects]);
-
   const createProject = async (event: FormEvent) => {
     event.preventDefault();
     if (!newName.trim()) return;
@@ -184,7 +174,7 @@ export function ProjectPage({
     setDeletingProject(true);
     try {
       const deleted = await Promise.resolve(onDeleteProject(selected.id));
-      if (deleted) setSelectedId("");
+      if (deleted) closeTab(selected.id);
     } finally {
       setDeletingProject(false);
     }
@@ -274,7 +264,7 @@ export function ProjectPage({
         meta={`진행 ${activeProjects.length}개`}
         actions={<>
 
-            <button type="button" className="btn-secondary" onClick={() => { setShowArchived((value) => !value); setShowCreateProject(false); }}>
+            <button type="button" className="btn-secondary" onClick={() => { setShowArchived((value) => !value); setShowCreateProject(false); showList(); }}>
               {showArchived ? <ArchiveRestore size={16} /> : <Archive size={16} />}
               {showArchived ? "진행 프로젝트" : `보관 ${archivedProjects.length}`}
             </button>
@@ -294,6 +284,9 @@ export function ProjectPage({
         </form>
       ) : null}
 
+      <WorkspaceTabs label="프로젝트 작업 탭" items={openedProjects} activeId={activeId}
+        onList={showList} onSelect={setSelectedId} onClose={closeTab}
+        onReopen={() => reopen(availableIds)} canReopen={closed.some((id) => availableIds.includes(id))} />
       <div className="project-v4-workspace">
         <div className="project-v4-main min-w-0">
       {selected ? (
@@ -303,14 +296,11 @@ export function ProjectPage({
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="min-w-0 text-xl font-semibold tracking-tight text-ui-text">
-                    <ProjectSwitcher items={switcherItems} selectedId={selectedId} onSelect={setSelectedId} />
+                    {selected.name}
                   </h2>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-400">
                   {!selected.archived ? <TargetTimerButton target={{ projectId: selected.id }} label={selected.name} /> : null}
-                  <span><strong className="font-medium text-ui-text">{completed}/{projectTodos.length}개 완료</strong>{projectTodos.length > 0 ? ` · ${progress}%` : ""}</span>
-                  {selected.startDate ? <span>시작일 {selected.startDate}</span> : null}
-                  {timeTotals.get(selected.id) ? <span title="이 프로젝트의 Todo에서 측정한 시간">{weekTotals.get(selected.id) ? `이번 주 ${formatDuration(weekTotals.get(selected.id)! * 60_000)} · ` : ""}누적 측정 {formatDuration(timeTotals.get(selected.id)! * 60_000)}</span> : null}
                 </div>
               </div>
 
@@ -333,6 +323,7 @@ export function ProjectPage({
                     <button type="button" onClick={() => onOpenProjectTodos(selected.id)}>전체 Todo에서 보기</button>
                     <button type="button" onClick={() => setProjectDialog("resources")}>자료 링크</button>
                     <button type="button" onClick={() => setProjectDialog("milestones")}>마일스톤 관리</button>
+                    <button type="button" onClick={() => setProjectDialog("memos")}>연결된 메모</button>
                     {projectDecisions.length ? <button type="button" onClick={() => setProjectDialog("decisions")}>기존 결정 기록</button> : null}
                     <button type="button" onClick={() => setShowDuplicate(true)}>복제</button>
                     {selected.archived ? (
@@ -376,10 +367,6 @@ export function ProjectPage({
                 </div>
               </form>
             ) : null}
-
-            {projectTodos.length > 0 ? <div role="progressbar" aria-label="프로젝트 완료율" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="project-overview__progress mt-4 h-1 overflow-hidden bg-ink-800">
-              <div className="h-full" style={{ width: `${progress}%`, background: getEntityColor(selected, projects) }} />
-            </div> : null}
 
           </section>
           {projectDialog === "resources" ? <Modal title="자료 링크" onClose={() => setProjectDialog(null)}>
@@ -481,8 +468,30 @@ export function ProjectPage({
             </div>
           </section></Modal> : null}
 
+          {projectDialog === "memos" ? <Modal title="연결된 메모" onClose={() => setProjectDialog(null)}>
+            <div className="workspace-document-list">
+              {memos.filter((memo) => memo.projectIds.includes(selected.id)).map((memo) => (
+                <button type="button" key={memo.id} className="workspace-document-row" onClick={() => onOpenMemo(memo.id)}>
+                  <span>{memo.title?.trim() || memo.content.trim().split("\n")[0]?.slice(0, 80) || "제목 없는 메모"}</span>
+                </button>
+              ))}
+              {!memos.some((memo) => memo.projectIds.includes(selected.id)) ? <p className="py-4 text-sm text-ui-muted">연결된 메모가 없습니다.</p> : null}
+            </div>
+          </Modal> : null}
           {projectDialog === "decisions" ? <Modal title="기존 결정 기록" onClose={() => setProjectDialog(null)}><ProjectDecisionLog projectId={selected.id} archived decisions={projectDecisions} onAdd={onAddDecision} onDelete={onDeleteDecision} /></Modal> : null}
           <ProjectKanban key={selected.id} project={selected} todos={projectTodos} milestones={projectMilestones} categories={categories} projects={projects} onAddTodo={onAddTodo} onUpdateTodo={onUpdateTodo} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} onDetachTodo={onDetachTodo} onReorderTodos={onReorderTodos} wipLimits={wipLimits} onChangeWipLimits={onChangeWipLimits} />
+        </div>
+      ) : visibleProjects.length ? (
+        <div className="workspace-document-list" aria-label="프로젝트 전체 목록">
+          {visibleProjects.map((project) => (
+            <button key={project.id} type="button" className="workspace-document-row" onClick={() => setSelectedId(project.id)}>
+              <span className="workspace-document-row__name">
+                <span className="workspace-document-tab__dot" style={{ backgroundColor: getEntityColor(project, projects) }} aria-hidden="true" />
+                {project.name}
+              </span>
+              <span className="text-xs text-ui-muted">{projectStatusLabel[project.status]}</span>
+            </button>
+          ))}
         </div>
       ) : (
         <div className="app-card flex min-h-56 items-center justify-center p-6 text-center">

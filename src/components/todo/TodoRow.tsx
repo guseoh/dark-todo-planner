@@ -93,7 +93,7 @@ export function TodoRow({
     || showCategoryBadge || (showCategoryMeta && Boolean(todo.category))
     || todo.planningState !== "SCHEDULED" || todo.archived || duplicateCandidate
     || Boolean(projectName) || (showDate && todo.planningState === "SCHEDULED")
-    || Boolean(todo.dueDate) || Boolean(todo.referenceUrl);
+    || (variant !== "today" && Boolean(todo.dueDate)) || Boolean(todo.referenceUrl);
 
   return (
     <article data-todo-row={selectionMode ? undefined : todo.id} tabIndex={selectionMode ? undefined : -1}
@@ -136,7 +136,7 @@ export function TodoRow({
             {projectName ? <span className="inline-flex items-center gap-1 font-medium text-ui-secondary"><span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: getEntityColor(project, actions?.projects) }} aria-hidden="true" />{projectName}</span> : null}
             {showCategoryMeta && !showCategoryBadge && todo.category ? <span className="inline-flex items-center gap-1">{variant === "today" ? <Tag size={12} aria-hidden="true" /> : null}{todo.category.name}</span> : null}
             {showDate && todo.planningState === "SCHEDULED" ? <span className={`inline-flex items-center gap-1 ${scheduledDaysPast ? "text-danger" : ""}`}><CalendarDays size={12} />{formatKoreanDate(todo.date, "M월 d일 E")}{scheduledDaysPast ? ` · ${scheduledDaysPast}일 지남` : ""}</span> : null}
-            {todo.dueDate ? <span className={`font-medium ${overdue ? "text-danger" : dueSoon ? "text-warning" : "text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {overdue ? `${getDaysPast(todo.dueDate, today)}일 지남` : getDdayLabel(todo.dueDate)}</span> : null}
+            {variant !== "today" && todo.dueDate ? <span className={`font-medium ${overdue ? "text-danger" : dueSoon ? "text-warning" : "text-ink-400"}`}>마감 {formatKoreanDate(todo.dueDate, "M/d")} · {overdue ? `${getDaysPast(todo.dueDate, today)}일 지남` : getDdayLabel(todo.dueDate)}</span> : null}
             {todo.referenceUrl ? <span className="inline-flex items-center gap-1 font-semibold text-accent-200"><ExternalLink size={11} />{todo.referenceLabel || "관련 링크"}</span> : null}
           </div> : null}
         </button>

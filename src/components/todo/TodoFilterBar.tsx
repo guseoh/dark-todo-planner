@@ -1,4 +1,4 @@
-import { BookmarkPlus, RotateCcw, Trash2, SlidersHorizontal } from "lucide-react";
+import { BookmarkPlus, ChevronDown, RotateCcw, Trash2, SlidersHorizontal } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { defaultFilters } from "../../hooks/useTodos";
 import type { Category } from "../../types/category";
@@ -93,13 +93,23 @@ export function TodoFilterBar({ filters, onChange, categories = [], projects = [
     <div className="todo-filter-workspace">
       <div className="todo-filter-workspace__primary">
         <div className="todo-filter-workspace__search"><TodoSearchInput value={filters.query} onChange={(query) => changeFilters({ ...filters, query })} /></div>
-        <select className="field todo-filter-workspace__status" aria-label="완료 상태 필터"
+        <div className="todo-filter-select todo-filter-select--status">
+          <select className="field todo-filter-workspace__status" aria-label="완료 상태 필터"
           value={filters.status} onChange={(event) => changeFilters({ ...filters, status: event.target.value as TodoStatusFilter })}>
           {statusFilters.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
         </select>
+          <ChevronDown className="todo-filter-select__chevron" size={14} aria-hidden="true" />
+        </div>
+        <div className="todo-filter-select todo-filter-select--project">
+          <select className="field todo-filter-workspace__project" value={filters.projectId} onChange={(event) => changeFilters({ ...filters, projectId: event.target.value })} aria-label="프로젝트 필터">
+            <option value="">모든 프로젝트</option><option value="unassigned">프로젝트 미지정</option>{projects.filter((project) => !project.archived || project.id === filters.projectId).map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
+          </select>
+          <ChevronDown className="todo-filter-select__chevron" size={14} aria-hidden="true" />
+        </div>
         <button type="button" className="btn-secondary todo-filter-workspace__expand"
-          onClick={() => setShowAdvanced((value) => !value)} aria-expanded={showAdvanced} aria-controls="todo-advanced-filters">
-          <SlidersHorizontal size={15} aria-hidden="true" />{showAdvanced ? "필터 닫기" : "고급 필터"}
+          onClick={() => setShowAdvanced((value) => !value)} aria-expanded={showAdvanced} aria-controls="todo-advanced-filters"
+          aria-label={showAdvanced ? "고급 필터 닫기" : "고급 필터 열기"} title={showAdvanced ? "고급 필터 닫기" : "고급 필터 열기"}>
+          <SlidersHorizontal size={15} aria-hidden="true" /><span className="sr-only">{showAdvanced ? "필터 닫기" : "고급 필터"}</span>
         </button>
       </div>
       {filtersActive ? (
@@ -148,9 +158,7 @@ export function TodoFilterBar({ filters, onChange, categories = [], projects = [
           <select className="field h-9 min-h-9 w-full py-1 sm:w-44" value={filters.categoryId} onChange={(event) => changeFilters({ ...filters, categoryId: event.target.value })} aria-label="카테고리 필터">
             <option value="">모든 카테고리</option><option value="uncategorized">미분류</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
           </select>
-          <select className="field h-9 min-h-9 w-full py-1 sm:w-48" value={filters.projectId} onChange={(event) => changeFilters({ ...filters, projectId: event.target.value })} aria-label="프로젝트 필터">
-            <option value="">모든 프로젝트</option><option value="unassigned">프로젝트 미지정</option>{projects.filter((project) => !project.archived || project.id === filters.projectId).map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
-          </select>
+          
           <select className="field h-9 min-h-9 w-full py-1 sm:w-44" value={filters.planningState || "ALL"} onChange={(event) => changeFilters({ ...filters, planningState: event.target.value as TodoFilters["planningState"] })} aria-label="계획 상태 필터">
             <option value="ALL">모든 계획 상태</option><option value="INBOX">미계획 (기존 Todo)</option><option value="SCHEDULED">일정</option><option value="SOMEDAY">언젠가</option><option value="WAITING">대기</option>
           </select>

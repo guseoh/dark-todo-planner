@@ -16,6 +16,7 @@ type TodoDetailFieldsProps = {
   showCategory?: boolean;
   /** With the quick chips visible, only what the chips cannot set (due date, memo) is shown, in one compact row. */
   compact?: boolean;
+  hideDueDate?: boolean;
   onDateChange: (value: string) => void;
   onDueDateChange: (value: string) => void;
   onPriorityChange: (value: TodoPriority) => void;
@@ -37,6 +38,7 @@ export function TodoDetailFields({
   projects = [],
   showCategory = true,
   compact = false,
+  hideDueDate = false,
   onDateChange,
   onDueDateChange,
   onPriorityChange,
@@ -47,10 +49,10 @@ export function TodoDetailFields({
 }: TodoDetailFieldsProps) {
   if (compact) {
     return (
-      <div className="todo-composer-details todo-composer-details--compact" role="group" aria-label="Todo 상세 옵션">
-        <label className="todo-composer-details__field todo-composer-details__field--due">마감일
+      <div className={`todo-composer-details todo-composer-details--compact ${hideDueDate ? "todo-composer-details--memo-only" : ""}`} role="group" aria-label="Todo 상세 옵션">
+        {!hideDueDate ? <label className="todo-composer-details__field todo-composer-details__field--due">마감일
           <input className="field" type="date" value={dueDate} onChange={(event) => onDueDateChange(event.target.value)} />
-        </label>
+        </label> : null}
         <label className="todo-composer-details__field todo-composer-details__field--memo">메모
           <textarea className="field" rows={1} value={memo} maxLength={2000} aria-label="Todo 메모"
             placeholder="필요한 내용만 간단히 기록하세요" onChange={(event) => onMemoChange(event.target.value)} />
@@ -70,9 +72,9 @@ export function TodoDetailFields({
           ) : (
             <div className="todo-composer-details__note"><span>실행일 없음</span><p>일정으로 옮길 때 날짜를 지정합니다.</p></div>
           )}
-          <label className="todo-composer-details__field">마감일
+          {!hideDueDate ? <label className="todo-composer-details__field">마감일
             <input className="field" type="date" value={dueDate} onChange={(event) => onDueDateChange(event.target.value)} />
-          </label>
+          </label> : null}
         </div>
       </fieldset>
       <fieldset className="todo-composer-details__group">

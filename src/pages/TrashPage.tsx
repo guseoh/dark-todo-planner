@@ -125,14 +125,14 @@ export function TrashPage({ onRestored, onOpenTodo }: { onRestored: () => Promis
       ) : null}
 
       {loading ? <div className="border-t border-ui-divider py-8 text-left text-sm text-ui-muted">휴지통을 불러오는 중...</div> : items.length ? (
-        <section className="divide-y divide-ui-divider border-t border-ui-divider">
+        <section className="trash-list divide-y divide-ui-divider border-t border-ui-divider">
           {visibleItems.map((item) => (
             <div key={item.id} className="trash-row flex flex-col gap-3 px-1 py-3 transition-colors hover:bg-ui-hover sm:flex-row sm:items-center">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[15px] font-semibold text-ui-text">{item.title}</p>
                 <p className="mt-1 text-xs text-ink-500">삭제 {new Date(item.deletedAt).toLocaleString("ko-KR", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
               </div>
-              <div className="flex gap-2">
+              <div className="trash-row__actions flex gap-2">
                 <button type="button" className="btn-secondary min-h-9 px-3 py-1 text-xs" onClick={() => void openPreview(item.id)} disabled={working}>
                   <SearchCheck size={14} />
                   복원 검토

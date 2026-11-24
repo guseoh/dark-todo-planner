@@ -1,4 +1,6 @@
 import { FormEvent, memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { WorkspaceTabs } from "../components/layout/WorkspaceTabs";
+import { useWorkspaceTabs } from "../hooks/useWorkspaceTabs";
 import { Ellipsis, FolderKanban, Link2, ListPlus, Pencil, Pin, PinOff, Plus, Save, Search, Trash2, X } from "lucide-react";
 import { EmptyState } from "../components/common/EmptyState";
 import { PageHeader } from "../components/common/PageHeader";
@@ -441,8 +443,15 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
   onTogglePin: (id: string) => unknown | Promise<unknown>;
   onAddTodo: (input: TodoInput) => Promise<Todo | undefined> | Todo | undefined;
 }) {
-  const [creating, setCreating] = useState(false);
-  const [previewMemoId, setPreviewMemoId] = useState<string | null>(null);
+  const NEW_MEMO = "__new_memo__";
+  const { opened, activeId, closed, open: openTab, close: closeTab, showList, reopen, replace } = useWorkspaceTabs("memo");
+  const creating = activeId === NEW_MEMO;
+  const availableIds = [...memos.map((memo) => memo.id), NEW_MEMO];
+  const openedMemos = opened.flatMap((id) => {
+    if (id === NEW_MEMO) return [{ id, title: "새 메모" }];
+    const memo = memos.find((item) => item.id === id);
+    return memo ? [{ id, title: memoDisplayTitle(memo) }] : [];
+  });
   const [colorPreviews, setColorPreviews] = useState<Record<string, string>>({});
   const handleColorPreview = useCallback((id: string, nextColor: string) => {
     setColorPreviews((current) => current[id] === nextColor
@@ -454,11 +463,10 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
     if (!focusedMemoId) return;
     const memo = memos.find((item) => item.id === focusedMemoId);
     if (memo) {
-      setPreviewMemoId(memo.id);
-      setCreating(false);
+      openTab(memo.id);
       onSearchTargetOpened?.();
     }
-  }, [focusedMemoId, memos, onSearchTargetOpened]);
+  }, [focusedMemoId, memos, onSearchTargetOpened, openTab]);
   const [conversionMessage, setConversionMessage] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const showSaved = (memo: Memo) => {
@@ -470,8 +478,7 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
       delete next[memo.id];
       return next;
     });
-    setPreviewMemoId(memo.id);
-    setCreating(false);
+    if (creating) replace(NEW_MEMO, memo.id);
     setSaveMessage("메모를 서버에 저장했습니다.");
   };
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase("ko-KR");
@@ -486,17 +493,13 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
   }), [memos, memoView, normalizedQuery, todosById, projectsById]);
   const pinnedMemos = filteredMemos.filter((memo) => memo.pinned);
   const normalMemos = filteredMemos.filter((memo) => !memo.pinned);
-  // Always show one document beside the list, even before the first selection.
-  // Search and filters determine the fallback document; an explicit selection wins.
-  const selectedMemo = filteredMemos.find((memo) => memo.id === previewMemoId) ?? filteredMemos[0] ?? null;
+  // Filtering the list does not change an explicitly opened document.
+  const selectedMemo = memos.find((memo) => memo.id === activeId) ?? null;
   // Let the selected row update immediately. Reconstructing a Tiptap document
   // may be expensive for long Markdown; defer that work without editing a stale note.
   const deferredMemo = useDeferredValue(selectedMemo);
   const switchingMemo = !creating && selectedMemo?.id !== deferredMemo?.id;
-  const selectMemo = useCallback((memo: Memo) => {
-    setCreating(false);
-    setPreviewMemoId(memo.id);
-  }, []);
+  const selectMemo = useCallback((memo: Memo) => openTab(memo.id), [openTab]);
 
   useEffect(() => {
     if (!conversionMessage) return undefined;
@@ -531,11 +534,14 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
     <div className="page-shell memo-page memo-page--workspace">
       <PageHeader title="메모"
         meta={`전체 ${memos.length}개`}
-        actions={<Button variant="secondary" className="memo-action-button" onClick={() => setCreating(true)}><Plus size={16} aria-hidden="true" />새 메모</Button>}
+        actions={<Button variant="secondary" className="memo-action-button" onClick={() => openTab(NEW_MEMO)}><Plus size={16} aria-hidden="true" />새 메모</Button>}
       />
       {conversionMessage ? <div className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-xs font-semibold text-success" role="status">{conversionMessage}</div> : null}
-      <div className="memo-workspace memo-workspace--editor">
-        <section className="memo-collections" aria-label="메모 목록">
+      <WorkspaceTabs label="메모 작업 탭" items={openedMemos} activeId={activeId}
+        onList={showList} onSelect={openTab} onClose={closeTab}
+        onReopen={() => reopen(availableIds)} canReopen={closed.some((id) => availableIds.includes(id))} />
+      <div className="memo-workspace memo-workspace--editor memo-workspace--tabs">
+        {!creating && !selectedMemo ? <section className="memo-collections" aria-label="메모 목록">
           <div className="memo-list-heading">
             <span>내 메모</span>
             <span>{filteredMemos.length}개</span>
@@ -563,16 +569,16 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
               {normalMemos.length ? <section className="memo-section"><div className="memo-section__heading"><h3>일반 메모</h3><span>{normalMemos.length}개</span></div><div className="memo-note-grid">{normalMemos.map(renderCard)}</div></section> : null}
             </>
           ) : (
-            <div className="memo-list-empty"><EmptyState title={memos.length ? "검색 결과가 없습니다." : "아직 메모가 없습니다."} description={memos.length ? "검색어나 필터를 변경해 보세요." : "오른쪽에서 새 메모를 작성할 수 있습니다."} /></div>
+            <div className="memo-list-empty"><EmptyState title={memos.length ? "검색 결과가 없습니다." : "아직 메모가 없습니다."} description={memos.length ? "검색어나 필터를 변경해 보세요." : "상단의 새 메모 버튼으로 시작할 수 있습니다."} /></div>
           )}
-        </section>
-        <aside className="memo-document-pane"
+        </section> : null}
+        {creating || selectedMemo ? <aside className="memo-document-pane"
           style={creating ? memoAccentStyle(colorPreviews.new) : memoAccentStyle(selectedMemo ? (colorPreviews[selectedMemo.id] ?? selectedMemo.color) : undefined)}
           aria-label="메모 편집기" aria-busy={switchingMemo}>
           {creating ? (
             <>
               <div className="memo-document-heading"><span className="memo-document-heading__eyebrow">새 문서</span><span className="memo-document-heading__hint">Markdown · Tiptap</span></div>
-              <MemoForm key="new" inline onColorPreview={handleColorPreview} draftKey={`${DRAFT_PREFIX}new`} submitLabel="메모 저장" todos={todos} projects={projects} onSaveLinks={onUpdateLinks} onRetryCreatedMemo={onUpdate} onSubmit={onAdd} onSaved={showSaved} onCancel={() => setCreating(false)} />
+              <MemoForm key="new" inline onColorPreview={handleColorPreview} draftKey={`${DRAFT_PREFIX}new`} submitLabel="메모 저장" todos={todos} projects={projects} onSaveLinks={onUpdateLinks} onRetryCreatedMemo={onUpdate} onSubmit={onAdd} onSaved={showSaved} onCancel={() => closeTab(NEW_MEMO)} />
             </>
           ) : switchingMemo ? (
             <div className="memo-document-loading" role="status" aria-live="polite">메모를 여는 중…</div>
@@ -592,7 +598,7 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
               <p>상단의 새 메모 버튼으로 시작할 수 있습니다.</p>
             </div>
           )}
-        </aside>
+        </aside> : null}
       </div>
       <p role="status" className="sr-only">{saveMessage}</p>
     </div>
