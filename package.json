@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "wrangler dev --local",
     "dev:desktop-ui": "vite --host 127.0.0.1 --port 5173 --strictPort",
-    "build:desktop-ui": "tsc -b && vite build --base=./",
+    "build:desktop-ui": "tsc -b tsconfig.app.json tsconfig.node.json && vite build --base=./",
     "build": "npm run build:desktop-ui && npm run build:worker",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",

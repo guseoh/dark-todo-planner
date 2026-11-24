@@ -51,7 +51,6 @@ jobs:
         run: npm ci
       - name: Verify main before signing and publishing
         run: |
-          npm run typecheck
           npm test
           node --test scripts/ci-scope.check.mjs scripts/prepare-desktop-release.check.mjs
       - name: Prepare version and registered updater public key

@@ -68,3 +68,5 @@ Windows 11에 Node.js 22, Rust stable/MSVC, WebView2가 준비되어 있어야 �
 ## Rust 의존성 고정
 
 `src-tauri/Cargo.lock`은 Windows runner의 Cargo에서 생성한 실제 lockfile을 추적합니다. PR 컴파일 및 릴리스/네이티브 스모크 빌드에 `--locked`를 적용합니다. 릴리스 준비 스크립트는 자체 `tern` 패키지 버전만 Cargo.toml 및 Cargo.lock에 동일하게 반영하고 의존성 버전·checksum은 변경하지 않습니다. 의존성 갱신은 별도 PR에서 lockfile과 함께 검토합니다.
+
+운영용 PWA manifest·설치용 아이콘 및 Cloudflare 정적 사이트 `_headers` 파일은 제거했습니다. Tauri 브랜딩 이미지, WebView용 favicon 및 실제 화면 폰트는 유지합니다. Windows 릴리스의 프런트엔드 타입 검사는 Tauri의 beforeBuildCommand에서 한 번 실행되며 Worker 타입 검사는 백엔드 파이프라인이 담당합니다.
