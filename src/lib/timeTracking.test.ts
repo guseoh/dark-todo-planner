@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Category } from "../types/category";
 import type { TimeEntry } from "../types/timeTracking";
-import { clockLabel, formatClock, formatDuration, formatShortDuration, isTargetRunning, hourlyBuckets, intervalOnDay, totalsByCategory } from "./timeTracking";
+import { clockLabel, formatClock, formatDuration, formatShortDuration, isTargetRunning, hourlyBuckets, intervalOnDay, totalsByCategory, measuredTotals, totalMs } from "./timeTracking";
 
 const at = (date: string, time: string) => new Date(`${date}T${time}`).toISOString();
 const category = (id: string, name: string, color: string): Category => ({
@@ -84,5 +84,21 @@ describe("aggregation", () => {
     expect(nine.segments[0].ms / 60_000).toBe(30);
     expect(ten.segments[0].ms / 60_000).toBe(15);
     expect(cells[8].segments).toHaveLength(0);
+  });
+});
+
+describe("measured totals by dimension", () => {
+  const first = { ...entry("a", at("2026-11-16", "23:00:00"), at("2026-11-17", "04:00:00"), "java"), todoId: "t1", projectId: "p1", title: "기록한 작업" };
+  const second = entry("b", at("2026-11-17", "09:00:00"), at("2026-11-17", "10:00:00"));
+  it("preserves the same total in every dimension, including unassigned entries and duplicate dates/IDs", () => {
+    for (const dimension of ["category", "project", "todo"] as const) {
+      const totals = measuredTotals([first, first, second], ["2026-11-16", "2026-11-17", "2026-11-17"], dimension, [java], [], []);
+      expect(totalMs(totals)).toBe(6 * 60 * 60_000);
+      expect(totals).toHaveLength(2);
+    }
+  });
+  it("uses recorded identifiers and snapshot title for missing entities", () => {
+    expect(measuredTotals([first], ["2026-11-17"], "todo", [], [], [])[0]).toMatchObject({ key: "todo:t1", name: "기록한 작업", ms: 60 * 60_000 });
+    expect(measuredTotals([first], ["2026-11-17"], "project", [], [], [])[0]).toMatchObject({ key: "project:p1", name: "삭제된 프로젝트", ms: 60 * 60_000 });
   });
 });

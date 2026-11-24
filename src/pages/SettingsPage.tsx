@@ -103,7 +103,7 @@ export function SettingsPage({
   return (
     <div className="page-shell settings-page">
       <PageHeader title="설정" description="앱 연결 상태, 자동화·알림 기준, 백업과 저장된 데이터를 관리합니다."
-        meta={connected ? "서버 연결됨" : "연결 확인 필요"}
+        meta={import.meta.env.VITE_TERN_QA === "1" ? "QA 예시 데이터" : connected ? "서버 연결됨" : "연결 확인 필요"}
       />
 
       <nav className="page-tabs" aria-label="설정 항목" role="tablist">
@@ -144,18 +144,18 @@ export function SettingsPage({
         <div className="flex flex-col gap-3 border-b border-ink-700 pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div><h3 id="operation-info-title" className="text-base font-bold text-ink-100">운영 정보</h3><p className="mt-1 text-xs text-ink-400">개인 플래너의 고정 운영 기준입니다.</p></div>
           <div className={`inline-flex min-h-9 items-center gap-2 self-start text-xs font-medium ${connected ? "text-ink-300" : "text-danger"}`} role="status">
-            <span className={`h-2 w-2 rounded-full ${connected ? "bg-success" : "bg-danger"}`} aria-hidden="true" />{connected ? "Cloudflare D1 연결됨" : "Cloudflare D1 연결 확인 필요"}
+            <span className={`h-2 w-2 rounded-full ${connected ? "bg-success" : "bg-danger"}`} aria-hidden="true" />{import.meta.env.VITE_TERN_QA === "1" ? "운영 API 차단 · 예시 데이터" : connected ? "Cloudflare D1 연결됨" : "Cloudflare D1 연결 확인 필요"}
           </div>
         </div>
         <dl className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className="border-b border-ink-700/35 px-1 py-3"><dt className="text-xs font-semibold text-ink-500">사용 모드</dt><dd className="mt-1 text-sm font-bold text-ink-100">단일 사용자</dd></div>
-          <div className="border-b border-ink-700/35 px-1 py-3"><dt className="text-xs font-semibold text-ink-500">저장소</dt><dd className="mt-1 text-sm font-bold text-ink-100">Cloudflare D1</dd></div>
+          <div className="border-b border-ink-700/35 px-1 py-3"><dt className="text-xs font-semibold text-ink-500">저장소</dt><dd className="mt-1 text-sm font-bold text-ink-100">{import.meta.env.VITE_TERN_QA === "1" ? "QA 메모리 데이터" : "Cloudflare D1"}</dd></div>
           <div className="border-b border-ink-700/35 px-1 py-3"><dt className="text-xs font-semibold text-ink-500">하루 시작 시각</dt><dd className="mt-1 text-sm font-bold text-ink-100">오전 3시</dd></div>
           <div className="border-b border-ink-700/35 px-1 py-3"><dt className="text-xs font-semibold text-ink-500">Discord Todo 알림</dt><dd className="mt-1 text-sm font-bold text-ink-100">매일 오후 9시 일괄 알림</dd><p className="mt-1 text-xs text-ink-400">현재 개별 시각 예약 알림은 지원하지 않습니다.</p></div>
         </dl>
       </section>
 
-      {isTauri() && <DesktopUpdateCard />}
+      {isTauri() && import.meta.env.VITE_TERN_QA !== "1" && <DesktopUpdateCard />}
       </div>
       ) : null}
 

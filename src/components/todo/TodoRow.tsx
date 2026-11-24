@@ -1,4 +1,4 @@
-import { Archive, CalendarDays, CheckCircle2, ExternalLink, MoreHorizontal, Pencil, RotateCcw, Star, StarOff, Tag, Trash2 } from "lucide-react";
+import { Archive, CalendarDays, CheckCircle2, ExternalLink, MoreHorizontal, Pencil, RotateCcw, Tag, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { formatKoreanDate, getDdayLabel, getDaysPast, todayKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../../lib/todo";
@@ -24,9 +24,6 @@ type TodoRowProps = {
   projectName?: string;
   leadingAction?: ReactNode;
   variant?: "default" | "today";
-  focusPinned?: boolean;
-  focusDisabled?: boolean;
-  onToggleFocus?: (id: string) => void;
   hideMediumPriority?: boolean;
   duplicateCandidate?: boolean;
   selectionMode?: boolean;
@@ -49,9 +46,6 @@ export function TodoRow({
   projectName: fallbackProjectName,
   leadingAction,
   variant = "default",
-  focusPinned = false,
-  focusDisabled = false,
-  onToggleFocus,
   hideMediumPriority = false,
   duplicateCandidate = false,
   selectionMode = false,
@@ -63,6 +57,14 @@ export function TodoRow({
   };
   const menuRef = useRef<HTMLDetailsElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [inlineEdit, setInlineEdit] = useState(false);
+  const [inlineBusy, setInlineBusy] = useState(false);
+  const [inlineError, setInlineError] = useState("");
+  const [inlineTitle, setInlineTitle] = useState("");
+  const [inlinePriority, setInlinePriority] = useState(todo.priority);
+  const [inlineCategory, setInlineCategory] = useState("");
+  const [inlineProject, setInlineProject] = useState("");
+  const rowRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!menuOpen) return;
     const dismissOutside = (event: PointerEvent) => {
@@ -81,6 +83,18 @@ export function TodoRow({
 
   const actions = useTodoQuickActions();
   const timer = useTimeTracking();
+  const beginInline = () => {
+    setInlineTitle(todo.title); setInlinePriority(todo.priority); setInlineCategory(todo.categoryId ?? ""); setInlineProject(todo.projectId ?? ""); setInlineError(""); setInlineEdit(true); setMenuOpen(false);
+  };
+  const finishInline = () => { setInlineEdit(false); window.requestAnimationFrame(() => rowRef.current?.focus()); };
+  const saveInline = async () => {
+    if (!actions?.updateTodo || inlineBusy || !inlineTitle.trim()) return;
+    setInlineBusy(true); setInlineError("");
+    try {
+      const updated = await actions.updateTodo(todo.id, { title: inlineTitle.trim(), priority: inlinePriority, categoryId: inlineCategory || undefined, projectId: inlineProject || undefined, ...(inlineProject !== (todo.projectId ?? "") ? { milestoneId: undefined } : {}) });
+      if (updated) finishInline(); else setInlineError("변경을 저장하지 못했습니다. 입력은 유지됩니다.");
+    } catch { setInlineError("저장 실패. 다시 시도하세요."); } finally { setInlineBusy(false); }
+  };
   const project = actions?.projects.find(({ id }) => id === todo.projectId);
   const projectName = project?.name ?? fallbackProjectName;
   const today = todayKey();
@@ -96,7 +110,7 @@ export function TodoRow({
     || (variant !== "today" && Boolean(todo.dueDate)) || Boolean(todo.referenceUrl);
 
   return (
-    <article data-todo-row={selectionMode ? undefined : todo.id} tabIndex={selectionMode ? undefined : -1}
+    <article ref={rowRef} data-todo-row={selectionMode ? undefined : todo.id} tabIndex={selectionMode ? undefined : -1}
       onKeyDown={(event) => {
         if (selectionMode || event.defaultPrevented || event.nativeEvent.isComposing || event.ctrlKey || event.metaKey || event.altKey) return;
         if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable]")) return;
@@ -106,7 +120,6 @@ export function TodoRow({
         else if (key === "s" && timer && !timer.busy && !todo.completed && !todo.archived) void (timer.active?.todoId === todo.id ? timer.stop() : timer.start(todo.id));
         else if (key === "e") onEdit(todo);
         else if (key === "delete") onDelete(todo.id);
-        else if (key === "f" && onToggleFocus && !focusDisabled && !todo.completed) onToggleFocus(todo.id);
         else return;
         event.preventDefault();
       }}
@@ -141,30 +154,15 @@ export function TodoRow({
           </div> : null}
         </button>
 
+        {!selectionMode && !todo.archived && actions?.updateTodo ? <button type="button" className="icon-btn h-8 w-8 text-ui-muted" title="인라인 수정" aria-label={`${todo.title} 인라인 수정`} onClick={beginInline}><Pencil size={13} /></button> : null}
         {!selectionMode && variant === "today" ? (
           <>
           <TimerToggleButton todo={todo} />
-          {onToggleFocus && !todo.completed ? (
-            <button type="button" className={`today-focus-toggle h-9 w-9 shrink-0 items-center justify-center ${focusPinned ? "is-pinned" : ""}`}
-              onClick={() => onToggleFocus(todo.id)} disabled={focusDisabled} aria-pressed={focusPinned}
-              aria-label={`핵심 작업 ${focusPinned ? "해제" : "선택"}: ${todo.title}`}
-              title={focusDisabled ? "핵심 작업은 최대 3개까지 지정할 수 있습니다." : focusPinned ? "핵심 작업에서 제외" : "핵심 작업으로 선택"}>
-              <Star size={16} fill={focusPinned ? "currentColor" : "none"} aria-hidden="true" />
-            </button>
-          ) : null}
           <details ref={menuRef} open={menuOpen} onToggle={(event) => setMenuOpen(event.currentTarget.open)} className="todo-row__more relative z-10 shrink-0">
             <summary className="ui-icon-button ui-icon-button--neutral h-9 w-9 cursor-pointer list-none" aria-label={`"${todo.title}" 더보기`} title="작업 메뉴">
               <MoreHorizontal size={17} />
             </summary>
             <div className="todo-row__menu absolute right-0 top-full z-40 mt-1 min-w-44 rounded-md border border-ui-divider bg-ui-elevated p-1.5" role="group" aria-label={`"${todo.title}" 작업 메뉴`}>
-              {onToggleFocus ? (
-                <button type="button" className="todo-row__menu-action" onClick={() => { onToggleFocus(todo.id); setMenuOpen(false); }}
-                  disabled={focusDisabled} aria-label={`${todo.title} ${focusPinned ? "핵심 작업에서 제외" : "핵심 작업으로 고정"}`}
-                  title={focusDisabled ? "핵심 작업은 최대 3개까지 지정할 수 있습니다." : undefined}>
-                  {focusPinned ? <StarOff size={14} /> : <Star size={14} />}
-                  {focusPinned ? "핵심 작업에서 제외" : "핵심 작업으로 고정"}
-                </button>
-              ) : null}
               <div className="todo-row__menu-action"><QuickSnoozeMenu todo={todo} /><span>빠른 미루기</span></div>
               <button type="button" className="todo-row__menu-action" onClick={() => { onEdit(todo); setMenuOpen(false); }} aria-label={`"${todo.title}" Todo 수정`}>
                 <Pencil size={14} />수정
@@ -188,6 +186,14 @@ export function TodoRow({
           </div>
         ) : null}
       </div>
+      {inlineEdit && !selectionMode ? <form className="ml-10 mt-2 flex flex-wrap items-center gap-2" onSubmit={event => { event.preventDefault(); void saveInline(); }} onKeyDown={event => { if (event.key === "Escape" && !inlineBusy && !event.nativeEvent.isComposing) { event.stopPropagation(); finishInline(); } if (event.key === "Enter" && event.nativeEvent.isComposing) event.preventDefault(); }}>
+        <input className="field min-h-8 min-w-32 flex-1 text-xs" aria-label="제목 빠른 수정" value={inlineTitle} onChange={event => setInlineTitle(event.target.value)} autoFocus maxLength={200} disabled={inlineBusy} />
+        <select className="field min-h-8 w-auto text-xs" aria-label="우선순위 빠른 수정" value={inlinePriority} onChange={event => setInlinePriority(event.target.value as Todo["priority"])} disabled={inlineBusy}><option value="LOW">낮음</option><option value="MEDIUM">보통</option><option value="HIGH">높음</option></select>
+        <select className="field min-h-8 w-auto text-xs" aria-label="카테고리 빠른 수정" value={inlineCategory} onChange={event => setInlineCategory(event.target.value)} disabled={inlineBusy}><option value="">미분류</option>{actions?.categories.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
+        <select className="field min-h-8 w-auto text-xs" aria-label="프로젝트 빠른 수정" value={inlineProject} onChange={event => setInlineProject(event.target.value)} disabled={inlineBusy || Boolean(todo.parentTodoId)}><option value="">미지정</option>{actions?.projects.filter(item => !item.archived || item.id === todo.projectId).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
+        <button type="submit" className="btn-secondary text-xs" disabled={inlineBusy || !inlineTitle.trim()}>저장</button><button type="button" className="btn-secondary text-xs" disabled={inlineBusy} onClick={finishInline}>취소</button>
+        {inlineError ? <span role="alert" className="w-full text-xs text-danger">{inlineError}</span> : null}
+      </form> : null}
     </article>
   );
 }

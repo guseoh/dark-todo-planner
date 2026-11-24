@@ -5,6 +5,7 @@ import { Archive, ArchiveRestore, CheckCircle2, CircleDot, ExternalLink, MoreHor
 import { ProjectDecisionLog } from "../components/project/ProjectDecisionLog";
 import { PageHeader } from "../components/common/PageHeader";
 import { ProjectKanban, type ProjectWipLimits } from "../components/project/ProjectKanban";
+import { ProjectGithubPanel } from "../components/project/ProjectGithubPanel";
 import { WorkspaceTabs } from "../components/layout/WorkspaceTabs";
 import { useWorkspaceTabs } from "../hooks/useWorkspaceTabs";
 import { TargetTimerButton } from "../components/timer/TargetTimerButton";
@@ -146,6 +147,8 @@ export function ProjectPage({
   const projectMilestones = useMemo(() => milestones.filter((milestone) => milestone.projectId === selectedId), [milestones, selectedId]);
   const projectDecisions = useMemo(() => decisions.filter((decision) => decision.projectId === selectedId), [decisions, selectedId]);
   const [showDuplicate, setShowDuplicate] = useState(false);
+  const [projectViews, setProjectViews] = useState<Record<string, "board" | "issues" | "pulls">>({});
+  const projectView = projectViews[selectedId] ?? "board";
   const unassignedMilestoneTodos = projectTodos.filter((todo) => !todo.milestoneId).length;
   const createProject = async (event: FormEvent) => {
     event.preventDefault();
@@ -479,7 +482,18 @@ export function ProjectPage({
             </div>
           </Modal> : null}
           {projectDialog === "decisions" ? <Modal title="기존 결정 기록" onClose={() => setProjectDialog(null)}><ProjectDecisionLog projectId={selected.id} archived decisions={projectDecisions} onAdd={onAddDecision} onDelete={onDeleteDecision} /></Modal> : null}
+          <div className="flex items-center gap-2">
+          <div className="page-tabs flex-1" role="group" aria-label="프로젝트 보기">
+            {([["board", "칸반"], ["issues", "Issues"], ["pulls", "Pull Requests"]] as const).map(([view, label]) =>
+              <button key={view} type="button" className="page-tab" aria-pressed={projectView === view} onClick={() => setProjectViews(current => ({ ...current, [selected.id]: view }))}>{label}</button>
+            )}
+          </div>
+          <button type="button" className="btn-secondary text-xs" onClick={() => setProjectDialog("memos")}>연결 메모 {memos.filter(memo => memo.projectIds.includes(selected.id)).length}</button>
+          </div>
+          {projectView === "board" ? (
           <ProjectKanban key={selected.id} project={selected} todos={projectTodos} milestones={projectMilestones} categories={categories} projects={projects} onAddTodo={onAddTodo} onUpdateTodo={onUpdateTodo} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} onDetachTodo={onDetachTodo} onReorderTodos={onReorderTodos} wipLimits={wipLimits} onChangeWipLimits={onChangeWipLimits} />
+          ) : <ProjectGithubPanel key={`${selected.id}:${projectView}`} project={selected} todos={projectTodos} kind={projectView} onAdd={onAddTodo} onUpdate={onUpdateTodo} onConnect={() => setProjectDialog("resources")} />}
+
         </div>
       ) : visibleProjects.length ? (
         <div className="workspace-document-list" aria-label="프로젝트 전체 목록">

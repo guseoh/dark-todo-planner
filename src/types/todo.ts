@@ -42,6 +42,8 @@ export type Todo = {
 
 export type TodoInput = {
   title: string;
+  referenceUrl?: string;
+  referenceLabel?: string;
   categoryId?: string;
   projectId?: string;
   milestoneId?: string;

@@ -143,7 +143,7 @@ export function AppContent({ activeView, calendarMode, calendarDate, onCalendarD
       content = <MemoPage focusedMemoId={focusedMemoId} onSearchTargetOpened={() => onFocusedItemOpened?.("메모")} memos={planner.memos} todos={planner.allTodos} projects={planner.projects} onAdd={planner.addMemo} onUpdate={planner.updateMemo} onUpdateLinks={planner.updateMemoLinks} onDelete={planner.deleteMemo} onTogglePin={planner.toggleMemoPin} onAddTodo={planner.addTodo} />;
       break;
     case "scratchpad":
-      content = <ScratchpadPage />;
+      content = <ScratchpadPage onCreateMemo={planner.addMemo} onOpenMemo={onOpenMemo} />;
       break;
     case "trash":
       content = <TrashPage onRestored={planner.loadAll} onOpenTodo={onOpenTodo} />;

@@ -12,7 +12,7 @@ export const SmartTextarea = forwardRef<HTMLTextAreaElement, SmartTextareaProps>
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     onKeyDown?.(event);
-    if (event.defaultPrevented || event.key !== "Enter" || event.shiftKey || event.metaKey || event.ctrlKey || event.altKey) return;
+    if (event.defaultPrevented || event.nativeEvent.isComposing || event.keyCode === 229 || event.key !== "Enter" || event.shiftKey || event.metaKey || event.ctrlKey || event.altKey) return;
 
     const textarea = ref.current;
     if (!textarea) return;

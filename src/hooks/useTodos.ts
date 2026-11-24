@@ -81,6 +81,8 @@ const createOptimisticTodo = (id: string, input: TodoInput): Todo => {
     milestoneId: input.milestoneId,
     parentTodoId: input.parentTodoId,
     memo: input.memo,
+    referenceUrl: input.referenceUrl,
+    referenceLabel: input.referenceUrl ? input.referenceLabel : undefined,
     date: input.date || todayKey(),
     dueDate: input.dueDate,
     planningState,
@@ -203,6 +205,7 @@ export function useTodos() {
     const existing = allTodos.find((todo) => todo.id === id);
     if (!existing) return undefined;
 
+    if (Object.prototype.hasOwnProperty.call(updates, "projectId") && updates.projectId !== existing.projectId && (existing.parentTodoId || allTodos.some(item => item.parentTodoId === id))) { setError("상·하위 작업 연결을 정리한 후 프로젝트를 이동하세요."); return undefined; }
     const serial = (updateSerialRef.current.get(id) ?? 0) + 1;
     updateSerialRef.current.set(id, serial);
     const optimistic = applyOptimisticUpdates(existing, updates);
@@ -389,6 +392,7 @@ export function useTodos() {
     if (!uniqueIds.length) return true;
     const previous = allTodos;
     const targetIds = new Set(uniqueIds);
+    if (action.type === "PROJECT" && allTodos.some(todo => (targetIds.has(todo.id) && Boolean(todo.parentTodoId)) || Boolean(todo.parentTodoId && targetIds.has(todo.parentTodoId)))) { setError("상·하위 작업이 연결된 Todo는 일괄 프로젝트 이동할 수 없습니다."); return false; }
     setAllTodos((current) => current.map((todo) => {
       if (!targetIds.has(todo.id)) return todo;
       if (action.type === "PROJECT") return { ...todo, projectId: action.value || undefined, milestoneId: undefined, parentTodoId: undefined, updatedAt: new Date().toISOString() };

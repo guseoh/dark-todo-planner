@@ -12,17 +12,18 @@ export function useTimeEntries(from: string, to: string) {
   const version = timer?.version ?? 0;
   const bump = timer?.bump;
   const [entries, setEntries] = useState<TimeEntry[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const [loadedRange, setLoadedRange] = useState("");
+  const range = `${from}:${to}`;
   const [error, setError] = useState("");
 
   useEffect(() => {
     let live = true;
     setError("");
     void api<{ timeEntries: TimeEntry[] }>(`/api/time-entries?from=${from}&to=${to}`)
-      .then((result) => { if (live) { setEntries(result.timeEntries); setLoaded(true); } })
+      .then((result) => { if (live) { setEntries(result.timeEntries); setLoadedRange(range); } })
       .catch(() => { if (live) setError("측정 기록을 불러오지 못했습니다."); });
     return () => { live = false; };
-  }, [from, to, version]);
+  }, [from, to, version, range]);
 
   const create = useCallback(async (input: TimeEntryInput) => {
     await api("/api/time-entries", { method: "POST", ...jsonBody(input) });
@@ -37,7 +38,7 @@ export function useTimeEntries(from: string, to: string) {
     bump?.();
   }, [bump]);
 
-  return { entries, loaded, error, create, update, remove };
+  return { entries: loadedRange === range ? entries : [], loaded: loadedRange === range, error, create, update, remove };
 }
 
 /** Measured milliseconds per planner date for a range, including the running timer on its start day. */

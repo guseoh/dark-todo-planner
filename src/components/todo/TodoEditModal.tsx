@@ -7,6 +7,8 @@ import type { Category } from "../../types/category";
 import type { Milestone, Project } from "../../types/project";
 import type { Todo, TodoPlanningState, TodoPriority, TodoWorkflowStatus } from "../../types/todo";
 import { Modal } from "../common/Modal";
+import { duplicateTodoInput } from "../../lib/duplicateTodo";
+import { useTodoQuickActions } from "./TodoQuickActionsContext";
 import { TodoWorkflowPanel } from "./TodoWorkflowPanel";
 
 const UNSCHEDULED_DATE = "9999-12-31";
@@ -30,9 +32,13 @@ type TodoEditModalProps = {
   onSave: (id: string, updates: Partial<Omit<Todo, "id" | "createdAt">>) => unknown | Promise<unknown>;
   presentation?: "modal" | "side-panel";
   hideDueDate?: boolean;
+  onToggleSubtask?: (id: string) => void;
 };
 
-export function TodoEditModal({ todo, categories = [], projects = [], milestones = [], subtasks, onAddSubtask, onClose, onSave, presentation = "modal", hideDueDate = false }: TodoEditModalProps) {
+export function TodoEditModal({ todo, categories = [], projects = [], milestones = [], subtasks, onAddSubtask, onClose, onSave, presentation = "modal", hideDueDate = true, onToggleSubtask }: TodoEditModalProps) {
+  const actions = useTodoQuickActions();
+  const [duplicating, setDuplicating] = useState(false);
+  const [duplicateMessage, setDuplicateMessage] = useState("");
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -71,10 +77,23 @@ export function TodoEditModal({ todo, categories = [], projects = [], milestones
     setReferenceLabel(todo.referenceLabel || "");
     setReferenceError("");
     setSaving(false);
+    setDuplicateMessage("");
   }, [todo]);
 
   if (!todo) return null;
   const referenceHref = safeHttpHref(referenceUrl);
+  const duplicate = async () => {
+    if (!actions?.addTodo || saving || duplicating || todo.archived) return;
+    setDuplicating(true); setDuplicateMessage("");
+    try {
+      const input = duplicateTodoInput(todo);
+      if (input.projectId && !projects.some(p => p.id === input.projectId && !p.archived)) input.projectId = undefined;
+      if (input.categoryId && !categories.some(c => c.id === input.categoryId)) input.categoryId = undefined;
+      const saved = await actions.addTodo(input);
+      setDuplicateMessage(saved ? "원본은 그대로 두고 오늘에 새 Todo를 만들었습니다." : "복제 실패. 다시 시도하세요.");
+    } catch { setDuplicateMessage("복제 실패. 다시 시도하세요."); }
+    finally { setDuplicating(false); }
+  };
 
   const moveToDayOffset = (days: number) => {
     setPlanningState("SCHEDULED");
@@ -105,7 +124,7 @@ export function TodoEditModal({ todo, categories = [], projects = [], milestones
         title: title.trim(),
         categoryId: categoryId || undefined,
         projectId: projectId || undefined,
-        ...(milestones.length ? { milestoneId: milestoneId || undefined } : {}),
+        ...(milestones.length || projectId !== (todo.projectId ?? "") ? { milestoneId: milestoneId || undefined } : {}),
         date: planningState === "SCHEDULED" ? resolveTodoScheduledDate(date, todo.date, todayKey()) : UNSCHEDULED_DATE,
         ...(!hideDueDate ? { dueDate: dueDate || undefined } : {}),
         blockReason: blockReason.trim() || undefined,
@@ -154,7 +173,7 @@ export function TodoEditModal({ todo, categories = [], projects = [], milestones
             </div>
           </div>
           <label className="space-y-1 text-sm text-ink-400">카테고리<select className="field" value={categoryId} onChange={(event) => setCategoryId(event.target.value)}><option value="">미분류</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
-          {projects.length || projectId ? <label className="space-y-1 text-sm text-ink-400">프로젝트<select className="field" value={projectId} onChange={(event) => setProjectId(event.target.value)}><option value="">프로젝트 없음</option>{projects.filter((project) => !project.archived || project.id === projectId).map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label> : null}
+          {projects.length || projectId ? <label className="space-y-1 text-sm text-ink-400">프로젝트<select className="field" value={projectId} disabled={Boolean(todo.parentTodoId || subtasks?.length)} onChange={(event) => { setProjectId(event.target.value); setMilestoneId(""); }}><option value="">프로젝트 없음</option>{projects.filter((project) => !project.archived || project.id === projectId).map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label> : null}
           {milestones.length && projectId ? <label className="space-y-1 text-sm text-ink-400">
             마일스톤
             <select className="field" value={milestoneId} onChange={(event) => setMilestoneId(event.target.value)}>
@@ -178,10 +197,11 @@ export function TodoEditModal({ todo, categories = [], projects = [], milestones
           {subtasks ? <section className="md:col-span-2 border-t border-ui-divider pt-3" aria-label="하위 작업">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-ui-text">하위 작업</h3>
-              <span className="text-xs text-ui-muted">{subtasks.length}개</span>
+              <span className="text-xs text-ui-muted">{subtasks.filter(item => item.completed).length}/{subtasks.length} 완료</span>
             </div>
             {subtasks.length ? <ul className="mt-2 space-y-1.5 text-xs text-ui-secondary">
               {subtasks.map((item) => <li key={item.id} className="flex items-center gap-2">
+                {onToggleSubtask ? <input type="checkbox" aria-label={`${item.title} 완료`} checked={item.completed} onChange={() => onToggleSubtask(item.id)} /> : null}
                 <span className={item.completed ? "line-through opacity-60" : ""}>{item.title}</span>
               </li>)}
             </ul> : null}
@@ -189,7 +209,7 @@ export function TodoEditModal({ todo, categories = [], projects = [], milestones
               <input className="field min-w-0 flex-1" value={subtaskTitle}
                 onChange={(event) => setSubtaskTitle(event.target.value)}
                 placeholder="하위 작업 제목" aria-label="하위 작업 제목"
-                onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void addSubtask(); } }} />
+                onKeyDown={(event) => { if (event.key === "Enter" && !event.nativeEvent.isComposing && event.keyCode !== 229) { event.preventDefault(); void addSubtask(); } }} />
               <button type="button" className="btn-secondary" disabled={subtaskBusy || !subtaskTitle.trim()} onClick={() => void addSubtask()}>
                 {subtaskBusy ? "추가 중" : "추가"}
               </button>
@@ -198,6 +218,7 @@ export function TodoEditModal({ todo, categories = [], projects = [], milestones
           </section> : null}
         </div>
         <TodoWorkflowPanel todo={todo} />
+        {actions?.addTodo && !todo.archived ? <div className="mt-3 flex flex-wrap items-center gap-2"><button type="button" className="btn-secondary text-xs" disabled={saving || duplicating} onClick={() => void duplicate()}>{duplicating ? "복제 중…" : "저장된 Todo 오늘로 복제"}</button><span role="status" className="text-xs text-ui-muted">{duplicateMessage}</span></div> : null}
         <div className="mt-5 flex flex-col-reverse gap-2 border-t border-ink-700/60 pt-4 sm:flex-row sm:justify-end"><button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>취소</button><button type="submit" className="btn-primary" disabled={!title.trim() || saving}>{saving ? "저장 중..." : "저장"}</button></div>
       </form>
     </Modal>

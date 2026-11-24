@@ -5,7 +5,7 @@ import { PLANNER_DAY_START_HOUR, formatKoreanDate, parseDateKey, toDateKey, toda
 import { getEntityColor } from "../../lib/entityColor";
 import {
   DAY_MINUTES, activeAsEntry, clockLabel, entryCategoryName, entryColor, formatDuration, intervalOnDay,
-  plannerDayStart, totalMs, totalsByCategory,
+  plannerDayStart, totalMs, totalsByCategory, measuredTotals, type TimeDimension,
 } from "../../lib/timeTracking";
 import { useTimeEntries } from "../../hooks/useTimeEntries";
 import type { Project } from "../../types/project";
@@ -62,14 +62,15 @@ export function WeeklyTimetable({ dates, selectedDate, todos, projects, onSelect
   const timer = useTimeTracking();
   const weekStart = dates[0];
   const weekEnd = dates[6];
-  const { entries, create, update, remove } = useTimeEntries(weekStart, weekEnd);
+  const { entries, loaded, error: entriesError, create, update, remove } = useTimeEntries(weekStart, weekEnd);
   const [visible, setVisible] = useState(() => window.matchMedia("(min-width: 1280px)").matches);
+  const [dimension, setDimension] = useState<TimeDimension>("category");
   const [blocks, setBlocks] = useState<TimeBlock[]>([]);
   const [loadedWeek, setLoadedWeek] = useState("");
   const [now, setNow] = useState(() => new Date());
   const [error, setError] = useState("");
   const [fullDay, setFullDay] = useState(() => { try { return localStorage.getItem(FULL_KEY) === "1"; } catch { return false; } });
-  const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
+  const [editingEntry, setEditingEntry] = useState<TimeEntry | "new" | null>(null);
   const writeInProgress = useRef(false);
   const gesture = useRef<{ column: string; start: number; block?: Placed } | null>(null);
   const [selection, setSelection] = useState<{ column: string; start: number; end: number } | null>(null);
@@ -100,8 +101,9 @@ export function WeeklyTimetable({ dates, selectedDate, todos, projects, onSelect
   const hours = Array.from({ length: endHour - startHour }, (_, index) => startHour + index);
 
   const dayTotals = useMemo(() => new Map(dates.map((date) => [date, totalMs(totalsByCategory(allEntries, [date], categories))])), [allEntries, categories, dates]);
-  const weekTotals = useMemo(() => totalsByCategory(allEntries, dates, categories), [allEntries, categories, dates]);
+  const weekTotals = useMemo(() => measuredTotals(allEntries, dates, dimension, categories, projects, todos), [allEntries, dates, dimension, categories, projects, todos]);
   const hasActual = allEntries.length > 0;
+  const plannedMs = weekBlocks.reduce((sum, item) => sum + Math.max(0, item.end - item.start) * 60_000, 0);
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1280px)");
@@ -198,14 +200,23 @@ export function WeeklyTimetable({ dates, selectedDate, todos, projects, onSelect
           {fullDay ? "업무 시간만 보기" : "하루 전체 보기"}
         </button>
       </div>
-      {weekTotals.length ? (
-        <ul className="calendar-week-totals" aria-label="이번 주 카테고리별 측정 시간">
-          <li className="font-semibold text-ui-text">측정 {formatDuration(totalMs(weekTotals))}</li>
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <button type="button" className="btn-secondary text-xs" disabled={!loaded || Boolean(entriesError) || plannerDayStart(selectedDate).getTime() >= Date.now()} onClick={() => setEditingEntry("new")}>선택 날짜 기록 추가</button>
+        <label className="text-xs text-ui-muted" htmlFor="weekly-measured-dimension">측정 시간</label>
+        <select id="weekly-measured-dimension" className="field min-h-8 w-auto py-1 text-xs" value={dimension} onChange={(event) => setDimension(event.target.value as TimeDimension)}>
+          <option value="category">카테고리별</option><option value="project">프로젝트별</option><option value="todo">Todo별</option>
+        </select>
+        <span className="text-xs font-semibold text-ui-text">{entriesError ? "조회 실패" : !loaded ? "조회 중…" : formatDuration(totalMs(weekTotals))}</span>
+        {loadedWeek === weekStart ? <span className="text-xs text-ui-muted">계획 {formatDuration(plannedMs)}{loaded && !entriesError && plannedMs > 0 ? ` · 실측/계획 ${Math.round(totalMs(weekTotals) / plannedMs * 100)}%` : ""}</span> : null}
+      </div>
+      {loaded && !entriesError && weekTotals.length ? (
+        <ul className="calendar-week-totals" aria-label="이번 주 측정 시간 분류">
           {weekTotals.map((item) => (
             <li key={item.key}><span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} aria-hidden="true" />{item.name} {formatDuration(item.ms)}</li>
           ))}
         </ul>
       ) : null}
+      {entriesError ? <p role="alert" className="mb-2 text-xs text-danger">{entriesError}</p> : null}
       {error ? <p role="alert" className="mb-2 text-xs text-danger">{error}</p> : null}
       <div className="calendar-time-grid" data-has-actual={hasActual}>
         <span aria-hidden="true" />
@@ -292,8 +303,8 @@ export function WeeklyTimetable({ dates, selectedDate, todos, projects, onSelect
         </div>)}
       </div>
       {editingEntry ? (
-        <TimeEntryModal entry={editingEntry} categories={categories}
-          defaultStart={editingEntry.startedAt} defaultEnd={editingEntry.endedAt}
+        <TimeEntryModal entry={editingEntry === "new" ? undefined : editingEntry} categories={categories} todos={todos}
+          defaultStart={editingEntry === "new" ? plannerDayStart(selectedDate).toISOString() : editingEntry.startedAt} defaultEnd={editingEntry === "new" ? new Date(Math.min(Date.now(), plannerDayStart(selectedDate).getTime() + 30 * 60_000)).toISOString() : editingEntry.endedAt}
           onClose={() => setEditingEntry(null)} onCreate={create} onUpdate={update} onDelete={remove} />
       ) : null}
     </section>

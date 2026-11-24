@@ -475,7 +475,7 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
             priority: parent.priority,
           });
         }}
-        onClose={() => setEditingTodoId(null)} onSave={onUpdateTodo} presentation="side-panel" /> : null}
+        onToggleSubtask={project.archived ? undefined : onToggleTodo} onClose={() => setEditingTodoId(null)} onSave={onUpdateTodo} presentation="side-panel" /> : null}
     </section>
   );
 }

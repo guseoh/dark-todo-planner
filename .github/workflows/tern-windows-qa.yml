@@ -1,0 +1,73 @@
+name: Tern Windows QA
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'src/**'
+      - 'src-tauri/**'
+      - 'package*.json'
+      - '.github/workflows/tern-windows-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: tern-qa-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  qa:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      VITE_TERN_QA: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: 'src-tauri -> target'
+      - run: npm ci
+      - run: npm test
+      - run: npx --yes @tauri-apps/cli@2 icon -o src-tauri/icons src-tauri/branding/tern.png
+      - name: Build isolated QA executable (no installer, no signing)
+        run: npx --yes @tauri-apps/cli@2 build --config src-tauri/tauri.qa.conf.json --features qa --no-bundle -- --locked
+      - name: Run isolated native unit tests
+        run: cargo test --release --locked --manifest-path src-tauri/Cargo.toml --features qa,tauri/custom-protocol --lib
+      - name: Package and check startup
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $exe = Resolve-Path 'src-tauri/target/release/tern.exe'
+          $p = Start-Process -FilePath $exe -PassThru
+          try {
+            $deadline = (Get-Date).AddSeconds(45)
+            do {
+              Start-Sleep -Seconds 1
+              $p.Refresh()
+              if ($p.HasExited) { throw 'QA exited before startup' }
+            } while ($p.MainWindowHandle -eq 0 -and (Get-Date) -lt $deadline)
+            if ($p.MainWindowHandle -eq 0 -or $p.MainWindowTitle -notmatch 'Tern QA') { throw 'Isolated QA window not detected' }
+            $second = Start-Process -FilePath $exe -PassThru
+            try {
+              if (!$second.WaitForExit(15000)) { throw 'Second QA instance did not exit' }
+              if ($second.ExitCode -ne 0) { throw "Second QA app returned $($second.ExitCode)" }
+            } finally { if (!$second.HasExited) { Stop-Process -Id $second.Id -Force } }
+          } finally {
+            if (!$p.HasExited) { Stop-Process -Id $p.Id -Force; $p.WaitForExit() }
+          }
+          New-Item -ItemType Directory -Force qa-artifact | Out-Null
+          Copy-Item $exe qa-artifact/Tern-QA.exe
+          "Source: $env:GITHUB_SHA. Fixture-only; no installer; unsupported actions return errors." | Set-Content qa-artifact/README.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tern-QA-${{ github.sha }}
+          path: qa-artifact/
+          if-no-files-found: error
+          retention-days: 7

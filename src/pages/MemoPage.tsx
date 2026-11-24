@@ -116,8 +116,8 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
   const showSource = sourceMode || requiresSource;
   const submittingRef = useRef(false);
   const normalizedLinkQuery = linkQuery.trim().toLocaleLowerCase("ko-KR");
-  const visibleTodos = todos.filter((todo) => !todo.archived && (!normalizedLinkQuery || todo.title.toLocaleLowerCase("ko-KR").includes(normalizedLinkQuery)));
-  const visibleProjects = projects.filter((project) => !normalizedLinkQuery || project.name.toLocaleLowerCase("ko-KR").includes(normalizedLinkQuery));
+  const visibleTodos = useMemo(() => todos.filter((todo) => !todo.archived && (!normalizedLinkQuery || todo.title.toLocaleLowerCase("ko-KR").includes(normalizedLinkQuery))), [todos, normalizedLinkQuery]);
+  const visibleProjects = useMemo(() => projects.filter((project) => !normalizedLinkQuery || project.name.toLocaleLowerCase("ko-KR").includes(normalizedLinkQuery)), [projects, normalizedLinkQuery]);
 
   // An untouched document is not a pending draft. Save rapid unsaved changes
   // synchronously on note switch, even before the debounce interval expires.
@@ -281,10 +281,10 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
             <MarkdownPreview value={content} />
           </div>
         ) : showSource ? (
-          <MarkdownEditor value={content} onChange={setContent} placeholder="- 떠오른 생각을 적어두세요"
+          <MarkdownEditor positionKey={draftKey} value={content} onChange={setContent} placeholder="- 떠오른 생각을 적어두세요"
             textareaClassName={large ? "min-h-[300px] max-h-[55vh]" : "min-h-36"} />
         ) : (
-          <RichMarkdownEditor ref={richEditorRef} variant="memo" markdown={content} onChange={setContent} readOnly={isSubmitting} />
+          <RichMarkdownEditor ref={richEditorRef} variant="memo" positionKey={draftKey} markdown={content} onChange={setContent} readOnly={isSubmitting} />
         )}
       </section>
 
@@ -324,7 +324,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
       <div className="flex min-h-5 flex-wrap items-center justify-between gap-3" aria-live="polite">
         {error ? <p role="alert" className="text-xs text-danger">{error}</p> : <span />}
         {draftError ? <p role="alert" className="text-xs text-danger">{draftError}</p> : null}
-        {draftSavedAt && !draftError ? <p className="text-xs text-ink-400" title="브라우저 로컬 초안입니다. 저장 버튼을 누르면 서버에 반영됩니다.">브라우저 초안 저장 · {new Date(draftSavedAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} · 서버 저장 전</p> : null}
+        {draftSavedAt && !draftError ? <p className="text-xs text-ink-400" title="이 PC에 저장된 로컬 초안입니다. 저장 버튼을 누르면 서버에 반영됩니다.">로컬 초안 저장 · {new Date(draftSavedAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} · 서버 저장 전</p> : null}
       </div>
       <div className="flex flex-wrap justify-end gap-2 border-t border-ink-700/60 pt-3">
         {onCancel ? <button type="button" className="btn-secondary" onClick={onCancel} disabled={isSubmitting}><X size={15} />취소</button> : null}
@@ -461,6 +461,7 @@ export function MemoPage({ memos, todos, projects, focusedMemoId, onSearchTarget
   const [memoView, setMemoView] = useState<"all" | "pinned" | "linked">("all");
   useEffect(() => {
     if (!focusedMemoId) return;
+    if (focusedMemoId === NEW_MEMO) { openTab(NEW_MEMO); onSearchTargetOpened?.(); return; }
     const memo = memos.find((item) => item.id === focusedMemoId);
     if (memo) {
       openTab(memo.id);

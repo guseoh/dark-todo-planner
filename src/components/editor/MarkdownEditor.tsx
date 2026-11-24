@@ -1,4 +1,4 @@
-import { TextareaHTMLAttributes, useRef } from "react";
+import { TextareaHTMLAttributes, useLayoutEffect, useRef } from "react";
 import { Bold, CheckSquare, Code2, Italic, Link, List, ListOrdered, Quote, Strikethrough } from "lucide-react";
 import { SmartTextarea } from "./SmartTextarea";
 
@@ -7,6 +7,7 @@ type MarkdownEditorProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "va
   onChange: (value: string) => void;
   label?: string;
   textareaClassName?: string;
+  positionKey?: string;
 };
 
 type ToolbarAction =
@@ -48,8 +49,18 @@ const wrapSelection = (action: ToolbarAction, selected: string) => {
   return selected;
 };
 
-export function MarkdownEditor({ value, onChange, label, className = "", textareaClassName = "", ...props }: MarkdownEditorProps) {
+const rawPositions = new Map<string, { value: string; start: number; end: number; scroll: number }>();
+export function MarkdownEditor({ value, onChange, label, className = "", textareaClassName = "", positionKey, ...props }: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  useLayoutEffect(() => {
+    const node = textareaRef.current;
+    if (!node || !positionKey) return;
+    const previous = rawPositions.get(positionKey);
+    if (previous?.value === node.value) { node.setSelectionRange(previous.start, previous.end); node.scrollTop = previous.scroll; }
+    const capture = () => { rawPositions.delete(positionKey); rawPositions.set(positionKey, { value: node.value, start: node.selectionStart, end: node.selectionEnd, scroll: node.scrollTop }); if (rawPositions.size > 30) rawPositions.delete(rawPositions.keys().next().value!); };
+    node.addEventListener("input", capture); node.addEventListener("select", capture); node.addEventListener("scroll", capture);
+    return () => { capture(); node.removeEventListener("input", capture); node.removeEventListener("select", capture); node.removeEventListener("scroll", capture); };
+  }, [positionKey]);
 
   const applyAction = (action: ToolbarAction) => {
     const textarea = textareaRef.current;

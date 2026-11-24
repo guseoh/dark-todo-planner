@@ -62,7 +62,7 @@ export function Modal({ title, description, children, onClose, size = "md", plac
     (meaningfulInput || closeButtonRef.current || dialog).focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (modalStack[modalStack.length - 1] !== modalToken) return;
+      if (modalStack[modalStack.length - 1] !== modalToken || event.defaultPrevented || event.isComposing || event.keyCode === 229) return;
 
       if (event.key === "Escape") {
         event.preventDefault();

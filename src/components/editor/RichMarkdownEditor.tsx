@@ -10,6 +10,7 @@ export type RichAction = "h1" | "h2" | "bullet" | "ordered" | "task" | "quote" |
 export type RichMarkdownHandle = {
   focus: () => void;
   selectAll: () => void;
+  selectedText: () => string;
   action: (action: RichAction) => void;
   undo: () => void;
   redo: () => void;
@@ -28,6 +29,13 @@ const markdownExtensions = [
 ];
 
 type Match = { from: number; to: number };
+type EditorPosition = Match & { markdown: string; scrollTop: number };
+const positions = new Map<string, EditorPosition>();
+function rememberPosition(key: string, position: EditorPosition) {
+  positions.delete(key);
+  positions.set(key, position);
+  if (positions.size > 30) positions.delete(positions.keys().next().value!);
+}
 const locate = (editor: Editor, query: string): Match[] => {
   if (!query) return [];
   const matches: Match[] = [];
@@ -52,9 +60,12 @@ export const RichMarkdownEditor = forwardRef<RichMarkdownHandle, {
   wrap?: boolean;
   onShortcut?: (event: React.KeyboardEvent<HTMLDivElement>) => void;
   variant?: "memo" | "scratchpad";
-}>(function RichMarkdownEditor({ markdown, onChange, readOnly = false, zoom = 100, wrap = true, onShortcut, variant = "scratchpad" }, ref) {
+  positionKey?: string;
+}>(function RichMarkdownEditor({ markdown, onChange, readOnly = false, zoom = 100, wrap = true, onShortcut, variant = "scratchpad", positionKey }, ref) {
   const onChangeRef = useRef(onChange);
   const lastEmittedRef = useRef<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const positionRef = useRef<EditorPosition | null>(positionKey ? positions.get(positionKey) ?? null : null);
   onChangeRef.current = onChange;
   const editor = useEditor({
     extensions: markdownExtensions,
@@ -86,9 +97,44 @@ export const RichMarkdownEditor = forwardRef<RichMarkdownHandle, {
   }, [editor, markdown]);
   useEffect(() => { editor?.setEditable(!readOnly); }, [editor, readOnly]);
 
+  // Position is session-local and bounded. Never restore offsets into changed content.
+  useEffect(() => {
+    if (!editor || !positionKey) return;
+    const node = containerRef.current;
+    const saved = positionRef.current;
+    const frame = window.requestAnimationFrame(() => {
+      if (saved && saved.markdown === editor.getMarkdown() && !editor.isDestroyed) {
+        const max = editor.state.doc.content.size;
+        if (saved.from >= 0 && saved.to <= max && saved.from <= saved.to) {
+          editor.commands.setTextSelection({ from: saved.from, to: saved.to });
+          if (node) node.scrollTop = saved.scrollTop;
+        }
+      }
+    });
+    let currentMarkdown = editor.getMarkdown();
+    const capture = () => {
+      if (editor.isDestroyed) return;
+      const { from, to } = editor.state.selection;
+      const position = { from, to, markdown: currentMarkdown, scrollTop: node?.scrollTop ?? 0 };
+      positionRef.current = position;
+      rememberPosition(positionKey, position);
+    };
+    const update = () => { currentMarkdown = editor.getMarkdown(); capture(); };
+    editor.on("update", update);
+    editor.on("selectionUpdate", capture);
+    node?.addEventListener("scroll", capture, { passive: true });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      editor.off("update", update);
+      editor.off("selectionUpdate", capture);
+      node?.removeEventListener("scroll", capture);
+    };
+  }, [editor, positionKey]);
+
   useImperativeHandle(ref, () => ({
     focus: () => { editor?.commands.focus(); },
     selectAll: () => { editor?.chain().focus().selectAll().run(); },
+    selectedText: () => editor ? editor.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to, "\n") : "",
     action: (action) => {
       if (!editor) return;
       const chain = editor.chain().focus();
@@ -150,7 +196,7 @@ export const RichMarkdownEditor = forwardRef<RichMarkdownHandle, {
   }), [editor]);
 
   return (
-    <div className={`scratchpad-rich rich-markdown-editor rich-markdown-editor--${variant} min-h-0 overflow-auto bg-ui-canvas text-ui-text ${variant === "memo" ? "px-3 py-3" : "flex-1 px-4 py-5 sm:px-8"}`}
+    <div ref={containerRef} className={`scratchpad-rich rich-markdown-editor rich-markdown-editor--${variant} min-h-0 overflow-auto bg-ui-canvas text-ui-text ${variant === "memo" ? "px-3 py-3" : "flex-1 px-4 py-5 sm:px-8"}`}
       onKeyDown={onShortcut} style={{ fontSize: String(16 * zoom / 100) + "px", overflowWrap: wrap ? "anywhere" : "normal" }}>
       <EditorContent editor={editor} />
     </div>
