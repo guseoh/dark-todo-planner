@@ -44,13 +44,7 @@ struct UpdateState {
     available_version: Option<String>,
 }
 
-#[tauri::command]
-async fn desktop_api_request(
-    state: State<'_, ApiClient>,
-    path: String,
-    method: String,
-    body: Option<String>,
-) -> Result<ApiResponse, String> {
+fn trusted_api_url(path: &str) -> Result<Url, String> {
     // All requests have a fixed trusted host. A renderer cannot turn this into an
     // arbitrary HTTP proxy, or send session cookies to a different server.
     if !path.starts_with("/api/") || path.contains('\\') || path.contains('#') {
@@ -60,6 +54,17 @@ async fn desktop_api_request(
     if url.origin().ascii_serialization() != API_ORIGIN || !url.path().starts_with("/api/") {
         return Err("허용되지 않은 API 주소입니다.".into());
     }
+    Ok(url)
+}
+
+#[tauri::command]
+async fn desktop_api_request(
+    state: State<'_, ApiClient>,
+    path: String,
+    method: String,
+    body: Option<String>,
+) -> Result<ApiResponse, String> {
+    let url = trusted_api_url(&path)?;
     let method = Method::from_bytes(method.as_bytes()).map_err(|_| "잘못된 HTTP 메서드입니다.")?;
     if !matches!(method, Method::GET | Method::POST | Method::PUT | Method::PATCH | Method::DELETE) {
         return Err("허용되지 않은 HTTP 메서드입니다.".into());
@@ -193,6 +198,14 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn native_api_rejects_external_and_escaped_paths() {
+        assert_eq!(trusted_api_url("/api/todos?limit=100").unwrap().origin().ascii_serialization(), API_ORIGIN);
+        for path in ["https://example.com/api/todos", "//example.com/api/todos", "/api/../secret", "/api/%2e%2e/secret", "/api/\\secret", "/api/todos#secret"] {
+            assert!(trusted_api_url(path).is_err(), "accepted {path}");
+        }
+    }
+
     #[test]
     fn update_gate_releases_on_drop_and_rejects_concurrent_work() {
         let gate = UpdateGate::default();

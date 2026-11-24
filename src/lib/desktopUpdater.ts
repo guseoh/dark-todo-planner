@@ -37,7 +37,10 @@ export function createDesktopUpdater(command: Command, pending: () => Promise<un
 
 export const desktopUpdater = createDesktopUpdater(
   (args) => invoke<UpdateState>("desktop_update", args),
-  listTodoMutations,
+  async () => {
+    if (typeof indexedDB === "undefined") throw new Error("IndexedDB unavailable");
+    return listTodoMutations();
+  },
 );
 
 export const updateErrorMessage = (cause: unknown, fallback: string) =>
