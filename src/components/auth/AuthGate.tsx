@@ -51,6 +51,13 @@ export function AuthGate({ children }: { children: (logout: () => Promise<void>)
     return () => { active = false; window.removeEventListener("auth:unauthorized", expire); };
   }, [attempt]);
 
+  useEffect(() => {
+    if (!sessionError || session) return;
+    const retry = () => setAttempt(n => n + 1);
+    window.addEventListener("online", retry);
+    return () => window.removeEventListener("online", retry);
+  }, [sessionError, session]);
+
   const login = async (event: FormEvent) => {
     event.preventDefault();
     setSubmitting(true);

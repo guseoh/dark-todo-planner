@@ -7,6 +7,7 @@ import { MarkdownEditor } from "../components/editor/MarkdownEditor";
 import { MarkdownPreview } from "../components/editor/MarkdownPreview";
 import { RichMarkdownEditor, type RichMarkdownHandle } from "../components/editor/RichMarkdownEditor";
 import { requiresRawScratchpadEditing } from "../lib/scratchpadEditorSafety";
+import { markDraftRecovery, registerRecoveryDraft } from "../lib/desktopSafety";
 import { formatKoreanDate, todayKey } from "../lib/date";
 import type { Memo, MemoInput, MemoLinksInput } from "../types/memo";
 import type { Project } from "../types/project";
@@ -45,7 +46,8 @@ const readDraft = (key: string, initial?: Memo): MemoDraft | null => {
     if (!raw) return null;
     const draft = JSON.parse(raw) as MemoDraft;
     if (!draft || typeof draft.savedAt !== "number") return null;
-    if (initial && draft.savedAt <= Date.parse(initial.updatedAt)) return null;
+    // A partial server save can be newer than a still-needed draft.
+    if (initial && draft.title === (initial.title ?? "") && draft.content === initial.content && draft.color === resolveMemoColor(initial.color) && draft.pinned === initial.pinned && JSON.stringify(draft.todoIds ?? []) === JSON.stringify(initial.todoIds ?? []) && JSON.stringify(draft.projectIds ?? []) === JSON.stringify(initial.projectIds ?? [])) return null;
     return draft;
   } catch {
     return null;
@@ -122,12 +124,17 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
   lastDraftRef.current = { title, content, color, pinned, todoIds, projectIds,
     createdMemoId: createdMemoIdRef.current || undefined, savedAt: Date.now() };
   useEffect(() => {
-    return () => {
-      if (!changedSinceSaveRef.current || !lastDraftRef.current) return;
+    const flush = () => {
+      if (submittingRef.current) return false;
+      if (!changedSinceSaveRef.current || !lastDraftRef.current) return true;
       try {
         localStorage.setItem(draftKey, JSON.stringify({ ...lastDraftRef.current, savedAt: Date.now() }));
-      } catch { /* Existing in-memory content is left untouched. */ }
+        markDraftRecovery(draftKey, true);
+        return true;
+      } catch { markDraftRecovery(draftKey, false); return false; }
     };
+    const unregister = registerRecoveryDraft(flush);
+    return () => { flush(); unregister(); };
   }, [draftKey]);
 
   useEffect(() => {
@@ -141,10 +148,12 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
       };
       try {
         localStorage.setItem(draftKey, JSON.stringify(draft));
+        markDraftRecovery(draftKey, true);
         setDraftSavedAt(draft.savedAt);
         setDraftError("");
       } catch {
-        setDraftError("브라우저 초안을 저장하지 못했습니다. 서버 저장 전에는 창을 닫지 마세요.");
+        markDraftRecovery(draftKey, false);
+        setDraftError("로컬 초안을 저장하지 못했습니다. 서버 저장 전에는 창을 닫지 마세요.");
       }
     }, 350);
     return () => window.clearTimeout(timer);
@@ -189,6 +198,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
       changedSinceSaveRef.current = false;
       draftVersionRef.current += 1;
       try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
+      markDraftRecovery(draftKey, true);
       setDraftSavedAt(0);
       setError("");
       onSaved?.(saved);
@@ -219,7 +229,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
             {memoColors.map((item) => (
               <button key={item.value} type="button" aria-label={item.label}
                 aria-pressed={color.toLowerCase() === item.value.toLowerCase()}
-                title={item.label} onClick={() => setColor(item.value)}
+                title={item.label} disabled={isSubmitting} onClick={() => setColor(item.value)}
                 className="memo-color-swatch" style={{ backgroundColor: item.value }} />
             ))}
             {!memoColors.some((item) => item.value.toLowerCase() === color.toLowerCase()) ? (
@@ -228,7 +238,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
             ) : null}
           </div>
         </fieldset>
-        <label className="flex min-h-9 items-center gap-2 px-2 text-xs font-semibold text-ink-300"><input type="checkbox" checked={pinned} onChange={(event) => setPinned(event.target.checked)} className="h-4 w-4 accent-accent-500" />고정</label>
+        <label className="flex min-h-9 items-center gap-2 px-2 text-xs font-semibold text-ink-300"><input type="checkbox" checked={pinned} disabled={isSubmitting} onChange={(event) => setPinned(event.target.checked)} className="h-4 w-4 accent-accent-500" />고정</label>
       </div>
 
       <section aria-label="메모 내용" className={inline ? "memo-edit-section memo-edit-section--inline space-y-2" : "memo-edit-section space-y-2"}>
@@ -288,7 +298,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
               <div className="max-h-40 space-y-1 overflow-y-auto rounded-md bg-ink-950/45 p-1.5">
                 {visibleTodos.length ? visibleTodos.map((todo) => (
                   <label key={todo.id} className="flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 text-xs text-ink-300 hover:bg-ink-800/70">
-                    <input type="checkbox" checked={todoIds.includes(todo.id)} onChange={() => setTodoIds((current) => toggleId(current, todo.id))} className="mt-0.5 h-4 w-4 accent-accent-500" />
+                    <input type="checkbox" checked={todoIds.includes(todo.id)} disabled={isSubmitting} onChange={() => setTodoIds((current) => toggleId(current, todo.id))} className="mt-0.5 h-4 w-4 accent-accent-500" />
                     <span className="min-w-0 flex-1"><span className="block truncate font-semibold text-ink-200">{todo.title}</span><span className="text-ink-500">{todo.date}</span></span>
                   </label>
                 )) : <p className="px-2 py-3 text-center text-xs text-ink-600">연결할 Todo가 없습니다.</p>}
@@ -299,7 +309,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
               <div className="max-h-40 space-y-1 overflow-y-auto rounded-md bg-ink-950/45 p-1.5">
                 {visibleProjects.length ? visibleProjects.map((project) => (
                   <label key={project.id} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-xs text-ink-300 hover:bg-ink-800/70">
-                    <input type="checkbox" checked={projectIds.includes(project.id)} onChange={() => setProjectIds((current) => toggleId(current, project.id))} className="h-4 w-4 accent-accent-500" />
+                    <input type="checkbox" checked={projectIds.includes(project.id)} disabled={isSubmitting} onChange={() => setProjectIds((current) => toggleId(current, project.id))} className="h-4 w-4 accent-accent-500" />
                     <span className="min-w-0 flex-1 truncate font-semibold text-ink-200">{project.name}{project.archived ? " · 보관됨" : ""}</span>
                   </label>
                 )) : <p className="px-2 py-3 text-center text-xs text-ink-600">연결할 프로젝트가 없습니다.</p>}

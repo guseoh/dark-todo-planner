@@ -1,7 +1,8 @@
-import { isTauri } from "@tauri-apps/api/core";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useState } from "react";
 
+import { beginMaintenance } from "../../lib/desktopSafety";
 import { desktopUpdater, updateErrorMessage } from "../../lib/desktopUpdater";
 
 export function DesktopAutoUpdate() {
@@ -38,7 +39,20 @@ export function DesktopAutoUpdate() {
       if (active) stop = unlisten;
       else unlisten();
     }).catch(() => { /* startup/hourly checks remain available */ });
-    return () => { active = false; window.clearInterval(interval); stop?.(); };
+    let stopQuit: (() => void) | undefined;
+    void listen("tern-request-quit", async () => {
+      let release: (() => void) | undefined;
+      try {
+        release = beginMaintenance();
+        await invoke("desktop_quit");
+      } catch (cause) {
+        setDismissed(false);
+        setError(updateErrorMessage(cause, "앱을 종료하지 못했습니다. 저장 상태를 확인해 주세요."));
+      } finally { release?.(); }
+    }).then(unlisten => { if (active) stopQuit = unlisten; else unlisten(); }).catch(() => {});
+    const online = () => void check();
+    window.addEventListener("online", online);
+    return () => { active = false; window.clearInterval(interval); stop?.(); stopQuit?.(); window.removeEventListener("online", online); };
   }, [check]);
 
   const install = async () => {
