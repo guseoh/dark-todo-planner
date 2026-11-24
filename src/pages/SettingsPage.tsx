@@ -124,10 +124,10 @@ export function SettingsPage({
 
       {section === "overview" ? (
       <div id="settings-panel-overview" role="tabpanel" aria-labelledby="settings-tab-overview" tabIndex={0} className="space-y-4">
-      <section className="work-section px-1 py-4" aria-labelledby="appearance-title">
+      <section className="settings-appearance work-section px-1 py-4" aria-labelledby="appearance-title">
         <h3 id="appearance-title" className="text-base font-semibold text-ui-text">화면 테마</h3>
-        <p className="mt-1 text-sm text-ui-secondary">선택한 테마는 이 브라우저에 저장됩니다. 시스템 설정은 운영체제의 밝기 모드를 따릅니다.</p>
-        <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="화면 테마 선택">
+        <p className="mt-1 text-sm text-ui-secondary">시스템 테마는 Windows의 밝기 설정을 따릅니다.</p>
+        <div className="settings-appearance__choices flex flex-wrap gap-2" role="group" aria-label="화면 테마 선택">
           {([
             { id: "dark", label: "다크", icon: Moon },
             { id: "light", label: "라이트", icon: Sun },
