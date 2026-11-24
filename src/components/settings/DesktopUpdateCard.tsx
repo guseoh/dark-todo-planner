@@ -1,8 +1,6 @@
-import { invoke } from "@tauri-apps/api/core";
+import { desktopUpdater, updateErrorMessage } from "../../lib/desktopUpdater";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
-
-type UpdateState = { installedVersion: string; availableVersion: string | null };
 
 export function DesktopUpdateCard() {
   const [version, setVersion] = useState<string | null>();
@@ -13,7 +11,7 @@ export function DesktopUpdateCard() {
 
   useEffect(() => {
     let active = true;
-    void invoke<UpdateState>("desktop_update", { checkNow: false, install: false }).then(
+    void desktopUpdater.version().then(
       (state) => { if (active) setVersion(state.installedVersion); },
       () => { if (active) setVersion(null); },
     );
@@ -24,7 +22,7 @@ export function DesktopUpdateCard() {
     setChecking(true);
     setError("");
     try {
-      const result = await invoke<UpdateState>("desktop_update", { checkNow: true, install: false });
+      const result = await desktopUpdater.check();
       setAvailable(result.availableVersion);
       if (!result.availableVersion) setError("현재 최신 버전입니다.");
     } catch {
@@ -35,13 +33,14 @@ export function DesktopUpdateCard() {
   };
 
   const installUpdate = async () => {
+    if (!available || installing || checking) return;
     setInstalling(true);
     setError("");
     try {
-      await invoke<UpdateState>("desktop_update", { checkNow: true, install: true });
+      await desktopUpdater.install(available);
       setAvailable(null);
-    } catch {
-      setError("업데이트 설치에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+    } catch (cause) {
+      setError(updateErrorMessage(cause, "업데이트 설치에 실패했습니다. 잠시 후 다시 시도해 주세요."));
     } finally {
       setInstalling(false);
     }
@@ -65,7 +64,7 @@ export function DesktopUpdateCard() {
           {available ? <p className="mt-2 text-sm text-ui-text">새 버전 {available}이 있습니다. 작성 중인 내용을 저장한 후 설치해 주세요.</p> : null}
         </div>
         <div className="flex shrink-0 gap-2 self-start">
-          {available ? <button type="button" className="btn-primary" disabled={installing} onClick={() => void installUpdate()}>{installing ? "설치 중…" : "업데이트 설치"}</button> : null}
+          {available ? <button type="button" className="btn-primary" disabled={installing || checking} onClick={() => void installUpdate()}>{installing ? "설치 중…" : "업데이트 설치"}</button> : null}
           {version ? <button type="button" className="btn-secondary" disabled={checking || installing} onClick={() => void checkForUpdate()}>
             <RefreshCw size={15} aria-hidden="true" />{checking ? "확인 중…" : "업데이트 확인"}
           </button> : null}

@@ -1,6 +1,6 @@
 use reqwest::{Client, Method, Url};
 use serde::Serialize;
-use std::time::Duration;
+use std::{sync::atomic::{AtomicBool, Ordering}, time::Duration};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
@@ -9,6 +9,21 @@ use tauri::{
 use tauri_plugin_updater::UpdaterExt;
 
 const API_ORIGIN: &str = "https://dark-todo-planner.guseoh.workers.dev";
+
+#[derive(Default)]
+struct UpdateGate(AtomicBool);
+
+struct UpdateLease<'a>(&'a AtomicBool);
+impl Drop for UpdateLease<'_> {
+    fn drop(&mut self) { self.0.store(false, Ordering::Release); }
+}
+impl UpdateGate {
+    fn acquire(&self) -> Result<UpdateLease<'_>, String> {
+        self.0.compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .map(|_| UpdateLease(&self.0))
+            .map_err(|_| "다른 업데이트 작업이 진행 중입니다.".into())
+    }
+}
 
 struct ApiClient {
     client: Client,
@@ -71,23 +86,32 @@ async fn desktop_api_request(
 #[tauri::command]
 async fn desktop_update(
     app: tauri::AppHandle,
+    gate: State<'_, UpdateGate>,
     check_now: bool,
     install: bool,
+    expected_version: Option<String>,
 ) -> Result<UpdateState, String> {
     let installed_version = app.package_info().version.to_string();
     if !check_now && !install {
         return Ok(UpdateState { installed_version, available_version: None });
     }
-    let updater = app.updater().map_err(|error| error.to_string())?;
-    let available = updater.check().await.map_err(|error| error.to_string())?;
+    let _lease = gate.acquire()?;
+    if install && expected_version.as_deref().filter(|v| !v.is_empty()).is_none() {
+        return Err("설치할 버전을 먼저 확인해 주세요.".into());
+    }
+    let updater = app.updater().map_err(|_| "업데이트 설정을 읽지 못했습니다.".to_string())?;
+    let available = updater.check().await.map_err(|_| "업데이트 확인에 실패했습니다.".to_string())?;
     let Some(update) = available else {
         return Ok(UpdateState { installed_version, available_version: None });
     };
     let available_version = Some(update.version.clone());
     if install {
+        if expected_version.as_deref() != Some(update.version.as_str()) {
+            return Err("새 버전 정보가 변경되었습니다. 다시 확인한 후 설치해 주세요.".into());
+        }
         // The Windows updater verifies the signature and exits this process to
         // hand control to the signed NSIS installer.
-        update.download_and_install(|_, _| {}, || {}).await.map_err(|error| error.to_string())?;
+        update.download_and_install(|_, _| {}, || {}).await.map_err(|_| "업데이트 다운로드 또는 서명 검증·설치에 실패했습니다.".to_string())?;
         // Tauri recommends restarting the app after the signed update installs.
         app.restart();
     }
@@ -110,6 +134,7 @@ pub fn run() {
             }
         })
         .manage(ApiClient { client })
+        .manage(UpdateGate::default())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![desktop_api_request, desktop_update])
         .setup(|app| {
@@ -163,4 +188,17 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running Tern");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn update_gate_releases_on_drop_and_rejects_concurrent_work() {
+        let gate = UpdateGate::default();
+        let lease = gate.acquire().unwrap();
+        assert!(gate.acquire().is_err());
+        drop(lease);
+        assert!(gate.acquire().is_ok());
+    }
 }
