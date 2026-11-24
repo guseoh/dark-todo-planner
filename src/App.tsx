@@ -365,7 +365,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
             {planner.loadedOnce ? (
               <>
                 {planner.backgroundOrOperationError ? <ErrorBanner message={planner.backgroundOrOperationError} onRetry={planner.loadAll} /> : null}
-                <AppContent activeView={activeView} calendarMode={calendarMode} calendarDate={calendarDate ?? todayKey()} onCalendarDateChange={changeCalendarDate} onCalendarModeChange={changeCalendarMode} planner={planner} onToggleTodo={toggleTodoWithUndo} onUpdateTodo={updateTodoWithUndo} onBulkUpdateTodos={bulkUpdateWithUndo} focusedMemoId={searchMemoId} focusedProjectId={searchProjectId} onFocusedItemOpened={clearOpenedSearchTarget} onOpenDayClose={() => setShowDayClose(true)} onDetachTodo={detachTodoWithUndo} onOpenProjectTodos={(id) => navigateToView("all", "month", id)} onOpenTodo={(id) => setSearchTodoId(id)} allProjectId={allProjectId} />
+                <AppContent activeView={activeView} calendarMode={calendarMode} calendarDate={calendarDate ?? todayKey()} onCalendarDateChange={changeCalendarDate} onCalendarModeChange={changeCalendarMode} planner={planner} onToggleTodo={toggleTodoWithUndo} onUpdateTodo={updateTodoWithUndo} onBulkUpdateTodos={bulkUpdateWithUndo} focusedMemoId={searchMemoId} focusedProjectId={searchProjectId} onFocusedItemOpened={clearOpenedSearchTarget} onOpenDayClose={() => setShowDayClose(true)} onDetachTodo={detachTodoWithUndo} onOpenProjectTodos={(id) => navigateToView("all", "month", id)} onOpenMemo={(id) => openSearchResult("메모", id)} onOpenTodo={(id) => setSearchTodoId(id)} allProjectId={allProjectId} />
               </>
             ) : null}
           </main>

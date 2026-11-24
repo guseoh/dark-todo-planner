@@ -16,7 +16,7 @@ import { TimerToggleButton } from "../timer/TimerToggleButton";
 const workflowColumns: Array<{ status: TodoWorkflowStatus; label: string }> = [
   { status: "TODO", label: workflowStatusLabels.TODO },
   { status: "IN_PROGRESS", label: "진행 중" },
-  { status: "BLOCKED", label: workflowStatusLabels.BLOCKED },
+  { status: "BLOCKED", label: "보류" },
   { status: "DONE", label: "완료" },
 ];
 
@@ -384,6 +384,9 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
             <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-500" />
             <input className="field h-9 min-h-9 pl-8 py-1 text-xs" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="프로젝트 작업 검색" aria-label="프로젝트 작업 검색" />
           </label>
+          <details className="workspace-board-options">
+            <summary className="btn-secondary text-xs">보기 옵션</summary>
+            <div className="workspace-board-options__panel">
           <select className="field h-9 min-h-9 w-auto text-xs" value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value)} aria-label="우선순위 필터">
             <option value="ALL">모든 우선순위</option><option value="HIGH">높음</option><option value="MEDIUM">보통</option><option value="LOW">낮음</option>
           </select>
@@ -392,6 +395,8 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
             title="각 열의 카드를 마일스톤별로 묶어 봅니다 (이 상태에서는 카드 순서 변경이 꺼집니다)">마일스톤별 묶기</button>
           <button type="button" className="btn-secondary text-xs" aria-pressed={compact} onClick={toggleCompact}
             title="카드를 한 줄로 줄여 더 많이 봅니다">{compact ? "자세히 보기" : "간단히 보기"}</button>
+            </div>
+          </details>
           <span className="shrink-0 text-xs text-ui-muted" aria-live="polite">{visibleTodos.length}개</span>
         </div>
         {!project.archived ? <button type="button" className="btn-primary shrink-0" onClick={() => setShowAdd((value) => !value)}>
@@ -403,13 +408,13 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
 
       <DndContext sensors={sensors} collisionDetection={columnCollision} onDragStart={onDragStart} onDragCancel={onDragCancel} onDragEnd={handleDragEnd}>
         <div className="project-v4-board-viewport">
-          <div data-done-collapsed={collapsedDoneColumns[project.id] ?? true} data-density={compact ? "compact" : "comfortable"} className="project-v4-board grid grid-cols-4 gap-3">
+          <div data-done-collapsed={collapsedDoneColumns[project.id] ?? false} data-density={compact ? "compact" : "comfortable"} className="project-v4-board grid grid-cols-4 gap-3">
             {workflowColumns.map((column) => {
               const items = visibleByStatus.get(column.status) ?? [];
               // WIP count is the total project count, not the filtered subset.
               const count = indexed.byStatus.get(column.status)?.length ?? 0;
               return (
-                <KanbanColumn key={column.status} status={column.status} label={column.label} count={count} visibleCount={items.length} wipLimit={wipLimitsByProject[project.id]?.[column.status]} onWipLimitChange={changeWipLimit} collapsed={column.status === "DONE" && (collapsedDoneColumns[project.id] ?? true)} onToggleCollapse={column.status === "DONE" ? () => setCollapsedDoneColumns((current) => ({ ...current, [project.id]: !(current[project.id] ?? true) })) : undefined}>
+                <KanbanColumn key={column.status} status={column.status} label={column.label} count={count} visibleCount={items.length} wipLimit={wipLimitsByProject[project.id]?.[column.status]} onWipLimitChange={changeWipLimit} collapsed={column.status === "DONE" && (collapsedDoneColumns[project.id] ?? false)} onToggleCollapse={column.status === "DONE" ? () => setCollapsedDoneColumns((current) => ({ ...current, [project.id]: !(current[project.id] ?? true) })) : undefined}>
                   {(groupByMilestone ? groupByMilestoneOrder(items, milestones) : [{ key: "all", title: "", items }]).map((group) => (
                     <div key={group.key} className="project-kanban-group">
                       {group.title ? <h5 className="project-kanban-group__title">{group.title}<span>{group.items.length}</span></h5> : null}
