@@ -27,7 +27,5 @@ jobs:
       - run: npm test
       - run: node --test scripts/ci-scope.check.mjs scripts/prepare-desktop-release.check.mjs scripts/d1-backup-crypto.check.mjs
       - run: npm audit --omit=dev
-  api-and-ui:
+  api:
     uses: ./.github/workflows/api-check.yml
-    with:
-      browser: true

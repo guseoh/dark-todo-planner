@@ -1,0 +1,53 @@
+name: Tern native startup smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tern-native-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  startup:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: 'src-tauri -> target'
+      - run: npm ci
+      - run: npx --yes @tauri-apps/cli@2 icon -o src-tauri/icons src-tauri/branding/tern.png
+      - name: Compile executable only
+        run: npx --yes @tauri-apps/cli@2 build --no-bundle
+      - name: Check native startup without login or data mutation
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $p = Start-Process -FilePath (Resolve-Path 'src-tauri/target/release/tern.exe') -PassThru
+          try {
+            $deadline = (Get-Date).AddSeconds(45)
+            do {
+              Start-Sleep -Seconds 2
+              $p.Refresh()
+              if ($p.HasExited) { throw "Tern exited before startup ($($p.ExitCode))" }
+            } while ($p.MainWindowHandle -eq 0 -and (Get-Date) -lt $deadline)
+            if ($p.MainWindowHandle -eq 0) { throw 'Tern main window was not detected' }
+            if ($p.MainWindowTitle -notmatch 'Tern') { throw 'Unexpected Tern window title' }
+            Start-Sleep -Seconds 3
+            $p.Refresh()
+            if ($p.HasExited) { throw 'Tern exited after startup' }
+            Write-Output 'Tern process and main window detected; login and IPC require local QA.'
+          } finally {
+            if (!$p.HasExited) { Stop-Process -Id $p.Id -Force }
+          }

@@ -38,5 +38,14 @@ jobs:
         run: npx --no-install vite build --base=./
       - name: Generate icons
         run: npx --yes @tauri-apps/cli@2 icon -o src-tauri/icons src-tauri/branding/tern.png
+      - name: Resolve initial lockfile (temporary bootstrap)
+        shell: pwsh
+        run: |
+          cargo generate-lockfile --manifest-path src-tauri/Cargo.toml
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Write-Output 'TERN_CARGO_LOCK_START'
+          $encoded = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Resolve-Path src-tauri/Cargo.lock)))
+          for ($i = 0; $i -lt $encoded.Length; $i += 120) { Write-Output ('TERN_LOCK:' + $encoded.Substring($i, [Math]::Min(120, $encoded.Length - $i))) }
+          Write-Output 'TERN_CARGO_LOCK_END'
       - name: Check native Windows code without linking or packaging
         run: cargo check --manifest-path src-tauri/Cargo.toml --features tauri/custom-protocol
