@@ -7,6 +7,10 @@ on:
         description: Include legacy Chromium UI and layout regressions
         type: boolean
         default: false
+      unit:
+        description: Run unit and crypto checks before production deployment
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -28,6 +32,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Verify unit and backup crypto before deployment
+        if: inputs.unit
+        run: |
+          npm test
+          node --test scripts/d1-backup-crypto.check.mjs
 
       - name: Install isolated pinned Playwright driver for CI only
         if: inputs.browser

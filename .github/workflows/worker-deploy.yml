@@ -23,6 +23,8 @@ jobs:
   verify:
     if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/api-check.yml
+    with:
+      unit: true
   deploy:
     needs: verify
     if: github.ref == 'refs/heads/main'
