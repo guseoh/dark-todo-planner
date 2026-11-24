@@ -14,8 +14,8 @@
 ## 자동 Windows 릴리스
 
 .github/workflows/tern-windows-release.yml:
-1. 데스크톱 파일 변경이 main에 들어오면 Windows runner에서 npm ci, Rust toolchain 설치를 수행합니다.
-2. src-tauri/tauri.conf.json에 버전 0.3.<run_number>와 등록된 업데이트 공개키를 **빌드 시에만** 주입합니다.
+1. 릴리스할 때 `src-tauri/tauri.conf.json`의 버전을 명시적으로 변경하고 `src-tauri/Cargo.toml` 및 `src-tauri/Cargo.lock`의 자체 `tern` 패키지 버전을 동일하게 맞춥니다. 이 설정 변경의 main 병합으로 Windows 릴리스가 실행되며, 수동 실행도 가능합니다. 일반 코드 변경만으로는 릴리스하지 않습니다.
+2. 안정 SemVer(MAJOR.MINOR.PATCH)를 검증하고 기존 최신 릴리스보다 높은 버전이며 동일 태그가 없는지 확인합니다. 실행 번호에 기반한 자동 증가는 폐기합니다. 등록된 업데이트 공개키만 **빌드 시에** 주입하고 버전 및 Cargo.lock은 변경하지 않습니다.
 3. src-tauri/branding/tern.png에서 Windows icon을 재현하여 NSIS 설치 파일을 만듭니다.
 4. Tauri가 비공개 서명 키를 사용해 updater 서명을 생성합니다.
 5. tauri-action이 GitHub Release와 최신 버전 manifest latest.json을 게시합니다.
@@ -67,6 +67,14 @@ Windows 11에 Node.js 22, Rust stable/MSVC, WebView2가 준비되어 있어야 �
 
 ## Rust 의존성 고정
 
-`src-tauri/Cargo.lock`은 Windows runner의 Cargo에서 생성한 실제 lockfile을 추적합니다. PR 컴파일 및 릴리스/네이티브 스모크 빌드에 `--locked`를 적용합니다. 릴리스 준비 스크립트는 자체 `tern` 패키지 버전만 Cargo.toml 및 Cargo.lock에 동일하게 반영하고 의존성 버전·checksum은 변경하지 않습니다. 의존성 갱신은 별도 PR에서 lockfile과 함께 검토합니다.
+`src-tauri/Cargo.lock`은 Windows runner의 Cargo에서 생성한 실제 lockfile을 추적합니다. PR 컴파일 및 릴리스/네이티브 스모크 빌드에 `--locked`를 적용합니다. 릴리스 준비 스크립트는 추적된 Tauri/Cargo/Cargo.lock의 자체 `tern` 버전 일치 여부를 검사하며 의존성 버전·checksum은 변경하지 않습니다. 의존성 갱신은 별도 PR에서 lockfile과 함께 검토합니다.
 
 운영용 PWA manifest·설치용 아이콘 및 Cloudflare 정적 사이트 `_headers` 파일은 제거했습니다. Tauri 브랜딩 이미지, WebView용 favicon 및 실제 화면 폰트는 유지합니다. Windows 릴리스의 프런트엔드 타입 검사는 Tauri의 beforeBuildCommand에서 한 번 실행되며 Worker 타입 검사는 백엔드 파이프라인이 담당합니다.
+
+## 명시적 버전 관리 (2026-11-24)
+
+- V4 기능 확장: 0.4.0. 호환되는 버그 수정은 0.4.1, 다음 기능 확장은 0.5.0처럼 변경 범위에 따라 결정한다. 0.x 단계에서는 호환성 변경을 별도로 기록한다.
+- 버전 기준은 Tauri 설정이며 Cargo.toml/Cargo.lock도 동일해야 한다. private npm 패키지의 버전은 데스크톱 배포 버전이 아니다.
+- 이전 0.3.9는 이력으로 보존한다. 기존 tag/Release/자산/서명 키를 변경하지 않는다.
+- 같은 버전, 낮은 버전, 이미 존재하는 태그는 발행 전에 실패한다. 실패 후 동일 태그가 남으면 자산과 상태를 별도 점검하고 복구 방안을 결정한다. 무조건 덮어쓰지 않는다.
+- main의 일반 코드 변경은 차기 버전으로 누적하며, 릴리스할 때만 버전을 명시적으로 갱신한다. Worker API 배포 워크플로는 독립적으로 유지한다.

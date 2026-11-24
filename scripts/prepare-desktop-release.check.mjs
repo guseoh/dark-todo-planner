@@ -4,13 +4,14 @@ import { copyFileSync, mkdtempSync, mkdirSync, readFileSync, rmSync } from "node
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
+import { compareVersions, readReleaseVersion, requireNewerRelease } from "./prepare-desktop-release.mjs";
 
 const script = resolve("scripts/prepare-desktop-release.mjs");
 const config = resolve("src-tauri/tauri.conf.json");
 const cargo = resolve("src-tauri/Cargo.toml");
 const lock = resolve("src-tauri/Cargo.lock");
 
-function execute(publicKey) {
+function execute(publicKey, override) {
   const temp = mkdtempSync(join(tmpdir(), "tern-release-preflight-"));
   try {
     mkdirSync(join(temp, "src-tauri"));
@@ -22,7 +23,7 @@ function execute(publicKey) {
       encoding: "utf8",
       env: {
         ...process.env,
-        TERN_VERSION: "0.3.812",
+        TERN_VERSION: override ?? readReleaseVersion(),
         TERN_UPDATER_PUBLIC_KEY: publicKey,
         TAURI_SIGNING_PRIVATE_KEY: "TEST-ONLY-NOT-A-REAL-KEY",
       },
@@ -43,15 +44,29 @@ test("Tauri CLI encoded minisign public key and version are accepted", () => {
   const pubkey = Buffer.from(document, "utf8").toString("base64");
   const result = execute(pubkey);
   assert.equal(result.processResult.status, 0, result.processResult.stderr);
-  assert.equal(result.config.version, "0.3.812");
+  assert.equal(result.config.version, readReleaseVersion());
   assert.equal(result.config.plugins.updater.pubkey, pubkey);
-  assert.match(result.cargo, /^version = "0\.3\.812"$/m);
-  const original = readFileSync(lock, "utf8");
-  assert.equal(result.lock, original.replace(/(^\[\[package\]\]\r?\nname = "tern"\r?\nversion = ")0\.3\.0(")/m, (_, prefix, suffix) => prefix + "0.3.812" + suffix));
+  assert.equal(result.cargo, readFileSync(cargo, "utf8"));
+  assert.equal(result.lock, readFileSync(lock, "utf8"));
 });
 
 test("raw RW line is rejected, never silently substituted as a Tauri CLI key", () => {
   const result = execute("RW" + "A".repeat(50));
+  assert.notEqual(result.processResult.status, 0);
+  assert.equal(result.config.plugins.updater.pubkey, "__TAURI_UPDATER_PUBLIC_KEY__");
+});
+
+test("explicit stable SemVer increases independently of CI run numbers", () => {
+  assert.equal(compareVersions("0.4.0", "0.3.9"), 1);
+  assert.equal(compareVersions("0.4.10", "0.4.9"), 1);
+  assert.equal(compareVersions("0.4.0", "0.4.0"), 0);
+  assert.equal(compareVersions("0.3.9", "0.4.0"), -1);
+  assert.doesNotThrow(() => requireNewerRelease("0.4.0", "tern-v0.3.9"));
+  for (const version of ["0.4.0", "0.3.9", "0.04.1", "0.5.0-rc.1"]) assert.throws(() => requireNewerRelease(version, "tern-v0.4.0"));
+  assert.throws(() => requireNewerRelease("0.4.1", "other-v0.4.0"));
+});
+test("environment variable cannot override the committed version", () => {
+  const result = execute(Buffer.from("untrusted comment: minisign public key: TEST-ONLY\nRW" + "A".repeat(50) + "\n").toString("base64"), "9.9.9");
   assert.notEqual(result.processResult.status, 0);
   assert.equal(result.config.plugins.updater.pubkey, "__TAURI_UPDATER_PUBLIC_KEY__");
 });
