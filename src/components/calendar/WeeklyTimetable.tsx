@@ -103,6 +103,7 @@ export function WeeklyTimetable({ dates, selectedDate, todos, projects, onSelect
   const dayTotals = useMemo(() => new Map(dates.map((date) => [date, totalMs(totalsByCategory(allEntries, [date], categories))])), [allEntries, categories, dates]);
   const weekTotals = useMemo(() => measuredTotals(allEntries, dates, dimension, categories, projects, todos), [allEntries, dates, dimension, categories, projects, todos]);
   const hasActual = allEntries.length > 0;
+  const plannedMs = weekBlocks.reduce((sum, item) => sum + Math.max(0, item.end - item.start) * 60_000, 0);
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1280px)");
@@ -205,6 +206,7 @@ export function WeeklyTimetable({ dates, selectedDate, todos, projects, onSelect
           <option value="category">카테고리별</option><option value="project">프로젝트별</option><option value="todo">Todo별</option>
         </select>
         <span className="text-xs font-semibold text-ui-text">{entriesError ? "조회 실패" : !loaded ? "조회 중…" : formatDuration(totalMs(weekTotals))}</span>
+        {loadedWeek === weekStart ? <span className="text-xs text-ui-muted">계획 {formatDuration(plannedMs)}{loaded && !entriesError && plannedMs > 0 ? ` · 실측/계획 ${Math.round(totalMs(weekTotals) / plannedMs * 100)}%` : ""}</span> : null}
       </div>
       {loaded && !entriesError && weekTotals.length ? (
         <ul className="calendar-week-totals" aria-label="이번 주 측정 시간 분류">
