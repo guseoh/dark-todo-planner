@@ -3422,3 +3422,75 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
 @media (prefers-reduced-motion: reduce) {
   aside[data-sidebar-mode], aside[data-sidebar-mode] .app-nav-button { transition: none; }
 }
+
+/* Tern V4 — page-specific visual refinement; keep all existing actions and theme semantics. */
+.all-todos-page .todo-filter-workspace__primary { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.all-todos-page .todo-filter-workspace__primary .todo-filter-workspace__search { flex:1 1 200px; min-width:0; }
+.all-todos-page .todo-filter-workspace__project { flex:0 1 158px; width:158px; min-width:116px; min-height:32px; padding-block:4px; font-size:12px; }
+.all-todos-page .todo-filter-workspace__primary :is(.field,.btn-secondary) { min-height:32px; }
+.all-todos-page .todo-category-header { min-height:36px; padding-block:5px; }
+.all-todos-page .todo-row { padding-block:6px; }
+.all-todos-page .todo-row:hover,.all-todos-page .todo-row:focus-within { background:var(--ui-hover); }
+.all-todos-page .todo-row__title { font-size:13px; line-height:1.5; }
+.all-todos-page .todo-row__meta { font-size:11px; }
+
+.project-page .project-v4-board { gap:10px; }
+.project-page .project-kanban-column[data-collapsed="false"] { padding:9px; border-top:1px solid var(--ui-divider); }
+.project-page .project-kanban-column__header { gap:4px; margin-bottom:10px; }
+.project-page .project-kanban-column__identity::before {
+  content:""; display:block; width:7px; height:7px; flex:none; border-radius:50%; background:var(--text-muted);
+}
+.project-page .project-kanban-column[data-status="IN_PROGRESS"] .project-kanban-column__identity::before { background:var(--info); }
+.project-page .project-kanban-column[data-status="BLOCKED"] .project-kanban-column__identity::before { background:var(--warning); }
+.project-page .project-kanban-column[data-status="DONE"] .project-kanban-column__identity::before { background:var(--success); }
+.project-page .project-kanban-column[data-collapsed="true"] .project-kanban-column__identity::before { display:none; }
+.project-page .project-kanban-column__identity h4 { padding-inline:0; font-size:13px; }
+.project-page .project-v4-board[data-density="comfortable"] .project-kanban-card { padding:9px 8px; margin-bottom:7px; }
+.project-page .project-v4-card__title { line-height:1.5; font-size:13px; }
+.project-page .project-kanban-add.btn-secondary { min-height:30px; justify-content:flex-start; border-color:transparent; color:var(--text-muted); padding-inline:6px; }
+.project-page .project-kanban-add.btn-secondary:hover { background:var(--ui-hover); color:var(--text-primary); }
+.project-page .project-kanban-empty { padding:10px 4px; text-align:left; line-height:1.5; }
+
+.memo-page .memo-workspace--tabs .memo-document-pane { max-width:880px; padding-inline:clamp(8px,2vw,22px); }
+.memo-page .memo-document-title-input { font-size:clamp(22px,2.5vw,30px); border-bottom-color:transparent; padding-block:6px 12px; }
+.memo-page .memo-document-title-input:hover { border-bottom-color:var(--ui-divider); }
+.memo-page .memo-document-title-input:focus-visible { border-bottom-color:var(--ui-focus); }
+.memo-page .memo-document-metadata .memo-color-picker { gap:8px; }
+.memo-page .memo-document-metadata .memo-color-swatch { width:18px; height:18px; }
+.memo-page .memo-document-metadata .memo-color-swatch[aria-pressed="true"] { outline:1px solid var(--text-primary); outline-offset:2px; }
+.memo-page .memo-edit-section--inline .memo-rich-toolbar { border-top:1px solid var(--ui-divider); border-bottom:1px solid var(--ui-divider); padding-block:6px; }
+.memo-page .memo-edit-section--inline .memo-rich-toolbar__action { min-height:28px; padding:3px 7px; }
+.memo-page .memo-edit-section--inline .rich-markdown-editor--memo .ProseMirror { font-size:15px; line-height:1.85; min-height:360px; padding-block:12px 30px; }
+.memo-page .memo-workspace--tabs .memo-note { padding-block:12px; }
+.memo-page .memo-workspace--tabs .memo-note__title { font-size:14px; }
+.memo-page .memo-workspace--tabs .memo-note__excerpt { font-size:12px; }
+
+.calendar-page .calendar-filter-chip { min-height:30px; padding-inline:9px; }
+.calendar-page .calendar-day[data-today="true"] { background:color-mix(in srgb,var(--info) 10%,var(--ui-canvas)); }
+.calendar-page .calendar-day[data-selected="true"] { box-shadow:inset 0 0 0 1px var(--ui-focus); }
+.calendar-page .calendar-day[data-today="true"][data-selected="true"] { background:color-mix(in srgb,var(--info) 14%,var(--ui-canvas)); }
+.calendar-page [data-calendar-event] { border-radius:2px; font-size:11px; line-height:1.45; }
+
+.scratchpad-workspace .scratchpad-command-strip { padding-inline:0; border-bottom:1px solid var(--ui-divider); }
+.scratchpad-workspace .scratchpad-toolbar { padding-inline:0; }
+.scratchpad-workspace .scratchpad-format-button { min-height:28px; padding-inline:7px; }
+.scratchpad-workspace .scratchpad-heading { padding-inline:0; }
+.scratchpad-workspace .scratchpad-rendered-preview { font-size:15px; line-height:1.85; }
+
+.settings-page .settings-appearance { display:flex; flex-direction:column; align-items:flex-start; gap:7px; }
+.settings-page .settings-appearance__choices { margin-top:4px; }
+.settings-page .settings-appearance__choices .theme-choice { min-height:32px; }
+.settings-page .settings-option-row > input.settings-toggle:checked { background:var(--info); border-color:var(--info); }
+.settings-page .settings-option-row > input.settings-toggle:checked::before { background:var(--ui-canvas); }
+.trash-page .trash-list { border-top:0; }
+.trash-page .trash-row__actions .btn-secondary,.trash-page .trash-row__actions .btn-danger { min-height:30px; }
+.trash-page .trash-row__delete:not(:hover):not(:focus-visible) { color:var(--text-muted); }
+@media (min-width:800px) {
+  .settings-page .settings-appearance { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; column-gap:18px; }
+  .settings-page .settings-appearance > h3 { grid-column:1; grid-row:1; }
+  .settings-page .settings-appearance > p { grid-column:1; grid-row:2; }
+  .settings-page .settings-appearance__choices { grid-column:2; grid-row:1 / span 2; margin-top:0; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .all-todos-page .todo-row,.calendar-page .calendar-day { transition:none; }
+}
