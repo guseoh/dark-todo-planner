@@ -4,20 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'src/**'
-      - 'fonts-src/**'
-      - 'tsconfig*.json'
-      - 'src-tauri/**'
-      - 'public/**'
-      - 'index.html'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'vite.config.ts'
-      - 'tailwind.config.ts'
-      - 'postcss.config.js'
-      - 'scripts/prepare-desktop-release.mjs'
-      - 'scripts/prepare-desktop-release.check.mjs'
-      - '.github/workflows/tern-windows-release.yml'
+      - 'src-tauri/tauri.conf.json'
   workflow_dispatch:
 
 permissions:
@@ -41,6 +28,24 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Require explicitly bumped and unpublished version
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = node scripts/prepare-desktop-release.mjs --version
+          if ($LASTEXITCODE -ne 0) { throw 'Invalid tracked version' }
+          $env:TERN_LATEST_TAG = gh api "repos/$env:GITHUB_REPOSITORY/releases/latest" --jq '.tag_name'
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot verify latest published release' }
+          node scripts/prepare-desktop-release.mjs --check-newer
+          if ($LASTEXITCODE -ne 0) { throw 'Version must increase explicitly' }
+          git ls-remote --exit-code origin "refs/tags/tern-v$version"
+          $tagStatus = $LASTEXITCODE
+          if ($tagStatus -eq 0) { throw 'Version tag already exists; never overwrite a published or partial release' }
+          if ($tagStatus -ne 2) { throw 'Cannot verify release tag' }
+          Write-Output "Release version: $version"
+          exit 0
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
@@ -55,7 +60,6 @@ jobs:
           node --test scripts/ci-scope.check.mjs scripts/prepare-desktop-release.check.mjs
       - name: Prepare version and registered updater public key
         env:
-          TERN_VERSION: 0.3.${{ github.run_number }}
           TERN_UPDATER_PUBLIC_KEY: ${{ secrets.TERN_UPDATER_PUBLIC_KEY }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: node scripts/prepare-desktop-release.mjs
