@@ -38,6 +38,8 @@ jobs:
       - run: npx --yes @tauri-apps/cli@2 icon -o src-tauri/icons src-tauri/branding/tern.png
       - name: Build isolated QA executable (no installer, no signing)
         run: npx --yes @tauri-apps/cli@2 build --config src-tauri/tauri.qa.conf.json --features qa --no-bundle -- --locked
+      - name: Run isolated native unit tests
+        run: cargo test --release --locked --manifest-path src-tauri/Cargo.toml --features qa,tauri/custom-protocol --lib
       - name: Package and check startup
         shell: pwsh
         run: |
@@ -52,6 +54,11 @@ jobs:
               if ($p.HasExited) { throw 'QA exited before startup' }
             } while ($p.MainWindowHandle -eq 0 -and (Get-Date) -lt $deadline)
             if ($p.MainWindowHandle -eq 0 -or $p.MainWindowTitle -notmatch 'Tern QA') { throw 'Isolated QA window not detected' }
+            $second = Start-Process -FilePath $exe -PassThru
+            try {
+              if (!$second.WaitForExit(15000)) { throw 'Second QA instance did not exit' }
+              if ($second.ExitCode -ne 0) { throw "Second QA app returned $($second.ExitCode)" }
+            } finally { if (!$second.HasExited) { Stop-Process -Id $second.Id -Force } }
           } finally {
             if (!$p.HasExited) { Stop-Process -Id $p.Id -Force; $p.WaitForExit() }
           }

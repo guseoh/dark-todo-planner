@@ -509,7 +509,7 @@ export function ScratchpadPage({ onCreateMemo, onOpenMemo }: { onCreateMemo?: (i
         <button type="button" className={`${toolButtonClass} text-sm italic`} title="기울임" onClick={() => replaceSelection("_", "_")}>I</button>
         <button type="button" className={`${toolButtonClass} text-sm line-through`} title="취소선" onClick={() => replaceSelection("~~", "~~")}>S</button>
         <button type="button" className={toolButtonClass} title="링크" onClick={() => replaceSelection("[", "](https://)", "링크")}>링크</button>
-        <span className="ml-auto hidden text-[10px] text-ink-600 sm:block">{sourceMode ? "원본 편집 · 서식 결과는 미리보기에서 확인" : "서식은 바로 적용되며 Markdown으로 저장됩니다."}</span>
+        {sourceMode ? <span className="ml-auto hidden text-[10px] text-ink-600 sm:block">원본 편집 · 미리보기</span> : null}
       </div> : null}
       </div>
 

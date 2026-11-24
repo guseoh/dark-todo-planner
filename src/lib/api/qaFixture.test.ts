@@ -55,3 +55,21 @@ describe("isolated QA fixture", () => {
     expect((await qaFetch("/api/github/repositories/real/repo/pulls")).status).toBe(501);
   });
 });
+
+describe("V4 QA workflow regression", () => {
+  it("rejects separate project movement without dropping a child link", async () => {
+    const qaFetch = createQaFetch();
+    const created = await qaFetch("/api/offline/todos/child", request("PUT", { title: "child", projectId: "qa-project", parentTodoId: "qa-todo-1" }));
+    expect(created.status).toBe(201);
+    expect((await qaFetch("/api/todos/qa-todo-1", request("PUT", { title: "parent", projectId: null }))).status).toBe(400);
+    expect((await (await qaFetch("/api/todos/child")).json()).todo.parentTodoId).toBe("qa-todo-1");
+  });
+  it("loads review and CI details without querying real repositories", async () => {
+    const qaFetch = createQaFetch();
+    const response = await qaFetch("/api/github/repositories/qa-example/demo/pulls/12/details");
+    expect(response.status).toBe(200);
+    const detail = await response.json();
+    expect(detail.reviews[0].state).toBe("APPROVED");
+    expect(detail.checks[0].conclusion).toBe("success");
+  });
+});

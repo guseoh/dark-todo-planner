@@ -663,7 +663,7 @@ try {
     `Today list rows should stay comfortably compact: ${todoVisual.height}px`);
   assert.equal(todoVisual.divider, "1px", "Todo rows must have a real separator.");
   assert.equal(todoVisual.todayVariant, true, "Today Todo rows must use the dedicated editorial presentation.");
-  assert.equal(todoVisual.focusAction, true, "Today must expose focus selection without entering the more menu.");
+  assert.equal(todoVisual.focusAction, false, "V4 removes the focus/star selection action.");
   await page.setViewportSize({ width: 390, height: 844 });
   // G6: reviewing today's tasks must never reschedule them by default.
   const dayCloseBefore = (await findServerTodo(title))?.date;
@@ -774,14 +774,18 @@ try {
   await page.getByRole("group", { name: "오늘 작업 현황" }).waitFor();
   assert.match(await page.getByRole("group", { name: "오늘 작업 현황" }).innerText(), /진행\s*\d+\s*\/\s*\d+/,
     "Today keeps a concise progress summary.");
-  // Direct star selection is a desktop affordance; mobile retains the more menu to avoid cramped rows.
+  // V4 intentionally has no starred work lane. Verify ordinary tasks remain usable.
   await page.setViewportSize({ width: 1440, height: 900 });
   const focusRow = () => page.locator(".todo-row--today").filter({ has: page.getByRole("heading", { name: title, exact: true }) });
-  await focusRow().getByRole("button", { name: `핵심 작업 선택: ${title}` }).click();
-  await page.getByRole("heading", { name: "지금 집중" }).waitFor();
-  assert.equal(await focusRow().count(), 1, "Pinned Todo must not be rendered twice.");
-  await focusRow().getByRole("button", { name: `핵심 작업 해제: ${title}` }).click();
-  await page.getByRole("heading", { name: "지금 집중" }).waitFor({ state: "hidden" });
+  assert.equal(await focusRow().count(), 1, "Ordinary Todo must appear exactly once.");
+  assert.equal(await page.getByRole("heading", { name: "지금 집중" }).count(), 0);
+  assert.equal(await page.getByText(/오늘의 핵심 작업은 최대/).count(), 0);
+  const sidebarToggle = page.locator('[aria-keyshortcuts="Control+B"]');
+  const expandedBefore = await sidebarToggle.getAttribute("aria-pressed");
+  await page.evaluate(() => { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); });
+  await page.keyboard.press("Control+b");
+  assert.notEqual(await sidebarToggle.getAttribute("aria-pressed"), expandedBefore, "Ctrl+B must toggle the sidebar outside editors.");
+  await page.keyboard.press("Control+b");
   await page.setViewportSize({ width: 390, height: 844 });
   // The more menu still exposes the remaining task actions.
   const openTodoActions = async () => {
@@ -908,7 +912,7 @@ try {
   assert.equal(await projectManageMenu.getAttribute("open"), "", "Project management actions should expand on demand.");
   await projectManageMenu.getByRole("button", { name: "삭제", exact: true }).waitFor();
   await projectManageMenu.locator("summary").click();
-  assert.equal(await page.getByRole("tab").count(), 0, "Project workspace has a single board.");
+  assert.equal(await page.getByRole("group", { name: "프로젝트 보기" }).getByRole("button", { name: "칸반" }).count(), 1, "Board remains available alongside repository views.");
   assert.equal(await page.getByLabel("프로젝트 목표일").count(), 0);
   assert.equal(await page.getByLabel("마일스톤 타임라인").count(), 0);
   await page.locator(".project-v4-board").waitFor();

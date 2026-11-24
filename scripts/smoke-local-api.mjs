@@ -212,11 +212,22 @@ try {
   const hour = expectStatus(await request("/api/time-entries", "POST", { todoId: trackedTodo.id, startedAt: "2025-01-05T01:00:00.000Z", endedAt: "2025-01-05T02:30:00.000Z" }), 201, "Measure time on a project Todo").timeEntries;
   const summary = expectStatus(await request("/api/time-summary?from=2025-01-05&to=2025-01-05"), 200, "Summarize time by project");
   assert.equal(summary.byProject.find((row) => row.projectId === tracked.id)?.minutes, 90);
+  const manualProject = expectStatus(await request("/api/time-entries", "POST", { projectId: tracked.id, startedAt: "2025-01-05T03:00:00.000Z", endedAt: "2025-01-05T04:00:00.000Z" }), 201, "Manual project measurement").timeEntries;
+  assert.equal(manualProject[0].projectId, tracked.id);
+  assert.equal(manualProject[0].todoId, undefined);
+  assert.equal(expectStatus(await request("/api/time-summary?from=2025-01-05&to=2025-01-05"), 200, "Sum manual and Todo project measurement").byProject.find(row => row.projectId === tracked.id)?.minutes, 150);
+  expectStatus(await request("/api/time-entries", "POST", { todoId: trackedTodo.id, projectId: tracked.id, startedAt: "2025-01-05T03:00:00.000Z", endedAt: "2025-01-05T04:00:00.000Z" }), 400, "Reject ambiguous manual target");
+  for (const entry of manualProject) expectStatus(await request("/api/time-entries/" + entry.id, "DELETE"), 200, "Remove manual project record");
+  const child = expectStatus(await request("/api/todos", "POST", { title: "Local child", date: today, projectId: tracked.id, parentTodoId: trackedTodo.id }), 201, "Create linked child").todo;
+  expectStatus(await request("/api/todos/" + trackedTodo.id, "PUT", { ...trackedTodo, projectId: null }), 409, "Reject moving a parent separately");
+  expectStatus(await request("/api/todos/bulk-update", "POST", { ids: [trackedTodo.id], action: { type: "PROJECT", value: null } }), 409, "Reject bulk project move with children");
+  assert.equal(expectStatus(await request("/api/todos/" + child.id), 200, "Child remains linked").todo.parentTodoId, trackedTodo.id);
+  expectStatus(await request("/api/todos/" + child.id, "DELETE"), 200, "Remove child");
   for (const entry of hour) expectStatus(await request("/api/time-entries/" + entry.id, "DELETE"), 200, "Remove tracked entry");
   expectStatus(await request("/api/todos/" + trackedTodo.id, "DELETE"), 200, "Remove tracked Todo");
   expectStatus(await request("/api/projects/" + tracked.id, "DELETE"), 200, "Remove tracked project");
 
-  console.log("LOCAL E2E PASS: auth, CRUD, trash recovery, atomic backup, Today focus, time block scheduling, time tracking, project deletion, preferences, and reflections.");
+  console.log("LOCAL E2E PASS: auth, CRUD, trash recovery, atomic backup, legacy Today plan compatibility, time block scheduling, manual target tracking, hierarchy guard, project deletion, preferences, and reflections.");
 } finally {
   if (created) {
     // Only loopback URLs can reach this cleanup path.
