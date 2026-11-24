@@ -442,8 +442,8 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
                     <TodoForm compact autoFocus layout="stacked" defaultProjectId={project.id} categories={categories}
                       projects={projects} onCancel={() => setAddingTo(null)}
                       onAdd={(input) => onAddTodo({ ...input, projectId: project.id, workflowStatus: column.status })} />
-                  ) : <button type="button" className="btn-secondary w-full text-xs" onClick={() => setAddingTo(column.status)}>+ 추가</button> : null}
-                  {!items.length ? <p className="border-t border-ui-divider py-6 text-center text-xs text-ui-muted">여기로 작업을 이동할 수 있습니다</p> : null}
+                  ) : <button type="button" className="project-kanban-add btn-secondary w-full text-xs" onClick={() => setAddingTo(column.status)}>+ 작업 추가</button> : null}
+                  {!items.length ? <p className="project-kanban-empty text-xs text-ui-muted">여기로 작업을 이동할 수 있습니다</p> : null}
                 </KanbanColumn>
               );
             })}
