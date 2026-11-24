@@ -353,7 +353,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
 
   return (
     <TimeTrackingContext.Provider value={timeTracking}>
-    <TodoQuickActionsProvider snoozeTodo={snoozeTodo} projects={planner.projects} categories={planner.categories}>
+    <TodoQuickActionsProvider addTodo={planner.addTodo} snoozeTodo={snoozeTodo} projects={planner.projects} categories={planner.categories}>
       <div className="min-h-screen pb-20 sm:pb-0">
         <Header storageStatus={planner.connectionError ? "offline" : "server"} onLogout={onLogout} onQuickAdd={openQuickAdd} onSearch={openSearch} activeView={activeView} />
 

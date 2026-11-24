@@ -482,10 +482,13 @@ export function ProjectPage({
             </div>
           </Modal> : null}
           {projectDialog === "decisions" ? <Modal title="기존 결정 기록" onClose={() => setProjectDialog(null)}><ProjectDecisionLog projectId={selected.id} archived decisions={projectDecisions} onAdd={onAddDecision} onDelete={onDeleteDecision} /></Modal> : null}
-          <div className="page-tabs" role="group" aria-label="프로젝트 보기">
+          <div className="flex items-center gap-2">
+          <div className="page-tabs flex-1" role="group" aria-label="프로젝트 보기">
             {([["board", "칸반"], ["issues", "Issues"], ["pulls", "Pull Requests"]] as const).map(([view, label]) =>
               <button key={view} type="button" className="page-tab" aria-pressed={projectView === view} onClick={() => setProjectViews(current => ({ ...current, [selected.id]: view }))}>{label}</button>
             )}
+          </div>
+          <button type="button" className="btn-secondary text-xs" onClick={() => setProjectDialog("memos")}>연결 메모 {memos.filter(memo => memo.projectIds.includes(selected.id)).length}</button>
           </div>
           {projectView === "board" ? (
           <ProjectKanban key={selected.id} project={selected} todos={projectTodos} milestones={projectMilestones} categories={categories} projects={projects} onAddTodo={onAddTodo} onUpdateTodo={onUpdateTodo} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} onDetachTodo={onDetachTodo} onReorderTodos={onReorderTodos} wipLimits={wipLimits} onChangeWipLimits={onChangeWipLimits} />
