@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'src/**'
+      - 'fonts-src/**'
+      - 'tsconfig*.json'
       - 'src-tauri/**'
       - 'public/**'
       - 'index.html'
@@ -18,7 +20,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: tern-windows-release
@@ -26,6 +28,9 @@ concurrency:
 
 jobs:
   release:
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
     name: Build, sign and publish Windows Tern
     runs-on: windows-latest
     timeout-minutes: 45
@@ -43,6 +48,11 @@ jobs:
           workspaces: 'src-tauri -> target'
       - name: Install frontend dependencies
         run: npm ci
+      - name: Verify main before signing and publishing
+        run: |
+          npm run typecheck
+          npm test
+          node --test scripts/ci-scope.check.mjs scripts/prepare-desktop-release.check.mjs
       - name: Prepare version and registered updater public key
         env:
           TERN_VERSION: 0.3.${{ github.run_number }}

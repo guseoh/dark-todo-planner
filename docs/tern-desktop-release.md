@@ -16,7 +16,7 @@
 .github/workflows/tern-windows-release.yml:
 1. 데스크톱 파일 변경이 main에 들어오면 Windows runner에서 npm ci, Rust toolchain 설치를 수행합니다.
 2. src-tauri/tauri.conf.json에 버전 0.3.<run_number>와 등록된 업데이트 공개키를 **빌드 시에만** 주입합니다.
-3. public/pwa-icon-512.png에서 Windows icon을 재현하여 NSIS 설치 파일을 만듭니다.
+3. src-tauri/branding/tern.png에서 Windows icon을 재현하여 NSIS 설치 파일을 만듭니다.
 4. Tauri가 비공개 서명 키를 사용해 updater 서명을 생성합니다.
 5. tauri-action이 GitHub Release와 최신 버전 manifest latest.json을 게시합니다.
 6. Tern은 실행 시와 이후 1시간 간격으로 새 버전을 자동 조회하고 사용자가 설치를 승인하면 서명을 검사하고 설치·재시작합니다. 작성 중인 내용이 갑자기 사라지지 않도록 무인 자동 설치하지 않습니다.
@@ -40,14 +40,18 @@ Windows 11에 Node.js 22, Rust stable/MSVC, WebView2가 준비되어 있어야 �
 2. npx --yes @tauri-apps/cli@2 icon -o src-tauri/icons public/pwa-icon-512.png
 3. npx --yes @tauri-apps/cli@2 dev
 
-개발 중에는 공개키 placeholder로 인해 updater 확인에 오류가 표시될 수 있습니다. 릴리스 빌드에는 반드시 실제 키를 주입해야 합니다. PR용 Windows 빌드 검사에서는 서명 아티팩트 생성을 임시로 끄고 컴파일만 검증합니다.
+개발 중에는 공개키 placeholder로 인해 updater 확인에 오류가 표시될 수 있습니다. 릴리스 빌드에는 반드시 실제 키를 주입해야 합니다. PR의 Rust/네이티브 변경은 Windows에서 cargo check로 검증합니다. 설치 파일 및 서명은 main 릴리스에서만 생성합니다.
 
 릴리스 이전에 수동으로 빌드하려면 현재 Tauri 설정의 공개키 자리표시자를 실제 키로 채우고 비공개 서명 키를 환경변수로 제공해야 합니다. 개인키는 저장소에 저장하지 않습니다.
 
 ## 백엔드 배포 분리
 
-- .github/workflows/ci.yml: PR/push 검증만 수행하고 웹 프런트엔드를 운영 배포하지 않습니다.
-- .github/workflows/worker-deploy.yml: worker/, migrations/, wrangler.jsonc 변경 시 Worker API·D1을 배포합니다. 긴급 작업은 workflow_dispatch로 수동 실행할 수 있습니다.
+- .github/workflows/ci.yml: PR의 변경 영역을 판별하고 타입 검사·단위 테스트 및 필요한 영역 검증만 실행합니다. main 전체 CI 재실행은 제거했습니다.
+- .github/workflows/tern-windows-check.yml: Rust/Tauri 또는 의존성 변경 PR만 Windows cargo check로 검증합니다. NSIS 패키징은 하지 않습니다.
+- .github/workflows/api-check.yml: Worker/D1 변경 PR과 백엔드 배포 전 로컬 인증·CRUD·복원·롤백 검증을 재사용합니다.
+- .github/workflows/regression.yml: 매주 또는 수동 실행하는 전체 Chromium UI 회귀·API·보안 감사·암호화 검증입니다. Chromium 결과는 실제 Tauri IPC/트레이 검증을 대체하지 않습니다.
+- Windows 릴리스는 같은 main 커밋에서 타입 검사·단위 테스트·릴리스 스크립트 검증이 성공한 뒤 기존 키로 서명·발행합니다.
+- .github/workflows/worker-deploy.yml: worker/, migrations/, wrangler.jsonc 및 공통 의존성·TypeScript 설정 변경 시 Worker API·D1을 배포합니다. 긴급 작업은 workflow_dispatch로 수동 실행할 수 있습니다.
 - Worker가 기존 정적 애셋을 함께 보유하는 구조는 유지하지만, **데스크톱 UI 배포 수단으로 취급하지 않습니다**. 백엔드 API 호환성을 지키는 동안만 유지합니다.
 - Worker 배포와 Windows 릴리스 성공은 서로 독립된 사실입니다.
 

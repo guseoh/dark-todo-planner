@@ -1,0 +1,93 @@
+name: Local API regression
+
+on:
+  workflow_call:
+    inputs:
+      browser:
+        description: Include legacy Chromium UI and layout regressions
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-local-api:
+    name: Local Worker + D1 regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install isolated pinned Playwright driver for CI only
+        if: inputs.browser
+        run: |
+          mkdir -p .ci-browser-runner
+          printf '{"name":"dtp-ci-browser-runner","private":true}\n' > .ci-browser-runner/package.json
+          npm install --prefix .ci-browser-runner --no-audit --no-fund --ignore-scripts --save-exact playwright@1.56.1
+
+      - name: Build assets
+        run: npm run build
+
+      - name: Initialize isolated local D1
+        run: npm run db:migrate:local
+
+      - name: Install local-only failure trigger for transactional rollback test
+        run: |
+          npx wrangler d1 execute DB --local --command "CREATE TRIGGER atomic_restore_ci_failure BEFORE INSERT ON routine_templates WHEN NEW.name = '__ATOMIC_RESTORE_FAIL__' BEGIN SELECT RAISE(ABORT, 'intentional restore failure'); END"
+
+      - name: Generate ephemeral smoke credentials
+        run: node scripts/prepare-smoke-auth.mjs
+
+      - name: Start local Worker
+        run: |
+          npx wrangler dev --local --port 8787 > /tmp/dtp-local-smoke.log 2>&1 &
+          echo $! > /tmp/dtp-local-smoke.pid
+
+      - name: Exercise authenticated CRUD and recovery
+        run: node scripts/smoke-local-api.mjs
+
+      - name: Exercise Chromium browser UI and offline reconnect
+        if: inputs.browser
+        run: node scripts/smoke-browser.mjs
+
+      - name: G5 dual-theme responsive, keyboard and read-only D1 regression
+        if: inputs.browser
+        run: node scripts/smoke-ui-v2-g5.mjs
+
+      - name: Upload local responsive layout snapshots
+        if: inputs.browser && success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-responsive-layout-snapshots
+          path: test-artifacts/layout-*.png
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload local-only browser failure screenshot
+        if: inputs.browser && failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-browser-smoke-failure
+          path: |
+            test-artifacts/browser-smoke-failure.png
+            test-artifacts/g5-browser-smoke-failure.png
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Report Worker startup errors if failed
+        if: failure()
+        run: |
+          echo "Local Worker error diagnostics (last 80 lines):"
+          tail -n 80 /tmp/dtp-local-smoke.log || true
+

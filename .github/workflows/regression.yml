@@ -1,0 +1,33 @@
+name: Extended regression
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 19 * * 0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tern-extended-regression
+  cancel-in-progress: false
+
+jobs:
+  full:
+    name: Unit tests, security audit and backup crypto
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: node --test scripts/ci-scope.check.mjs scripts/prepare-desktop-release.check.mjs scripts/d1-backup-crypto.check.mjs
+      - run: npm audit --omit=dev
+  api-and-ui:
+    uses: ./.github/workflows/api-check.yml
+    with:
+      browser: true
