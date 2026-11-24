@@ -4,4 +4,4 @@ PR #184, #182. 별도의 Windows 식별자와 잠금, Rust qa feature의 운영 
 
 Actions의 Tern Windows QA 실행이 성공한 경우 Artifacts에서 Tern-QA-<SHA> ZIP을 받아 압축 해제하고 Tern-QA.exe를 실행한다. Windows 11/WebView2만 필요하다. GitHub runner에서 생성한 검증용 unsigned 산출물이며 정식 배포가 아니다.
 
-초기 fixture는 화면 조회 및 낙서장 메모리 편집에 한정한다. 지원하지 않는 요청은 501을 반환하며 운영 API로 fallback하지 않는다. Todo/프로젝트/메모 쓰기, DnD, 측정, 복원 등 실제 API와 동일한 회귀 검증은 미완료. QA 종료 후 메모리 변경은 사라지며 로컬 UI 상태는 별도 앱 식별자로 저장된다. 운영 앱과 동시 실행, WebView2 저장소 격리, 실제 Windows 실행은 별도 확인해야 한다.
+fixture는 메모리 내 Todo 생성/수정/완료/정렬/기본 휴지통·복원, 프로젝트 생성/수정/보관, 메모 작성·연결, 낙서장, 타이머·시간 기록·계획 블록 및 회고, 가상 GitHub 목록을 지원한다. 지원하지 않는 요청(연결된 Todo 휴지통, 일부 관리 기능 등)은 501을 반환하며 운영 API로 fallback하지 않는다. 실제 Worker/D1의 정합성·보안 및 완전한 회귀 검증을 대체하지 않는다. QA 종료 후 메모리 변경은 사라지며 로컬 UI 상태는 별도 앱 식별자로 저장된다. 운영 앱과 동시 실행, WebView2 저장소 격리, 실제 Windows 실행은 별도 확인해야 한다.
