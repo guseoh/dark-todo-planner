@@ -6,10 +6,14 @@ use windows_sys::Win32::{
     Security::Credentials::{CREDENTIALW, CRED_PERSIST_LOCAL_MACHINE, CRED_TYPE_GENERIC, CredReadW, CredWriteW, CredDeleteW, CredFree},
 };
 const TARGET: &str = "io.github.guseoh.dark-todo-planner/session-v2";
-fn target() -> Vec<u16> { TARGET.encode_utf16().chain(Some(0)).collect() }
+fn target(name: &str) -> Vec<u16> { name.encode_utf16().chain(Some(0)).collect() }
 
-pub fn read() -> io::Result<Option<String>> {
-    let name = target();
+pub fn read() -> io::Result<Option<String>> { read_named(TARGET) }
+pub fn write(token: &str) -> io::Result<()> { write_named(TARGET, token) }
+pub fn clear() -> io::Result<()> { clear_named(TARGET) }
+
+fn read_named(name: &str) -> io::Result<Option<String>> {
+    let name = target(name);
     let mut raw: *mut CREDENTIALW = ptr::null_mut();
     if unsafe { CredReadW(name.as_ptr(), CRED_TYPE_GENERIC, 0, &mut raw) } == 0 {
         let error = io::Error::last_os_error();
@@ -29,8 +33,8 @@ pub fn read() -> io::Result<Option<String>> {
     result
 }
 
-pub fn write(token: &str) -> io::Result<()> {
-    let mut name = target();
+fn write_named(name: &str, token: &str) -> io::Result<()> {
+    let mut name = target(name);
     let mut bytes = token.as_bytes().to_vec();
     let mut credential: CREDENTIALW = unsafe { std::mem::zeroed() };
     credential.Type = CRED_TYPE_GENERIC;
@@ -42,9 +46,35 @@ pub fn write(token: &str) -> io::Result<()> {
     if unsafe { CredWriteW(&credential, 0) } == 0 { Err(io::Error::last_os_error()) } else { Ok(()) }
 }
 
-pub fn clear() -> io::Result<()> {
-    let name = target();
+fn clear_named(name: &str) -> io::Result<()> {
+    let name = target(name);
     if unsafe { CredDeleteW(name.as_ptr(), CRED_TYPE_GENERIC, 0) } != 0 { return Ok(()); }
     let error = io::Error::last_os_error();
     if error.raw_os_error() == Some(ERROR_NOT_FOUND as i32) { Ok(()) } else { Err(error) }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct Cleanup(String);
+    impl Drop for Cleanup {
+        fn drop(&mut self) { let _ = clear_named(&self.0); }
+    }
+
+    #[test]
+    fn credential_vault_round_trip_and_delete() {
+        // Only a unique synthetic entry; never touch the actual session target.
+        let name = format!("Tern-test/session-{}-{}", std::process::id(),
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
+        let _cleanup = Cleanup(name.clone());
+        assert_eq!(read_named(&name).unwrap(), None);
+        write_named(&name, "test-only-token").unwrap();
+        assert_eq!(read_named(&name).unwrap().as_deref(), Some("test-only-token"));
+        write_named(&name, "replacement-test-token").unwrap();
+        assert_eq!(read_named(&name).unwrap().as_deref(), Some("replacement-test-token"));
+        clear_named(&name).unwrap();
+        assert_eq!(read_named(&name).unwrap(), None);
+        clear_named(&name).unwrap();
+    }
 }
