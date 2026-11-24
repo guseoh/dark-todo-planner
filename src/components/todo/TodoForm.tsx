@@ -81,6 +81,7 @@ type TodoFormProps = {
   collapsible?: boolean;
   /** Display the inline composer immediately and retain it after adding a task. */
   alwaysOpen?: boolean;
+  todayCompact?: boolean;
   onCancel?: () => void;
   placeholder?: string;
   autoFocus?: boolean;
@@ -101,6 +102,7 @@ export function TodoForm({
   lockCategory = false,
   collapsible = false,
   alwaysOpen = false,
+  todayCompact = false,
   onCancel,
   placeholder,
   autoFocus = false,
@@ -315,11 +317,22 @@ export function TodoForm({
               <button type="button" onClick={() => choosePlanning("WAITING")}>대기</button>
             </div>
           </details>
+          {todayCompact ? (
+            <label className="todo-composer-priority" data-priority={priority}>
+              <input type="range" min={0} max={2} step={1}
+                value={priority === "LOW" ? 0 : priority === "MEDIUM" ? 1 : 2}
+                aria-label="우선순위" aria-valuetext={priority === "LOW" ? "낮음" : priority === "MEDIUM" ? "보통" : "높음"}
+                disabled={saving}
+                onChange={(event) => setPriority((["LOW", "MEDIUM", "HIGH"] as const)[Number(event.target.value)])} />
+              <span>{priority === "LOW" ? "낮음" : priority === "MEDIUM" ? "보통" : "높음"}</span>
+            </label>
+          ) : (
           <InlineSelectMenu label="우선순위" value={priority} menuRef={priorityMenuRef}
             icon={<Flag size={14} aria-hidden="true" />}
             className={priority === "HIGH" ? "todo-composer-chip-menu--urgent" : ""}
             options={[{ value: "LOW", label: "낮음" }, { value: "MEDIUM", label: "보통" }, { value: "HIGH", label: "높음" }]}
             disabled={saving} onOpen={closeMenus} onChange={(value) => setPriority(value as TodoPriority)} />
+          )}
           <InlineSelectMenu label="프로젝트" value={projectId} menuRef={projectMenuRef}
             icon={<FolderKanban size={14} aria-hidden="true" />} className="todo-composer-chip-menu--project"
             options={[{ value: "", label: "프로젝트" }, ...projects
@@ -377,6 +390,7 @@ export function TodoForm({
             projects={projects}
             showCategory={!lockCategory}
             compact={collapsible}
+            hideDueDate={todayCompact}
             onDateChange={setDate}
             onDueDateChange={setDueDate}
             onPriorityChange={setPriority}

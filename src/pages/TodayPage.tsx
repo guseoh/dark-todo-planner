@@ -1,5 +1,4 @@
 import { getEntityColor } from "../lib/entityColor";
-import { addDays } from "date-fns";
 import { api, apiAllPages, jsonBody } from "../lib/api/client";
 import { onRevalidated } from "../lib/api/bootstrap";
 import type { DailyPlan } from "../types/planning";
@@ -8,16 +7,15 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronDown, GripVertical, History, MoonStar, PanelRightOpen, Settings2, Star, X } from "lucide-react";
+import { ChevronDown, GripVertical, MoonStar, PanelRightOpen, Settings2, Star, X } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { IconButton } from "../components/ui/IconButton";
 import { IconRenderer } from "../components/common/IconRenderer";
 import { TodayCategoryManager } from "../components/today/TodayCategoryManager";
-import { OverdueTodoImportModal } from "../components/todo/OverdueTodoImportModal";
 import { TodoEditModal } from "../components/todo/TodoEditModal";
 import { TodoForm } from "../components/todo/TodoForm";
 import { TodoRow } from "../components/todo/TodoRow";
-import { formatKoreanDate, parseDateKey, PLANNER_DAY_START_HOUR, toDateKey, todayKey } from "../lib/date";
+import { formatKoreanDate, PLANNER_DAY_START_HOUR, toDateKey, todayKey } from "../lib/date";
 import { moveFocusTodo } from "../lib/todayPlanning";
 import { formatCompletionRate } from "../lib/todo";
 import type { OverdueTodoImportMode, OverdueTodoImportResult } from "../lib/todoRecovery";
@@ -107,7 +105,6 @@ function SortableTodayRow({ todo, render }: {
 export function TodayPage({
   todayTodos,
   rail,
-  onMoveOverdue,
   candidateTodos,
   onPlanTodoToToday,
   onOpenDayClose,
@@ -115,7 +112,6 @@ export function TodayPage({
   onAdd,
   onToggle,
   onDelete,
-  onDeleteMany,
   onUpdate,
   onReorderTodos,
   categories = [],
@@ -124,14 +120,11 @@ export function TodayPage({
   onUpdateCategory,
   onDeleteCategory,
   onReorderCategories,
-  overdueTodos,
-  onBringOverdueTodos,
 }: TodayPageProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
-  const [showOverdueImport, setShowOverdueImport] = useState(false);
   const [activeCategoryId, setActiveCategoryId] = useState<CategoryFilter>("all");
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
@@ -141,9 +134,6 @@ export function TodayPage({
   const [focusError, setFocusError] = useState("");
   const [focusSaving, setFocusSaving] = useState(false);
   const focusWrite = useRef(false);
-  const [movingOverdue, setMovingOverdue] = useState(false);
-  const [overdueMoveError, setOverdueMoveError] = useState("");
-  const [overdueMoveNotice, setOverdueMoveNotice] = useState("");
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [planningTodoId, setPlanningTodoId] = useState<string | null>(null);
   const [planningError, setPlanningError] = useState("");
@@ -161,8 +151,7 @@ export function TodayPage({
   const focusIds = useMemo(() => focusPlan?.date === today ? focusPlan.topTodoIds : [], [focusPlan, today]);
   const focusedTodos = useMemo(() => focusIds.map((id) => todayTodos.find((todo) => todo.id === id)).filter((todo): todo is Todo => Boolean(todo && !todo.completed && !todo.archived)), [focusIds, todayTodos]);
   const focusSet = useMemo(() => new Set(focusedTodos.map((todo) => todo.id)), [focusedTodos]);
-  const oldestOverdueDate = overdueTodos[0]?.date;
-  const hasPlanningContent = candidateTodos.length > 0 || overdueTodos.length > 0;
+  const hasPlanningContent = candidateTodos.length > 0;
   const sortedCategories = useMemo(
     () => [...categories].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, "ko")),
     [categories],
@@ -257,24 +246,6 @@ export function TodayPage({
     else if (ids.length < 3) void saveFocus([...ids, id]);
   };
 
-  const moveOverdue = async (date: string) => {
-    if (movingOverdue) return;
-    setMovingOverdue(true);
-    setOverdueMoveError("");
-    setOverdueMoveNotice("");
-    try {
-      const succeeded = await onMoveOverdue(date);
-      if (!succeeded) {
-        setOverdueMoveError("지난 일정을 이동하지 못했습니다. 작업 상태를 확인한 후 다시 시도해 주세요.");
-      } else {
-        setOverdueMoveNotice("지난 일정 이동 요청을 처리했습니다. 목록을 확인해 주세요.");
-      }
-    } catch {
-      setOverdueMoveError("지난 일정 이동에 실패했습니다. 연결을 확인한 후 다시 시도해 주세요.");
-    } finally {
-      setMovingOverdue(false);
-    }
-  };
 
   const moveFocused = ({ active, over }: DragEndEvent) => {
     const ids = moveFocusTodo(focusedTodos.map(({ id }) => id), String(active.id), over ? String(over.id) : undefined);
@@ -367,34 +338,10 @@ export function TodayPage({
 
       <div className={`today-workspace ${planningOpen ? "today-workspace--planning" : "today-workspace--single"}`}>
         <main className="today-workspace__main min-w-0 space-y-3">
-          {overdueMoveError ? <p role="alert" className="today-operation-feedback text-danger">{overdueMoveError}</p> : null}
-          {overdueMoveNotice ? <p role="status" className="today-operation-feedback text-ui-secondary">{overdueMoveNotice}</p> : null}
-          {overdueTodos.length > 0 ? (
-            <div className="today-overdue-banner" role="status">
-              <span>
-                지난 일정 <strong>{overdueTodos.length}개</strong>
-                {oldestOverdueDate ? ` · ${formatKoreanDate(oldestOverdueDate, "M월 d일")}부터` : ""}
-              </span>
-              <div className="today-overdue-banner__controls">
-                <button type="button" className="today-overdue-banner__action today-overdue-banner__review"
-                  onClick={() => setShowOverdueImport(true)}>작업 선택·검토</button>
-                <details className="today-overdue-banner__details">
-                  <summary className="today-overdue-banner__action">일괄 이동 <ChevronDown size={13} aria-hidden="true" /></summary>
-                  <div className="today-overdue-banner__bulk-actions">
-                    <p>선택 없이 전체 일정 날짜를 변경합니다. 기존 마감일은 유지됩니다.</p>
-                    <button type="button" className="today-overdue-banner__action" disabled={movingOverdue}
-                      onClick={() => void moveOverdue(today)}>전부 오늘로 · {overdueTodos.length}개</button>
-                    <button type="button" className="today-overdue-banner__action" disabled={movingOverdue}
-                      onClick={() => void moveOverdue(toDateKey(addDays(parseDateKey(today), 1)))}>전부 내일로 · {overdueTodos.length}개</button>
-                  </div>
-                </details>
-              </div>
-            </div>
-          ) : null}
           <section className="today-capture-section" aria-label="빠른 작업 입력">
             <div className="today-composer today-quick-capture">
               <TodoForm onAdd={onAdd} defaultDate={today} defaultCategoryId={inlineCategoryId}
-                compact collapsible alwaysOpen submitLabel="추가"
+                compact collapsible alwaysOpen todayCompact showSyntaxHint={false} submitLabel="추가"
                 categories={categories} projects={activeProjects} />
             </div>
           </section>
@@ -402,7 +349,6 @@ export function TodayPage({
             <span>계획 <strong>{stats.todayTotal}</strong></span>
             <span>남은 일 <strong>{stats.todayActive}</strong></span>
             <span>완료 <strong>{stats.todayCompleted}</strong></span>
-            {overdueTodos.length > 0 ? <span className="today-daily-summary__overdue">지난 일정 <strong>{overdueTodos.length}</strong></span> : null}
           </div>
           {focusError ? <p role="alert" className="text-xs text-danger">{focusError}</p> : null}
           {focusedTodos.length ? (
@@ -532,11 +478,7 @@ export function TodayPage({
                     onClick={() => setPlanningOpen(true)}>후보 전체 보기</button>
                 </div>
               ) : null}
-              {overdueTodos.length > 0 ? (
-                <button type="button" className="today-empty-state__action" onClick={() => setShowOverdueImport(true)}>
-                  지난 일정 {overdueTodos.length}개 중에서 선택하기
-                </button>
-              ) : !hasPlanningContent ? <a className="today-planning-panel__all-link block" href="#/all">전체 Todo에서 찾기</a> : null}
+              {!hasPlanningContent ? <a className="today-planning-panel__all-link block" href="#/all">전체 Todo에서 찾기</a> : null}
               {planningError ? <p role="alert" className="today-planning-panel__error">{planningError}</p> : null}
             </div>}
 
@@ -574,7 +516,7 @@ export function TodayPage({
                   <h3>다음 작업 후보</h3>
                   <span>{candidateTodos.length}개 표시</span>
                 </div>
-                <p className="today-planning-panel__hint">오늘로 이동하면 실행 날짜만 바뀌며 마감일은 유지됩니다.</p>
+                <p className="today-planning-panel__hint">오늘로 이동하면 실행 날짜가 오늘로 바뀝니다.</p>
                 <ul className="today-candidate-list">
                   {candidateTodos.map((todo) => (
                     <li key={todo.id} className="today-candidate">
@@ -586,7 +528,6 @@ export function TodayPage({
                             : todo.planningState === "SOMEDAY" ? "언젠가" : "미계획"}
                           {todo.projectId && projectById.get(todo.projectId)
                             ? ` · ${projectById.get(todo.projectId)?.name}` : ""}
-                          {todo.dueDate ? ` · 마감 ${formatKoreanDate(todo.dueDate, "M월 d일")}` : ""}
                         </span>
                       </div>
                       <button type="button" className="today-candidate__move"
@@ -602,22 +543,6 @@ export function TodayPage({
               </section>
             ) : null}
 
-            {overdueTodos.length > 0 ? (
-              <section className="today-planning-panel__section" aria-labelledby="overdue-summary-title">
-                <div className="today-planning-panel__section-title">
-                  <h3 id="overdue-summary-title">지난 일정</h3>
-                  <span className="today-planning-panel__overdue-count">{overdueTodos.length}개</span>
-                </div>
-                <p className="today-planning-panel__hint">
-                  {oldestOverdueDate ? `${formatKoreanDate(oldestOverdueDate, "M월 d일")}부터 남은 작업입니다.` : "이전 작업을 검토합니다."}
-                  {" "}선택한 항목만 이동합니다.
-                </p>
-                <Button variant="secondary" size="sm" className="today-plan-review"
-                  onClick={() => setShowOverdueImport(true)}>
-                  <History size={14} aria-hidden="true" /> 지난 작업 검토
-                </Button>
-              </section>
-            ) : null}
 
             {stats.weekTotal > 0 ? (
               <section className="today-planning-panel__section" aria-label="이번 주 요약">
@@ -640,7 +565,7 @@ export function TodayPage({
         ) : null}
       </div>
 
-      <TodoEditModal todo={editingTodo} categories={categories} projects={activeProjects} onClose={() => setEditingTodo(null)} onSave={onUpdate} />
+      <TodoEditModal hideDueDate todo={editingTodo} categories={categories} projects={activeProjects} onClose={() => setEditingTodo(null)} onSave={onUpdate} />
 
       <TodayCategoryManager
         open={showCategoryManager}
@@ -656,7 +581,6 @@ export function TodayPage({
         }}
       />
 
-      {showOverdueImport ? <OverdueTodoImportModal todos={overdueTodos} onImport={onBringOverdueTodos} onDeleteMany={onDeleteMany} onClose={() => setShowOverdueImport(false)} /> : null}
     </div>
   );
 }

@@ -3345,3 +3345,20 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
   }
   .today-page .today-overdue-banner__bulk-actions { right: auto; left: 0; }
 }
+
+/* Tern V4.3: today-only compact composer. Shared forms keep their existing density. */
+.today-page .today-quick-capture:has(.todo-composer-form--inline) { padding: 7px 12px; }
+.today-page .todo-composer-form--inline .todo-composer-form__main { padding: 0; gap: 9px; }
+.today-page .todo-composer-form--inline .todo-composer-form__title,
+.today-page .todo-composer-form--inline .todo-composer-form__input { min-height: 28px; }
+.today-page .todo-composer-form--inline .todo-composer-form__input { padding: 2px 0; font-size: 14px; }
+.today-page .todo-composer-form--inline .todo-composer-form__submit--quiet { min-height: 27px; padding: 3px 12px; font-size: 12px; }
+.today-page .todo-composer-form--inline .todo-composer-form__meta-row { min-height: 29px; margin-top: 4px; padding: 5px 0 0; gap: 4px 11px; }
+.today-page .todo-composer-form--inline .todo-composer-form__chips { margin: 0; }
+.today-page .todo-composer-form--inline .todo-composer-chip { min-height: 24px; font-size: 12px; }
+.today-page .todo-composer-form--inline .todo-composer-form__toggle { min-height: 24px; padding: 2px 3px; font-size: 12px; }
+.todo-composer-priority { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; white-space: nowrap; color: var(--ui-text-secondary); }
+.todo-composer-priority input[type="range"] { width: 60px; height: 24px; margin: 0; accent-color: var(--info); cursor: pointer; }
+.todo-composer-priority[data-priority="HIGH"] input { accent-color: var(--danger); }
+.todo-composer-priority span { min-width: 26px; }
+.todo-composer-details--compact.todo-composer-details--memo-only { grid-template-columns: minmax(0, 1fr); }
