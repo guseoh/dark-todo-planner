@@ -2,7 +2,7 @@ import { DndContext, DragOverlay, PointerSensor, pointerWithin, rectIntersection
 import { ChevronDown, ChevronRight, GripVertical, MoreHorizontal, Plus, Search } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { TodoForm } from "../todo/TodoForm";
-import { exceedsWipLimit } from "../../lib/projectWorkflow";
+import { exceedsWipLimit, toggleDoneColumnCollapsed } from "../../lib/projectWorkflow";
 import { formatKoreanDate, todayKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../../lib/todo";
 import { workflowStatusLabels } from "../../lib/todoLabels";
@@ -414,7 +414,7 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
               // WIP count is the total project count, not the filtered subset.
               const count = indexed.byStatus.get(column.status)?.length ?? 0;
               return (
-                <KanbanColumn key={column.status} status={column.status} label={column.label} count={count} visibleCount={items.length} wipLimit={wipLimitsByProject[project.id]?.[column.status]} onWipLimitChange={changeWipLimit} collapsed={column.status === "DONE" && (collapsedDoneColumns[project.id] ?? false)} onToggleCollapse={column.status === "DONE" ? () => setCollapsedDoneColumns((current) => ({ ...current, [project.id]: !(current[project.id] ?? true) })) : undefined}>
+                <KanbanColumn key={column.status} status={column.status} label={column.label} count={count} visibleCount={items.length} wipLimit={wipLimitsByProject[project.id]?.[column.status]} onWipLimitChange={changeWipLimit} collapsed={column.status === "DONE" && (collapsedDoneColumns[project.id] ?? false)} onToggleCollapse={column.status === "DONE" ? () => setCollapsedDoneColumns((current) => ({ ...current, [project.id]: toggleDoneColumnCollapsed(current[project.id]) })) : undefined}>
                   {(groupByMilestone ? groupByMilestoneOrder(items, milestones) : [{ key: "all", title: "", items }]).map((group) => (
                     <div key={group.key} className="project-kanban-group">
                       {group.title ? <h5 className="project-kanban-group__title">{group.title}<span>{group.items.length}</span></h5> : null}
