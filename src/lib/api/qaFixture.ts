@@ -229,12 +229,14 @@ return async (input, init) => {
     if (existing && plannerDate(start) !== plannerDate(end - 1)) return bad("하루 경계를 넘기는 수정은 지원하지 않습니다.");
     const todo = todos.find(item => item.id === body.todoId);
     if (body.todoId && !todo) return missing();
-    const title = todo?.title ?? text(body.title) ?? existing?.title;
+    const project = projects.find(item => item.id === body.projectId && !item.archived);
+    if (body.projectId && (!project || body.todoId)) return bad("프로젝트를 확인하세요.");
+    const title = todo?.title ?? text(body.title) ?? existing?.title ?? project?.name;
     if (!title?.trim()) return bad("제목을 입력하세요.");
     const categoryId = todo?.categoryId ?? (body.categoryId === null ? undefined : text(body.categoryId) ?? existing?.categoryId);
     const category = categories.find(item => item.id === categoryId);
     if (categoryId && !category) return missing();
-    const result = makeEntries({ title, todoId: todo?.id ?? existing?.todoId, projectId: todo?.projectId ?? existing?.projectId, categoryId, categoryName: category?.name }, start, end);
+    const result = makeEntries({ title, todoId: todo?.id ?? existing?.todoId, projectId: todo?.projectId ?? existing?.projectId ?? project?.id, categoryId, categoryName: category?.name }, start, end);
     if (existing) { result[0].id = existing.id; upsert(entries, result[0]); } else entries.push(...result);
     return json({ timeEntries: result }, existing ? 200 : 201);
   }

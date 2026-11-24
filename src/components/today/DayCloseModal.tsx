@@ -6,7 +6,7 @@ import { useTimeEntries } from "../../hooks/useTimeEntries";
 import { useTimeTracking } from "../timer/TimeTrackingContext";
 import { useTodoQuickActions } from "../todo/TodoQuickActionsContext";
 import { TimeEntryModal } from "../timer/TimeEntryModal";
-import type { TimeEntry } from "../../types/timeTracking";
+import type { TimeEntry, TimerTarget } from "../../types/timeTracking";
 import { formatKoreanDate, parseDateKey, todayKey, toDateKey } from "../../lib/date";
 import { activeAsEntry, formatDuration, intervalOnDay, plannerDayStart, measuredTotals, totalMs } from "../../lib/timeTracking";
 import type { Todo } from "../../types/todo";
@@ -16,17 +16,20 @@ export type DayCloseDecision = "TOMORROW" | "SOMEDAY" | "KEEP";
 
 type DayCloseModalProps = {
   todos: Todo[];
+  recordTodos?: Todo[];
   /** Tasks already finished today, for the recap line. */
   completedCount: number;
   onClose: () => void;
   onApply: (decisions: Record<string, DayCloseDecision>) => Promise<{ ok: boolean; message?: string }>;
 };
 
-export function DayCloseModal({ todos, completedCount, onClose, onApply }: DayCloseModalProps) {
+export function DayCloseModal({ todos, recordTodos = todos, completedCount, onClose, onApply }: DayCloseModalProps) {
   const today = todayKey();
 
   const timer = useTimeTracking();
-  const categories = useTodoQuickActions()?.categories ?? [];
+  const actions = useTodoQuickActions();
+  const categories = actions?.categories ?? [];
+  const projects = actions?.projects ?? [];
   const { entries, loaded, error: timeError, create, update, remove } = useTimeEntries(today, today);
   const [now, setNow] = useState(Date.now);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | "new" | null>(null);
@@ -39,6 +42,12 @@ export function DayCloseModal({ todos, completedCount, onClose, onApply }: DayCl
   const allEntries = timer?.active ? [...entries, activeAsEntry(timer.active, now + timer.offsetMs)] : entries;
   const measuredMs = totalMs(measuredTotals(allEntries, [today], "category", categories, [], []));
   const visibleEntries = allEntries.filter(entry => intervalOnDay(entry.startedAt, entry.endedAt, today)).sort((a, b) => a.startedAt.localeCompare(b.startedAt));
+  const resumeTarget = (entry: TimeEntry): TimerTarget | null => {
+    if (entry.todoId) return recordTodos.some(todo => todo.id === entry.todoId && !todo.archived && !todo.completed) ? { todoId: entry.todoId } : null;
+    if (entry.projectId) return projects.some(project => project.id === entry.projectId && !project.archived) ? { projectId: entry.projectId, categoryId: categories.some(category => category.id === entry.categoryId) ? entry.categoryId : undefined } : null;
+    if (entry.categoryId && categories.some(category => category.id === entry.categoryId)) return { categoryId: entry.categoryId };
+    return null;
+  };
   const goalMs = (timer?.dailyGoalMinutes ?? 0) * 60_000;
   const manualEnd = Math.min(Date.now(), plannerDayStart(today).getTime() + 24 * 60 * 60_000);
   const manualStart = Math.max(plannerDayStart(today).getTime(), manualEnd - 30 * 60_000);
@@ -129,10 +138,14 @@ export function DayCloseModal({ todos, completedCount, onClose, onApply }: DayCl
             {loaded && !timeError ? <div className="max-h-48 overflow-y-auto">
               {visibleEntries.map(entry => {
                 const part = intervalOnDay(entry.startedAt, entry.endedAt, today)!;
+                const target = resumeTarget(entry);
                 return <div key={entry.id} className="flex flex-wrap items-center gap-2 border-b border-ui-divider py-2 text-xs">
                   <span className="min-w-0 flex-1 truncate" title={entry.title}>{entry.title}</span>
                   <span className="tabular-nums text-ui-muted">{formatDuration((part.end - part.start) * 60_000)}</span>
-                  {entry.id === "active" ? <span className="text-success">측정 중</span> : <button type="button" className="btn-secondary text-xs" disabled={saving} onClick={() => setEditingEntry(entry)}>수정</button>}
+                  {entry.id === "active" ? <span className="text-success">측정 중</span> : <>
+                    {target && timer && !timer.active ? <button type="button" className="btn-secondary text-xs" disabled={saving || timer.busy} onClick={() => void timer.start(target)}>재개</button> : null}
+                    <button type="button" className="btn-secondary text-xs" disabled={saving} onClick={() => setEditingEntry(entry)}>수정</button>
+                  </>}
                 </div>;
               })}
             </div> : null}
@@ -187,7 +200,7 @@ export function DayCloseModal({ todos, completedCount, onClose, onApply }: DayCl
         {error ? <p className="rounded-md border border-danger/40 bg-danger/[0.08] px-3 py-2 text-xs font-semibold text-danger" role="alert">{error}</p> : null}
       </div>
     </Modal>
-    {editingEntry ? <TimeEntryModal entry={editingEntry === "new" ? undefined : editingEntry} categories={categories}
+    {editingEntry ? <TimeEntryModal entry={editingEntry === "new" ? undefined : editingEntry} categories={categories} todos={recordTodos}
       defaultStart={new Date(manualStart).toISOString()} defaultEnd={new Date(manualEnd).toISOString()}
       onClose={() => setEditingEntry(null)} onCreate={create} onUpdate={update} onDelete={remove} /> : null}
     </>

@@ -30,6 +30,7 @@ export type TimeEntry = {
 
 export type TimeEntryInput = {
   todoId?: string | null;
+  projectId?: string | null;
   title?: string;
   categoryId?: string | null;
   startedAt: string;

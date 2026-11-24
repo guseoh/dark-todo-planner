@@ -41,6 +41,14 @@ describe("isolated QA fixture", () => {
     expect(stopped.timeEntries.map((entry: { plannerDate: string; durationMinutes: number }) => [entry.plannerDate, entry.durationMinutes])).toEqual([["2026-11-24", 10], ["2026-11-25", 10]]);
     expect(stopped.activeTimer).toBeNull();
   });
+  it("records manual project and Todo time with their target identifiers", async () => {
+    const qaFetch = createQaFetch(() => Date.parse("2026-11-24T12:00:00Z"));
+    const times = { startedAt: "2026-11-24T09:00:00Z", endedAt: "2026-11-24T10:00:00Z" };
+    const project = await (await qaFetch("/api/time-entries", request("POST", { ...times, projectId: "qa-project" }))).json();
+    expect(project.timeEntries[0]).toMatchObject({ projectId: "qa-project", title: "QA 프로젝트" });
+    const todo = await (await qaFetch("/api/time-entries", request("POST", { ...times, todoId: "qa-todo-1" }))).json();
+    expect(todo.timeEntries[0]).toMatchObject({ todoId: "qa-todo-1", projectId: "qa-project", categoryId: "qa-study" });
+  });
   it("provides GitHub sample rows without network", async () => {
     const qaFetch = createQaFetch();
     expect((await (await qaFetch("/api/github/repositories/qa-example/demo/pulls?state=open")).json()).items[0].number).toBe(12);

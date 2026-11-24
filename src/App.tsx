@@ -381,7 +381,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
 
         {searchTodo ? <TodoEditModal todo={searchTodo} categories={planner.categories} projects={planner.activeProjects} onClose={() => setSearchTodoId(null)} onSave={updateTodoWithUndo} /> : null}
 
-        {showDayClose ? <DayCloseModal todos={todayOpenTodos} completedCount={planner.getTodayTodos().filter((todo) => todo.completed && !todo.archived).length} onClose={() => setShowDayClose(false)} onApply={applyDayClose} /> : null}
+        {showDayClose ? <DayCloseModal recordTodos={planner.allTodos} todos={todayOpenTodos} completedCount={planner.getTodayTodos().filter((todo) => todo.completed && !todo.archived).length} onClose={() => setShowDayClose(false)} onApply={applyDayClose} /> : null}
         {showTodoShortcuts ? (
           <Modal title="할 일 단축키" onClose={() => setShowTodoShortcuts(false)}>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">

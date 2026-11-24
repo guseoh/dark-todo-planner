@@ -25,6 +25,7 @@ const rangeSchema = z.object({ from: dateKey, to: dateKey });
 const entryTimesSchema = z.object({ startedAt: isoInstant, endedAt: isoInstant });
 const createEntrySchema = entryTimesSchema.extend({
   todoId: z.string().min(1).nullable().optional(),
+  projectId: z.string().min(1).nullable().optional(),
   title: z.string().trim().min(1).max(200).optional(),
   categoryId: z.string().min(1).nullable().optional(),
 });
@@ -176,19 +177,24 @@ timeTrackingRoutes.post("/time-entries", async (c) => {
   const problem = validateTimes(input.startedAt, input.endedAt);
   if (problem) return c.json({ message: problem }, 400);
   let meta: Meta;
+  if (input.todoId && input.projectId) return c.json({ message: "Todo 또는 프로젝트 중 한 대상을 선택하세요." }, 400);
   if (input.todoId) {
     const todo = await todoMeta(db, userId, input.todoId);
     if (!todo) return c.json({ message: "Todo를 찾을 수 없습니다." }, 404);
     meta = { todoId: todo.id, title: todo.title, categoryId: todo.category_id, categoryName: todo.category_name, projectId: todo.project_id };
   } else {
-    if (!input.title) return c.json({ message: "Todo를 고르거나 제목을 입력하세요." }, 400);
+    const project = input.projectId ? await projectMeta(db, userId, input.projectId) : null;
+    if (input.projectId && !project) return c.json({ message: "프로젝트를 찾을 수 없습니다." }, 404);
+    if (project?.archived) return c.json({ message: "보관된 프로젝트에는 새 기록을 추가할 수 없습니다." }, 400);
+    const title = input.title ?? project?.name;
+    if (!title) return c.json({ message: "Todo를 고르거나 제목을 입력하세요." }, 400);
     let name: string | null = null;
     if (input.categoryId) {
       const category = await categoryName(db, userId, input.categoryId);
       if (!category) return c.json({ message: "카테고리를 찾을 수 없습니다." }, 404);
       name = category.name;
     }
-    meta = { todoId: null, title: input.title, categoryId: input.categoryId ?? null, categoryName: name, projectId: null };
+    meta = { todoId: null, title, categoryId: input.categoryId ?? null, categoryName: name, projectId: input.projectId ?? null };
   }
   const now = nowIso();
   const segments = splitByPlannerDay(Date.parse(input.startedAt), Date.parse(input.endedAt));
