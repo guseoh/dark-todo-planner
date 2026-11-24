@@ -4,14 +4,14 @@
 
 ## 자동 Production 배포
 
-[CI 워크플로](../../.github/workflows/ci.yml)의 실제 순서는 다음과 같습니다.
+[Worker 전용 배포 워크플로](../../.github/workflows/worker-deploy.yml)의 실제 순서는 다음과 같습니다.
 
-1. PR에서 `npm ci`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --omit=dev`를 실행합니다. PR은 **Production 배포를 하지 않습니다**.
-2. `main` push 또는 `workflow_dispatch`에서는 검사 성공 뒤 `Deploy production` 잡이 실행됩니다.
+1. PR은 변경 영역에 따라 타입·단위 및 로컬 API 검증을 실행합니다. PR은 **Production 배포를 하지 않습니다**.
+2. 백엔드 관련 `main` push 또는 수동 실행은 로컬 API·단위·암호화 검증이 성공한 뒤 운영 배포 잡을 실행합니다. React 빌드는 수행하지 않습니다.
 3. Cloudflare API Token/Account ID Secret을 확인하고 `npm run db:migrate:production`으로 Production D1 migration을 적용합니다.
-4. `npm run deploy:production`으로 Worker를 배포하고 [Production health](https://dark-todo-planner.guseoh.workers.dev/api/health) HTTP 200을 확인합니다.
+4. Worker 전용 빌드 후 API를 배포하고 [Production health](https://dark-todo-planner.guseoh.workers.dev/api/health) HTTP 200을 확인합니다.
 
-**주의:** 현재 자동화에는 로그인 후 CRUD 브라우저 E2E와 Preview 승인이 필수 게이트로 연결돼 있지 않습니다. PR 검증 통과만으로 사용자 데이터 복원이나 로그인·동작 확인까지 보증하지 않습니다. Migration을 추가하거나 파괴적 기능을 변경할 때는 병합 전에 별도 Preview 검증 및 백업을 수행하세요.
+**주의:** 로컬 API CRUD·복원 검증이 필수 게이트이며 실제 운영 계정이나 Preview 승인을 대신하지 않습니다. PR 검증 통과만으로 사용자 데이터 복원이나 로그인·동작 확인까지 보증하지 않습니다. Migration을 추가하거나 파괴적 기능을 변경할 때는 병합 전에 별도 Preview 검증 및 백업을 수행하세요.
 
 ## 로컬 검증 및 수동 Preview
 
@@ -19,7 +19,7 @@
 npm ci
 npm run typecheck
 npm test
-npm run build
+npm run build:worker
 npm audit --omit=dev
 npm run deploy:preview
 ```

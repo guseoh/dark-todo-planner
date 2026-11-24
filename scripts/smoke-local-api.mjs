@@ -39,6 +39,9 @@ for (let attempt = 0; attempt < 50; attempt += 1) {
 }
 assert.ok(ready, "Local Worker did not become healthy. Check wrangler dev and local D1 migrations.");
 
+for (const path of ["/", "/app.webmanifest", "/assets/missing.js"]) {
+  expectStatus(await request(path), 404, `API-only Worker must not serve a web frontend: ${path}`);
+}
 expectStatus(await request("/api/todos"), 401, "Unauthorized Todo list");
 const anonymousBoot = await request("/api/bootstrap?date=2026-10-08");
 assert.deepEqual(anonymousBoot.data.data ?? {}, {}, "Bootstrap must not return data without a session.");

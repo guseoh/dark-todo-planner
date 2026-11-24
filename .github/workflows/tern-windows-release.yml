@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'src/**'
+      - 'fonts-src/**'
+      - 'tsconfig*.json'
       - 'src-tauri/**'
       - 'public/**'
       - 'index.html'
@@ -14,11 +16,12 @@ on:
       - 'tailwind.config.ts'
       - 'postcss.config.js'
       - 'scripts/prepare-desktop-release.mjs'
+      - 'scripts/prepare-desktop-release.check.mjs'
       - '.github/workflows/tern-windows-release.yml'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: tern-windows-release
@@ -26,6 +29,9 @@ concurrency:
 
 jobs:
   release:
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
     name: Build, sign and publish Windows Tern
     runs-on: windows-latest
     timeout-minutes: 45
@@ -43,12 +49,18 @@ jobs:
           workspaces: 'src-tauri -> target'
       - name: Install frontend dependencies
         run: npm ci
+      - name: Verify main before signing and publishing
+        run: |
+          npm test
+          node --test scripts/ci-scope.check.mjs scripts/prepare-desktop-release.check.mjs
       - name: Prepare version and registered updater public key
         env:
           TERN_VERSION: 0.3.${{ github.run_number }}
           TERN_UPDATER_PUBLIC_KEY: ${{ secrets.TERN_UPDATER_PUBLIC_KEY }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: node scripts/prepare-desktop-release.mjs
+      - name: Confirm release lockfile remains valid
+        run: cargo metadata --locked --manifest-path src-tauri/Cargo.toml --format-version 1 --no-deps
       - name: Generate Windows icons from tracked source image
         run: npx --yes @tauri-apps/cli@2 icon -o src-tauri/icons src-tauri/branding/tern.png
       - name: Build and publish signed Windows installer and latest.json
@@ -65,4 +77,4 @@ jobs:
           prerelease: false
           uploadUpdaterJson: true
           updaterJsonPreferNsis: true
-          args: '--bundles nsis'
+          args: '--bundles nsis -- --locked'

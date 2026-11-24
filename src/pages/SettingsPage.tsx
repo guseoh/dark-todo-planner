@@ -8,7 +8,6 @@ import { CalendarExportCard } from "../components/settings/CalendarExportCard";
 import { ExportPanel } from "../components/settings/ExportPanel";
 import { BackupRestoreCard } from "../components/settings/BackupRestoreCard";
 import { DesktopUpdateCard } from "../components/settings/DesktopUpdateCard";
-import { PwaInstallCard } from "../components/settings/PwaInstallCard";
 import { RoutinePanel } from "../components/settings/RoutinePanel";
 import type { Category } from "../types/category";
 import type { Goal } from "../types/goal";
@@ -156,7 +155,7 @@ export function SettingsPage({
         </dl>
       </section>
 
-      {isTauri() ? <DesktopUpdateCard /> : <PwaInstallCard />}
+      {isTauri() && <DesktopUpdateCard />}
       </div>
       ) : null}
 

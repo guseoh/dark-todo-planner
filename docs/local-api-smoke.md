@@ -1,14 +1,9 @@
-# 로컬 Worker·D1 E2E + Chromium 브라우저 검증
+# 로컬 Worker·D1 API 검증
 
-CI에서는 Production에 데이터를 쓰지 않습니다. `Local Worker + D1 API smoke` 잡이 완전히 분리된 GitHub Runner에서 로컬 D1 migration을 적용하고 Wrangler 개발 서버를 시작합니다.
+운영 Worker는 API 전용입니다. 로컬 API 회귀는 React/Vite를 빌드하지 않고 GitHub Runner의 격리 D1에 migration을 적용합니다. `api-check.yml`은 백엔드 PR과 운영 배포 전, 주간 회귀에서 재사용됩니다.
 
-검증 순서: /api/health → 비로그인 API 401 → 임시 계정 로그인 → 클라이언트 UUID Todo 생성 및 동일 요청 재실행(멱등성) → 제목·관련 링크 수정 → 완료 → 휴지통 이동 → 복원 미리보기 → 복원 → 로컬 데이터 정리.
-
-- `scripts/prepare-smoke-auth.mjs`: CI에서 일회용 계정·비밀번호·세션 Secret을 생성합니다. Production 인증 정보는 사용하지 않습니다.
-- `scripts/smoke-local-api.mjs`: loopback IP/호스트 이외의 URL을 거부합니다. Production/Preview를 대상으로는 실행할 수 없습니다.
-- `deploy-production` 잡은 **타입·단위 테스트/백업 암호화 검증/빌드 + 로컬 Worker·D1 API smoke 양쪽이 통과해야** 시작합니다.
-- API 테스트 뒤 CI에서만 격리된 폴더(.ci-browser-runner)에 고정된 Playwright 드라이버를 임시 설치하고 GitHub Runner에 설치된 Chrome을 이용해 **실제 브라우저 E2E**를 실행합니다.
-- 모바일 390px 화면에서 로그인, 고정 5탭·더보기 탐색, 설정의 백업 카드, Today Todo 추가, Ctrl+K 검색 결과로 해당 Todo 편집, 오프라인 작업 생성, 재연결 동기화 및 새로고침 후 보존을 검사합니다.
-- 전체 브라우저 흐름도 **로컬 Worker·D1만** 사용하고 Production/Preview URL은 실행 시작 시 거부합니다. 실패 시 테스트용 데이터만 포함하는 스크린샷을 7일간 아티팩트로 남깁니다.
-- 개인 장치·다양한 브라우저와 실제 Preview 복원 훈련을 대체하지는 않습니다.
-- 정상화 및 D1 Time Travel 복구 훈련은 [D1 백업·복구 Runbook](runbook/d1-backup-restore.md)의 Preview 전용 절차에 따릅니다.
+- `scripts/prepare-smoke-auth.mjs`: CI용 일회용 계정·세션을 생성합니다.
+- `scripts/smoke-local-api.mjs`: loopback 전용. API health, 웹 경로 JSON 404, 비로그인 401, 로그인, CRUD, 멱등성, 백업·복원·트랜잭션 롤백을 검증합니다.
+- 운영 배포는 이 격리 테스트를 통과해야 합니다. 운영 D1에는 CI 테스트 데이터를 쓰지 않습니다.
+- 기존 Chromium 웹/PWA 회귀 스크립트는 이력 참고용이며 더 이상 운영 CI에서 호출하지 않습니다. Windows 앱 QA는 [Windows 체크리스트](tern-windows-qa.md)를 따릅니다.
+- D1 복구 훈련은 [D1 백업·복구 Runbook](runbook/d1-backup-restore.md)의 Preview 전용 절차를 사용합니다.
