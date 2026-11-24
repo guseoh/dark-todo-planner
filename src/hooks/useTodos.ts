@@ -81,6 +81,8 @@ const createOptimisticTodo = (id: string, input: TodoInput): Todo => {
     milestoneId: input.milestoneId,
     parentTodoId: input.parentTodoId,
     memo: input.memo,
+    referenceUrl: input.referenceUrl,
+    referenceLabel: input.referenceUrl ? input.referenceLabel : undefined,
     date: input.date || todayKey(),
     dueDate: input.dueDate,
     planningState,
