@@ -110,6 +110,8 @@ export function startBootstrap(fetcher: typeof fetch = appFetch, date = todayKey
 
 export function clearBootstrap() {
   generation += 1;
+  clearTimeout(refreshTimer);
+  refreshTimer = undefined;
   primed.clear();
   staleServed.clear();
   expected = new Set();
@@ -148,14 +150,16 @@ export async function takePrimed<T>(path: string): Promise<T | undefined> {
 let refreshTimer: ReturnType<typeof setTimeout> | undefined;
 let lastRefreshAt = 0;
 
-async function refreshSnapshot(fetcher: typeof fetch = appFetch) {
+export async function refreshSnapshot(fetcher: typeof fetch = appFetch) {
+  const mine = generation;
+  const targetStore = store;
   lastRefreshAt = Date.now();
   const date = todayKey();
   try {
     const response = await fetcher(`/api/bootstrap?date=${date}`, { credentials: "include", signal: AbortSignal.timeout(TIMEOUT_MS) });
     if (!response.ok) return;
     const body = await response.json() as { data?: Record<string, unknown> };
-    if (body.data) await store.write({ savedAt: Date.now(), date, data: body.data });
+    if (mine === generation && body.data) await targetStore.write({ savedAt: Date.now(), date, data: body.data });
   } catch { /* the next write schedules another attempt */ }
 }
 

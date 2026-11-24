@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { bootstrapPaths, clearBootstrap, noteMutation, onRevalidated, snapshotAvailable, startBootstrap, takePrimed } from "./bootstrap";
+import { bootstrapPaths, clearBootstrap, noteMutation, onRevalidated, refreshSnapshot, snapshotAvailable, startBootstrap, takePrimed } from "./bootstrap";
 import type { Snapshot, SnapshotStore } from "./snapshot";
 
 const respond = (data: Record<string, unknown>, ok = true) =>
@@ -163,4 +163,16 @@ describe("snapshot, stale first", () => {
     await request;
     expect(await waiting).toEqual({ todos: ["first"] });
   });
+});
+
+it("does not repopulate a discarded snapshot from an in-flight refresh", async () => {
+  const { store, state } = memoryStore(snapshotOf({ old: true }));
+  await startBootstrap(respond({ old: true }), "2026-11-16", store);
+  const network = deferred();
+  const refreshing = refreshSnapshot(network.fetcher);
+  clearBootstrap();
+  await store.clear();
+  network.answer({ private: "old session" });
+  await refreshing;
+  expect(state.current).toBeNull();
 });

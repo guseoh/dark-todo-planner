@@ -1,7 +1,7 @@
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { CalendarCheck2 } from "lucide-react";
 import { api, ApiError, jsonBody } from "../../lib/api/client";
-import { clearBootstrap, discardSnapshot, snapshotAvailable, startBootstrap } from "../../lib/api/bootstrap";
+import { clearBootstrap, discardSnapshot, startBootstrap } from "../../lib/api/bootstrap";
 
 type Session = { authenticated: boolean; username?: string };
 export function AuthGate({ children }: { children: (logout: () => Promise<void>) => ReactNode }) {
@@ -11,21 +11,45 @@ export function AuthGate({ children }: { children: (logout: () => Promise<void>)
   const [error, setError] = useState("");
   const [logoutError, setLogoutError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [sessionError, setSessionError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    let verified = false;
-    api<Session>("/api/auth/session").then((next) => {
-      verified = true;
-      if (!next.authenticated) void discardSnapshot();
-      setSession(next);
-    }).catch(() => { verified = true; setSession({ authenticated: false }); });
-    // A snapshot only exists after a successful sign-in on this browser and is wiped on logout, so draw the
-    // app from it right away; the session check still decides, and signs out below if it fails.
-    void snapshotAvailable().then((available) => { if (available && !verified) setSession((current) => current ?? { authenticated: true }); });
-    const expire = () => { void discardSnapshot(); setSession({ authenticated: false }); };
+    let active = true;
+    let expired = false;
+    const expire = () => {
+      expired = true;
+      clearBootstrap();
+      void discardSnapshot();
+      setSessionError(false);
+      setSession({ authenticated: false });
+    };
     window.addEventListener("auth:unauthorized", expire);
-    return () => window.removeEventListener("auth:unauthorized", expire);
-  }, []);
+    // A cached snapshot is not a credential. Render private data only after
+    // the server verifies the current native session.
+    setSessionError(false);
+    api<Session>("/api/auth/session").then(async (next) => {
+      if (!active || expired) return;
+      if (!next.authenticated) {
+        clearBootstrap();
+        await discardSnapshot();
+      } else {
+        void startBootstrap();
+      }
+      if (active && !expired) setSession(next);
+    }).catch(async (cause) => {
+      if (!active || expired) return;
+      if (cause instanceof ApiError && cause.status === 401) {
+        clearBootstrap();
+        await discardSnapshot();
+        if (active && !expired) setSession({ authenticated: false });
+      } else {
+        // Network failures are not proof of session expiry.
+        setSessionError(true);
+      }
+    });
+    return () => { active = false; window.removeEventListener("auth:unauthorized", expire); };
+  }, [attempt]);
 
   const login = async (event: FormEvent) => {
     event.preventDefault();
@@ -57,7 +81,7 @@ export function AuthGate({ children }: { children: (logout: () => Promise<void>)
     }
   };
 
-  if (!session) return <div className="flex min-h-screen items-center justify-center text-ink-300">인증 상태 확인 중...</div>;
+  if (!session) return <div className="flex min-h-screen flex-col items-center justify-center gap-3 text-ink-300">{sessionError ? <><p role="alert">서버에 연결하지 못했습니다. 네트워크를 확인해 주세요.</p><button className="btn-secondary" onClick={() => setAttempt((n) => n + 1)}>다시 확인</button></> : "인증 상태 확인 중..."}</div>;
   if (session.authenticated) {
     return <>
       {logoutError ? <div role="alert" aria-live="assertive" className="fixed right-4 top-20 z-50 max-w-md rounded-lg border border-danger/50 bg-ink-950 px-4 py-3 text-sm font-semibold text-danger shadow-2xl">{logoutError}</div> : null}
