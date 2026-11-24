@@ -15,20 +15,20 @@
 
 .github/workflows/tern-windows-release.yml:
 1. 데스크톱 파일 변경이 main에 들어오면 Windows runner에서 npm ci, Rust toolchain 설치를 수행합니다.
-2. src-tauri/tauri.conf.json에 버전 0.3.<run_number>와 기존 업데이트 공개키를 **빌드 시에만** 주입합니다.
+2. src-tauri/tauri.conf.json에 버전 0.3.<run_number>와 등록된 업데이트 공개키를 **빌드 시에만** 주입합니다.
 3. public/pwa-icon-512.png에서 Windows icon을 재현하여 NSIS 설치 파일을 만듭니다.
 4. Tauri가 비공개 서명 키를 사용해 updater 서명을 생성합니다.
 5. tauri-action이 GitHub Release와 최신 버전 manifest latest.json을 게시합니다.
 6. Tern은 실행 시와 이후 1시간 간격으로 새 버전을 자동 조회하고 사용자가 설치를 승인하면 서명을 검사하고 설치·재시작합니다. 작성 중인 내용이 갑자기 사라지지 않도록 무인 자동 설치하지 않습니다.
 
 필요한 GitHub Actions Repository Secrets:
-- TAURI_SIGNING_PRIVATE_KEY: **기존 Tern v0.2.0에 사용한** Tauri updater 개인키 내용
+- TAURI_SIGNING_PRIVATE_KEY: 현재 릴리스용 Tauri updater 개인키 내용 (기존 키 유실 시 새로 생성한 키)
 - TAURI_SIGNING_PRIVATE_KEY_PASSWORD: 개인키 암호(설정한 경우)
 - TERN_UPDATER_PUBLIC_KEY: 해당 개인키와 정확히 짝인 Tauri CLI가 출력한 **base64 인코딩된 minisign 공개키 문서** 값(일반적으로 `dW50cn...`로 시작). `.pub`의 내부 `RW...` 한 줄만 넣지 않습니다.
 
 **개인키를 Git 또는 공개 문서에 업로드하지 마세요.** GitHub Settings → Secrets and variables → Actions → Repository secrets에서 추가합니다. 기존 개인키가 없으면 공개키만으로 새 업데이트를 만들 수 없습니다. 키가 유실됐다면 새 서명 키를 만든 후 기존 설치자에게 **신규 설치 파일을 직접 실행하는 1회 전환**이 필요합니다. v0.2.0 인플레이스 자동 업데이트를 보장할 수 없습니다.
 
-또한 기존 설치본의 Windows bundle identifier / install scope와 현재 설정의 com.guseoh.tern, NSIS 설치 범위의 일치도 확인해야 합니다. 확인 전에는 v0.2.0을 자동 교체한다고 주장하지 않습니다.
+기존 v0.2.0의 Tauri 설정에서 확인한 bundle identifier `io.github.guseoh.dark-todo-planner`를 유지합니다. 기존 개인키를 찾지 못해 새 키 쌍으로 전환하는 경우 v0.2.0 사용자는 GitHub Releases의 새 NSIS 설치 파일을 직접 실행해야 합니다. 설치 범위 및 실제 인플레이스 교체 결과는 Windows에서 확인해야 합니다. 새 앱은 이후 동일한 새 서명 키를 사용한 릴리스를 자동 확인합니다. 이전 앱의 로컬 미동기화 데이터는 전환 전에 서버 동기화 여부를 확인합니다.
 
 서명 키가 아직 설정되지 않았다면 릴리스 워크플로는 실패하며 **서명하지 않은 실행 파일을 latest.json으로 게시하지 않습니다**. 동작을 우회하기 위해 임시 개인키를 CI에서 매번 생성하지 않습니다.
 
@@ -56,7 +56,7 @@ Windows 11에 Node.js 22, Rust stable/MSVC, WebView2가 준비되어 있어야 �
 - 기존 v0.2.0의 설치 이름, bundle identifier, NSIS installation scope와 공개키를 확인합니다.
 - 첫 릴리스에서 생성된 설치 파일과 latest.json의 버전·다운로드 URL·서명이 같은 릴리스를 가리키는지 확인합니다.
 - 기존 설치본에서 실제 업데이트가 확인되기 전에는 최신 Release를 기존 Tern에 자동 배포했다고 보고하지 않습니다.
-- 새 키를 사용해야 한다면 업그레이드 경로를 명시적으로 공지하고 기존 설치본의 업데이트 피드를 잘못 덮어쓰지 않도록 합니다.
+- 새 키로의 전환 릴리스에는 기존 v0.2.0 사용자의 1회 수동 설치 필요성을 명시합니다. 이전 설치본이 새 서명을 거부하더라도 검증을 우회하지 않습니다.
 - 릴리스 실패 시 GitHub Actions 로그를 참고하며, D1 백업/복원과 별개로 Windows 설치 파일만 이전 검증된 릴리스로 수동 재설치할 수 있습니다.
 
 공식 근거: https://v2.tauri.app/plugin/updater/ 및 https://v2.tauri.app/distribute/pipelines/github/
