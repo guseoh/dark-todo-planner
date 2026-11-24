@@ -175,6 +175,32 @@ async fn desktop_update(
     Ok(UpdateState { installed_version, available_version })
 }
 
+fn trusted_github_link(value: &str) -> Result<Url, String> {
+    let url = Url::parse(value).map_err(|_| "잘못된 GitHub 주소입니다.")?;
+    let parts: Vec<_> = url.path().trim_matches('/').split('/').collect();
+    let segment_ok = |part: &str| !part.is_empty() && part != "." && part != ".." && part.bytes().all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, b'-' | b'_' | b'.'));
+    if url.origin().ascii_serialization() != "https://github.com" || !url.username().is_empty() || url.password().is_some() || url.query().is_some() || url.fragment().is_some()
+        || parts.len() != 4 || !segment_ok(parts[0]) || !segment_ok(parts[1]) || !matches!(parts[2], "issues" | "pull") || parts[3].is_empty() || !parts[3].bytes().all(|ch| ch.is_ascii_digit()) {
+        return Err("허용되지 않은 GitHub 주소입니다.".into());
+    }
+    Ok(url)
+}
+
+#[tauri::command]
+fn desktop_open_github(url: String) -> Result<(), String> {
+    if cfg!(feature = "qa") { return Err("QA 빌드에서는 외부 브라우저를 열지 않습니다.".into()); }
+    let url = trusted_github_link(&url)?;
+    #[cfg(windows)]
+    {
+        // Pass the URL as one argument, never interpolate it into a shell command.
+        let explorer = std::env::var_os("WINDIR").map(std::path::PathBuf::from).ok_or("Windows 경로를 확인하지 못했습니다.")?.join("explorer.exe");
+        std::process::Command::new(explorer).arg(url.as_str()).spawn().map_err(|_| "브라우저를 열지 못했습니다.".to_string())?;
+        Ok(())
+    }
+    #[cfg(not(windows))]
+    { let _ = url; Err("Windows 전용 기능입니다.".into()) }
+}
+
 #[tauri::command]
 fn desktop_quit(app: tauri::AppHandle, gate: State<'_, UpdateGate>) -> Result<(), String> {
     let _lease = gate.acquire()?;
@@ -228,7 +254,7 @@ pub fn run() {
         .manage(ApiClient { client, jar })
         .manage(UpdateGate::default())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![desktop_api_request, desktop_update, desktop_quit])
+        .invoke_handler(tauri::generate_handler![desktop_api_request, desktop_update, desktop_quit, desktop_open_github])
         .setup(|app| {
             // No global shortcuts or shared system tray actions in QA.
             if cfg!(feature = "qa") { return Ok(()); }
@@ -326,5 +352,18 @@ mod tests {
         assert!(gate.acquire().is_err());
         drop(lease);
         assert!(gate.acquire().is_ok());
+    }
+}
+
+#[cfg(test)]
+mod github_link_tests {
+    use super::*;
+    #[test]
+    fn only_canonical_github_item_urls() {
+        assert!(trusted_github_link("https://github.com/owner/repo/pull/12").is_ok());
+        assert!(trusted_github_link("https://github.com/owner/repo/issues/3").is_ok());
+        for value in ["http://github.com/o/r/pull/1", "https://evil.example/o/r/pull/1", "https://github.com@evil.example/o/r/pull/1", "https://user@github.com/o/r/pull/1", "https://github.com/o/r/pull/1?x=1", "https://github.com/o/r/pull/%31", "file:///C:/Windows"] {
+            assert!(trusted_github_link(value).is_err());
+        }
     }
 }

@@ -32,36 +32,50 @@ export function normalizeGithubItems(value: unknown, owner: string, repo: string
   }).slice(0, 100);
 }
 
-type Result = { items: GithubItem[]; fetchedAt: string; limited: boolean };
+export function repositoryCredential(env: Pick<Bindings, "GITHUB_REPOSITORY_TOKEN" | "GITHUB_REPOSITORY_ALLOWLIST">, owner: string, repo: string): string | undefined {
+  const allowed = (env.GITHUB_REPOSITORY_ALLOWLIST ?? "").split(",").map(item => item.trim().toLowerCase());
+  const token = env.GITHUB_REPOSITORY_TOKEN?.trim();
+  return token && allowed.includes(`${owner}/${repo}`.toLowerCase()) ? token : undefined;
+}
+export function githubReadHeaders(url: URL, token?: string): Headers {
+  if (url.origin !== "https://api.github.com" || !url.pathname.startsWith("/repos/") || url.username || url.password) throw new Error("Invalid GitHub origin");
+  const headers = new Headers({ Accept: "application/vnd.github+json", "User-Agent": "Tern-Repository-Reader", "X-GitHub-Api-Version": "2022-11-28" });
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  return headers;
+}
+type Result = { items: GithubItem[]; fetchedAt: string; limited: boolean; authenticated: boolean };
 const cache = new Map<string, { expires: number; data: Result }>();
 const inFlight = new Map<string, Promise<Result>>();
 const TTL = 90_000;
+let authenticatedLists = 0;
+let authenticatedDetails = 0;
 export const githubRepositoryRoutes = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 githubRepositoryRoutes.get("/github/repositories/:owner/:repo/:kind", async (c) => {
   const { owner, repo, kind } = c.req.param();
   const url = githubListUrl(owner, repo, kind, c.req.query("state") ?? "open", Number(c.req.query("page") ?? 1));
   if (!url) return c.json({ message: "저장소 또는 조회 조건이 올바르지 않습니다." }, 400);
+  const token = repositoryCredential(c.env, owner, repo);
   const key = url.toString();
-  const hit = cache.get(key);
+  const hit = token ? undefined : cache.get(key);
   if (hit && hit.expires > Date.now()) return c.json(hit.data);
   try {
-    let request = inFlight.get(key);
+    // Authenticated data is never retained in shared caches or shared in-flight promises.
+    let request = token ? undefined : inFlight.get(key);
     if (!request) {
-      if (inFlight.size >= 8) return c.json({ message: "GitHub 조회가 많습니다. 잠시 후 다시 시도하세요." }, 429);
+      if (inFlight.size + authenticatedLists >= 8) return c.json({ message: "GitHub 조회가 많습니다. 잠시 후 다시 시도하세요." }, 429);
+      if (token) authenticatedLists += 1;
       request = (async () => {
-        // Public-only first slice. No user or activity token is sent, and redirects are blocked.
-        const response = await fetch(url, { headers: { Accept: "application/vnd.github+json", "User-Agent": "Tern-Repository-Reader", "X-GitHub-Api-Version": "2022-11-28" }, redirect: "error", signal: AbortSignal.timeout(10_000) });
+        const response = await fetch(url, { headers: githubReadHeaders(url, token), redirect: "error", signal: AbortSignal.timeout(10_000) });
         if (!response.ok) throw new Error(String(response.status));
-        const data: Result = { items: normalizeGithubItems(await response.json(), owner, repo, kind as "issues" | "pulls"), fetchedAt: new Date().toISOString(), limited: Boolean(response.headers.get("Link")?.includes('rel="next"')) };
-        if (cache.size >= 100) cache.delete(cache.keys().next().value!);
-        cache.set(key, { expires: Date.now() + TTL, data });
+        const data: Result = { items: normalizeGithubItems(await response.json(), owner, repo, kind as "issues" | "pulls"), fetchedAt: new Date().toISOString(), limited: Boolean(response.headers.get("Link")?.includes('rel="next"')), authenticated: Boolean(token) };
+        if (!token) { if (cache.size >= 100) cache.delete(cache.keys().next().value!); cache.set(key, { expires: Date.now() + TTL, data }); }
         return data;
-      })().finally(() => { inFlight.delete(key); });
-      inFlight.set(key, request);
+      })().finally(() => { if (token) authenticatedLists -= 1; else inFlight.delete(key); });
+      if (!token) inFlight.set(key, request);
     }
     return c.json(await request);
   } catch {
-    return c.json({ message: "공개 GitHub 저장소를 조회하지 못했습니다. 저장소 주소 또는 요청 한도를 확인해 주세요." }, 503);
+    return c.json({ message: "GitHub 저장소를 조회하지 못했습니다. 주소·읽기 권한·허용 목록·요청 한도를 확인해 주세요." }, 503);
   }
 });
 
@@ -88,8 +102,8 @@ export function normalizeReviewStates(value: unknown): PRDetails["reviews"] {
   }
   return [...byUser.values()].map(({ user, state }) => ({ user, state }));
 }
-async function publicGithubJson(url: URL) {
-  const response = await fetch(url, { headers: { Accept: "application/vnd.github+json", "User-Agent": "Tern-Repository-Reader", "X-GitHub-Api-Version": "2022-11-28" }, redirect: "error", signal: AbortSignal.timeout(10_000) });
+async function githubJson(url: URL, token?: string) {
+  const response = await fetch(url, { headers: githubReadHeaders(url, token), redirect: "error", signal: AbortSignal.timeout(10_000) });
   if (!response.ok) throw new Error("GitHub response error");
   return { body: await response.json() as any, limited: Boolean(response.headers.get("Link")?.includes('rel="next"')) };
 }
@@ -98,23 +112,25 @@ githubRepositoryRoutes.get("/github/repositories/:owner/:repo/pulls/:number/deta
   const root = githubListUrl(owner, repo, "pulls", "all");
   if (!root || !/^[1-9][0-9]{0,9}$/.test(number)) return c.json({ message: "잘못된 PR 번호입니다." }, 400);
   const url = new URL(root.pathname + "/" + number, root.origin);
+  const token = repositoryCredential(c.env, owner, repo);
   const key = url.toString();
-  const hit = detailsCache.get(key);
+  const hit = token ? undefined : detailsCache.get(key);
   if (hit && hit.expires > Date.now()) return c.json(hit.data);
   try {
-    let request = detailsInFlight.get(key);
+    let request = token ? undefined : detailsInFlight.get(key);
     if (!request) {
-      if (detailsInFlight.size >= 3) return c.json({ message: "GitHub 조회가 많습니다. 잠시 후 다시 시도하세요." }, 429);
+      if (detailsInFlight.size + authenticatedDetails >= 3) return c.json({ message: "GitHub 조회가 많습니다. 잠시 후 다시 시도하세요." }, 429);
+      if (token) authenticatedDetails += 1;
       request = (async () => {
-        const { body: pr } = await publicGithubJson(url);
+        const { body: pr } = await githubJson(url, token);
         const headSha = pr?.head?.sha;
         if (typeof headSha !== "string" || !/^[0-9a-f]{40}$/i.test(headSha)) throw new Error("Invalid head SHA");
         const reviewsUrl = new URL(url.pathname + "/reviews?per_page=100", root.origin);
         const commitsPath = `/repos/${owner}/${repo}/commits/${headSha}`;
         const [reviews, checks, status] = await Promise.all([
-          publicGithubJson(reviewsUrl),
-          publicGithubJson(new URL(commitsPath + "/check-runs?per_page=100", root.origin)),
-          publicGithubJson(new URL(commitsPath + "/status?per_page=100", root.origin)),
+          githubJson(reviewsUrl, token),
+          githubJson(new URL(commitsPath + "/check-runs?per_page=100", root.origin), token),
+          githubJson(new URL(commitsPath + "/status?per_page=100", root.origin), token),
         ]);
         if (!Array.isArray(checks.body?.check_runs) || !Array.isArray(reviews.body)) throw new Error("Invalid details");
         const data: PRDetails = {
@@ -127,14 +143,13 @@ githubRepositoryRoutes.get("/github/repositories/:owner/:repo/pulls/:number/deta
           truncated: reviews.limited || checks.limited || status.limited,
           fetchedAt: new Date().toISOString(),
         };
-        if (detailsCache.size >= 50) detailsCache.delete(detailsCache.keys().next().value!);
-        detailsCache.set(key, { expires: Date.now() + TTL, data });
+        if (!token) { if (detailsCache.size >= 50) detailsCache.delete(detailsCache.keys().next().value!); detailsCache.set(key, { expires: Date.now() + TTL, data }); }
         return data;
-      })().finally(() => { detailsInFlight.delete(key); });
-      detailsInFlight.set(key, request);
+      })().finally(() => { if (token) authenticatedDetails -= 1; else detailsInFlight.delete(key); });
+      if (!token) detailsInFlight.set(key, request);
     }
     return c.json(await request);
   } catch {
-    return c.json({ message: "PR 리뷰 또는 CI 정보를 조회하지 못했습니다. GitHub 요청 한도나 공개 여부를 확인하세요." }, 503);
+    return c.json({ message: "PR 리뷰 또는 CI 정보를 조회하지 못했습니다. GitHub 요청 한도나 읽기 권한을 확인하세요." }, 503);
   }
 });

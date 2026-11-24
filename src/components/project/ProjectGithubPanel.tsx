@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, GitPullRequest, CircleDot, RefreshCw } from "lucide-react";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { Modal } from "../common/Modal";
 import { api } from "../../lib/api/client";
 import type { Project } from "../../types/project";
 import type { Todo, TodoInput } from "../../types/todo";
 
+function GithubLink({ url, label }: { url: string; label?: string }) {
+  const [error, setError] = useState("");
+  if (!isTauri()) return <a className="btn-secondary text-xs" href={url} target="_blank" rel="noreferrer"><ExternalLink size={14} />{label}</a>;
+  return <span className="inline-flex flex-col gap-1"><button type="button" className="btn-secondary text-xs" aria-label={label ?? "GitHub 원본 열기"} onClick={() => { setError(""); void invoke("desktop_open_github", { url }).catch(() => setError("외부 브라우저를 열지 못했습니다.")); }}><ExternalLink size={14} />{label}</button>{error ? <span role="alert" className="text-xs text-danger">{error}</span> : null}</span>;
+}
 type Kind = "issues" | "pulls";
 type Item = { number: number; title: string; url: string; state: "OPEN" | "CLOSED" | "DRAFT" | "MERGED"; author: string; updatedAt: string };
-type Result = { items: Item[]; fetchedAt: string; limited: boolean };
+type Result = { items: Item[]; fetchedAt: string; limited: boolean; authenticated?: boolean };
 export function githubRepoFromUrl(value: string): string | undefined {
   try {
     const url = new URL(value);
@@ -66,7 +72,7 @@ export function ProjectGithubPanel({ project, todos, kind, onAdd, onUpdate, onCo
     } catch (cause) { setActionError(cause instanceof Error ? cause.message : "Todo 연결 실패"); }
     finally { setBusy(false); }
   };
-  if (!repo) return <section className="space-y-3 py-4"><p className="text-sm text-ui-muted">자료 링크에 공개 GitHub 저장소 주소(https://github.com/owner/repo)를 추가하세요.</p><button type="button" className="btn-secondary" onClick={onConnect}>저장소 연결</button></section>;
+  if (!repo) return <section className="space-y-3 py-4"><p className="text-sm text-ui-muted">자료 링크에 GitHub 저장소 주소(https://github.com/owner/repo)를 추가하세요.</p><button type="button" className="btn-secondary" onClick={onConnect}>저장소 연결</button></section>;
   const visible = loadedKey === key ? result?.items.filter(item => `${item.title} #${item.number} ${item.author}`.toLowerCase().includes(query.trim().toLowerCase())) ?? [] : [];
   return <section className="space-y-2 py-3" aria-label={kind === "issues" ? "GitHub Issues" : "GitHub Pull Requests"}>
     <div className="flex flex-wrap items-center gap-2">
@@ -75,7 +81,7 @@ export function ProjectGithubPanel({ project, todos, kind, onAdd, onUpdate, onCo
       <select className="field min-h-8 w-auto text-xs" aria-label="GitHub 상태" value={state} onChange={event => { setState(event.target.value); setPage(1); }}><option value="open">열림</option><option value="closed">종료</option><option value="all">전체</option></select>
       <button type="button" className="btn-secondary text-xs" onClick={() => setRefresh(value => value + 1)}><RefreshCw size={14} />새로고침</button>
     </div>
-    <p className="text-xs text-ui-muted">공개 저장소 · 페이지당 최대 100개 · 현재 페이지 검색 · 읽기 전용 GitHub 조회{result?.limited ? " · 더 많은 항목이 있습니다" : ""}</p>
+    <p className="text-xs text-ui-muted">{result?.authenticated ? "인증된 읽기 전용 조회" : "공개 읽기 전용 조회"} · 페이지당 최대 100개 · 현재 페이지 검색{result?.limited ? " · 더 많은 항목이 있습니다" : ""}</p>
     {error && loadedKey === key ? <p role="alert" className="text-xs text-danger">{error}</p> : null}
     {loadedKey !== key ? <p role="status" className="text-xs text-ui-muted">GitHub 조회 중…</p> : null}
     {actionError ? <p role="alert" className="text-xs text-danger">{actionError}</p> : null}
@@ -88,7 +94,7 @@ export function ProjectGithubPanel({ project, todos, kind, onAdd, onUpdate, onCo
           <button className="btn-secondary text-xs" type="button" disabled={busy} onClick={() => { setLinkNumber(item.number); setTodoId(""); }}>기존 Todo 연결</button>
         </> : null}
         {kind === "pulls" ? <button type="button" className="btn-secondary text-xs" onClick={() => setDetailItem(item)}>리뷰 · CI</button> : null}
-        <a className="btn-secondary text-xs" href={item.url} target="_blank" rel="noreferrer" aria-label={`GitHub #${item.number} 원본 열기`}><ExternalLink size={14} /></a>
+        <GithubLink url={item.url} />
       </div>
       {linkNumber === item.number && !todo ? <div className="mt-2 flex gap-2">
         <select className="field min-w-0 flex-1" aria-label="연결할 Todo" value={todoId} onChange={event => setTodoId(event.target.value)}><option value="">연결할 Todo 선택</option>{todos.filter(todo => !todo.referenceUrl && !todo.archived).map(todo => <option key={todo.id} value={todo.id}>{todo.title}</option>)}</select>
@@ -135,6 +141,6 @@ function PullRequestDetails({ repo, item, onClose }: { repo: string; item: Item;
       {data.truncated ? <p className="text-xs text-warning">일부 데이터만 조회되었습니다. 전체 판정은 GitHub 원본에서 확인하세요.</p> : null}
       <p className="text-xs text-ui-muted">조회 결과는 병합 승인 여부가 아니며 자동 병합·승인을 수행하지 않습니다.</p>
     </div>}
-    <div className="mt-4 flex justify-end"><a className="btn-secondary" href={item.url} target="_blank" rel="noreferrer"><ExternalLink size={14} />GitHub에서 열기</a></div>
+    <div className="mt-4 flex justify-end"><GithubLink url={item.url} label="GitHub에서 열기" /></div>
   </Modal>;
 }
