@@ -414,7 +414,6 @@ export function ScratchpadPage() {
       <div className="scratchpad-heading flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-ui-divider bg-transparent px-3 py-3">
         <div className="space-y-1">
           <h1 className="text-lg font-semibold text-ui-text">낙서장</h1>
-          <p className="text-xs text-ui-muted">작성하는 즉시 서식이 적용되며 Markdown으로 저장됩니다.</p>
         </div>
       </div>
       <div className="scratchpad-command-strip"><div className="scratchpad-command-strip__menus">

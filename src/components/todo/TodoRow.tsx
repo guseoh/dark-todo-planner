@@ -1,4 +1,4 @@
-import { Archive, CalendarDays, CheckCircle2, ExternalLink, MoreHorizontal, Pencil, RotateCcw, Star, StarOff, Tag, Trash2 } from "lucide-react";
+import { Archive, CalendarDays, CheckCircle2, ExternalLink, MoreHorizontal, Pencil, RotateCcw, Tag, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { formatKoreanDate, getDdayLabel, getDaysPast, todayKey } from "../../lib/date";
 import { isDueSoon, isOverdueByDeadline } from "../../lib/todo";
@@ -24,9 +24,6 @@ type TodoRowProps = {
   projectName?: string;
   leadingAction?: ReactNode;
   variant?: "default" | "today";
-  focusPinned?: boolean;
-  focusDisabled?: boolean;
-  onToggleFocus?: (id: string) => void;
   hideMediumPriority?: boolean;
   duplicateCandidate?: boolean;
   selectionMode?: boolean;
@@ -49,9 +46,6 @@ export function TodoRow({
   projectName: fallbackProjectName,
   leadingAction,
   variant = "default",
-  focusPinned = false,
-  focusDisabled = false,
-  onToggleFocus,
   hideMediumPriority = false,
   duplicateCandidate = false,
   selectionMode = false,
@@ -106,7 +100,6 @@ export function TodoRow({
         else if (key === "s" && timer && !timer.busy && !todo.completed && !todo.archived) void (timer.active?.todoId === todo.id ? timer.stop() : timer.start(todo.id));
         else if (key === "e") onEdit(todo);
         else if (key === "delete") onDelete(todo.id);
-        else if (key === "f" && onToggleFocus && !focusDisabled && !todo.completed) onToggleFocus(todo.id);
         else return;
         event.preventDefault();
       }}
@@ -144,27 +137,11 @@ export function TodoRow({
         {!selectionMode && variant === "today" ? (
           <>
           <TimerToggleButton todo={todo} />
-          {onToggleFocus && !todo.completed ? (
-            <button type="button" className={`today-focus-toggle h-9 w-9 shrink-0 items-center justify-center ${focusPinned ? "is-pinned" : ""}`}
-              onClick={() => onToggleFocus(todo.id)} disabled={focusDisabled} aria-pressed={focusPinned}
-              aria-label={`핵심 작업 ${focusPinned ? "해제" : "선택"}: ${todo.title}`}
-              title={focusDisabled ? "핵심 작업은 최대 3개까지 지정할 수 있습니다." : focusPinned ? "핵심 작업에서 제외" : "핵심 작업으로 선택"}>
-              <Star size={16} fill={focusPinned ? "currentColor" : "none"} aria-hidden="true" />
-            </button>
-          ) : null}
           <details ref={menuRef} open={menuOpen} onToggle={(event) => setMenuOpen(event.currentTarget.open)} className="todo-row__more relative z-10 shrink-0">
             <summary className="ui-icon-button ui-icon-button--neutral h-9 w-9 cursor-pointer list-none" aria-label={`"${todo.title}" 더보기`} title="작업 메뉴">
               <MoreHorizontal size={17} />
             </summary>
             <div className="todo-row__menu absolute right-0 top-full z-40 mt-1 min-w-44 rounded-md border border-ui-divider bg-ui-elevated p-1.5" role="group" aria-label={`"${todo.title}" 작업 메뉴`}>
-              {onToggleFocus ? (
-                <button type="button" className="todo-row__menu-action" onClick={() => { onToggleFocus(todo.id); setMenuOpen(false); }}
-                  disabled={focusDisabled} aria-label={`${todo.title} ${focusPinned ? "핵심 작업에서 제외" : "핵심 작업으로 고정"}`}
-                  title={focusDisabled ? "핵심 작업은 최대 3개까지 지정할 수 있습니다." : undefined}>
-                  {focusPinned ? <StarOff size={14} /> : <Star size={14} />}
-                  {focusPinned ? "핵심 작업에서 제외" : "핵심 작업으로 고정"}
-                </button>
-              ) : null}
               <div className="todo-row__menu-action"><QuickSnoozeMenu todo={todo} /><span>빠른 미루기</span></div>
               <button type="button" className="todo-row__menu-action" onClick={() => { onEdit(todo); setMenuOpen(false); }} aria-label={`"${todo.title}" Todo 수정`}>
                 <Pencil size={14} />수정

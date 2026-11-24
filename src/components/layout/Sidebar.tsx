@@ -1,5 +1,6 @@
 import { Calendar, CalendarCheck, ClipboardList, FileText, FolderKanban, Menu, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { isSidebarToggleShortcut } from "../../lib/sidebarShortcut";
 
 export const appViewIds = ["today", "all", "projects", "calendar", "memo", "scratchpad", "settings", "trash"] as const;
 export type AppView = (typeof appViewIds)[number];
@@ -55,10 +56,26 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
   const inlineExpanded = !collapsed;
   const showExpandedContent = inlineExpanded || hoverExpanded;
 
-  const clearHoverTimers = () => {
+  const clearHoverTimers = useCallback(() => {
     if (hoverOpenTimerRef.current !== null) { window.clearTimeout(hoverOpenTimerRef.current); hoverOpenTimerRef.current = null; }
     if (hoverCloseTimerRef.current !== null) { window.clearTimeout(hoverCloseTimerRef.current); hoverCloseTimerRef.current = null; }
-  };
+  }, []);
+  const toggleMode = useCallback(() => {
+    clearHoverTimers();
+    setHoverExpanded(false);
+    setMode((current) => current === "expanded" ? "collapsed" : "expanded");
+  }, [clearHoverTimers]);
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target;
+      const editing = target instanceof Element && Boolean(target.closest("input, textarea, select, [contenteditable]:not([contenteditable=false]), [role=textbox]"));
+      if (compactWindow || !isSidebarToggleShortcut(event, editing)) return;
+      event.preventDefault();
+      toggleMode();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [compactWindow, toggleMode]);
   const openHoverPanel = () => {
     if (!collapsed) return;
     if (hoverCloseTimerRef.current !== null) { window.clearTimeout(hoverCloseTimerRef.current); hoverCloseTimerRef.current = null; }
@@ -81,7 +98,7 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
     return () => media.removeEventListener("change", sync);
   }, []);
   useEffect(() => { if (!collapsed) setHoverExpanded(false); }, [collapsed]);
-  useEffect(() => () => clearHoverTimers(), []);
+  useEffect(() => () => clearHoverTimers(), [clearHoverTimers]);
   useEffect(() => { setMobileMenuOpen(false); }, [activeView]);
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -137,9 +154,9 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
             <div className="space-y-1">
               {renderDesktopItem(settingsItem)}
               {renderDesktopItem(trashItem)}
-              {!compactWindow ? <button type="button" onClick={() => { clearHoverTimers(); setHoverExpanded(false); setMode((current) => current === "expanded" ? "collapsed" : "expanded"); }}
+              {!compactWindow ? <button type="button" onClick={toggleMode}
                 className={`flex min-h-10 w-full items-center rounded-lg text-sm font-semibold text-ink-400 transition-colors hover:bg-ink-800/75 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${showExpandedContent ? "justify-between gap-3 px-3 text-left" : "justify-center px-2"}`}
-                aria-label={collapsed ? "사이드바 펼쳐서 고정" : "사이드바 축소"} aria-pressed={!collapsed} title={collapsed && !hoverExpanded ? "사이드바 펼쳐서 고정" : undefined}>
+                aria-label={collapsed ? "사이드바 펼쳐서 고정" : "사이드바 축소"} aria-pressed={!collapsed} aria-keyshortcuts="Control+B" title={`${collapsed ? "사이드바 펼치기" : "사이드바 축소"} (Ctrl+B)`}>
                 {collapsed && !hoverExpanded ? <PanelLeftOpen size={17} /> : collapsed ? <><span>사이드바 펼쳐서 고정</span><PanelLeftOpen size={17} className="shrink-0" /></> : <><span>사이드바 축소</span><PanelLeftClose size={17} className="shrink-0" /></>}
               </button> : null}
             </div>

@@ -1,13 +1,10 @@
 import { getEntityColor } from "../lib/entityColor";
-import { api, apiAllPages, jsonBody } from "../lib/api/client";
-import { onRevalidated } from "../lib/api/bootstrap";
-import type { DailyPlan } from "../types/planning";
 import { TodayPlanningRail } from "../components/today/TodayPlanningRail";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronDown, GripVertical, MoonStar, PanelRightOpen, Settings2, Star, X } from "lucide-react";
+import { ChevronDown, GripVertical, MoonStar, PanelRightOpen, Settings2, X } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { IconButton } from "../components/ui/IconButton";
 import { IconRenderer } from "../components/common/IconRenderer";
@@ -16,7 +13,6 @@ import { TodoEditModal } from "../components/todo/TodoEditModal";
 import { TodoForm } from "../components/todo/TodoForm";
 import { TodoRow } from "../components/todo/TodoRow";
 import { formatKoreanDate, PLANNER_DAY_START_HOUR, toDateKey, todayKey } from "../lib/date";
-import { moveFocusTodo } from "../lib/todayPlanning";
 import { formatCompletionRate } from "../lib/todo";
 import type { OverdueTodoImportMode, OverdueTodoImportResult } from "../lib/todoRecovery";
 import type { Category } from "../types/category";
@@ -67,16 +63,6 @@ const COMPACT_ROWS_KEY = "dark-todo-planner:today-compact";
 /** A long category list folds after this many rows; folding is skipped when only a couple would be hidden. */
 const FOLD_LIMIT = 8;
 const FOLD_SLACK = 2;
-const FOCUS_STORAGE_PREFIX = "dark-todo-planner:focus:";
-const readFocusIds = (date: string): string[] => {
-  try {
-    const value: unknown = JSON.parse(localStorage.getItem(FOCUS_STORAGE_PREFIX + date) || "[]");
-    return Array.isArray(value) ? Array.from(new Set(value.filter((id): id is string => typeof id === "string"))).slice(0, 3) : [];
-  } catch {
-    return [];
-  }
-};
-
 function SortableTodayRow({ todo, render }: {
   todo: Todo;
   render: (todo: Todo, handle?: ReactNode) => ReactNode;
@@ -130,10 +116,6 @@ export function TodayPage({
   const [showCompleted, setShowCompleted] = useState(false);
   const [showAllRows, setShowAllRows] = useState(false);
   const [compactRows, setCompactRows] = useState(() => { try { return localStorage.getItem(COMPACT_ROWS_KEY) === "1"; } catch { return false; } });
-  const [focusPlan, setFocusPlan] = useState<Pick<DailyPlan, "date" | "focusText" | "topTodoIds">>();
-  const [focusError, setFocusError] = useState("");
-  const [focusSaving, setFocusSaving] = useState(false);
-  const focusWrite = useRef(false);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [planningTodoId, setPlanningTodoId] = useState<string | null>(null);
   const [planningError, setPlanningError] = useState("");
@@ -148,9 +130,6 @@ export function TodayPage({
   }, [planningOpen]);
 
   const today = todayKey();
-  const focusIds = useMemo(() => focusPlan?.date === today ? focusPlan.topTodoIds : [], [focusPlan, today]);
-  const focusedTodos = useMemo(() => focusIds.map((id) => todayTodos.find((todo) => todo.id === id)).filter((todo): todo is Todo => Boolean(todo && !todo.completed && !todo.archived)), [focusIds, todayTodos]);
-  const focusSet = useMemo(() => new Set(focusedTodos.map((todo) => todo.id)), [focusedTodos]);
   const hasPlanningContent = candidateTodos.length > 0;
   const sortedCategories = useMemo(
     () => [...categories].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, "ko")),
@@ -181,7 +160,6 @@ export function TodayPage({
 
   const activeTodos = useMemo(() => visibleTodos.filter((todo) => !todo.completed), [visibleTodos]);
   const completedTodos = useMemo(() => visibleTodos.filter((todo) => todo.completed), [visibleTodos]);
-  const remainingTodos = useMemo(() => activeTodos.filter((todo) => !focusSet.has(todo.id)), [activeTodos, focusSet]);
   const hasTodayTodos = todayTodos.length > 0;
   // Preselect the active filter, but allow an explicit category choice in the inline composer.
   const inlineCategoryId = activeCategoryId === "all" || activeCategoryId === "uncategorized" ? "" : activeCategoryId;
@@ -201,56 +179,13 @@ export function TodayPage({
   }, [activeCategoryId]);
 
   // Long lists fold; the drag-and-drop order below only covers the rows that are shown.
-  const foldable = activeCategoryId !== "all" && remainingTodos.length > FOLD_LIMIT + FOLD_SLACK;
+  const foldable = activeCategoryId !== "all" && activeTodos.length > FOLD_LIMIT + FOLD_SLACK;
   const folded = foldable && !showAllRows;
-  const shownTodos = useMemo(() => folded ? remainingTodos.slice(0, FOLD_LIMIT) : remainingTodos, [folded, remainingTodos]);
+  const shownTodos = useMemo(() => folded ? activeTodos.slice(0, FOLD_LIMIT) : activeTodos, [folded, activeTodos]);
   const toggleCompactRows = () => setCompactRows((value) => {
     try { localStorage.setItem(COMPACT_ROWS_KEY, value ? "0" : "1"); } catch { /* display preference only */ }
     return !value;
   });
-
-  const [planEpoch, setPlanEpoch] = useState(0);
-  // Today's focus list may have been drawn from the previous visit's snapshot; reload it when the server disagrees.
-  useEffect(() => onRevalidated(() => setPlanEpoch((value) => value + 1)), []);
-  useEffect(() => {
-    let live = true;
-    setFocusError("");
-    void apiAllPages<DailyPlan>(`/api/daily-plans?date=${today}`, "dailyPlans").then(([plan]) => {
-      if (live) setFocusPlan(plan ?? { date: today, topTodoIds: readFocusIds(today) });
-    }).catch(() => { if (live) setFocusError("집중 목록을 불러오지 못했습니다."); });
-    return () => { live = false; };
-  }, [today, planEpoch]);
-
-  const saveFocus = async (topTodoIds: string[]) => {
-    if (focusPlan?.date !== today || focusWrite.current) return;
-    focusWrite.current = true;
-    setFocusSaving(true);
-    setFocusError("");
-    try {
-      const { dailyPlan } = await api<{ dailyPlan: DailyPlan }>(`/api/daily-plans/${today}`, {
-        method: "PUT",
-        ...jsonBody({ topTodoIds, focusText: focusPlan.focusText }),
-      });
-      setFocusPlan((current) => current?.date === today ? dailyPlan : current);
-    } catch {
-      setFocusError("집중 순서를 저장하지 못했습니다.");
-    } finally {
-      focusWrite.current = false;
-      setFocusSaving(false);
-    }
-  };
-
-  const toggleFocus = (id: string) => {
-    const ids = focusedTodos.map((todo) => todo.id);
-    if (ids.includes(id)) void saveFocus(ids.filter((value) => value !== id));
-    else if (ids.length < 3) void saveFocus([...ids, id]);
-  };
-
-
-  const moveFocused = ({ active, over }: DragEndEvent) => {
-    const ids = moveFocusTodo(focusedTodos.map(({ id }) => id), String(active.id), over ? String(over.id) : undefined);
-    if (ids) void saveFocus(ids);
-  };
 
   const planToday = async (todo: Todo) => {
     if (planningTodoId) return;
@@ -272,9 +207,6 @@ export function TodayPage({
       todo={todo}
       leadingAction={dragHandle}
       variant="today"
-      focusPinned={focusSet.has(todo.id)}
-      focusDisabled={focusPlan?.date !== today || focusSaving || (!focusSet.has(todo.id) && focusedTodos.length >= 3)}
-      onToggleFocus={toggleFocus}
       onToggle={onToggle}
       onDelete={onDelete}
       onEdit={setEditingTodo}
@@ -350,39 +282,9 @@ export function TodayPage({
             <span>남은 일 <strong>{stats.todayActive}</strong></span>
             <span>완료 <strong>{stats.todayCompleted}</strong></span>
           </div>
-          {focusError ? <p role="alert" className="text-xs text-danger">{focusError}</p> : null}
-          {focusedTodos.length ? (
-            <section className="today-focus-section" aria-labelledby="today-focus-title">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h3 id="today-focus-title" className="inline-flex items-center gap-2 text-sm font-semibold text-ui-text"><Star size={15} className="text-warning" />지금 집중</h3>
-                </div>
-                <span className="text-xs font-medium tabular-nums text-ui-muted">{focusedTodos.length} / 3 선택</span>
-              </div>
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={moveFocused}>
-                <SortableContext items={focusIds} strategy={verticalListSortingStrategy}>
-                  <div className="today-focus-list">
-                    {focusedTodos.map((todo) => (
-                      <div key={todo.id} className="flex items-center gap-1">
-                        <div className="min-w-0 flex-1"><SortableTodayRow todo={todo} render={renderTodo} /></div>
-                        {todo.workflowStatus === "TODO" ? <button type="button" className="btn-secondary shrink-0 text-xs"
-                          onClick={() => onUpdate(todo.id, { workflowStatus: "IN_PROGRESS" })}>시작</button> : null}
-                      </div>
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            </section>
-          ) : stats.todayActive > 0 ? (
-            <div className="today-focus-prompt" role="note">
-              <Star size={14} aria-hidden="true" />
-              <span>오늘의 핵심 작업은 최대 3개입니다. 할 일 오른쪽 별표를 눌러 선택하세요.</span>
-            </div>
-          ) : null}
-
           <section className="today-task-section space-y-2" aria-label="오늘 Todo" data-density={compactRows ? "compact" : "comfortable"}>
             <div className="today-task-heading">
-              <h3 className="text-[17px] font-semibold tracking-tight text-ui-text">{focusedTodos.length ? "나머지 할 일" : "오늘 할 일"}</h3>
+              <h3 className="text-[17px] font-semibold tracking-tight text-ui-text">오늘 할 일</h3>
               {activeTodos.length > 1 ? <span className="today-task-count">{activeTodos.length}개 남음</span> : null}
             </div>
             {hasTodayTodos ? (
@@ -437,7 +339,7 @@ export function TodayPage({
             {hasTodayTodos ? (
               <>
 
-                {remainingTodos.length ? (
+                {activeTodos.length ? (
                   <div className="border-t border-[var(--ui-row-divider)]">
                     {shownTodos.length > 1 ? (
                       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleTodoDragEnd}>
@@ -448,13 +350,11 @@ export function TodayPage({
                     ) : shownTodos.map((todo) => renderTodo(todo))}
                     {foldable ? (
                       <button type="button" className="today-fold-toggle" aria-expanded={!folded} onClick={() => setShowAllRows((value) => !value)}>
-                        {folded ? `나머지 ${remainingTodos.length - FOLD_LIMIT}개 더 보기` : "접기"}
+                        {folded ? `나머지 ${activeTodos.length - FOLD_LIMIT}개 더 보기` : "접기"}
                         <ChevronDown size={14} className={folded ? "" : "rotate-180"} aria-hidden="true" />
                       </button>
                     ) : null}
                   </div>
-                ) : activeTodos.length ? (
-                  <p className="py-2 text-xs text-ink-400">미완료 Todo는 상단 핵심 작업에 모두 표시되어 있습니다.</p>
                 ) : (
                   <p className={`border-t border-ink-700/35 px-1 py-5 text-sm ${activeCategoryId === "all" && !stats.todayActive ? "text-ink-200" : "text-ink-300"}`}>{activeCategoryId === "all" && !stats.todayActive ? "오늘의 할 일을 모두 완료했습니다." : "선택한 카테고리에 미완료 Todo가 없습니다."}</p>
                 )}
