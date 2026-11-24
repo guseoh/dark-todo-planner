@@ -1,4 +1,5 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import { startNativeWrite } from "../desktopSafety";
 
 type NativeResponse = { status: number; body: string; contentType: string };
 
@@ -29,6 +30,8 @@ export const appFetch: typeof fetch = async (input, init) => {
     throw new TypeError("데스크톱 API에서는 JSON 문자열 요청 본문만 지원합니다.");
   }
   const method = (init?.method || "GET").toUpperCase();
+  const done = method === "GET" ? () => {} : startNativeWrite();
+  try {
   const request = invoke<NativeResponse>("desktop_api_request", {
     path: input,
     method,
@@ -39,4 +42,5 @@ export const appFetch: typeof fetch = async (input, init) => {
     status: result.status,
     headers: { "Content-Type": result.contentType },
   });
+  } finally { done(); }
 };

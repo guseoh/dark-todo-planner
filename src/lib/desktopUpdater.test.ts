@@ -20,13 +20,17 @@ describe("desktop updater coordinator", () => {
     expect(command).not.toHaveBeenCalled();
   });
   it("rejects competing installs and releases the gate on failure", async () => {
-    const command = vi.fn(async () => { throw new Error("network"); });
+    let reject!: (error: Error) => void;
+    const deferred = new Promise<typeof state>((_, fail) => { reject = fail; });
+    const command = vi.fn(() => deferred);
     const updater = createDesktopUpdater(command, async () => []);
     const first = updater.install("0.3.7");
     await expect(updater.install("0.3.7")).rejects.toThrow("진행 중");
     await expect(updater.check()).rejects.toThrow("진행 중");
-    await expect(first).rejects.toThrow("network");
-    command.mockResolvedValueOnce(state as never);
+    const failed = expect(first).rejects.toThrow("network");
+    reject(new Error("network"));
+    await failed;
+    command.mockResolvedValueOnce(state);
     await expect(updater.check()).resolves.toEqual(state);
   });
 });
