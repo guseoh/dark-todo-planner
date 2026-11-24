@@ -49,10 +49,10 @@ Windows 11에 Node.js 22, Rust stable/MSVC, WebView2가 준비되어 있어야 �
 - .github/workflows/ci.yml: PR의 변경 영역을 판별하고 타입 검사·단위 테스트 및 필요한 영역 검증만 실행합니다. main 전체 CI 재실행은 제거했습니다.
 - .github/workflows/tern-windows-check.yml: Rust/Tauri 또는 의존성 변경 PR만 Windows cargo check로 검증합니다. NSIS 패키징은 하지 않습니다.
 - .github/workflows/api-check.yml: Worker/D1 변경 PR과 백엔드 배포 전 로컬 인증·CRUD·복원·롤백 검증을 재사용합니다.
-- .github/workflows/regression.yml: 매주 또는 수동 실행하는 전체 Chromium UI 회귀·API·보안 감사·암호화 검증입니다. Chromium 결과는 실제 Tauri IPC/트레이 검증을 대체하지 않습니다.
+- .github/workflows/regression.yml: 매주 또는 수동 실행하는 API·보안 감사·암호화 검증입니다. 기존 웹/Chromium 전용 UI 자동 테스트는 운영 검증에서 제외했습니다.
 - Windows 릴리스는 같은 main 커밋에서 타입 검사·단위 테스트·릴리스 스크립트 검증이 성공한 뒤 기존 키로 서명·발행합니다.
 - .github/workflows/worker-deploy.yml: worker/, migrations/, wrangler.jsonc 및 공통 의존성·TypeScript 설정 변경 시 Worker API·D1을 배포합니다. 긴급 작업은 workflow_dispatch로 수동 실행할 수 있습니다.
-- Worker가 기존 정적 애셋을 함께 보유하는 구조는 유지하지만, **데스크톱 UI 배포 수단으로 취급하지 않습니다**. 백엔드 API 호환성을 지키는 동안만 유지합니다.
+- Worker는 API 전용입니다. 정적 에셋 바인딩 및 SPA fallback을 제거하고 비 API 경로는 JSON 404를 반환합니다. `npm run build:worker`는 React/Vite 빌드를 실행하지 않습니다. 로컬 UI 개발은 `npm run dev:desktop-ui` 또는 Tauri dev로 진행합니다.
 - Worker 배포와 Windows 릴리스 성공은 서로 독립된 사실입니다.
 
 ## 선행 확인 및 장애 대응

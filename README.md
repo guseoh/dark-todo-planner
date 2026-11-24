@@ -1,6 +1,6 @@
 # Tern — Windows 작업 플래너
 
-Tern은 Windows 11 x64 데스크톱 앱입니다. React 화면은 Tauri 설치 파일에 포함되며, Cloudflare Worker는 인증·API·D1 데이터 저장과 스케줄러를 담당합니다. 웹 UI는 주 배포 대상이 아닙니다.
+Tern은 Windows 11 x64 데스크톱 앱입니다. React 화면은 Tauri 설치 파일에 포함되며, Cloudflare Worker는 인증·API·D1 데이터 저장과 스케줄러를 담당합니다. 운영 웹 UI와 PWA는 제공하지 않습니다.
 
 ## Windows 설치
 
@@ -12,10 +12,14 @@ Tern은 Windows 11 x64 데스크톱 앱입니다. React 화면은 Tauri 설치 �
 
 ## 개발 및 배포
 
+- `npm run build:worker`: Worker 전용 타입 검사 및 dry-run (React 빌드 없음)
+- `npm run build:desktop-ui`: Tauri용 React 번들 생성
+- Windows 네이티브 실행 검증: [체크리스트](docs/tern-windows-qa.md)
+
 - 프런트엔드: React·Vite (Tauri 내부에 정적 파일로 포함)
 - 네이티브 앱: Tauri 2 / Rust (src-tauri/)
 - 백엔드: Cloudflare Workers·Hono·D1 (worker/)
 - Windows 릴리스: main에 데스크톱 코드가 반영되면 GitHub Actions가 **서명된 NSIS 설치 파일 + latest.json**을 GitHub Releases에 게시합니다.
-- Worker 배포: 백엔드·DB 설정 변경 시에만 별도의 파이프라인에서 수행합니다.
+- Worker 배포: 백엔드·DB 설정 및 공통 의존성 변경 시 별도의 파이프라인에서 API만 배포합니다.
 
 기존 설치본과의 서명 호환성, GitHub Actions Secret 설정, 로컬 빌드 및 운영 전환 주의사항은 [Windows 릴리스 운영 가이드](docs/tern-desktop-release.md)를 확인하세요.
