@@ -177,7 +177,32 @@ fn desktop_quit(app: tauri::AppHandle, gate: State<'_, UpdateGate>) -> Result<()
     Ok(())
 }
 
+#[cfg(windows)]
+fn acquire_instance(directory: &std::path::Path) -> std::io::Result<Option<std::fs::File>> {
+    std::fs::create_dir_all(directory)?;
+    let lock = std::fs::OpenOptions::new()
+        .read(true).write(true).create(true).truncate(false)
+        .open(directory.join("tern-instance.lock"))?;
+    match lock.try_lock() {
+        Ok(()) => Ok(Some(lock)),
+        Err(std::fs::TryLockError::WouldBlock) => Ok(None),
+        Err(std::fs::TryLockError::Error(error)) => Err(error),
+    }
+}
+
+// Take the OS-backed lock before Tauri, WebView2, or session restoration can start.
 pub fn run() {
+    #[cfg(windows)]
+    let _instance = {
+        let directory = std::env::var_os("LOCALAPPDATA").map(std::path::PathBuf::from)
+            .expect("Windows local application data directory unavailable")
+            .join("io.github.guseoh.dark-todo-planner");
+        match acquire_instance(&directory) {
+            Ok(Some(lock)) => lock,
+            Ok(None) => return,
+            Err(error) => panic!("failed to acquire Tern instance lock: {error}"),
+        }
+    };
     let jar = Arc::new(Jar::default());
     restore_session(&jar);
     let client = Client::builder()
@@ -199,14 +224,6 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![desktop_api_request, desktop_update, desktop_quit])
         .setup(|app| {
-            let data = app.path().app_local_data_dir()?;
-            std::fs::create_dir_all(&data)?;
-            let lock = std::fs::OpenOptions::new().read(true).write(true).create(true).truncate(false).open(data.join("tern-instance.lock"))?;
-            match lock.try_lock() {
-                Ok(()) => { app.manage(lock); }
-                Err(std::fs::TryLockError::WouldBlock) => std::process::exit(0),
-                Err(error) => return Err(error.into()),
-            }
             use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
             let quick_add = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyK);
             app.handle().plugin(
@@ -268,6 +285,17 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(windows)]
+    #[test]
+    fn instance_lock_rejects_second_handle_and_reopens_after_release() {
+        let directory = std::env::temp_dir().join(format!("tern-lock-test-{}-{}", std::process::id(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        let first = acquire_instance(&directory).unwrap().unwrap();
+        assert!(acquire_instance(&directory).unwrap().is_none());
+        drop(first);
+        assert!(acquire_instance(&directory).unwrap().is_some());
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
     #[test]
     fn rejects_invalid_session_cookie_shapes() {
         assert!(valid_token_shape("v2.1.2.abc.def"));

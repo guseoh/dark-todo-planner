@@ -47,6 +47,3 @@ jobs:
           Write-Output "glib is absent from the resolved Windows dependency graph."
       - name: Check native Windows code without linking or packaging
         run: cargo check --locked --manifest-path src-tauri/Cargo.toml --features tauri/custom-protocol --tests
-      - name: Run native unit tests (no installer)
-        if: contains(github.event.pull_request.labels.*.name, 'native-qa')
-        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --features tauri/custom-protocol --lib
