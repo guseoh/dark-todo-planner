@@ -2,7 +2,8 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useState } from "react";
 
-type UpdateState = { installedVersion: string; availableVersion: string | null };
+import { beginMaintenance } from "../../lib/desktopSafety";
+import { desktopUpdater, updateErrorMessage } from "../../lib/desktopUpdater";
 
 export function DesktopAutoUpdate() {
   const [available, setAvailable] = useState<string | null>(null);
@@ -16,7 +17,7 @@ export function DesktopAutoUpdate() {
     setDismissed(false);
     setError("");
     try {
-      const status = await invoke<UpdateState>("desktop_update", { checkNow: true, install: false });
+      const status = await desktopUpdater.check();
       setAvailable(status.availableVersion);
     } catch {
       // Startup network failure should not block opening the app.
@@ -37,18 +38,32 @@ export function DesktopAutoUpdate() {
     void listen("tern-check-update", () => void check()).then((unlisten) => {
       if (active) stop = unlisten;
       else unlisten();
-    });
-    return () => { active = false; window.clearInterval(interval); stop?.(); };
+    }).catch(() => { /* startup/hourly checks remain available */ });
+    let stopQuit: (() => void) | undefined;
+    void listen("tern-request-quit", async () => {
+      let release: (() => void) | undefined;
+      try {
+        release = beginMaintenance();
+        await invoke("desktop_quit");
+      } catch (cause) {
+        setDismissed(false);
+        setError(updateErrorMessage(cause, "앱을 종료하지 못했습니다. 저장 상태를 확인해 주세요."));
+      } finally { release?.(); }
+    }).then(unlisten => { if (active) stopQuit = unlisten; else unlisten(); }).catch(() => {});
+    const online = () => void check();
+    window.addEventListener("online", online);
+    return () => { active = false; window.clearInterval(interval); stop?.(); stopQuit?.(); window.removeEventListener("online", online); };
   }, [check]);
 
   const install = async () => {
+    if (!available || installing || checking) return;
     setInstalling(true);
     setError("");
     try {
-      await invoke<UpdateState>("desktop_update", { checkNow: true, install: true });
+      await desktopUpdater.install(available);
       setAvailable(null);
-    } catch {
-      setError("업데이트 설치에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+    } catch (cause) {
+      setError(updateErrorMessage(cause, "업데이트 설치에 실패했습니다. 잠시 후 다시 시도해 주세요."));
     } finally {
       setInstalling(false);
     }
@@ -62,8 +77,8 @@ export function DesktopAutoUpdate() {
       {error ? <p className="mt-2 text-sm text-danger">{error}</p> : null}
       <div className="mt-3 flex gap-2">
         {available ? <button className="btn-primary" type="button" disabled={installing || checking} onClick={() => void install()}>{installing ? "설치 중…" : "업데이트 설치"}</button> : null}
-        {error ? <button className="btn-secondary" type="button" disabled={checking} onClick={() => void check()}>{checking ? "확인 중…" : "다시 확인"}</button> : null}
-        <button className="btn-secondary" type="button" onClick={() => setDismissed(true)}>나중에</button>
+        {error ? <button className="btn-secondary" type="button" disabled={checking || installing} onClick={() => void check()}>{checking ? "확인 중…" : "다시 확인"}</button> : null}
+        <button className="btn-secondary" type="button" disabled={installing} onClick={() => setDismissed(true)}>나중에</button>
       </div>
     </aside>
   );

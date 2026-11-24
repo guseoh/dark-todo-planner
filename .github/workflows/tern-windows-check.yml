@@ -38,5 +38,12 @@ jobs:
         run: npx --no-install vite build --base=./
       - name: Generate icons
         run: npx --yes @tauri-apps/cli@2 icon -o src-tauri/icons src-tauri/branding/tern.png
+      - name: Verify Windows dependency graph excludes glib
+        shell: pwsh
+        run: |
+          $graph = cargo tree --locked --manifest-path src-tauri/Cargo.toml --target x86_64-pc-windows-msvc --prefix none
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ($graph | Select-String "^glib v") { throw "glib is present in the Windows target dependency graph; review RUSTSEC-2024-0429" }
+          Write-Output "glib is absent from the resolved Windows dependency graph."
       - name: Check native Windows code without linking or packaging
-        run: cargo check --locked --manifest-path src-tauri/Cargo.toml --features tauri/custom-protocol
+        run: cargo check --locked --manifest-path src-tauri/Cargo.toml --features tauri/custom-protocol --tests

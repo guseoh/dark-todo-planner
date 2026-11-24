@@ -4,6 +4,7 @@ import { MarkdownPreview } from "../components/editor/MarkdownPreview";
 import { Button } from "../components/ui/Button";
 import { requiresRawScratchpadEditing } from "../lib/scratchpadEditorSafety";
 import { api, jsonBody } from "../lib/api/client";
+import { markDraftRecovery, registerRecoveryDraft } from "../lib/desktopSafety";
 import { SCRATCHPAD_DRAFT_KEY, isScratchpadRecoveryNeeded, parseScratchpadDraft, type ScratchpadDraft } from "../lib/scratchpadDraft";
 
 type ScratchpadResponse = {
@@ -76,8 +77,9 @@ export function ScratchpadPage() {
     if (loadedRef.current && next !== savedRef.current) setSaveState("dirty");
     try {
       localStorage.setItem(SCRATCHPAD_DRAFT_KEY, JSON.stringify({ content: next, savedAt: Date.now() }));
+      markDraftRecovery(SCRATCHPAD_DRAFT_KEY, true);
       setLocalDraftError(false);
-    } catch { setLocalDraftError(true); }
+    } catch { markDraftRecovery(SCRATCHPAD_DRAFT_KEY, false); setLocalDraftError(true); }
     setRecoveryDraft(null);
     if (!recordHistory) return;
     const current = historyRef.current[historyIndexRef.current];
@@ -153,6 +155,7 @@ export function ScratchpadPage() {
         setError("");
         if (latestSaved) {
           try { localStorage.removeItem(SCRATCHPAD_DRAFT_KEY); } catch { /* no-op */ }
+          markDraftRecovery(SCRATCHPAD_DRAFT_KEY, true);
         }
         return true;
       } catch (err) {
@@ -166,6 +169,25 @@ export function ScratchpadPage() {
   }, []);
 
   useEffect(() => { void loadScratchpad(); }, [loadScratchpad]);
+  useEffect(() => {
+    const flush = () => {
+      if (!loadedRef.current || recoveryPendingRef.current || contentRef.current === savedRef.current) return true;
+      try {
+        localStorage.setItem(SCRATCHPAD_DRAFT_KEY, JSON.stringify({ content: contentRef.current, savedAt: Date.now() }));
+        markDraftRecovery(SCRATCHPAD_DRAFT_KEY, true);
+        return true;
+      } catch { markDraftRecovery(SCRATCHPAD_DRAFT_KEY, false); return false; }
+    };
+    const unregister = registerRecoveryDraft(flush);
+    return () => { flush(); unregister(); };
+  }, []);
+  useEffect(() => {
+    const retry = () => {
+      if (loadedRef.current && !recoveryPendingRef.current && contentRef.current !== savedRef.current) void saveNow();
+    };
+    window.addEventListener("online", retry);
+    return () => window.removeEventListener("online", retry);
+  }, [saveNow]);
 
   useEffect(() => {
     if (!loadedRef.current || content === savedContent) return;
@@ -175,11 +197,11 @@ export function ScratchpadPage() {
   }, [content, saveNow, savedContent]);
 
   useEffect(() => {
-    localStorage.setItem(ZOOM_STORAGE_KEY, String(zoom));
+    try { localStorage.setItem(ZOOM_STORAGE_KEY, String(zoom)); } catch { /* optional preference */ }
   }, [zoom]);
 
   useEffect(() => {
-    localStorage.setItem(WRAP_STORAGE_KEY, String(wrap));
+    try { localStorage.setItem(WRAP_STORAGE_KEY, String(wrap)); } catch { /* optional preference */ }
   }, [wrap]);
 
   useEffect(() => {
