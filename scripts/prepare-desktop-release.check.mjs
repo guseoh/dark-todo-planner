@@ -8,6 +8,7 @@ import { test } from "node:test";
 const script = resolve("scripts/prepare-desktop-release.mjs");
 const config = resolve("src-tauri/tauri.conf.json");
 const cargo = resolve("src-tauri/Cargo.toml");
+const lock = resolve("src-tauri/Cargo.lock");
 
 function execute(publicKey) {
   const temp = mkdtempSync(join(tmpdir(), "tern-release-preflight-"));
@@ -15,6 +16,7 @@ function execute(publicKey) {
     mkdirSync(join(temp, "src-tauri"));
     copyFileSync(config, join(temp, "src-tauri/tauri.conf.json"));
     copyFileSync(cargo, join(temp, "src-tauri/Cargo.toml"));
+    copyFileSync(lock, join(temp, "src-tauri/Cargo.lock"));
     const processResult = spawnSync(process.execPath, [script], {
       cwd: temp,
       encoding: "utf8",
@@ -29,6 +31,7 @@ function execute(publicKey) {
       processResult,
       config: JSON.parse(readFileSync(join(temp, "src-tauri/tauri.conf.json"), "utf8")),
       cargo: readFileSync(join(temp, "src-tauri/Cargo.toml"), "utf8"),
+      lock: readFileSync(join(temp, "src-tauri/Cargo.lock"), "utf8"),
     };
   } finally {
     rmSync(temp, { recursive: true, force: true });
@@ -43,6 +46,8 @@ test("Tauri CLI encoded minisign public key and version are accepted", () => {
   assert.equal(result.config.version, "0.3.812");
   assert.equal(result.config.plugins.updater.pubkey, pubkey);
   assert.match(result.cargo, /^version = "0\.3\.812"$/m);
+  const original = readFileSync(lock, "utf8");
+  assert.equal(result.lock, original.replace(/(^\[\[package\]\]\r?\nname = "tern"\r?\nversion = ")0\.3\.0(")/m, (_, prefix, suffix) => prefix + "0.3.812" + suffix));
 });
 
 test("raw RW line is rejected, never silently substituted as a Tauri CLI key", () => {

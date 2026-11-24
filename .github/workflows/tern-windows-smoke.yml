@@ -29,7 +29,7 @@ jobs:
       - run: npm ci
       - run: npx --yes @tauri-apps/cli@2 icon -o src-tauri/icons src-tauri/branding/tern.png
       - name: Compile executable only
-        run: npx --yes @tauri-apps/cli@2 build --no-bundle
+        run: npx --yes @tauri-apps/cli@2 build --no-bundle -- --locked
       - name: Check native startup without login or data mutation
         shell: pwsh
         run: |

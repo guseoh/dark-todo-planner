@@ -64,3 +64,7 @@ Windows 11에 Node.js 22, Rust stable/MSVC, WebView2가 준비되어 있어야 �
 - 릴리스 실패 시 GitHub Actions 로그를 참고하며, D1 백업/복원과 별개로 Windows 설치 파일만 이전 검증된 릴리스로 수동 재설치할 수 있습니다.
 
 공식 근거: https://v2.tauri.app/plugin/updater/ 및 https://v2.tauri.app/distribute/pipelines/github/
+
+## Rust 의존성 고정
+
+`src-tauri/Cargo.lock`은 Windows runner의 Cargo에서 생성한 실제 lockfile을 추적합니다. PR 컴파일 및 릴리스/네이티브 스모크 빌드에 `--locked`를 적용합니다. 릴리스 준비 스크립트는 자체 `tern` 패키지 버전만 Cargo.toml 및 Cargo.lock에 동일하게 반영하고 의존성 버전·checksum은 변경하지 않습니다. 의존성 갱신은 별도 PR에서 lockfile과 함께 검토합니다.

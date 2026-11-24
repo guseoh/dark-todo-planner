@@ -30,6 +30,12 @@ conf.version = version;
 const cargoPath = "src-tauri/Cargo.toml";
 const cargo = readFileSync(cargoPath, "utf8");
 if (!/^version = "0\.3\.0"$/m.test(cargo)) throw new Error("Unexpected Cargo version; refusing to replace.");
+const lockPath = "src-tauri/Cargo.lock";
+const lock = readFileSync(lockPath, "utf8");
+const rootVersion = /(^\[\[package\]\]\r?\nname = "tern"\r?\nversion = ")0\.3\.0(")/gm;
+if ([...lock.matchAll(rootVersion)].length !== 1) throw new Error("Unexpected Tern root package in Cargo.lock.");
+// Only the application version changes; dependency versions/checksums are preserved.
+writeFileSync(lockPath, lock.replace(rootVersion, (_, prefix, suffix) => prefix + version + suffix));
 writeFileSync(cargoPath, cargo.replace(/^version = "0\.3\.0"$/m, `version = "${version}"`));
 conf.plugins.updater.pubkey = publicKey;
 writeFileSync(path, JSON.stringify(conf, null, 2) + "\n");
