@@ -19,3 +19,9 @@ Actions의 최신 PR 커밋 Tern Windows QA가 성공하면 Artifacts ZIP을 풀
 | 안정성 | 운영 앱과 QA 동시 실행, 운영 D1 미접근, QA 재시작, 오류 메시지, 창 크기·DPI |
 
 운영 GitHub 조회는 배포 후 별도 테스트 계정/읽기 권한으로 검증한다. QA에서 운영 Secret을 입력하지 않는다. 템플릿은 현재 PC의 앱 저장소만 사용하며 계정 동기화/백업은 구현하지 않는다. 메모 성능은 실제 Windows에서 문서 전환 반복 및 작업 관리자/DevTools를 통해 관찰하고 결과를 기록한다. 전체 기능 회귀 검증과 배포 승인이 완료되기 전까지 Draft PR을 유지한다.
+
+## 1차 통합 QA 기록 (2026-11-24)
+
+- 기준 head `afb9853`: CI의 Typecheck/Unit/Backup/Audit/Local Worker+D1 및 Windows compile check, QA executable 빌드/Native unit tests/시작/중복 실행 차단/Artifact 업로드 통과. [QA workflow](https://github.com/guseoh/dark-todo-planner/actions/runs/45361653533). 실제 PC에서의 운영 앱과 동시 실행은 아직 검증하지 않았다.
+- 코드 감사 후 수정: QA 프로젝트 측정 합계가 항상 0이던 fixture, GitHub Issue/PR 탭 페이지 초기화, 빠른 중복 연결 방어와 조회 시각 표시, 템플릿 로드 시 이전 일정 잔류 및 선택 초기화, Modal IME Escape, 거절된 프로젝트 이동의 요청 serial 변경, 03시 날짜 경계에서 열린 오늘 정리의 대상 날짜 보호.
+- QA 프로젝트 합계의 Todo+수동 기록 및 날짜 범위 단위 테스트 추가. 최종 수정 head의 CI/Windows QA 및 실제 사용 검증은 별도로 확인한다.

@@ -1,6 +1,6 @@
 import { addDays } from "date-fns";
 import { MoonStar } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDailyReflection } from "../../hooks/useDailyReflection";
 import { useTimeEntries } from "../../hooks/useTimeEntries";
 import { useTimeTracking } from "../timer/TimeTrackingContext";
@@ -20,11 +20,19 @@ type DayCloseModalProps = {
   /** Tasks already finished today, for the recap line. */
   completedCount: number;
   onClose: () => void;
-  onApply: (decisions: Record<string, DayCloseDecision>) => Promise<{ ok: boolean; message?: string }>;
+  onApply: (decisions: Record<string, DayCloseDecision>, expectedDate: string) => Promise<{ ok: boolean; message?: string }>;
 };
 
 export function DayCloseModal({ todos, recordTodos = todos, completedCount, onClose, onApply }: DayCloseModalProps) {
-  const today = todayKey();
+  // A review belongs to the planner day on which it was opened.
+  const [today] = useState(todayKey);
+  const [currentDay, setCurrentDay] = useState(todayKey);
+  const dayChanged = currentDay !== today;
+  useEffect(() => {
+    const refresh = () => setCurrentDay(todayKey());
+    const handle = window.setInterval(refresh, 1000);
+    return () => window.clearInterval(handle);
+  }, []);
 
   const timer = useTimeTracking();
   const actions = useTodoQuickActions();
@@ -58,8 +66,9 @@ export function DayCloseModal({ todos, recordTodos = todos, completedCount, onCl
   const noteDirty = reflection.loaded && !reflection.error && noteTouched && note.trim() !== reflection.content;
   const [decisions, setDecisions] = useState<Record<string, DayCloseDecision>>({});
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [error, setError] = useState("");
-  const tomorrow = useMemo(() => toDateKey(addDays(parseDateKey(todayKey()), 1)), []);
+  const tomorrow = useMemo(() => toDateKey(addDays(parseDateKey(today), 1)), [today]);
 
   useEffect(() => {
     setDecisions((current) => {
@@ -74,22 +83,22 @@ export function DayCloseModal({ todos, recordTodos = todos, completedCount, onCl
   };
 
   const apply = async () => {
+    if (savingRef.current) return;
+    if (todayKey() !== today) { setCurrentDay(todayKey()); setError("플래너 날짜가 바뀌었습니다. 오늘 정리를 다시 열어 주세요."); return; }
+    savingRef.current = true;
     setSaving(true);
     setError("");
     try {
       if (noteDirty) await reflection.save(note.trim());
+      const result = changesCount ? await onApply(decisions, today) : { ok: true };
+      if (result.ok) { onClose(); return; }
+      setError(result.message || "하루 마감 처리를 완료하지 못했습니다.");
     } catch {
+      setError("회고 또는 Todo를 저장하지 못했습니다. 입력은 유지됩니다. 연결을 확인하고 다시 시도하세요.");
+    } finally {
+      savingRef.current = false;
       setSaving(false);
-      setError("회고를 저장하지 못했습니다. 연결을 확인하고 다시 시도하세요.");
-      return;
     }
-    const result = changesCount ? await onApply(decisions) : { ok: true };
-    setSaving(false);
-    if (result.ok) {
-      onClose();
-      return;
-    }
-    setError(result.message || "하루 마감 처리를 완료하지 못했습니다.");
   };
 
   const tomorrowCount = Object.values(decisions).filter((decision) => decision === "TOMORROW").length;
@@ -106,6 +115,7 @@ export function DayCloseModal({ todos, recordTodos = todos, completedCount, onCl
       size="lg"
     >
       <div className="space-y-4">
+        {dayChanged ? <p role="alert" className="text-xs text-warning">플래너 날짜가 바뀌었습니다. 작성 중인 회고를 복사해 둔 뒤 오늘 정리를 다시 열어 주세요. 이전 날짜의 선택은 반영되지 않습니다.</p> : null}
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-700/70 bg-ink-950/45 p-3">
           <div className="flex items-center gap-2">
             <MoonStar size={17} className="text-accent-300" />
@@ -131,7 +141,7 @@ export function DayCloseModal({ todos, recordTodos = todos, completedCount, onCl
           <div className="my-3 border-y border-ui-divider py-2">
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-sm font-semibold">오늘의 측정 기록</h3>
-              <button type="button" className="btn-secondary text-xs" disabled={saving || !loaded || Boolean(timeError) || manualEnd <= manualStart} onClick={() => setEditingEntry("new")}>기록 추가</button>
+              <button type="button" className="btn-secondary text-xs" disabled={saving || dayChanged || !loaded || Boolean(timeError) || manualEnd <= manualStart} onClick={() => setEditingEntry("new")}>기록 추가</button>
             </div>
             {timeError ? <p role="alert" className="text-xs text-danger">{timeError}</p> : null}
             {loaded && !timeError && !visibleEntries.length ? <p className="py-2 text-xs text-ui-muted">아직 측정 기록이 없습니다.</p> : null}
@@ -143,7 +153,7 @@ export function DayCloseModal({ todos, recordTodos = todos, completedCount, onCl
                   <span className="min-w-0 flex-1 truncate" title={entry.title}>{entry.title}</span>
                   <span className="tabular-nums text-ui-muted">{formatDuration((part.end - part.start) * 60_000)}</span>
                   {entry.id === "active" ? <span className="text-success">측정 중</span> : <>
-                    {target && timer && !timer.active ? <button type="button" className="btn-secondary text-xs" disabled={saving || timer.busy} onClick={() => void timer.start(target)}>재개</button> : null}
+                    {target && timer && !timer.active ? <button type="button" className="btn-secondary text-xs" disabled={saving || dayChanged || timer.busy} onClick={() => void timer.start(target)}>재개</button> : null}
                     <button type="button" className="btn-secondary text-xs" disabled={saving} onClick={() => setEditingEntry(entry)}>수정</button>
                   </>}
                 </div>;
@@ -193,7 +203,7 @@ export function DayCloseModal({ todos, recordTodos = todos, completedCount, onCl
           <p className="text-xs text-ink-500">내일 {tomorrowCount} · Someday {somedayCount} · 유지 {keepCount}</p>
           <div className="flex justify-end gap-2">
             <button type="button" className="btn-secondary" disabled={saving} onClick={onClose}>취소</button>
-            <button type="button" className="btn-primary" disabled={saving || (!changesCount && !noteDirty)} onClick={() => void apply()}>{saving ? "저장 중..." : changesCount ? `선택한 ${changesCount}개 반영${noteDirty ? " + 회고 저장" : ""}` : noteDirty ? "회고 저장" : "선택한 0개 반영"}</button>
+            <button type="button" className="btn-primary" disabled={saving || dayChanged || (!changesCount && !noteDirty)} onClick={() => void apply()}>{saving ? "저장 중..." : changesCount ? `선택한 ${changesCount}개 반영${noteDirty ? " + 회고 저장" : ""}` : noteDirty ? "회고 저장" : "선택한 0개 반영"}</button>
           </div>
         </div>
 

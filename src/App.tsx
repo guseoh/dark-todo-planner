@@ -337,8 +337,9 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
   const todayOpenTodos = planner.getTodayTodos().filter((todo) => !todo.completed && !todo.archived);
   const searchTodo = searchTodoId ? planner.allTodos.find((todo) => todo.id === searchTodoId) || null : null;
 
-  const applyDayClose = async (decisions: Record<string, DayCloseDecision>) => {
-    const tomorrow = toDateKey(addDays(parseDateKey(todayKey()), 1));
+  const applyDayClose = async (decisions: Record<string, DayCloseDecision>, expectedDate: string) => {
+    if (todayKey() !== expectedDate) return { ok: false, message: "플래너 날짜가 바뀌었습니다. 오늘 정리를 다시 열어 주세요." };
+    const tomorrow = toDateKey(addDays(parseDateKey(expectedDate), 1));
     let failed = 0;
     for (const todo of todayOpenTodos) {
       const decision = decisions[todo.id] || "KEEP";
