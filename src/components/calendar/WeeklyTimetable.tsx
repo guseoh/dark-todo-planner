@@ -5,7 +5,7 @@ import { PLANNER_DAY_START_HOUR, formatKoreanDate, parseDateKey, toDateKey, toda
 import { getEntityColor } from "../../lib/entityColor";
 import {
   DAY_MINUTES, activeAsEntry, clockLabel, entryCategoryName, entryColor, formatDuration, intervalOnDay,
-  plannerDayStart, totalMs, totalsByCategory,
+  plannerDayStart, totalMs, totalsByCategory, measuredTotals, type TimeDimension,
 } from "../../lib/timeTracking";
 import { useTimeEntries } from "../../hooks/useTimeEntries";
 import type { Project } from "../../types/project";
@@ -62,8 +62,9 @@ export function WeeklyTimetable({ dates, selectedDate, todos, projects, onSelect
   const timer = useTimeTracking();
   const weekStart = dates[0];
   const weekEnd = dates[6];
-  const { entries, create, update, remove } = useTimeEntries(weekStart, weekEnd);
+  const { entries, loaded, error: entriesError, create, update, remove } = useTimeEntries(weekStart, weekEnd);
   const [visible, setVisible] = useState(() => window.matchMedia("(min-width: 1280px)").matches);
+  const [dimension, setDimension] = useState<TimeDimension>("category");
   const [blocks, setBlocks] = useState<TimeBlock[]>([]);
   const [loadedWeek, setLoadedWeek] = useState("");
   const [now, setNow] = useState(() => new Date());
@@ -100,7 +101,7 @@ export function WeeklyTimetable({ dates, selectedDate, todos, projects, onSelect
   const hours = Array.from({ length: endHour - startHour }, (_, index) => startHour + index);
 
   const dayTotals = useMemo(() => new Map(dates.map((date) => [date, totalMs(totalsByCategory(allEntries, [date], categories))])), [allEntries, categories, dates]);
-  const weekTotals = useMemo(() => totalsByCategory(allEntries, dates, categories), [allEntries, categories, dates]);
+  const weekTotals = useMemo(() => measuredTotals(allEntries, dates, dimension, categories, projects, todos), [allEntries, dates, dimension, categories, projects, todos]);
   const hasActual = allEntries.length > 0;
 
   useEffect(() => {
@@ -198,14 +199,21 @@ export function WeeklyTimetable({ dates, selectedDate, todos, projects, onSelect
           {fullDay ? "업무 시간만 보기" : "하루 전체 보기"}
         </button>
       </div>
-      {weekTotals.length ? (
-        <ul className="calendar-week-totals" aria-label="이번 주 카테고리별 측정 시간">
-          <li className="font-semibold text-ui-text">측정 {formatDuration(totalMs(weekTotals))}</li>
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <label className="text-xs text-ui-muted" htmlFor="weekly-measured-dimension">측정 시간</label>
+        <select id="weekly-measured-dimension" className="field min-h-8 w-auto py-1 text-xs" value={dimension} onChange={(event) => setDimension(event.target.value as TimeDimension)}>
+          <option value="category">카테고리별</option><option value="project">프로젝트별</option><option value="todo">Todo별</option>
+        </select>
+        <span className="text-xs font-semibold text-ui-text">{entriesError ? "조회 실패" : !loaded ? "조회 중…" : formatDuration(totalMs(weekTotals))}</span>
+      </div>
+      {loaded && !entriesError && weekTotals.length ? (
+        <ul className="calendar-week-totals" aria-label="이번 주 측정 시간 분류">
           {weekTotals.map((item) => (
             <li key={item.key}><span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} aria-hidden="true" />{item.name} {formatDuration(item.ms)}</li>
           ))}
         </ul>
       ) : null}
+      {entriesError ? <p role="alert" className="mb-2 text-xs text-danger">{entriesError}</p> : null}
       {error ? <p role="alert" className="mb-2 text-xs text-danger">{error}</p> : null}
       <div className="calendar-time-grid" data-has-actual={hasActual}>
         <span aria-hidden="true" />

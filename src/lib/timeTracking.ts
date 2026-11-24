@@ -1,5 +1,7 @@
 import { PLANNER_DAY_START_HOUR, parseDateKey } from "./date";
 import type { Category } from "../types/category";
+import type { Project } from "../types/project";
+import type { Todo } from "../types/todo";
 import type { ActiveTimer, TimeEntry, TimerTarget } from "../types/timeTracking";
 import { getEntityColor } from "./entityColor";
 
@@ -108,7 +110,7 @@ export function totalsByCategory(entries: TimeEntry[], dateKeys: string[], categ
   return [...totals.values()].sort((a, b) => b.ms - a.ms);
 }
 
-export const totalMs = (totals: CategoryTotal[]) => totals.reduce((sum, item) => sum + item.ms, 0);
+export const totalMs = (totals: readonly { ms: number }[]) => totals.reduce((sum, item) => sum + item.ms, 0);
 
 export type HourCell = { hour: number; label: string; segments: Array<{ key: string; color: string; name: string; ms: number }> };
 
@@ -142,3 +144,39 @@ export const toLocalInput = (iso: string): string => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 export const fromLocalInput = (value: string): string => new Date(value).toISOString();
+
+export type TimeDimension = "category" | "project" | "todo";
+export type MeasuredTotal = { key: string; name: string; color: string; ms: number };
+
+/** Each entry belongs to exactly one bucket per dimension, including unassigned work.
+ * Aggregate dimensions separately: summing category + project + Todo totals would triple-count work.
+ * Preserve the recorded project/category assignment even after a Todo is moved.
+ */
+export function measuredTotals(entries: TimeEntry[], dateKeys: string[], dimension: TimeDimension,
+  categories: Category[], projects: Project[], todos: Todo[]): MeasuredTotal[] {
+  const uniqueEntries = [...new Map(entries.map(entry => [entry.id, entry])).values()];
+  const dates = [...new Set(dateKeys)];
+  if (dimension === "category") return totalsByCategory(uniqueEntries, dates, categories);
+  const totals = new Map<string, MeasuredTotal>();
+  const projectById = new Map(projects.map(project => [project.id, project]));
+  const todoById = new Map(todos.map(todo => [todo.id, todo]));
+  for (const entry of uniqueEntries) {
+    let ms = 0;
+    for (const date of dates) {
+      const part = intervalOnDay(entry.startedAt, entry.endedAt, date);
+      if (part) ms += (part.end - part.start) * MINUTE_MS;
+    }
+    if (!ms) continue;
+    const id = dimension === "project" ? entry.projectId : entry.todoId;
+    const key = id ? `${dimension}:${id}` : "unassigned";
+    const project = entry.projectId ? projectById.get(entry.projectId) : undefined;
+    const name = dimension === "project"
+      ? project?.name ?? (id ? "삭제된 프로젝트" : "프로젝트 미지정")
+      : id ? todoById.get(id)?.title ?? entry.title : "개별 Todo 미지정";
+    const color = dimension === "project" && project ? getEntityColor(project, projects) : "var(--text-muted)";
+    const previous = totals.get(key);
+    if (previous) previous.ms += ms;
+    else totals.set(key, { key, name, color, ms });
+  }
+  return [...totals.values()].sort((a, b) => b.ms - a.ms);
+}
