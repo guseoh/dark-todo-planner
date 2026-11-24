@@ -3346,7 +3346,7 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
   .today-page .today-overdue-banner__bulk-actions { right: auto; left: 0; }
 }
 
-/* Tern V4.3: today-only compact composer. Shared forms keep their existing density. */
+/* Tern V4: today-only compact composer. Shared forms keep their existing density. */
 .today-page .today-quick-capture:has(.todo-composer-form--inline) { padding: 7px 12px; }
 .today-page .todo-composer-form--inline .todo-composer-form__main { padding: 0; gap: 9px; }
 .today-page .todo-composer-form--inline .todo-composer-form__title,
@@ -3363,7 +3363,7 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
 .todo-composer-priority span { min-width: 26px; }
 .todo-composer-details--compact.todo-composer-details--memo-only { grid-template-columns: minmax(0, 1fr); }
 
-/* Tern V4.3: shared stable document tabs */
+/* Tern V4: shared stable document tabs */
 .workspace-document-tabs { display:flex; align-items:flex-end; gap:4px; min-width:0; min-height:30px; border-bottom:1px solid var(--ui-divider); background:var(--ui-surface); padding:0 4px; }
 .workspace-document-tabs__strip { display:flex; align-items:flex-end; min-width:0; flex:1; overflow-x:auto; scrollbar-width:thin; }
 .workspace-document-tab { display:flex; align-items:center; position:relative; height:28px; flex:0 0 150px; min-width:0; border:1px solid transparent; border-bottom:0; border-radius:6px 6px 0 0; padding:0 3px 0 2px; color:var(--text-muted); transition:background-color 150ms ease,color 150ms ease,border-color 150ms ease; }
@@ -3396,3 +3396,29 @@ form:not(:focus-within) > .todo-composer-form__syntax-hint { display: none; }
 .workspace-board-options > summary::-webkit-details-marker { display:none; }
 .workspace-board-options__panel { position:absolute; z-index:25; top:calc(100% + 4px); right:0; display:grid; gap:5px; min-width:180px; padding:7px; border:1px solid var(--ui-divider); background:var(--ui-surface); border-radius:4px; }
 @media (prefers-reduced-motion:reduce) { .workspace-document-tab,.workspace-document-tab__close { transition:none; } }
+
+/* Tern V4 — common desktop workspace. Preserve narrow-window navigation and theme tokens. */
+@media (min-width: 640px) {
+  .app-topbar .app-search-button,
+  .app-topbar .app-quick-add-button { min-height: 30px; padding-block: 4px; font-size: 13px; }
+  aside[data-sidebar-mode] > nav { padding: 17px 9px 10px; }
+  aside[data-sidebar-mode] .app-nav-button[aria-current="page"] {
+    background: color-mix(in srgb, var(--ui-focus) 10%, var(--ui-navigation));
+  }
+  aside[data-sidebar-mode] .app-nav-button[aria-current="page"] > svg { color: var(--ui-focus); }
+  .page-shell .page-header { gap: 10px 18px; padding-block: 4px 14px; }
+  .page-shell .page-toolbar.page-toolbar { gap: 6px; padding-block: 6px; }
+  .page-shell .page-tabs.page-tabs { gap: 4px; }
+  .page-shell .page-tab.page-tab { min-height: 32px; padding-inline: 10px; }
+  .trash-page .trash-toolbar { gap: 8px; padding-block: 8px; }
+  .trash-page .trash-row { gap: 12px; padding-block: 10px; }
+  .scratchpad-workspace .scratchpad-heading { padding-block: 10px; }
+  .scratchpad-workspace .scratchpad-toolbar { gap: 6px; padding-block: 5px; }
+  .settings-page .settings-option-row { min-height: 56px; padding-block: 12px; }
+}
+@media (min-width: 640px) and (max-width: 1130px) {
+  aside[data-sidebar-mode][data-sidebar-hover-expanded="false"] > nav { padding-inline: 7px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  aside[data-sidebar-mode], aside[data-sidebar-mode] .app-nav-button { transition: none; }
+}
