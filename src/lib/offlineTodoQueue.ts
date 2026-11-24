@@ -152,7 +152,14 @@ const sendMutation = async (mutation: QueuedTodoMutation) => {
   });
 };
 
-export async function flushTodoMutationQueue(): Promise<OfflineTodoFlushResult> {
+let activeFlush: Promise<OfflineTodoFlushResult> | null = null;
+export function flushTodoMutationQueue(): Promise<OfflineTodoFlushResult> {
+  if (activeFlush) return activeFlush;
+  activeFlush = flushOnce().finally(() => { activeFlush = null; });
+  return activeFlush;
+}
+
+async function flushOnce(): Promise<OfflineTodoFlushResult> {
   if (typeof navigator !== "undefined" && !navigator.onLine) {
     const summary = await getOfflineTodoQueueSummary();
     return { flushed: 0, remaining: summary.total, blocked: false };

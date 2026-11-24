@@ -2,6 +2,9 @@ name: Tern native startup smoke
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/tern-windows-smoke.yml']
 
 permissions:
   contents: read
@@ -44,10 +47,17 @@ jobs:
             } while ($p.MainWindowHandle -eq 0 -and (Get-Date) -lt $deadline)
             if ($p.MainWindowHandle -eq 0) { throw 'Tern main window was not detected' }
             if ($p.MainWindowTitle -notmatch 'Tern') { throw 'Unexpected Tern window title' }
+            $second = Start-Process -FilePath (Resolve-Path 'src-tauri/target/release/tern.exe') -PassThru
+            try {
+              if (!$second.WaitForExit(15000)) { throw 'Second app instance did not exit' }
+              if ($second.ExitCode -ne 0) { throw "Second app returned $($second.ExitCode)" }
+            } finally {
+              if (!$second.HasExited) { Stop-Process -Id $second.Id -Force }
+            }
             Start-Sleep -Seconds 3
             $p.Refresh()
             if ($p.HasExited) { throw 'Tern exited after startup' }
-            Write-Output 'Tern process and main window detected; login and IPC require local QA.'
+            Write-Output 'Tern process and main window detected; second instance exits. Login, tray, shortcut and update require local QA.'
           } finally {
             if (!$p.HasExited) { Stop-Process -Id $p.Id -Force }
           }
