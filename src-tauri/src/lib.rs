@@ -1,4 +1,7 @@
-use reqwest::{Client, Method, Url};
+use reqwest::{Client, Method, Url, cookie::{Jar, CookieStore}};
+use std::sync::Arc;
+#[cfg(windows)]
+mod session_vault;
 use serde::Serialize;
 use std::{sync::atomic::{AtomicBool, Ordering}, time::Duration};
 use tauri::{
@@ -25,9 +28,38 @@ impl UpdateGate {
     }
 }
 
+const SESSION_COOKIE: &str = "__Host-dtp_session";
+
 struct ApiClient {
     client: Client,
+    jar: Arc<Jar>,
 }
+
+fn session_token(jar: &Jar, url: &Url) -> Option<String> {
+    let header = jar.cookies(url)?;
+    header.to_str().ok()?.split(';').find_map(|part| {
+        let (name, value) = part.trim().split_once('=')?;
+        (name == SESSION_COOKIE).then(|| value.to_string())
+    })
+}
+
+fn valid_token_shape(token: &str) -> bool {
+    token.len() <= 512 && token.starts_with("v2.") && token.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-' | b'_'))
+}
+
+fn restore_session(jar: &Jar) {
+    #[cfg(windows)]
+    match session_vault::read() {
+        Ok(Some(token)) if valid_token_shape(&token) => {
+            if let Ok(url) = Url::parse(API_ORIGIN) {
+                jar.add_cookie_str(&format!("{SESSION_COOKIE}={token}; Path=/; Secure; HttpOnly; SameSite=Strict"), &url);
+            }
+        }
+        Ok(_) => {}
+        Err(_) => eprintln!("Tern session vault unavailable; sign in again."),
+    }
+}
+
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -72,7 +104,13 @@ async fn desktop_api_request(
     if method == Method::GET && body.is_some() {
         return Err("GET 요청에는 본문을 전송할 수 없습니다.".into());
     }
-    let mut request = state.client.request(method, url).header("Accept", "application/json");
+    let auth_path = url.path().to_string();
+    let previous_token = session_token(&state.jar, &url);
+    #[cfg(windows)]
+    if auth_path == "/api/auth/logout" || auth_path == "/api/auth/login" {
+        session_vault::clear().map_err(|_| "Windows 세션 저장소를 정리하지 못했습니다. 다시 시도해 주세요.")?;
+    }
+    let mut request = state.client.request(method, url.clone()).header("Accept", "application/json");
     if let Some(body) = body {
         request = request.header("Content-Type", "application/json").body(body);
     }
@@ -85,6 +123,15 @@ async fn desktop_api_request(
         .unwrap_or("application/json")
         .to_string();
     let body = response.text().await.map_err(|_| "API 응답을 읽지 못했습니다.".to_string())?;
+    #[cfg(windows)]
+    if auth_path == "/api/auth/login" && status == 200 {
+        if let Some(token) = session_token(&state.jar, &url).filter(|token| valid_token_shape(token)) {
+            if session_vault::write(&token).is_err() { eprintln!("Tern could not persist the session; sign-in remains valid until exit."); }
+        }
+    } else if auth_path == "/api/auth/session" && status == 401 && session_token(&state.jar, &url) == previous_token {
+        if session_vault::clear().is_err() { eprintln!("Tern could not remove expired session from vault."); }
+        state.jar.add_cookie_str(&format!("{SESSION_COOKIE}=; Path=/; Secure; Max-Age=0"), &url);
+    }
     Ok(ApiResponse { status, body, content_type })
 }
 
@@ -123,9 +170,18 @@ async fn desktop_update(
     Ok(UpdateState { installed_version, available_version })
 }
 
+#[tauri::command]
+fn desktop_quit(app: tauri::AppHandle, gate: State<'_, UpdateGate>) -> Result<(), String> {
+    let _lease = gate.acquire()?;
+    app.exit(0);
+    Ok(())
+}
+
 pub fn run() {
+    let jar = Arc::new(Jar::default());
+    restore_session(&jar);
     let client = Client::builder()
-        .cookie_store(true)
+        .cookie_provider(jar.clone())
         .timeout(Duration::from_secs(35))
         .redirect(reqwest::redirect::Policy::none())
         .build()
@@ -138,11 +194,19 @@ pub fn run() {
                 let _ = window.hide();
             }
         })
-        .manage(ApiClient { client })
+        .manage(ApiClient { client, jar })
         .manage(UpdateGate::default())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![desktop_api_request, desktop_update])
+        .invoke_handler(tauri::generate_handler![desktop_api_request, desktop_update, desktop_quit])
         .setup(|app| {
+            let data = app.path().app_local_data_dir()?;
+            std::fs::create_dir_all(&data)?;
+            let lock = std::fs::OpenOptions::new().read(true).write(true).create(true).truncate(false).open(data.join("tern-instance.lock"))?;
+            match lock.try_lock() {
+                Ok(()) => { app.manage(lock); }
+                Err(std::fs::TryLockError::WouldBlock) => std::process::exit(0),
+                Err(error) => return Err(error.into()),
+            }
             use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
             let quick_add = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyK);
             app.handle().plugin(
@@ -181,7 +245,13 @@ pub fn run() {
                             let _ = window.emit("tern-check-update", ());
                         }
                     }
-                    "quit" => app.exit(0),
+                    "quit" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                            let _ = window.emit("tern-request-quit", ());
+                        }
+                    },
                     _ => {}
                 }
             });
@@ -198,6 +268,13 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn rejects_invalid_session_cookie_shapes() {
+        assert!(valid_token_shape("v2.1.2.abc.def"));
+        assert!(!valid_token_shape("v2.1; other=secret"));
+        assert!(!valid_token_shape("v2.1\n"));
+    }
+
     #[test]
     fn native_api_rejects_external_and_escaped_paths() {
         assert_eq!(trusted_api_url("/api/todos?limit=100").unwrap().origin().ascii_serialization(), API_ORIGIN);
