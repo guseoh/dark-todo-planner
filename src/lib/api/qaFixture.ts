@@ -253,6 +253,7 @@ return async (input, init) => {
     return json({ timeBlock }, existing ? 200 : 201);
   }
   if (collection === "time-blocks" && method === "DELETE" && key) { const index = blocks.findIndex(item => item.id === key); if (index >= 0) blocks.splice(index, 1); return ok(); }
+  if (method === "GET" && path === "/api/github/repositories/qa-example/demo/pulls/12/details") return json({ reviews: [{ user: "qa-reviewer", state: "APPROVED" }], requestedReviewers: [], checks: [{ name: "QA CI", status: "completed", conclusion: "success" }], commitStatus: "success", headSha: "a".repeat(40), mergeable: true, truncated: false, fetchedAt: timestamp() });
   if (method === "GET" && /^\/api\/github\/repositories\/qa-example\/demo\/(issues|pulls)$/.test(path)) {
     const pull = path.endsWith("/pulls");
     const state = url.searchParams.get("state");
