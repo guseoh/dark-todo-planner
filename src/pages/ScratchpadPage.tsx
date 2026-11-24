@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { RichScratchpadEditor, type RichScratchpadHandle, type RichAction } from "../components/editor/RichScratchpadEditor";
 import { MarkdownPreview } from "../components/editor/MarkdownPreview";
+import { Modal } from "../components/common/Modal";
+import type { Memo, MemoInput } from "../types/memo";
 import { Button } from "../components/ui/Button";
 import { requiresRawScratchpadEditing } from "../lib/scratchpadEditorSafety";
 import { api, jsonBody } from "../lib/api/client";
@@ -33,7 +35,7 @@ const readZoom = () => {
 const readWrap = () => typeof window === "undefined" || localStorage.getItem(WRAP_STORAGE_KEY) !== "false";
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-export function ScratchpadPage() {
+export function ScratchpadPage({ onCreateMemo, onOpenMemo }: { onCreateMemo?: (input: MemoInput) => Promise<Memo | undefined> | Memo | undefined; onOpenMemo?: (id: string) => void } = {}) {
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
   const richEditorRef = useRef<RichScratchpadHandle | null>(null);
   const [sourceMode, setSourceMode] = useState(false);
@@ -63,6 +65,10 @@ export function ScratchpadPage() {
   const [findText, setFindText] = useState("");
   const [replaceText, setReplaceText] = useState("");
   const [openMenu, setOpenMenu] = useState<ScratchpadMenu | null>(null);
+  const [memoCopy, setMemoCopy] = useState<{ content: string; title: string; selected: boolean; rich: boolean } | null>(null);
+  const [memoBusy, setMemoBusy] = useState(false);
+  const memoBusyRef = useRef(false);
+  const [memoError, setMemoError] = useState("");
 
   const resetHistory = useCallback((value: string) => {
     historyRef.current = [value];
@@ -234,6 +240,26 @@ export function ScratchpadPage() {
     const editor = editorRef.current;
     if (!editor) return { start: 0, end: 0, text: "" };
     return { start: editor.selectionStart, end: editor.selectionEnd, text: content.slice(editor.selectionStart, editor.selectionEnd) };
+  };
+
+  const prepareMemo = (selected: boolean) => {
+    if (!loadedRef.current || recoveryPendingRef.current || !onCreateMemo) return;
+    const value = selected ? (sourceMode ? selection().text : richEditorRef.current?.selectedText() ?? "") : contentRef.current;
+    setOpenMenu(null);
+    if (!value.trim()) { setMemoError(selected ? "먼저 복사할 내용을 선택하세요." : "낙서장이 비어 있습니다."); return; }
+    setMemoError("");
+    setMemoCopy({ content: value, title: "", selected, rich: selected && !sourceMode });
+  };
+  const createMemoCopy = async () => {
+    if (!memoCopy || !onCreateMemo || memoBusyRef.current) return;
+    memoBusyRef.current = true; setMemoBusy(true); setMemoError("");
+    try {
+      const result = await onCreateMemo({ title: memoCopy.title.trim() || undefined, content: memoCopy.content });
+      if (!result) throw new Error("메모를 저장하지 못했습니다.");
+      setMemoCopy(null);
+      onOpenMemo?.(result.id);
+    } catch (cause) { setMemoError(cause instanceof Error ? cause.message : "메모를 저장하지 못했습니다."); }
+    finally { memoBusyRef.current = false; setMemoBusy(false); }
   };
 
   const replaceSelection = (before: string, after = before, fallback = "텍스트") => {
@@ -426,6 +452,10 @@ export function ScratchpadPage() {
                 <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => fileInputRef.current?.click())}>Markdown / 텍스트 열기</button>
                 <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(() => { void saveNow(content); })}>저장 <span className="float-right text-ink-500">Ctrl+S</span></button>
                 <button role="menuitem" type="button" className={menuItemClass} onClick={() => closeMenuAndRun(downloadText)}>Markdown 다운로드</button>
+                {onCreateMemo ? <>
+                  <button role="menuitem" type="button" className={menuItemClass} disabled={!loadedRef.current || Boolean(recoveryDraft)} onMouseDown={event => event.preventDefault()} onClick={() => prepareMemo(true)}>선택 영역을 메모로 복사</button>
+                  <button role="menuitem" type="button" className={menuItemClass} disabled={!content.trim() || Boolean(recoveryDraft)} onClick={() => prepareMemo(false)}>전체를 메모로 복사</button>
+                </> : null}
               </div>
             ) : null}
           </div>
@@ -508,6 +538,7 @@ export function ScratchpadPage() {
         </div>
       ) : null}
       {localDraftError ? <p role="alert" className="shrink-0 border-b border-danger/30 px-3 py-2 text-xs text-danger">브라우저 임시 저장이 불가능합니다. 서버에 저장되기 전에는 페이지를 닫지 마세요.</p> : null}
+      {memoError && !memoCopy ? <p role="alert" className="px-3 py-2 text-xs text-danger">{memoError}</p> : null}
       {error ? <div role="alert" className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-danger/30 bg-danger/[0.08] px-3 py-2 text-xs text-danger"><span>저장 또는 불러오기 실패: {error}</span><button type="button" className="btn-secondary text-xs" onClick={() => void (loadedRef.current ? saveNow() : loadScratchpad())}>{loadedRef.current ? "저장 재시도" : "불러오기 재시도"}</button></div> : null}
 
       {sourceMode && requiresRawScratchpadEditing(content) ? (
@@ -551,6 +582,14 @@ export function ScratchpadPage() {
       </div>
 
       <input ref={fileInputRef} type="file" className="hidden" accept=".txt,.md,text/plain,text/markdown" onChange={(event) => void openTextFile(event.target.files?.[0])} />
+      {memoCopy ? <Modal title="낙서장을 메모로 복사" description={memoCopy.rich ? "시각 편집기의 선택 텍스트를 복사합니다. 원본 서식을 유지하려면 Markdown 원본에서 선택하세요. 낙서장은 변경되지 않습니다." : "원본 낙서장은 변경되지 않습니다."} onClose={memoBusy ? () => undefined : () => { setMemoCopy(null); setMemoError(""); }}>
+        <form className="space-y-3" onSubmit={event => { event.preventDefault(); void createMemoCopy(); }}>
+          <input className="field" aria-label="메모 제목" placeholder="메모 제목 (선택)" maxLength={120} value={memoCopy.title} onChange={event => setMemoCopy(current => current ? { ...current, title: event.target.value } : current)} disabled={memoBusy} />
+          <pre className="max-h-52 overflow-auto whitespace-pre-wrap break-words border border-ui-divider p-3 text-xs">{memoCopy.content}</pre>
+          {memoError ? <p role="alert" className="text-xs text-danger">{memoError}</p> : null}
+          <div className="flex justify-end gap-2"><button type="button" className="btn-secondary" disabled={memoBusy} onClick={() => { setMemoCopy(null); setMemoError(""); }}>취소</button><button type="submit" className="btn-primary" disabled={memoBusy}>{memoBusy ? "저장 중…" : "메모 저장"}</button></div>
+        </form>
+      </Modal> : null}
     </section>
   );
 }

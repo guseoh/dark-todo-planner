@@ -116,8 +116,8 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
   const showSource = sourceMode || requiresSource;
   const submittingRef = useRef(false);
   const normalizedLinkQuery = linkQuery.trim().toLocaleLowerCase("ko-KR");
-  const visibleTodos = todos.filter((todo) => !todo.archived && (!normalizedLinkQuery || todo.title.toLocaleLowerCase("ko-KR").includes(normalizedLinkQuery)));
-  const visibleProjects = projects.filter((project) => !normalizedLinkQuery || project.name.toLocaleLowerCase("ko-KR").includes(normalizedLinkQuery));
+  const visibleTodos = useMemo(() => todos.filter((todo) => !todo.archived && (!normalizedLinkQuery || todo.title.toLocaleLowerCase("ko-KR").includes(normalizedLinkQuery))), [todos, normalizedLinkQuery]);
+  const visibleProjects = useMemo(() => projects.filter((project) => !normalizedLinkQuery || project.name.toLocaleLowerCase("ko-KR").includes(normalizedLinkQuery)), [projects, normalizedLinkQuery]);
 
   // An untouched document is not a pending draft. Save rapid unsaved changes
   // synchronously on note switch, even before the debounce interval expires.
@@ -284,7 +284,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
           <MarkdownEditor value={content} onChange={setContent} placeholder="- 떠오른 생각을 적어두세요"
             textareaClassName={large ? "min-h-[300px] max-h-[55vh]" : "min-h-36"} />
         ) : (
-          <RichMarkdownEditor ref={richEditorRef} variant="memo" markdown={content} onChange={setContent} readOnly={isSubmitting} />
+          <RichMarkdownEditor ref={richEditorRef} variant="memo" positionKey={draftKey} markdown={content} onChange={setContent} readOnly={isSubmitting} />
         )}
       </section>
 
