@@ -1,6 +1,5 @@
 export type Bindings = {
   DB: D1Database;
-  ASSETS: Fetcher;
   AUTH_USERNAME: string;
   AUTH_PASSWORD_HASH: string;
   SESSION_SECRET: string;

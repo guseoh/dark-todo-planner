@@ -4,13 +4,13 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "npm run build && wrangler dev --local",
-    "dev:desktop-ui": "vite --host 127.0.0.1 --port 5173",
+    "dev": "wrangler dev --local",
+    "dev:desktop-ui": "vite --host 127.0.0.1 --port 5173 --strictPort",
     "build:desktop-ui": "tsc -b && vite build --base=./",
-    "build": "tsc -b && vite build && wrangler deploy --dry-run --env=\"\" --outdir .wrangler/build",
+    "build": "npm run build:desktop-ui && npm run build:worker",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
-    "preview": "npm run build && wrangler dev --env preview --remote",
+    "preview": "wrangler dev --env preview --remote",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:migrate:preview": "wrangler d1 migrations apply DB --env preview --remote",
@@ -18,8 +18,10 @@
     "db:backup:preview": "node scripts/backup-d1.mjs preview",
     "db:backup:production": "node scripts/backup-d1.mjs production",
     "auth:hash": "node scripts/hash-password.mjs",
-    "deploy:preview": "npm run build && wrangler deploy --env preview",
-    "deploy:production": "npm run build && wrangler deploy --env production"
+    "deploy:preview": "npm run build:worker && wrangler deploy --env preview",
+    "deploy:production": "npm run build:worker && wrangler deploy --env production",
+    "build:worker": "tsc -b tsconfig.worker.json && wrangler deploy --dry-run --env=\"\" --outdir .wrangler/build",
+    "typecheck:worker": "tsc -b tsconfig.worker.json --pretty false"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -164,7 +164,7 @@ app.route("/api", libraryRoutes);
 app.route("/api", atomicBackupRoutes);
 app.route("/api", backupRoutes);
 
-app.notFound((c) => c.req.path.startsWith("/api/") ? c.json({ message: "API 경로를 찾을 수 없습니다." }, 404) : c.env.ASSETS.fetch(c.req.raw));
+app.notFound((c) => c.json({ message: "API 경로를 찾을 수 없습니다." }, 404));
 app.onError((error, c) => {
   if (error instanceof ZodError) return c.json({ message: "입력값이 올바르지 않습니다.", issues: error.issues }, 400);
   if (error instanceof SyntaxError) return c.json({ message: "JSON 요청 본문이 올바르지 않습니다." }, 400);
