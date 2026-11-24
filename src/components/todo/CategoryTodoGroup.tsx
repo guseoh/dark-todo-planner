@@ -156,7 +156,7 @@ export function CategoryTodoGroup({
                 <InlineTodoAdd categoryId={categoryId} defaultDate={defaultDate} onAdd={(todo) => onAddTodo(todo)} onCancel={() => setAdding(false)} />
               ) : (
                 <button type="button" className="flex min-h-8 w-full items-center rounded-md border border-dashed border-ink-700/70 px-3 text-xs font-semibold text-ink-500 transition hover:border-accent-500/55 hover:bg-ink-900/60 hover:text-ink-100" onClick={() => setAdding(true)}>
-                  + Todo 추가
+                  + 할 일 추가
                 </button>
               )
             ) : null}

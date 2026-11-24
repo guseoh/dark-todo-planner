@@ -16,7 +16,7 @@ type SidebarMode = "expanded" | "collapsed";
 export const navGroups: Array<{ label: string; items: NavItem[] }> = [
   { label: "작업", items: [
     { id: "today", label: "오늘", icon: CalendarCheck },
-    { id: "all", label: "전체 Todo", icon: ClipboardList },
+    { id: "all", label: "전체 할 일", icon: ClipboardList },
     { id: "projects", label: "프로젝트", icon: FolderKanban },
     { id: "calendar", label: "캘린더", icon: Calendar },
   ] },
@@ -133,10 +133,10 @@ export function Sidebar({ activeView, onChangeView, onSearch }: SidebarProps) {
     <>
       <aside className={`relative sticky top-14 z-20 hidden h-[calc(100vh-3.5rem)] shrink-0 self-start transition-[width] duration-150 ease-out sm:block ${inlineExpanded ? "w-[218px]" : "w-16"}`} data-sidebar-mode={mode} data-compact-window={compactWindow ? "true" : "false"} data-sidebar-hover-expanded={hoverExpanded ? "true" : "false"}>
         <nav className={`flex h-full min-h-0 flex-col border-r border-ui-divider bg-[var(--sidebar-bg)] px-2 py-2.5 ${!inlineExpanded && hoverExpanded ? "absolute left-0 top-0 z-30 w-[218px] shadow-xl" : "w-full"}`} onMouseEnter={openHoverPanel} onMouseLeave={closeHoverPanel} onFocusCapture={openHoverPanel} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) closeHoverPanel(); }}>
-          <button type="button" onClick={() => onChangeView("today")} aria-label="Todo Planner 홈" title={collapsed && !hoverExpanded ? "Todo Planner" : undefined}
+          <button type="button" onClick={() => onChangeView("today")} aria-label="Tern 홈" title={collapsed && !hoverExpanded ? "Tern" : undefined}
             className={`mb-4 flex min-h-10 shrink-0 items-center rounded-[4px] text-left transition-colors hover:bg-ink-800/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/45 ${showExpandedContent ? "gap-2.5 px-2.5" : "justify-center px-2"}`}>
             <span className="sidebar-brand-mark flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] border border-ui-divider bg-ui-surface text-ui-text"><CalendarCheck size={18} /></span>
-            {showExpandedContent ? <span className="min-w-0"><span className="block truncate text-sm font-bold text-ink-100">Todo Planner</span><span className="block truncate text-xs text-ink-500">개인 작업 관리</span></span> : null}
+            {showExpandedContent ? <span className="min-w-0"><span className="block truncate text-sm font-bold text-ink-100">Tern</span><span className="block truncate text-xs text-ink-500">개인 작업 관리</span></span> : null}
           </button>
 
           <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-0.5">

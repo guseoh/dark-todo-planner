@@ -2,11 +2,13 @@ use reqwest::{Client, Method, Url, cookie::{Jar, CookieStore}};
 use std::sync::Arc;
 #[cfg(windows)]
 mod session_vault;
+#[cfg(windows)]
+mod instance_signal;
 use serde::Serialize;
 use std::{sync::atomic::{AtomicBool, Ordering}, time::Duration};
 use tauri::{
     menu::{Menu, MenuItem},
-    tray::TrayIconBuilder,
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Emitter, Manager, State,
 };
 use tauri_plugin_updater::UpdaterExt;
@@ -221,6 +223,14 @@ fn acquire_instance(directory: &std::path::Path) -> std::io::Result<Option<std::
     }
 }
 
+fn show_main_window(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
 // Take the OS-backed lock before Tauri, WebView2, or session restoration can start.
 pub fn run() {
     #[cfg(windows)]
@@ -230,10 +240,16 @@ pub fn run() {
             .join(if cfg!(feature = "qa") { "io.github.guseoh.dark-todo-planner.qa" } else { "io.github.guseoh.dark-todo-planner" });
         match acquire_instance(&directory) {
             Ok(Some(lock)) => lock,
-            Ok(None) => return,
+            Ok(None) => {
+                // Bring the running (possibly tray-hidden) window forward instead of doing nothing.
+                instance_signal::notify_running_instance(cfg!(feature = "qa"));
+                return;
+            }
             Err(error) => panic!("failed to acquire Tern instance lock: {error}"),
         }
     };
+    #[cfg(windows)]
+    let show_signal = instance_signal::ShowSignal::create(cfg!(feature = "qa"));
     let jar = Arc::new(Jar::default());
     if !cfg!(feature = "qa") { restore_session(&jar); }
     let client = Client::builder()
@@ -255,7 +271,14 @@ pub fn run() {
         .manage(UpdateGate::default())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![desktop_api_request, desktop_update, desktop_quit, desktop_open_github])
-        .setup(|app| {
+        .setup(move |app| {
+            #[cfg(windows)]
+            if let Some(signal) = show_signal {
+                let handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    while signal.wait() { show_main_window(&handle); }
+                });
+            }
             // No global shortcuts or shared system tray actions in QA.
             if cfg!(feature = "qa") { return Ok(()); }
             use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
@@ -281,14 +304,17 @@ pub fn run() {
             let check = MenuItem::with_id(app, "check", "업데이트 확인", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "종료", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&open, &check, &quit])?;
-            let mut tray = TrayIconBuilder::new().menu(&menu).on_menu_event(|app, event| {
-                match event.id().as_ref() {
-                    "open" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
+            // Windows convention: left click opens the app, right click shows the menu.
+            let mut tray = TrayIconBuilder::new().menu(&menu).tooltip("Tern")
+                .show_menu_on_left_click(false)
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = event {
+                        show_main_window(tray.app_handle());
                     }
+                })
+                .on_menu_event(|app, event| {
+                match event.id().as_ref() {
+                    "open" => show_main_window(app),
                     "check" => {
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.show();

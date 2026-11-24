@@ -26,7 +26,7 @@ export function Header({ storageStatus = "server", onLogout, onQuickAdd, onSearc
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-ui-selected text-ui-text">
               <CalendarCheck2 size={18} />
             </div>
-            <h1 className="truncate text-base font-bold text-ink-100">Todo Planner</h1>
+            <h1 className="truncate text-base font-bold text-ink-100">Tern</h1>
           </div>
           <HeaderTimer />
         </div>

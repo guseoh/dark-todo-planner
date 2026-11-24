@@ -185,11 +185,12 @@ const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, paren
           <button type="button" className={`project-v4-card__title ${todo.completed ? "line-through opacity-60" : ""}`}
             onClick={() => onOpenDetails(todo)} title={todo.title}>{todo.title}</button>
         </div>
-        {!project.archived ? <TimerToggleButton todo={todo} className="project-v4-card__timer" /> : null}
-        {!project.archived ? <button type="button" className="project-v4-card__drag"
+        {!project.archived ? <div className="project-v4-card__actions">
+        <TimerToggleButton todo={todo} className="project-v4-card__timer" />
+        <button type="button" className="project-v4-card__drag"
           title="잡고 다른 열로 드래그해 상태 변경" aria-label={`${todo.title} 상태 이동`}
-          {...listeners} {...attributes}><GripVertical size={15} /></button> : null}
-        {!project.archived ? <details className="project-actions-menu" onKeyDown={(event) => {
+          {...listeners} {...attributes}><GripVertical size={15} /></button>
+        <details className="project-actions-menu" onKeyDown={(event) => {
           if (event.key !== "Escape") return;
           event.currentTarget.open = false;
           event.currentTarget.querySelector("summary")?.focus();
@@ -199,6 +200,7 @@ const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, paren
             const menu = event.currentTarget.closest("details");
             if (menu) menu.open = false;
           }}>
+            <button type="button" onClick={() => onOpenDetails(todo)}>편집</button>
             {workflowColumns.filter((column) => column.status !== status).map((column) => (
               <button key={column.status} type="button" onClick={() => onMove(todo, column.status)}>{column.label}으로 이동</button>
             ))}
@@ -209,7 +211,8 @@ const ProjectKanbanCard = memo(function ProjectKanbanCard({ project, todo, paren
             <button type="button" onClick={() => onDetach(todo)}>프로젝트에서 제외</button>
             <button type="button" className="project-actions-menu__danger" onClick={() => onDelete(todo.id)}>휴지통으로 이동</button>
           </div>
-        </details> : null}
+        </details>
+        </div> : null}
       </div>
       {(todo.priority === "HIGH" || milestone || childCount > 0 || todo.dueDate || todo.planningState === "SCHEDULED" || todo.blockReason) ? (
         <div className="project-v4-card__meta">
@@ -400,7 +403,7 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
           <span className="shrink-0 text-xs text-ui-muted" aria-live="polite">{visibleTodos.length}개</span>
         </div>
         {!project.archived ? <button type="button" className="btn-primary shrink-0" onClick={() => setShowAdd((value) => !value)}>
-          <Plus size={16} />{showAdd ? "추가 닫기" : "작업 추가"}
+          <Plus size={16} />{showAdd ? "추가 닫기" : "할 일 추가"}
         </button> : null}
       </div>
       {showAdd && !project.archived ? <TodoForm compact autoFocus submitLabel="추가" defaultProjectId={project.id}
@@ -442,7 +445,7 @@ export function ProjectKanban({ project, todos, milestones, categories = [], pro
                     <TodoForm compact autoFocus layout="stacked" defaultProjectId={project.id} categories={categories}
                       projects={projects} onCancel={() => setAddingTo(null)}
                       onAdd={(input) => onAddTodo({ ...input, projectId: project.id, workflowStatus: column.status })} />
-                  ) : <button type="button" className="project-kanban-add btn-secondary w-full text-xs" onClick={() => setAddingTo(column.status)}>+ 작업 추가</button> : null}
+                  ) : <button type="button" className="project-kanban-add btn-secondary w-full text-xs" onClick={() => setAddingTo(column.status)}>+ 할 일 추가</button> : null}
                   {!items.length ? <p className="project-kanban-empty text-xs text-ui-muted">여기로 작업을 이동할 수 있습니다</p> : null}
                 </KanbanColumn>
               );

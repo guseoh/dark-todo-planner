@@ -143,7 +143,7 @@ export function AllTodosPage({
 
   return (
     <div ref={pageRef} className="page-shell all-todos-page">
-      <PageHeader title="전체 Todo" description="검색하고, 필요한 작업을 골라 정리합니다."
+      <PageHeader title="전체 할 일" description="검색하고, 필요한 작업을 골라 정리합니다."
         meta={`검색 결과 ${filteredTodos.length}개`}
         actions={
           <button
@@ -219,7 +219,7 @@ export function AllTodosPage({
               <button type="button" className="btn-secondary hover:border-danger/60 hover:text-danger" onClick={() => void deleteIds(filteredTodos.map((todo) => todo.id), "현재 결과 Todo")} disabled={!filteredTodos.length || deleting || updating}>
                 현재 결과 {filteredTodos.length}개를 휴지통으로
               </button>
-              <button type="button" className="btn-secondary hover:border-danger/60 hover:text-danger" onClick={() => void deleteIds(allTodos.map((todo) => todo.id), "전체 Todo")} disabled={!allTodos.length || deleting || updating}>
+              <button type="button" className="btn-secondary hover:border-danger/60 hover:text-danger" onClick={() => void deleteIds(allTodos.map((todo) => todo.id), "전체 할 일")} disabled={!allTodos.length || deleting || updating}>
                 전체 {allTodos.length}개를 휴지통으로
               </button>
             </div>

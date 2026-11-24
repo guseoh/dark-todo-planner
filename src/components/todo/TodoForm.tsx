@@ -192,6 +192,13 @@ export function TodoForm({
     if (compact) setShowDetails(false);
   };
 
+  const [addedElsewhere, setAddedElsewhere] = useState("");
+  useEffect(() => {
+    if (!addedElsewhere) return undefined;
+    const timer = window.setTimeout(() => setAddedElsewhere(""), 8000);
+    return () => window.clearTimeout(timer);
+  }, [addedElsewhere]);
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (saving || composing) return;
@@ -220,6 +227,13 @@ export function TodoForm({
       if (!created) {
         setSaveError("Todo 저장에 실패했습니다. 작성 중인 내용은 유지됩니다.");
         return;
+      }
+      // Today's composer only lists today's work: say where a differently dated item went.
+      if (todayCompact && defaultDate) {
+        const where = input.planningState === "SOMEDAY" ? "언젠가"
+          : input.planningState === "WAITING" ? "대기"
+            : input.date && input.date !== defaultDate ? `${Number(input.date.slice(5, 7))}월 ${Number(input.date.slice(8, 10))}일` : "";
+        setAddedElsewhere(where ? `"${input.title}" 할 일을 ${where}에 추가했습니다. 오늘 목록에는 보이지 않습니다.` : "");
       }
       reset();
       if (collapsible && !alwaysOpen) setExpanded(false);
@@ -400,6 +414,7 @@ export function TodoForm({
         </div>
       ) : null}
       {saveError ? <p role="alert" className="mt-2 text-xs font-semibold text-danger">{saveError}</p> : null}
+      <p role="status" className={addedElsewhere ? "mt-2 text-xs text-ui-secondary" : "sr-only"}>{addedElsewhere}</p>
       {showSyntaxHint && titleFocused ? <p className="todo-composer-form__syntax-hint mt-2 text-[11px] leading-5 text-ui-muted">빠른 문법: 내일 · !high · @프로젝트 · +카테고리 · due:내일 · date:2026-08-20 · someday/waiting · 공백 이름은 @{"{"}프로젝트 이름{"}"} / +{"{"}카테고리 이름{"}"}</p> : null}
       <div id={detailsId} hidden={!showDetails}>
         {showDetails ? <div className="flex flex-wrap items-center gap-2 border-t border-ui-divider py-2">

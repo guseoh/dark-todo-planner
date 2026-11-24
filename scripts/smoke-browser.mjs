@@ -141,7 +141,7 @@ try {
   assert.equal(await page.getByRole("button", { name: "개발 활동", exact: true }).count(), 0,
     "The development-activity tab is retired; GitHub grass lives on Today.");
   await page.getByRole("button", { name: "오늘", exact: true }).click();
-  await page.getByRole("group", { name: "오늘 계획 요약" }).waitFor();
+  await page.getByRole("group", { name: "오늘 작업 현황" }).waitFor();
   assert.equal(await page.locator(".today-header__action").count(), 1,
     "Daily reflection must remain available even when no Todo is scheduled.");
   await page.locator(".today-rail-extras__toggle").click();
@@ -301,7 +301,7 @@ try {
   // G3: a historical INBOX row remains stored unchanged and is reachable
   // via All Todo, while no new Inbox UI or input shortcut can produce it.
   assert.equal(await nav.getByRole("button", { name: "받은함", exact: true }).count(), 0);
-  assert.equal(await page.getByRole("button", { name: "전체 Todo", exact: true }).count(), 1);
+  assert.equal(await page.getByRole("button", { name: "전체 할 일", exact: true }).count(), 1);
   const legacyTitle = `Legacy unplanned ${randomUUID().slice(0, 8)}`;
   const legacyCreate = await page.evaluate(async (title) => {
     const response = await fetch("/api/todos", {
@@ -317,7 +317,7 @@ try {
   // Navigating to a different hash is same-document; reload to refetch the fixture from local D1.
   await page.reload({ waitUntil: "domcontentloaded" });
   assert.equal((await findServerTodo(legacyTitle))?.planningState, "INBOX", "Local D1 fixture should survive reload.");
-  await page.getByRole("heading", { name: "전체 Todo", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "전체 할 일", exact: true }).waitFor();
   assert.equal(new URL(page.url()).hash, "#/all", "Old Inbox bookmarks must redirect to All Todo.");
   const unplannedButton = page.getByRole("button", { name: /미계획 \d+개 보기/ });
   await unplannedButton.click();
@@ -333,9 +333,9 @@ try {
   assert.equal(await page.getByRole("combobox", { name: "계획 상태 필터" }).inputValue(), "INBOX");
   // Advanced filters stay expanded on mobile: Todo actions must still be reachable.
   await legacyRow.evaluate((row) => row.scrollIntoView({ block: "center", inline: "nearest" }));
-  const editLegacy = legacyRow.getByRole("button", { name: `"${legacyTitle}" Todo 수정` });
+  const editLegacy = legacyRow.getByRole("button", { name: `"${legacyTitle}" 수정` });
   await editLegacy.click();
-  const legacyEdit = page.getByRole("dialog", { name: "Todo 수정" });
+  const legacyEdit = page.getByRole("dialog", { name: "할 일 수정" });
   await legacyEdit.getByRole("combobox", { name: "보관 위치" }).waitFor();
   assert.equal(await legacyEdit.getByRole("combobox", { name: "보관 위치" }).inputValue(), "INBOX");
   // Ordinary metadata edits must not silently move old INBOX records into Today.
@@ -698,8 +698,8 @@ try {
   await todoFilter.click();
   // Clicking a scheduled chip edits its Todo; clicking the day opens details.
   await monthGrid.getByRole("button", { name: title, exact: true }).click();
-  const fromCalendarEdit = page.getByRole("dialog", { name: "Todo 수정" });
-  await fromCalendarEdit.getByPlaceholder("Todo 제목").waitFor();
+  const fromCalendarEdit = page.getByRole("dialog", { name: "할 일 수정" });
+  await fromCalendarEdit.getByPlaceholder("할 일 제목").waitFor();
   await fromCalendarEdit.getByRole("button", { name: "취소" }).click();
   await fromCalendarEdit.waitFor({ state: "hidden" });
   await monthGrid.getByRole("button", { name: title, exact: true })
@@ -794,7 +794,7 @@ try {
     return row;
   };
   let actionsRow = await openTodoActions();
-  await actionsRow.getByRole("button", { name: `"${title}" Todo 수정` }).waitFor();
+  await actionsRow.getByRole("button", { name: `"${title}" 수정` }).waitFor();
   await actionsRow.locator("summary").click();
 
   await page.keyboard.press("Control+k");
@@ -810,8 +810,8 @@ try {
   assert.equal(await wantedResult.getAttribute("aria-current"), "true",
     "Keyboard navigation must select the exact Todo search result.");
   await commandInput.press("Enter");
-  const edit = page.getByRole("dialog", { name: "Todo 수정" });
-  await edit.getByPlaceholder("Todo 제목").fill(edited);
+  const edit = page.getByRole("dialog", { name: "할 일 수정" });
+  await edit.getByPlaceholder("할 일 제목").fill(edited);
   await edit.getByRole("button", { name: "저장", exact: true }).click();
   await edit.waitFor({ state: "hidden" });
   await waitForServerTodo(edited); // Persistence may settle after the edit modal closes.
@@ -966,7 +966,7 @@ try {
   await taskCard.waitFor();
   assert.equal(await taskCard.locator("select").count(), 0, "Kanban cards must not contain inline milestone editors");
   await taskCard.getByRole("button", { name: parentTaskTitle, exact: true }).click();
-  const projectInspector = page.getByRole("dialog", { name: "Todo 수정" });
+  const projectInspector = page.getByRole("dialog", { name: "할 일 수정" });
   await projectInspector.getByRole("heading", { name: "하위 작업" }).waitFor();
   const childTitle = `Inspector child ${randomUUID().slice(0, 8)}`;
   await projectInspector.getByRole("textbox", { name: "하위 작업 제목" }).fill(childTitle);
@@ -1396,7 +1396,7 @@ try {
 
   // G2 visual coverage: compare content-first screens in both themes at key widths.
   const screenLabels = {
-    today: "오늘", all: "전체 Todo", calendar: "캘린더", projects: "프로젝트",
+    today: "오늘", all: "전체 할 일", calendar: "캘린더", projects: "프로젝트",
     memo: "메모", scratchpad: "낙서장", settings: "설정", trash: "휴지통",
   };
   for (const theme of ["dark", "light"]) {
@@ -1600,9 +1600,9 @@ try {
   assert.equal(await safeReflectionInput.inputValue(), `Reflection ${flowTag}`, "Retry must restore the previous server reflection.");
   await safeRecapDialog.getByRole("button", { name: "취소" }).click();
 
-  // 전체 Todo bulk selection: a whole group can be selected, or excluded again, with one click.
+  // 전체 할 일 bulk selection: a whole group can be selected, or excluded again, with one click.
   await page.evaluate(() => { window.location.hash = "#/all"; });
-  await page.getByRole("heading", { name: "전체 Todo", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "전체 할 일", exact: true }).waitFor();
   await page.getByRole("button", { name: "선택 작업", exact: true }).click();
   const groupChip = page.getByRole("group", { name: "그룹별 선택" }).getByRole("button", { name: new RegExp(`^Flow ${flowTag}`) });
   await groupChip.waitFor();

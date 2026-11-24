@@ -4167,7 +4167,7 @@ dependencies = [
 
 [[package]]
 name = "tern"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "reqwest 0.12.28",
  "serde",
