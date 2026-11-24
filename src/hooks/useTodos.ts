@@ -205,9 +205,9 @@ export function useTodos() {
     const existing = allTodos.find((todo) => todo.id === id);
     if (!existing) return undefined;
 
+    if (Object.prototype.hasOwnProperty.call(updates, "projectId") && updates.projectId !== existing.projectId && (existing.parentTodoId || allTodos.some(item => item.parentTodoId === id))) { setError("상·하위 작업 연결을 정리한 후 프로젝트를 이동하세요."); return undefined; }
     const serial = (updateSerialRef.current.get(id) ?? 0) + 1;
     updateSerialRef.current.set(id, serial);
-    if (Object.prototype.hasOwnProperty.call(updates, "projectId") && updates.projectId !== existing.projectId && (existing.parentTodoId || allTodos.some(item => item.parentTodoId === id))) { setError("상·하위 작업 연결을 정리한 후 프로젝트를 이동하세요."); return undefined; }
     const optimistic = applyOptimisticUpdates(existing, updates);
     // Only the atomic workflow transition used by the board is safe to render
     // optimistically. Scheduling/metadata edits may change the active list

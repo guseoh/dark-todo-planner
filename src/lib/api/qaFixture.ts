@@ -264,6 +264,11 @@ return async (input, init) => {
     return json({ items: state === "closed" ? [] : items, fetchedAt: timestamp(), limited: false });
   }
   if (method !== "GET") return json({ message: "지원하지 않는 QA 수정입니다. 운영 데이터로 전송되지 않습니다." }, 501);
+  const summaryEntries = entries.filter(item => range(item.plannerDate));
+  const projectMinutes = new Map<string, number>();
+  for (const entry of summaryEntries) {
+    if (entry.projectId) projectMinutes.set(entry.projectId, (projectMinutes.get(entry.projectId) ?? 0) + entry.durationMinutes);
+  }
   const responses: Record<string, unknown> = {
     "/api/auth/session": { authenticated: true, username: "QA fixture" },
     "/api/bootstrap": { data: {} },
@@ -278,7 +283,7 @@ return async (input, init) => {
     "/api/planner-settings": { plannerSettings: settings },
     "/api/timer": { activeTimer, serverNow: timestamp() },
     "/api/time-entries": { timeEntries: entries.filter(item => range(item.plannerDate)) },
-    "/api/time-summary": { byProject: [] },
+    "/api/time-summary": { byProject: [...projectMinutes].map(([projectId, minutes]) => ({ projectId, minutes })), totalMinutes: summaryEntries.reduce((sum, entry) => sum + entry.durationMinutes, 0) },
     "/api/time-blocks": { timeBlocks: blocks.filter(item => range(item.date)) },
     "/api/daily-plans": { dailyPlans: [] },
     "/api/reflections": { reflections: [...reflections.entries()].filter(([date]) => range(date)).map(([date, content]) => ({ date, content })) },

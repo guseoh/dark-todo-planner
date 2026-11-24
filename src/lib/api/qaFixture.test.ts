@@ -73,3 +73,16 @@ describe("V4 QA workflow regression", () => {
     expect(detail.checks[0].conclusion).toBe("success");
   });
 });
+
+describe("QA project time summary", () => {
+  it("counts Todo and manual project measurements and respects the requested range", async () => {
+    const qaFetch = createQaFetch(() => Date.parse("2026-11-24T12:00:00Z"));
+    const times = { startedAt: "2026-11-24T09:00:00Z", endedAt: "2026-11-24T10:00:00Z" };
+    expect((await qaFetch("/api/time-entries", request("POST", { ...times, projectId: "qa-project" }))).status).toBe(201);
+    const todoTimes = { startedAt: "2026-11-24T10:00:00Z", endedAt: "2026-11-24T10:30:00Z" };
+    expect((await qaFetch("/api/time-entries", request("POST", { ...todoTimes, todoId: "qa-todo-1" }))).status).toBe(201);
+    const summary = await (await qaFetch("/api/time-summary?from=2026-11-24&to=2026-11-24")).json();
+    expect(summary).toEqual({ byProject: [{ projectId: "qa-project", minutes: 90 }], totalMinutes: 90 });
+    expect(await (await qaFetch("/api/time-summary?from=2026-11-25&to=2026-11-25")).json()).toEqual({ byProject: [], totalMinutes: 0 });
+  });
+});

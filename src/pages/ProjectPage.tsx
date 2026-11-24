@@ -492,7 +492,7 @@ export function ProjectPage({
           </div>
           {projectView === "board" ? (
           <ProjectKanban key={selected.id} project={selected} todos={projectTodos} milestones={projectMilestones} categories={categories} projects={projects} onAddTodo={onAddTodo} onUpdateTodo={onUpdateTodo} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} onDetachTodo={onDetachTodo} onReorderTodos={onReorderTodos} wipLimits={wipLimits} onChangeWipLimits={onChangeWipLimits} />
-          ) : <ProjectGithubPanel key={selected.id} project={selected} todos={projectTodos} kind={projectView} onAdd={onAddTodo} onUpdate={onUpdateTodo} onConnect={() => setProjectDialog("resources")} />}
+          ) : <ProjectGithubPanel key={`${selected.id}:${projectView}`} project={selected} todos={projectTodos} kind={projectView} onAdd={onAddTodo} onUpdate={onUpdateTodo} onConnect={() => setProjectDialog("resources")} />}
 
         </div>
       ) : visibleProjects.length ? (

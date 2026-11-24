@@ -173,11 +173,14 @@ export function TodoForm({
     const template = templates.find(item => item.id === id);
     if (!template) return;
     setTitle(template.title); setMemo(template.memo); setPriority(template.priority);
+    setDate(defaultDate || todayKey()); setDueDate(""); setPlanningState(defaultPlanningState);
     setProjectId(projects.some(item => item.id === template.projectId && !item.archived) ? template.projectId! : defaultProjectId);
     if (!lockCategory) setCategoryId(categories.some(item => item.id === template.categoryId) ? template.categoryId! : defaultCategoryId);
     setShowDetails(true); titleInputRef.current?.focus();
   };
   const reset = () => {
+    setTemplateId("");
+    setTemplateNotice("");
     setTitle("");
     setMemo("");
     setDate(defaultDate || todayKey());

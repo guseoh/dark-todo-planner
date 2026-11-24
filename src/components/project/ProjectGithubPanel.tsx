@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ExternalLink, GitPullRequest, CircleDot, RefreshCw } from "lucide-react";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { Modal } from "../common/Modal";
@@ -43,6 +43,7 @@ export function ProjectGithubPanel({ project, todos, kind, onAdd, onUpdate, onCo
   const [refresh, setRefresh] = useState(0);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const applyingRef = useRef(false);
   const [actionError, setActionError] = useState("");
   const [linkNumber, setLinkNumber] = useState<number | null>(null);
   const [todoId, setTodoId] = useState("");
@@ -60,17 +61,18 @@ export function ProjectGithubPanel({ project, todos, kind, onAdd, onUpdate, onCo
   }, [repo, kind, state, page, refresh, key]);
   const linked = (item: Item) => todos.find(todo => todo.referenceUrl?.toLowerCase() === item.url.toLowerCase());
   const apply = async (item: Item, existing?: string) => {
-    if (busy || project.archived || linked(item)) return;
+    if (applyingRef.current || project.archived || linked(item)) return;
+    applyingRef.current = true;
     setBusy(true); setActionError("");
     try {
       const reference = { referenceUrl: item.url, referenceLabel: `GitHub #${item.number}` };
-      const target = todos.find(todo => todo.id === existing && !todo.referenceUrl);
+      const target = todos.find(todo => todo.id === existing && !todo.referenceUrl && !todo.archived);
       const saved = existing ? (target ? await onUpdate(existing, reference) : undefined)
         : await onAdd({ title: `#${item.number} ${item.title}`.slice(0, 200), projectId: project.id, planningState: "INBOX", ...reference });
       if (!saved) throw new Error("Todo를 연결하지 못했습니다.");
       setLinkNumber(null); setTodoId("");
     } catch (cause) { setActionError(cause instanceof Error ? cause.message : "Todo 연결 실패"); }
-    finally { setBusy(false); }
+    finally { applyingRef.current = false; setBusy(false); }
   };
   if (!repo) return <section className="space-y-3 py-4"><p className="text-sm text-ui-muted">자료 링크에 GitHub 저장소 주소(https://github.com/owner/repo)를 추가하세요.</p><button type="button" className="btn-secondary" onClick={onConnect}>저장소 연결</button></section>;
   const visible = loadedKey === key ? result?.items.filter(item => `${item.title} #${item.number} ${item.author}`.toLowerCase().includes(query.trim().toLowerCase())) ?? [] : [];
@@ -81,7 +83,7 @@ export function ProjectGithubPanel({ project, todos, kind, onAdd, onUpdate, onCo
       <select className="field min-h-8 w-auto text-xs" aria-label="GitHub 상태" value={state} onChange={event => { setState(event.target.value); setPage(1); }}><option value="open">열림</option><option value="closed">종료</option><option value="all">전체</option></select>
       <button type="button" className="btn-secondary text-xs" onClick={() => setRefresh(value => value + 1)}><RefreshCw size={14} />새로고침</button>
     </div>
-    <p className="text-xs text-ui-muted">{result?.authenticated ? "인증된 읽기 전용 조회" : "공개 읽기 전용 조회"} · 페이지당 최대 100개 · 현재 페이지 검색{result?.limited ? " · 더 많은 항목이 있습니다" : ""}</p>
+    <p className="text-xs text-ui-muted">{result?.authenticated ? "인증된 읽기 전용 조회" : "공개 읽기 전용 조회"} · 페이지당 최대 100개 · 현재 페이지 검색{result?.limited ? " · 더 많은 항목이 있습니다" : ""}{result ? ` · 조회 ${new Date(result.fetchedAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}${result.authenticated ? "" : " (최대 90초 캐시)"}` : ""}</p>
     {error && loadedKey === key ? <p role="alert" className="text-xs text-danger">{error}</p> : null}
     {loadedKey !== key ? <p role="status" className="text-xs text-ui-muted">GitHub 조회 중…</p> : null}
     {actionError ? <p role="alert" className="text-xs text-danger">{actionError}</p> : null}
