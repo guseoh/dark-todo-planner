@@ -281,7 +281,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
             <MarkdownPreview value={content} />
           </div>
         ) : showSource ? (
-          <MarkdownEditor value={content} onChange={setContent} placeholder="- 떠오른 생각을 적어두세요"
+          <MarkdownEditor positionKey={draftKey} value={content} onChange={setContent} placeholder="- 떠오른 생각을 적어두세요"
             textareaClassName={large ? "min-h-[300px] max-h-[55vh]" : "min-h-36"} />
         ) : (
           <RichMarkdownEditor ref={richEditorRef} variant="memo" positionKey={draftKey} markdown={content} onChange={setContent} readOnly={isSubmitting} />
@@ -324,7 +324,7 @@ function MemoForm({ initial, submitLabel, onSubmit, onSaveLinks, onRetryCreatedM
       <div className="flex min-h-5 flex-wrap items-center justify-between gap-3" aria-live="polite">
         {error ? <p role="alert" className="text-xs text-danger">{error}</p> : <span />}
         {draftError ? <p role="alert" className="text-xs text-danger">{draftError}</p> : null}
-        {draftSavedAt && !draftError ? <p className="text-xs text-ink-400" title="브라우저 로컬 초안입니다. 저장 버튼을 누르면 서버에 반영됩니다.">브라우저 초안 저장 · {new Date(draftSavedAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} · 서버 저장 전</p> : null}
+        {draftSavedAt && !draftError ? <p className="text-xs text-ink-400" title="이 PC에 저장된 로컬 초안입니다. 저장 버튼을 누르면 서버에 반영됩니다.">로컬 초안 저장 · {new Date(draftSavedAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} · 서버 저장 전</p> : null}
       </div>
       <div className="flex flex-wrap justify-end gap-2 border-t border-ink-700/60 pt-3">
         {onCancel ? <button type="button" className="btn-secondary" onClick={onCancel} disabled={isSubmitting}><X size={15} />취소</button> : null}

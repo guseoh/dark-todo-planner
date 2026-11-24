@@ -7,6 +7,7 @@ import { parseQuickTodoDraft } from "../../lib/quickAdd";
 import type { Category } from "../../types/category";
 import type { Project } from "../../types/project";
 import type { Todo, TodoInput, TodoPlanningState, TodoPriority } from "../../types/todo";
+import { makeTodoTemplate, readTodoTemplates, TODO_TEMPLATE_KEY, type TodoTemplate } from "../../lib/todoTemplates";
 import { TodoDetailFields } from "./TodoDetailFields";
 
 const UNSCHEDULED_DATE = "9999-12-31";
@@ -129,6 +130,9 @@ export function TodoForm({
   const [expanded, setExpanded] = useState(!collapsible || alwaysOpen);
   const [composing, setComposing] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [templates, setTemplates] = useState(() => readTodoTemplates(localStorage));
+  const [templateId, setTemplateId] = useState("");
+  const [templateNotice, setTemplateNotice] = useState("");
 
   useEffect(() => { setDate(defaultDate || todayKey()); }, [defaultDate]);
   useEffect(() => { if (collapsible && expanded && !alwaysOpen) titleInputRef.current?.focus(); }, [collapsible, expanded, alwaysOpen]);
@@ -155,6 +159,24 @@ export function TodoForm({
     projects,
   });
 
+  const storeTemplates = (next: TodoTemplate[]) => {
+    try { localStorage.setItem(TODO_TEMPLATE_KEY, JSON.stringify(next)); setTemplates(next); setTemplateNotice(""); return true; }
+    catch { setTemplateNotice("템플릿을 저장하지 못했습니다."); return false; }
+  };
+  const saveTemplate = () => {
+    if (!parsed.title.trim()) return;
+    const template = makeTodoTemplate(crypto.randomUUID(), { title: parsed.title, memo, priority: parsed.priority ?? priority, projectId: (parsed.projectId ?? projectId) || undefined, categoryId: lockCategory ? categoryId || undefined : (parsed.categoryId ?? categoryId) || undefined });
+    if (storeTemplates([template, ...readTodoTemplates(localStorage)].slice(0, 30))) { setTemplateId(template.id); setTemplateNotice("이 PC에 템플릿을 저장했습니다."); }
+  };
+  const loadTemplate = (id: string) => {
+    setTemplateId(id);
+    const template = templates.find(item => item.id === id);
+    if (!template) return;
+    setTitle(template.title); setMemo(template.memo); setPriority(template.priority);
+    setProjectId(projects.some(item => item.id === template.projectId && !item.archived) ? template.projectId! : defaultProjectId);
+    if (!lockCategory) setCategoryId(categories.some(item => item.id === template.categoryId) ? template.categoryId! : defaultCategoryId);
+    setShowDetails(true); titleInputRef.current?.focus();
+  };
   const reset = () => {
     setTitle("");
     setMemo("");
@@ -377,6 +399,12 @@ export function TodoForm({
       {saveError ? <p role="alert" className="mt-2 text-xs font-semibold text-danger">{saveError}</p> : null}
       {showSyntaxHint && titleFocused ? <p className="todo-composer-form__syntax-hint mt-2 text-[11px] leading-5 text-ui-muted">빠른 문법: 내일 · !high · @프로젝트 · +카테고리 · due:내일 · date:2026-08-20 · someday/waiting · 공백 이름은 @{"{"}프로젝트 이름{"}"} / +{"{"}카테고리 이름{"}"}</p> : null}
       <div id={detailsId} hidden={!showDetails}>
+        {showDetails ? <div className="flex flex-wrap items-center gap-2 border-t border-ui-divider py-2">
+          <select className="field min-h-8 w-auto text-xs" aria-label="Todo 템플릿" value={templateId} disabled={saving} onChange={event => loadTemplate(event.target.value)} onFocus={() => setTemplates(readTodoTemplates(localStorage))}><option value="">템플릿 불러오기</option>{templates.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select>
+          <button type="button" className="btn-secondary text-xs" disabled={saving || !parsed.title.trim()} onClick={saveTemplate}>템플릿 저장</button>
+          <button type="button" className="btn-secondary text-xs" disabled={saving || !templateId} onClick={() => { if (storeTemplates(readTodoTemplates(localStorage).filter(item => item.id !== templateId))) setTemplateId(""); }}>삭제</button>
+          {templateNotice ? <span role="status" className="text-xs text-ui-muted">{templateNotice}</span> : null}
+        </div> : null}
         {showDetails ? (
           <TodoDetailFields
             date={date}

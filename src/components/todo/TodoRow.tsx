@@ -57,6 +57,14 @@ export function TodoRow({
   };
   const menuRef = useRef<HTMLDetailsElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [inlineEdit, setInlineEdit] = useState(false);
+  const [inlineBusy, setInlineBusy] = useState(false);
+  const [inlineError, setInlineError] = useState("");
+  const [inlineTitle, setInlineTitle] = useState("");
+  const [inlinePriority, setInlinePriority] = useState(todo.priority);
+  const [inlineCategory, setInlineCategory] = useState("");
+  const [inlineProject, setInlineProject] = useState("");
+  const rowRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!menuOpen) return;
     const dismissOutside = (event: PointerEvent) => {
@@ -75,6 +83,18 @@ export function TodoRow({
 
   const actions = useTodoQuickActions();
   const timer = useTimeTracking();
+  const beginInline = () => {
+    setInlineTitle(todo.title); setInlinePriority(todo.priority); setInlineCategory(todo.categoryId ?? ""); setInlineProject(todo.projectId ?? ""); setInlineError(""); setInlineEdit(true); setMenuOpen(false);
+  };
+  const finishInline = () => { setInlineEdit(false); window.requestAnimationFrame(() => rowRef.current?.focus()); };
+  const saveInline = async () => {
+    if (!actions?.updateTodo || inlineBusy || !inlineTitle.trim()) return;
+    setInlineBusy(true); setInlineError("");
+    try {
+      const updated = await actions.updateTodo(todo.id, { title: inlineTitle.trim(), priority: inlinePriority, categoryId: inlineCategory || undefined, projectId: inlineProject || undefined, ...(inlineProject !== (todo.projectId ?? "") ? { milestoneId: undefined } : {}) });
+      if (updated) finishInline(); else setInlineError("변경을 저장하지 못했습니다. 입력은 유지됩니다.");
+    } catch { setInlineError("저장 실패. 다시 시도하세요."); } finally { setInlineBusy(false); }
+  };
   const project = actions?.projects.find(({ id }) => id === todo.projectId);
   const projectName = project?.name ?? fallbackProjectName;
   const today = todayKey();
@@ -90,7 +110,7 @@ export function TodoRow({
     || (variant !== "today" && Boolean(todo.dueDate)) || Boolean(todo.referenceUrl);
 
   return (
-    <article data-todo-row={selectionMode ? undefined : todo.id} tabIndex={selectionMode ? undefined : -1}
+    <article ref={rowRef} data-todo-row={selectionMode ? undefined : todo.id} tabIndex={selectionMode ? undefined : -1}
       onKeyDown={(event) => {
         if (selectionMode || event.defaultPrevented || event.nativeEvent.isComposing || event.ctrlKey || event.metaKey || event.altKey) return;
         if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable]")) return;
@@ -134,6 +154,7 @@ export function TodoRow({
           </div> : null}
         </button>
 
+        {!selectionMode && !todo.archived && actions?.updateTodo ? <button type="button" className="icon-btn h-8 w-8 text-ui-muted" title="인라인 수정" aria-label={`${todo.title} 인라인 수정`} onClick={beginInline}><Pencil size={13} /></button> : null}
         {!selectionMode && variant === "today" ? (
           <>
           <TimerToggleButton todo={todo} />
@@ -165,6 +186,14 @@ export function TodoRow({
           </div>
         ) : null}
       </div>
+      {inlineEdit && !selectionMode ? <form className="ml-10 mt-2 flex flex-wrap items-center gap-2" onSubmit={event => { event.preventDefault(); void saveInline(); }} onKeyDown={event => { if (event.key === "Escape" && !inlineBusy && !event.nativeEvent.isComposing) { event.stopPropagation(); finishInline(); } if (event.key === "Enter" && event.nativeEvent.isComposing) event.preventDefault(); }}>
+        <input className="field min-h-8 min-w-32 flex-1 text-xs" aria-label="제목 빠른 수정" value={inlineTitle} onChange={event => setInlineTitle(event.target.value)} autoFocus maxLength={200} disabled={inlineBusy} />
+        <select className="field min-h-8 w-auto text-xs" aria-label="우선순위 빠른 수정" value={inlinePriority} onChange={event => setInlinePriority(event.target.value as Todo["priority"])} disabled={inlineBusy}><option value="LOW">낮음</option><option value="MEDIUM">보통</option><option value="HIGH">높음</option></select>
+        <select className="field min-h-8 w-auto text-xs" aria-label="카테고리 빠른 수정" value={inlineCategory} onChange={event => setInlineCategory(event.target.value)} disabled={inlineBusy}><option value="">미분류</option>{actions?.categories.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
+        <select className="field min-h-8 w-auto text-xs" aria-label="프로젝트 빠른 수정" value={inlineProject} onChange={event => setInlineProject(event.target.value)} disabled={inlineBusy || Boolean(todo.parentTodoId)}><option value="">미지정</option>{actions?.projects.filter(item => !item.archived || item.id === todo.projectId).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
+        <button type="submit" className="btn-secondary text-xs" disabled={inlineBusy || !inlineTitle.trim()}>저장</button><button type="button" className="btn-secondary text-xs" disabled={inlineBusy} onClick={finishInline}>취소</button>
+        {inlineError ? <span role="alert" className="w-full text-xs text-danger">{inlineError}</span> : null}
+      </form> : null}
     </article>
   );
 }

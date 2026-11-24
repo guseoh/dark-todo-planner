@@ -1,5 +1,5 @@
 import { TodoForm } from "../components/todo/TodoForm";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Activity, CalendarDays, Flag, FolderKanban, ListChecks, Settings2, Trash2, X } from "lucide-react";
 import { defaultFilters } from "../hooks/useTodos";
 import { todayKey } from "../lib/date";
@@ -33,11 +33,25 @@ type AllTodosPageProps = {
 
 // Session-local view preferences; never retain destructive multi-selection.
 let lastGeneralFilters: TodoFilters | undefined;
+const listScroll = new Map<string, number>();
 
 export function AllTodosPage({
   initialProjectId = "", allTodos, filterTodos, categories = [], projects, duplicateTodoIds, onToggle, onDelete, onDeleteMany, onBulkUpdate,
   onUpdate, onUnarchive, onAddTodo, onAddCategory, onUpdateCategory, onDeleteCategory,
 }: AllTodosPageProps) {
+  const pageRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    let node: HTMLElement | null = pageRef.current?.parentElement ?? null;
+    while (node && !/auto|scroll/.test(getComputedStyle(node).overflowY)) node = node.parentElement;
+    const scroller = node ?? document.scrollingElement;
+    if (!scroller) return;
+    const key = initialProjectId || "general";
+    const eventTarget = scroller === document.scrollingElement ? window : scroller;
+    const capture = () => { listScroll.set(key, scroller.scrollTop); if (listScroll.size > 30) listScroll.delete(listScroll.keys().next().value!); };
+    const top = listScroll.get(key) ?? 0;
+    const frame = requestAnimationFrame(() => { scroller.scrollTop = top; eventTarget.addEventListener("scroll", capture, { passive: true }); });
+    return () => { cancelAnimationFrame(frame); eventTarget.removeEventListener("scroll", capture); };
+  }, [initialProjectId]);
   const [filters, setFilters] = useState<TodoFilters>(() => initialProjectId ? { ...defaultFilters, status: "ALL", projectId: initialProjectId } : { ...(lastGeneralFilters ?? { ...defaultFilters, status: "ACTIVE" }) });
   useEffect(() => { if (!initialProjectId) lastGeneralFilters = { ...filters }; }, [filters, initialProjectId]);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -128,7 +142,7 @@ export function AllTodosPage({
   };
 
   return (
-    <div className="page-shell all-todos-page">
+    <div ref={pageRef} className="page-shell all-todos-page">
       <PageHeader title="전체 Todo" description="검색하고, 필요한 작업을 골라 정리합니다."
         meta={`검색 결과 ${filteredTodos.length}개`}
         actions={
