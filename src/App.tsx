@@ -371,7 +371,7 @@ function App({ onLogout }: { onLogout: () => Promise<void> }) {
           </main>
         </div>
 
-        {showCommandPalette ? <CommandPalette onClose={() => setShowCommandPalette(false)} onNavigate={changeView} onQuickAdd={openQuickAdd} onOpenItem={openSearchResult} todos={planner.allTodos} memos={planner.memos} projects={planner.projects} /> : null}
+        {showCommandPalette ? <CommandPalette onClose={() => setShowCommandPalette(false)} onNavigate={changeView} onQuickAdd={openQuickAdd} onDayClose={() => setShowDayClose(true)} onStopTimer={timeTracking.active && !timeTracking.busy ? () => { void timeTracking.stop(); } : undefined} onOpenItem={openSearchResult} todos={planner.allTodos} memos={planner.memos} projects={planner.projects} /> : null}
 
         {showQuickAdd ? (
           <Modal title="빠른 Todo 추가" description="Ctrl+Shift+K · 내일 · !high · @프로젝트 · +카테고리 · due:2026-08-20 같은 빠른 문법을 사용할 수 있습니다." onClose={() => setShowQuickAdd(false)}>

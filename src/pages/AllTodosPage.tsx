@@ -1,5 +1,5 @@
 import { TodoForm } from "../components/todo/TodoForm";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Activity, CalendarDays, Flag, FolderKanban, ListChecks, Settings2, Trash2, X } from "lucide-react";
 import { defaultFilters } from "../hooks/useTodos";
 import { todayKey } from "../lib/date";
@@ -31,11 +31,15 @@ type AllTodosPageProps = {
   onDeleteCategory: (id: string, mode: "moveTodos" | "deleteTodos") => void | Promise<void>;
 };
 
+// Session-local view preferences; never retain destructive multi-selection.
+let lastGeneralFilters: TodoFilters | undefined;
+
 export function AllTodosPage({
   initialProjectId = "", allTodos, filterTodos, categories = [], projects, duplicateTodoIds, onToggle, onDelete, onDeleteMany, onBulkUpdate,
   onUpdate, onUnarchive, onAddTodo, onAddCategory, onUpdateCategory, onDeleteCategory,
 }: AllTodosPageProps) {
-  const [filters, setFilters] = useState<TodoFilters>(() => ({ ...defaultFilters, status: initialProjectId ? "ALL" : "ACTIVE", projectId: initialProjectId }));
+  const [filters, setFilters] = useState<TodoFilters>(() => initialProjectId ? { ...defaultFilters, status: "ALL", projectId: initialProjectId } : { ...(lastGeneralFilters ?? { ...defaultFilters, status: "ACTIVE" }) });
+  useEffect(() => { if (!initialProjectId) lastGeneralFilters = { ...filters }; }, [filters, initialProjectId]);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [deleting, setDeleting] = useState(false);
@@ -140,14 +144,14 @@ export function AllTodosPage({
         }
       />
 
-      {!selectionMode ? <TodoForm key={filters.projectId} compact collapsible categories={categories} projects={projects.filter((project) => !project.archived)} defaultProjectId={filters.projectId || undefined} onAdd={onAddTodo} /> : null}
+      {!selectionMode ? <TodoForm key={filters.projectId} compact collapsible categories={categories} projects={projects.filter((project) => !project.archived)} defaultProjectId={projects.some(project => !project.archived && project.id === filters.projectId) ? filters.projectId : undefined} onAdd={onAddTodo} /> : null}
 
       {unplannedCount > 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-ui-divider py-2.5">
           <p className="text-sm text-ui-secondary">기존 미계획 Todo <strong className="font-semibold text-ui-text">{unplannedCount}개</strong> · 일정을 지정하기 전까지 그대로 보관됩니다.</p>
-          <button type="button" className="btn-secondary min-h-9 text-xs" aria-pressed={showingUnplanned} onClick={() => setFilters((current) => ({
+          <button type="button" className="btn-secondary min-h-9 text-xs" aria-pressed={showingUnplanned} onClick={() => { setSelectedIds(new Set()); setFilters((current) => ({
             ...current, planningState: showingUnplanned ? "ALL" : "INBOX", status: "ALL", archived: "ACTIVE",
-          }))}>{showingUnplanned ? "전체 보기" : `미계획 ${unplannedCount}개 보기`}</button>
+          })); }}>{showingUnplanned ? "전체 보기" : `미계획 ${unplannedCount}개 보기`}</button>
         </div>
       ) : null}
       <div className="relative z-20 border-b border-ui-divider bg-ui-canvas py-2 lg:sticky lg:top-[60px]">

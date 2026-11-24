@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Calendar, CalendarCheck, ClipboardList, FileText, FolderKanban, ListTodo, Plus, Search, Settings, StickyNote, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Calendar, CalendarCheck, ClipboardList, FileText, FolderKanban, ListTodo, Plus, Search, Square, MoonStar, Settings, StickyNote, Trash2 } from "lucide-react";
 import type { Memo } from "../../types/memo";
 import type { Project } from "../../types/project";
 import type { Todo } from "../../types/todo";
@@ -10,6 +10,8 @@ type CommandPaletteProps = {
   onClose: () => void;
   onNavigate: (view: AppView) => void;
   onQuickAdd: () => void;
+  onDayClose: () => void;
+  onStopTimer?: () => void;
   onOpenItem: (kind: "Todo" | "메모" | "프로젝트", id: string) => void;
   todos: Todo[];
   memos: Memo[];
@@ -22,7 +24,7 @@ type Result = {
   detail: string;
   view?: AppView;
   targetId?: string;
-  action?: "quick-add";
+  action?: "quick-add" | "day-close" | "stop-timer";
   kind: "이동" | "Todo" | "메모" | "프로젝트" | "명령";
 };
 
@@ -40,6 +42,8 @@ export const navigation: Result[] = [
 
 const resultIcon = (result: Result) => {
   if (result.action === "quick-add") return Plus;
+  if (result.action === "day-close") return MoonStar;
+  if (result.action === "stop-timer") return Square;
   if (result.kind === "Todo") return ListTodo;
   if (result.kind === "메모") return StickyNote;
   if (result.kind === "프로젝트" || result.view === "projects") return FolderKanban;
@@ -52,15 +56,18 @@ const resultIcon = (result: Result) => {
   return CalendarCheck;
 };
 
-export function CommandPalette({ onClose, onNavigate, onQuickAdd, onOpenItem, todos, memos, projects }: CommandPaletteProps) {
+export function CommandPalette({ onClose, onNavigate, onQuickAdd, onDayClose, onStopTimer, onOpenItem, todos, memos, projects }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const resultsRef = useRef<HTMLDivElement>(null);
   const results = useMemo(() => {
+    const commands: Result[] = [...navigation, { id: "day-close", label: "오늘 정리", detail: "측정 기록 및 하루 회고", action: "day-close", kind: "명령" }];
+    if (onStopTimer) commands.unshift({ id: "stop-timer", label: "시간 측정 종료", detail: "현재 측정 중인 작업 저장", action: "stop-timer", kind: "명령" });
     const keyword = query.trim().toLocaleLowerCase("ko");
-    if (!keyword) return navigation;
+    if (!keyword) return commands;
 
     const matches: Result[] = [];
-    for (const item of navigation) {
+    for (const item of commands) {
       if (`${item.label} ${item.detail}`.toLocaleLowerCase("ko").includes(keyword)) matches.push(item);
     }
     for (const todo of todos) {
@@ -75,10 +82,13 @@ export function CommandPalette({ onClose, onNavigate, onQuickAdd, onOpenItem, to
       if (`${project.name} ${project.description || ""}`.toLocaleLowerCase("ko").includes(keyword)) matches.push({ id: `project-${project.id}`, label: project.name, detail: project.archived ? "보관된 프로젝트" : "프로젝트에서 열기", view: "projects", targetId: project.id, kind: "프로젝트" });
     }
     return matches.slice(0, 16);
-  }, [memos, projects, query, todos]);
+  }, [memos, projects, query, todos, onStopTimer]);
+  useEffect(() => { resultsRef.current?.querySelector<HTMLElement>(`[data-command-index="${Math.min(activeIndex, results.length - 1)}"]`)?.scrollIntoView({ block: "nearest" }); }, [activeIndex, results.length]);
 
   const run = (result: Result) => {
     onClose();
+    if (result.action === "day-close") { onDayClose(); return; }
+    if (result.action === "stop-timer") { onStopTimer?.(); return; }
     if (result.action === "quick-add") {
       onQuickAdd();
       return;
@@ -98,6 +108,7 @@ export function CommandPalette({ onClose, onNavigate, onQuickAdd, onOpenItem, to
           <input data-modal-initial-focus className="field pl-10" value={query}
             onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }}
             onKeyDown={(event) => {
+              if (event.nativeEvent.isComposing || event.keyCode === 229) return;
               if (event.key === "ArrowDown") { event.preventDefault(); setActiveIndex((index) => results.length ? (index + 1) % results.length : 0); }
               if (event.key === "ArrowUp") { event.preventDefault(); setActiveIndex((index) => results.length ? (index - 1 + results.length) % results.length : 0); }
               if (event.key === "Enter" && results.length) { event.preventDefault(); run(results[Math.min(activeIndex, results.length - 1)]); }
@@ -106,11 +117,11 @@ export function CommandPalette({ onClose, onNavigate, onQuickAdd, onOpenItem, to
             placeholder="검색하거나 실행할 명령 입력" />
         </label>
         <p id="command-keyboard-help" className="text-xs text-ink-400">↑ ↓ 이동 · Enter 열기 · Esc 닫기</p>
-        <div className="max-h-[min(60vh,32rem)] space-y-1 overflow-y-auto pr-1">
+        <div ref={resultsRef} className="max-h-[min(60vh,32rem)] space-y-1 overflow-y-auto pr-1">
           {results.length ? results.map((result, index) => {
             const Icon = resultIcon(result);
             return (
-              <button key={result.id} type="button" onClick={() => run(result)} onMouseEnter={() => setActiveIndex(index)}
+              <button key={result.id} data-command-index={index} type="button" onClick={() => run(result)} onMouseEnter={() => setActiveIndex(index)}
                 aria-current={index === activeIndex ? "true" : undefined}
                 className={`flex w-full items-center gap-3 rounded-[3px] border px-3 py-2.5 text-left transition ${index === activeIndex ? "border-ui-focus bg-ui-selected" : "border-transparent hover:border-ui-divider hover:bg-ui-hover"}`}>
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[3px] border border-ui-divider bg-transparent text-ui-secondary"><Icon size={16} /></span>

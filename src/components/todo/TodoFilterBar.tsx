@@ -112,6 +112,13 @@ export function TodoFilterBar({ filters, onChange, categories = [], projects = [
           <SlidersHorizontal size={15} aria-hidden="true" /><span className="sr-only">{showAdvanced ? "필터 닫기" : "고급 필터"}</span>
         </button>
       </div>
+      {!showAdvanced && savedViews.length ? <div className="flex items-center gap-2 py-1">
+        <label className="text-xs text-ui-muted" htmlFor="todo-saved-quick">저장된 보기</label>
+        <select id="todo-saved-quick" className="field min-h-8 w-auto text-xs" value={selectedViewId} onChange={event => {
+          const view = savedViews.find(item => item.id === event.target.value);
+          if (view) { onChange(view.filters); setSelectedViewId(view.id); }
+        }}><option value="">보기 선택</option>{savedViews.map(view => <option key={view.id} value={view.id}>{view.name}</option>)}</select>
+      </div> : null}
       {filtersActive ? (
         <div className="todo-filter-workspace__active">
           <span>검색 조건이 적용되어 있습니다.</span>
